@@ -23,7 +23,20 @@ namespace Hoodrich.UI
         /// <summary>Set by Main: what he settled on is written down.</summary>
         public Action Done;
 
+        /// <summary>
+        /// Set by Main: the save, so the rail can hang outfits on it.
+        ///
+        /// A reference rather than a pile of callbacks because every one of the four things
+        /// this screen does with an outfit is a call on Locations.Wardrobe that needs the
+        /// state and nothing else. Null is a rail with no pegs on it, which is what a screen
+        /// opened before Main has finished wiring should be.
+        /// </summary>
+        public State.PlayerState State;
+
         private readonly Curtain _curtain = new Curtain();
+
+        /// <summary>What a peg row does when it is chosen.</summary>
+        private enum Deed { None, Wear, Hang, Strip }
 
         private sealed class Slot
         {
@@ -31,7 +44,16 @@ namespace Hoodrich.UI
             public bool Prop;
             public bool Body;
             public int Index;
+
+            /// <summary>The row that picks WHICH peg. Left and right move along the rail.</summary>
+            public bool Peg;
+
+            /// <summary>What this row does to the peg the row above is showing.</summary>
+            public Deed Act;
         }
+
+        /// <summary>Which peg the four rows at the top are pointed at.</summary>
+        private int _peg;
 
         /// <summary>
         /// Every slot the game has, and the body they hang on.
@@ -50,6 +72,15 @@ namespace Hoodrich.UI
         /// </summary>
         private static readonly Slot[] Slots =
         {
+            // THE PEGS FIRST, because choosing which outfit is a bigger decision than which
+            // shoes and the eye starts at the top. Four rows rather than one per peg: the peg
+            // is a value you scroll through like any other row on this rail, and the three
+            // under it act on whichever one is showing.
+            new Slot { Name = "Outfit", Peg = true },
+            new Slot { Name = "Wear it", Act = Deed.Wear },
+            new Slot { Name = "Hang this up", Act = Deed.Hang },
+            new Slot { Name = "Clear it", Act = Deed.Strip },
+
             new Slot { Name = "Body", Body = true },
 
             new Slot { Name = "Face", Index = 0 },
@@ -223,9 +254,105 @@ namespace Hoodrich.UI
 
             if (Pressed(Control.PhoneUp)) Move(-1);
             else if (Pressed(Control.PhoneDown)) Move(1);
-            else if (Pressed(Control.PhoneLeft)) Step(-1);
-            else if (Pressed(Control.PhoneRight)) Step(1);
-            else if (Pressed(Control.PhoneSelect) || Pressed(Control.Context)) Colour();
+            else if (Pressed(Control.PhoneLeft)) Peg(-1);
+            else if (Pressed(Control.PhoneRight)) Peg(1);
+            else if (Pressed(Control.PhoneSelect) || Pressed(Control.Context)) Choose();
+        }
+
+        /// <summary>Left and right: along the rail on a peg row, through the rack on any other.</summary>
+        private void Peg(int by)
+        {
+            var s = Slots[_row];
+
+            if (!s.Peg) { Step(by); return; }
+
+            _peg = (_peg + by + Locations.Wardrobe.Pegs) % Locations.Wardrobe.Pegs;
+            _pickedAt = Game.GameTime;
+            Hud.PlaySound("NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        /// <summary>The button: the peg rows do their own thing, everything else takes a colour.</summary>
+        private void Choose()
+        {
+            var s = Slots[_row];
+
+            if (s.Peg || s.Act != Deed.None) { Do(s); return; }
+
+            Colour();
+        }
+
+        /// <summary>
+        /// What a peg row does.
+        ///
+        /// The peg row itself wears what is on it, because pressing the thing you are looking
+        /// at should do the obvious thing rather than nothing -- the row below is the same
+        /// action spelled out for anybody who did not guess.
+        /// </summary>
+        private void Do(Slot s)
+        {
+            if (State == null)
+            {
+                Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                return;
+            }
+
+            var deed = s.Peg ? Deed.Wear : s.Act;
+
+            if (deed == Deed.Wear)
+            {
+                if (!Locations.Wardrobe.WearPeg(State, _peg))
+                {
+                    Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                    return;
+                }
+
+                Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                return;
+            }
+
+            if (deed == Deed.Strip)
+            {
+                if (!Locations.Wardrobe.Strip(State, _peg))
+                {
+                    Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                    return;
+                }
+
+                Hud.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                return;
+            }
+
+            if (deed != Deed.Hang) return;
+
+            // NAMED WHEN IT IS HUNG, not on a separate row. Somebody who does not want to name
+            // it presses escape and gets "Outfit 3", which is what the game's own wardrobe
+            // calls them anyway -- and somebody who does gets the keyboard without having to
+            // find a second row for it. A peg that already has something on it offers its own
+            // name back, so this doubles as the rename.
+            string typed;
+
+            var already = Locations.Wardrobe.NameOn(State, _peg);
+
+            try
+            {
+                typed = Game.GetUserInput(WindowTitle.EnterMessage20, already, 18);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("The keyboard would not open: " + ex.Message);
+                typed = null;
+            }
+
+            // The keyboard's own Enter or Escape must not land on this panel as well.
+            Core.InputGuard.Swallow();
+
+            if (!Locations.Wardrobe.Hang(State, _peg, typed))
+            {
+                Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                return;
+            }
+
+            Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
         private void Move(int step)
@@ -503,7 +630,22 @@ namespace Hoodrich.UI
                 string value;
                 try
                 {
-                    if (s.Body)
+                    if (s.Peg)
+                    {
+                        var name = State == null ? "" : Locations.Wardrobe.NameOn(State, _peg);
+
+                        value = (_peg + 1) + " / " + Locations.Wardrobe.Pegs + "     " +
+                                (name.Length == 0 ? "EMPTY" : name.ToUpperInvariant());
+                    }
+                    else if (s.Act != Deed.None)
+                    {
+                        var on = State != null && Locations.Wardrobe.Used(State, _peg);
+
+                        value = s.Act == Deed.Hang
+                                    ? (on ? "OVER " + (_peg + 1) : "ONTO " + (_peg + 1))
+                                    : on ? "" : "NOTHING ON IT";
+                    }
+                    else if (s.Body)
                     {
                         value = BodyNow(me) == 0 ? "FRANKLIN" : "PRESS TO GO BACK";
                     }
@@ -524,15 +666,19 @@ namespace Hoodrich.UI
                     value = "";
                 }
 
-                Hud.TextRight((here ? "<  " : "") + value + (here ? "  >" : ""), right, y + 0.008f, 0.24f,
+                // The arrows belong on a row you can scroll. An action row is pressed, not
+                // scrolled, and putting arrows on it says otherwise.
+                var scrolls = !s.Peg ? s.Act == Deed.None : true;
+
+                Hud.TextRight((here && scrolls ? "<  " : "") + value + (here && scrolls ? "  >" : ""), right, y + 0.008f, 0.24f,
                               here ? ink : Palette.TextDim, Hud.FontLabel);
 
                 y += RowHeight;
             }
 
             Hud.Text(Hud.OnPad
-                         ? "D-PAD  SLOT / CHANGE      A  COLOUR      B  DONE"
-                         : "UP/DOWN  SLOT      LEFT/RIGHT  CHANGE      ENTER  COLOUR      BACKSPACE  DONE",
+                         ? "D-PAD  SLOT / CHANGE      A  CHOOSE      B  DONE"
+                         : "UP/DOWN  SLOT      LEFT/RIGHT  CHANGE      ENTER  CHOOSE      BACKSPACE  DONE",
                      x, top + height - 0.030f, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
         }
     }

@@ -869,6 +869,11 @@ namespace Hoodrich
 
                 _wardrobeScreen = new WardrobeScreen();
                 _wardrobe = new Wardrobe(_wardrobeScreen);
+
+                // The pegs live in the save, so the rail needs it. Without this every peg row
+                // is a beep -- which is exactly what the screen does when it has no state, on
+                // purpose, rather than throwing at somebody stood at a wardrobe.
+                _wardrobeScreen.State = _state;
                 _wardrobeScreen.Done = () =>
                 {
                     // Written down on the way out, and the block has something to say if it

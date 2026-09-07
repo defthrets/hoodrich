@@ -113,6 +113,200 @@ namespace Hoodrich.Locations
             state.Touch();
         }
 
+        // ---- the six he has hung up -------------------------------------------------
+
+        /// <summary>How many pegs there are. Six, which is what the game's own wardrobe gives him.</summary>
+        public const int Pegs = 6;
+
+        /// <summary>The body he is in, as the key the rows are filed under.</summary>
+        private static string BodyKey(Ped me)
+        {
+            return unchecked((uint)me.Model.Hash).ToString("X8");
+        }
+
+        /// <summary>
+        /// What is on peg n for the body he is in, or null.
+        ///
+        /// Returned as the whole row so the caller can read the name off it without going back
+        /// to the list; Wearing and Naming both split it the same way.
+        /// </summary>
+        private static string Row(PlayerState state, Ped me, int peg)
+        {
+            if (state == null || !Him(me) || peg < 0 || peg >= Pegs) return null;
+
+            var head = peg.ToString(CultureInfo.InvariantCulture) + "|";
+            var body = BodyKey(me);
+
+            foreach (var row in state.Outfits)
+            {
+                if (!row.StartsWith(head, StringComparison.Ordinal)) continue;
+
+                var bits = row.Split('|');
+                if (bits.Length != 4) continue;
+                if (!string.Equals(bits[2], body, StringComparison.OrdinalIgnoreCase)) continue;
+
+                return row;
+            }
+
+            return null;
+        }
+
+        /// <summary>What peg n is called, or empty for a bare peg.</summary>
+        public static string NameOn(PlayerState state, int peg)
+        {
+            var row = Row(state, Game.Player.Character, peg);
+            if (row == null) return "";
+
+            var bits = row.Split('|');
+            return bits.Length == 4 ? bits[1] : "";
+        }
+
+        /// <summary>Whether there is anything on peg n.</summary>
+        public static bool Used(PlayerState state, int peg)
+        {
+            return Row(state, Game.Player.Character, peg) != null;
+        }
+
+        /// <summary>
+        /// Hangs what he has on now on peg n, under a name.
+        ///
+        /// Read off the ped rather than out of the Outfit record, because the record is only
+        /// written when the closet SHUTS -- so hanging one up mid-session would otherwise save
+        /// whatever he was wearing when he walked in rather than what he is looking at.
+        /// </summary>
+        public static bool Hang(PlayerState state, int peg, string name)
+        {
+            var me = Game.Player.Character;
+            if (state == null || !Him(me) || peg < 0 || peg >= Pegs) return false;
+
+            var worn = new List<string>();
+
+            try
+            {
+                foreach (var slot in Components)
+                {
+                    var d = Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, me.Handle, slot);
+                    var t = Function.Call<int>(Hash.GET_PED_TEXTURE_VARIATION, me.Handle, slot);
+                    worn.Add("c:" + slot + ":" + d + ":" + t);
+                }
+
+                foreach (var slot in Props)
+                {
+                    var d = Function.Call<int>(Hash.GET_PED_PROP_INDEX, me.Handle, slot);
+                    var t = Function.Call<int>(Hash.GET_PED_PROP_TEXTURE_INDEX, me.Handle, slot);
+                    worn.Add("p:" + slot + ":" + d + ":" + t);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not read what to hang up: " + ex.Message);
+                return false;
+            }
+
+            // The name is the player's, so it is cleaned rather than trusted: the separators
+            // are the record's own and a name carrying one would split the row in two.
+            var clean = (name ?? "").Replace("|", " ").Replace(",", " ").Replace(":", " ").Trim();
+            if (clean.Length == 0) clean = "Outfit " + (peg + 1);
+            if (clean.Length > 18) clean = clean.Substring(0, 18);
+
+            Strip(state, peg, me);
+
+            state.Outfits.Add(peg.ToString(CultureInfo.InvariantCulture) + "|" + clean + "|" +
+                              BodyKey(me) + "|" + string.Join(",", worn.ToArray()));
+
+            state.Touch();
+
+            Log.Info("Hung \"" + clean + "\" on peg " + (peg + 1) + ".");
+            return true;
+        }
+
+        /// <summary>Renames peg n, leaving what is on it alone. False if the peg is bare.</summary>
+        public static bool Rename(PlayerState state, int peg, string name)
+        {
+            var me = Game.Player.Character;
+            var row = Row(state, me, peg);
+            if (row == null) return false;
+
+            var bits = row.Split('|');
+
+            var clean = (name ?? "").Replace("|", " ").Replace(",", " ").Replace(":", " ").Trim();
+            if (clean.Length == 0) return false;
+            if (clean.Length > 18) clean = clean.Substring(0, 18);
+
+            state.Outfits.Remove(row);
+            state.Outfits.Add(bits[0] + "|" + clean + "|" + bits[2] + "|" + bits[3]);
+            state.Touch();
+
+            return true;
+        }
+
+        /// <summary>Takes peg n bare. False if it already was.</summary>
+        public static bool Strip(PlayerState state, int peg, Ped me = null)
+        {
+            me = me ?? Game.Player.Character;
+
+            var row = Row(state, me, peg);
+            if (row == null) return false;
+
+            state.Outfits.Remove(row);
+            state.Touch();
+            return true;
+        }
+
+        /// <summary>
+        /// Puts what is on peg n back on him.
+        ///
+        /// Every slot the record carries, in the order it was written, so a hat that needs the
+        /// hair under it lands after the hair. Slots the row does not carry are left as they
+        /// are rather than blanked -- an outfit saved before a slot was on the rail should not
+        /// strip him of it.
+        /// </summary>
+        public static bool WearPeg(PlayerState state, int peg)
+        {
+            var me = Game.Player.Character;
+            var row = Row(state, me, peg);
+            if (row == null) return false;
+
+            var bits = row.Split('|');
+            if (bits.Length != 4) return false;
+
+            var put = 0;
+
+            foreach (var one in bits[3].Split(','))
+            {
+                try
+                {
+                    var f = one.Split(':');
+                    if (f.Length != 4) continue;
+
+                    var slot = int.Parse(f[1], CultureInfo.InvariantCulture);
+                    var drawable = int.Parse(f[2], CultureInfo.InvariantCulture);
+                    var texture = int.Parse(f[3], CultureInfo.InvariantCulture);
+
+                    if (f[0] == "c")
+                    {
+                        if (Array.IndexOf(Components, slot) < 0) continue;
+                        Function.Call(Hash.SET_PED_COMPONENT_VARIATION, me.Handle, slot, drawable, texture, 0);
+                        put++;
+                    }
+                    else if (f[0] == "p")
+                    {
+                        if (Array.IndexOf(Props, slot) < 0) continue;
+                        if (drawable < 0) Function.Call(Hash.CLEAR_PED_PROP, me.Handle, slot);
+                        else Function.Call(Hash.SET_PED_PROP_INDEX, me.Handle, slot, drawable, texture, true);
+                        put++;
+                    }
+                }
+                catch
+                {
+                    // That slot stays as it is.
+                }
+            }
+
+            if (put > 0) Log.Info("Put on \"" + bits[1] + "\": " + put + " slot(s).");
+            return put > 0;
+        }
+
         /// <summary>
         /// Puts the record back on him. Nothing recorded means he stays as the game dressed
         /// him. Says whether it is done with -- false while the player is somebody else, so

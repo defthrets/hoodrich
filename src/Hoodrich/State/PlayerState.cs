@@ -481,6 +481,21 @@ namespace Hoodrich.State
         public readonly List<string> Outfit = new List<string>();
 
         /// <summary>
+        /// The outfits he has hung up, as "slot|name|BODY|c:s:d:t,c:s:d:t,...,p:s:d:t".
+        ///
+        /// SEPARATE FROM Outfit ABOVE, WHICH IS A DIFFERENT THING. That one is what he has ON
+        /// -- written every time he shuts the closet, read back when the game loads, so he
+        /// wakes up in what he went to bed in. These are what he has SAVED: the six the game's
+        /// own wardrobe would have given him, kept whole so he can put one back on whenever he
+        /// is at the rail.
+        ///
+        /// One line each and the body is in it, for the same reason it is in Outfit: a
+        /// drawable number is an index into one model's wardrobe and means something else on
+        /// another, so an outfit hung up on one body is never put on a different one.
+        /// </summary>
+        public readonly List<string> Outfits = new List<string>();
+
+        /// <summary>
         /// Cars you have actually paid for, and enough about each to stand it back up.
         ///
         /// CarsBought is only a list of ids, and its whole job is stopping Hao restocking
@@ -679,6 +694,7 @@ namespace Hoodrich.State
             GunParts.Clear();
             VoiceHeard.Clear();
             Outfit.Clear();
+            Outfits.Clear();
             Owned.Clear();
 
             SeenWelcome = false;
@@ -991,6 +1007,13 @@ namespace Hoodrich.State
             return arr;
         }
 
+        private Json OutfitsJson()
+        {
+            var arr = Json.Array();
+            foreach (var row in Outfits) arr.Add(Json.Str(row));
+            return arr;
+        }
+
         private Json OfferedJson()
         {
             var arr = Json.Array();
@@ -1098,6 +1121,7 @@ namespace Hoodrich.State
                 .Set("gunParts", GunPartsJson())
                 .Set("voiceHeard", VoiceHeardJson())
                 .Set("outfit", OutfitJson())
+                .Set("outfits", OutfitsJson())
                 .Set("triggerIsYours", TriggerIsYours)
                 .Set("ownedCars", OwnedJson())
                 .Set("missionsOffered", OfferedJson())
@@ -1238,6 +1262,16 @@ namespace Hoodrich.State
                 {
                     var row = node.AsString("");
                     if (!string.IsNullOrEmpty(row)) Outfit.Add(row);
+                }
+
+                // A save from before the rail existed simply has none, which reads as an empty
+                // list and shows six empty pegs. Nothing to migrate.
+                Outfits.Clear();
+
+                foreach (var node in doc["outfits"].Items)
+                {
+                    var row = node.AsString("");
+                    if (!string.IsNullOrEmpty(row)) Outfits.Add(row);
                 }
 
                 LeadersMet.Clear();

@@ -7,7 +7,29 @@
   0.6.2  (7 September 2026)
 -------------------------------------------------------------------------------
 
-Three things an audit found that had never worked.
+Six outfits at the closet, and three things an audit found that had never
+worked.
+
+
+===============================================================================
+  NEW
+===============================================================================
+
+
+SIX OUTFITS AT THE CLOSET, the way the game's own wardrobe does it.
+
+The rail at Denise's could dress him and remember what he had on, and that was
+all: one look, and changing it lost the last one. There are six pegs on it now.
+Hang up what he is wearing, give it a name -- or press escape and it is called
+Outfit 3 -- and put it back on whenever you are at the closet. The four rows
+sit at the top of the rail above the clothes, because which outfit is a bigger
+question than which shoes.
+
+Named when it is hung rather than on a row of its own, and hanging over a peg
+that already has something on it offers its old name back, so that is the
+rename as well. They are filed under the body they were worn on, for the same
+reason what he has on always has been: a drawable number is an index into one
+model's wardrobe and means something else entirely on another.
 
 
 ===============================================================================
