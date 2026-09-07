@@ -38,6 +38,9 @@ namespace Hoodrich.UI
         /// <summary>What a peg row does when it is chosen.</summary>
         private enum Deed { None, Wear, Hang, Strip }
 
+        /// <summary>The two rows that are neither clothes nor pegs.</summary>
+        private enum Kind { None, Walk, Shoot }
+
         private sealed class Slot
         {
             public string Name;
@@ -50,6 +53,9 @@ namespace Hoodrich.UI
 
             /// <summary>What this row does to the peg the row above is showing.</summary>
             public Deed Act;
+
+            /// <summary>The row that chooses how he moves rather than what he wears.</summary>
+            public Kind Style;
         }
 
         /// <summary>Which peg the four rows at the top are pointed at.</summary>
@@ -82,6 +88,11 @@ namespace Hoodrich.UI
             new Slot { Name = "Clear it", Act = Deed.Strip },
 
             new Slot { Name = "Body", Body = true },
+
+            // HOW HE CARRIES HIMSELF, next to the body rather than among the clothes. It is
+            // the same kind of choice -- what he is, not what he has on.
+            new Slot { Name = "Walk", Style = Kind.Walk },
+            new Slot { Name = "Shooting", Style = Kind.Shoot },
 
             new Slot { Name = "Face", Index = 0 },
             new Slot { Name = "Mask", Index = 1 },
@@ -264,9 +275,40 @@ namespace Hoodrich.UI
         {
             var s = Slots[_row];
 
+            if (s.Style != Kind.None) { Style(s, by); return; }
             if (!s.Peg) { Step(by); return; }
 
             _peg = (_peg + by + Locations.Wardrobe.Pegs) % Locations.Wardrobe.Pegs;
+            _pickedAt = Game.GameTime;
+            Hud.PlaySound("NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        /// <summary>
+        /// Left and right on the two rows that are about how he moves.
+        ///
+        /// PUT ON THE INSTANT IT IS CHOSEN. A wardrobe where you scroll a list and then have
+        /// to press something else to see it is a wardrobe you cannot judge -- the whole
+        /// point of standing in front of a mirror is that the change is in front of you.
+        /// </summary>
+        private void Style(Slot s, int by)
+        {
+            if (State == null) return;
+
+            if (s.Style == Kind.Walk)
+            {
+                var n = Locations.Wardrobe.Walks.Length;
+                State.Walk = (State.Walk + by + n) % n;
+            }
+            else
+            {
+                var n = Locations.Wardrobe.Shoots.Length;
+                State.Shoot = (State.Shoot + by + n) % n;
+            }
+
+            State.Touch();
+
+            Locations.Wardrobe.Carry(State);
+
             _pickedAt = Game.GameTime;
             Hud.PlaySound("NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
@@ -630,7 +672,21 @@ namespace Hoodrich.UI
                 string value;
                 try
                 {
-                    if (s.Peg)
+                    if (s.Style == Kind.Walk)
+                    {
+                        var pick = State == null ? 0 : State.Walk;
+                        var names = Locations.Wardrobe.WalkNames;
+
+                        value = pick >= 0 && pick < names.Length ? names[pick] : "HIS OWN";
+                    }
+                    else if (s.Style == Kind.Shoot)
+                    {
+                        var pick = State == null ? 0 : State.Shoot;
+                        var names = Locations.Wardrobe.ShootNames;
+
+                        value = pick >= 0 && pick < names.Length ? names[pick] : "HIS OWN";
+                    }
+                    else if (s.Peg)
                     {
                         var name = State == null ? "" : Locations.Wardrobe.NameOn(State, _peg);
 
@@ -668,7 +724,7 @@ namespace Hoodrich.UI
 
                 // The arrows belong on a row you can scroll. An action row is pressed, not
                 // scrolled, and putting arrows on it says otherwise.
-                var scrolls = !s.Peg ? s.Act == Deed.None : true;
+                var scrolls = s.Style != Kind.None || (!s.Peg ? s.Act == Deed.None : true);
 
                 Hud.TextRight((here && scrolls ? "<  " : "") + value + (here && scrolls ? "  >" : ""), right, y + 0.008f, 0.24f,
                               here ? ink : Palette.TextDim, Hud.FontLabel);

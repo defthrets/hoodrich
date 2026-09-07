@@ -113,6 +113,90 @@ namespace Hoodrich.Locations
             state.Touch();
         }
 
+        // ---- how he carries himself --------------------------------------------------
+
+        /// <summary>
+        /// The walks, his own first.
+        ///
+        /// EVERY ONE OF THESE IS IN THE GAME'S OWN ANIMATION LIST, checked against it rather
+        /// than remembered -- a movement clipset that does not exist is not an error, it is a
+        /// man who carries on walking exactly as he did, which is indistinguishable from the
+        /// setting not working.
+        ///
+        /// An empty name is his own, and it is first because it is the one he came with.
+        /// </summary>
+        public static readonly string[] Walks =
+        {
+            "", "move_m@gangster@a", "move_m@gangster@ng", "move_m@gangster@generic",
+            "move_m@casual@a", "move_m@casual@d", "move_m@hurry@a"
+        };
+
+        public static readonly string[] WalkNames =
+        {
+            "HIS OWN", "GANGSTER", "GANGSTER 2", "GANGSTER 3", "CASUAL", "CASUAL 2", "IN A HURRY"
+        };
+
+        /// <summary>
+        /// How he holds a gun. Two, because the game has two and inventing a third would be
+        /// a name that quietly does nothing.
+        /// </summary>
+        public static readonly string[] Shoots = { "", "Gang" };
+
+        public static readonly string[] ShootNames = { "HIS OWN", "GANG" };
+
+        /// <summary>
+        /// Puts the walk and the gun hold on him.
+        ///
+        /// ASKED FOR AND CHECKED, like every other clipset in this mod: a movement clipset
+        /// applied before it has streamed in is silently ignored and he walks normally for the
+        /// rest of the session. Requested here and put on when it has landed -- the caller
+        /// runs this on a timer, so "not yet" is answered by asking again.
+        /// </summary>
+        /// <returns>False while it is still streaming, so the caller knows to come back.</returns>
+        public static bool Carry(PlayerState state)
+        {
+            if (state == null) return true;
+
+            var me = Game.Player.Character;
+            if (!Him(me)) return false;
+
+            var ready = true;
+
+            try
+            {
+                var walk = state.Walk >= 0 && state.Walk < Walks.Length ? Walks[state.Walk] : "";
+
+                if (walk.Length == 0)
+                {
+                    Function.Call(Hash.RESET_PED_MOVEMENT_CLIPSET, me.Handle, 0.35f);
+                }
+                else
+                {
+                    Function.Call(Hash.REQUEST_ANIM_SET, walk);
+
+                    if (Function.Call<bool>(Hash.HAS_ANIM_SET_LOADED, walk))
+                    {
+                        Function.Call(Hash.SET_PED_MOVEMENT_CLIPSET, me.Handle, walk, 0.35f);
+                    }
+                    else
+                    {
+                        ready = false;
+                    }
+                }
+
+                var shoot = state.Shoot >= 0 && state.Shoot < Shoots.Length ? Shoots[state.Shoot] : "";
+
+                Function.Call(Hash.SET_WEAPON_ANIMATION_OVERRIDE, me.Handle,
+                              Function.Call<int>(Hash.GET_HASH_KEY, shoot.Length == 0 ? "Default" : shoot));
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not change how he carries himself: " + ex.Message);
+            }
+
+            return ready;
+        }
+
         // ---- the six he has hung up -------------------------------------------------
 
         /// <summary>How many pegs there are. Six, which is what the game's own wardrobe gives him.</summary>

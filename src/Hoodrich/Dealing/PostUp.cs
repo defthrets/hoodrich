@@ -356,10 +356,44 @@ namespace Hoodrich.Dealing
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return "Not right now.";
-            if (player.IsInVehicle()) return "Get out of the car first.";
+            // SERVING OUT OF THE WINDOW IS ALLOWED NOW, and it used to be the one flat no
+            // in here. Sitting in a car with the window down on a corner is the oldest
+            // picture there is; the only things it actually needs are that you are the one
+            // driving and that the car is not moving.
+            if (player.IsInVehicle())
+            {
+                var seat = player.CurrentVehicle;
+
+                if (seat == null || !seat.Exists() || seat.Driver != player)
+                {
+                    return "You have to be the one driving.";
+                }
+
+                if (Function.Call<float>(Hash.GET_ENTITY_SPEED, seat.Handle) > Crawling)
+                {
+                    return "Stop the car first.";
+                }
+            }
 
             _product = product;
             _anchor = player.Position;
+
+            // AND THE WINDOW COMES DOWN, because that is the whole of how this works: they
+            // come to the window and the hand goes out of it. Only the driver's, and only
+            // once -- rolling one that is already down replays the animation.
+            try
+            {
+                var seat = player.CurrentVehicle;
+
+                if (player.IsInVehicle() && seat != null && seat.Exists())
+                {
+                    Function.Call(Hash.ROLL_DOWN_WINDOW, seat.Handle, 0);
+                }
+            }
+            catch
+            {
+                // He serves through the glass, which is his problem.
+            }
 
             // NOT zero. Whatever this block already has is what you are standing in.
             //
@@ -617,10 +651,25 @@ namespace Hoodrich.Dealing
                 return;
             }
 
+            // THE SAME RULE AS WALKING OFF, applied to the car. It is not being in a car
+            // that ends a pitch, it is leaving the pitch -- and a car that is moving is a
+            // pitch being left. The leash below catches the rest, including getting out and
+            // walking away, because the anchor does not move when you do.
             if (player.IsInVehicle())
             {
-                Stop("You packed up.");
-                return;
+                var seat = player.CurrentVehicle;
+
+                if (seat == null || !seat.Exists() || seat.Driver != player)
+                {
+                    Stop("You packed up.");
+                    return;
+                }
+
+                if (Function.Call<float>(Hash.GET_ENTITY_SPEED, seat.Handle) > Rolling)
+                {
+                    Stop("You drove off.");
+                    return;
+                }
             }
 
             // Wandering off the pitch ends it. This is what makes it a SPOT, not a mode.
@@ -863,7 +912,13 @@ namespace Hoodrich.Dealing
                 // other. Left where they happened to stop, the hands passed through empty air a
                 // metre apart -- so the buyer is walked onto the mark and both are turned in.
                 Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, _customer.Handle, player.Handle, DealDurationMs);
-                Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, player.Handle, _customer.Handle, DealDurationMs);
+
+                // Not the man in the car. Turning a driver to face somebody out of his own
+                // window is asking him to turn the car.
+                if (!player.IsInVehicle())
+                {
+                    Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, player.Handle, _customer.Handle, DealDurationMs);
+                }
 
                 var mark = MarkInFrontOf(player);
                 Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, _customer.Handle,
@@ -877,9 +932,54 @@ namespace Hoodrich.Dealing
             }
         }
 
-        /// <summary>The spot a buyer should stand on to be within arm's reach of the player.</summary>
+        /// <summary>
+        /// The spot a buyer should stand on to be within arm's reach of the player.
+        ///
+        /// AT THE WINDOW WHEN HE IS IN THE CAR. In front of a seated man is the bonnet, and
+        /// a buyer walked onto the bonnet reaches through the windscreen -- so when he is
+        /// driving the mark is beside the driver's door instead, worked out from the car
+        /// rather than from him because the car is the thing with a side.
+        ///
+        /// Asked of the model's own bounding box rather than a fixed number: the door of a
+        /// Buccaneer and the door of a van are not the same distance from the middle, and a
+        /// buyer stood inside the wing of one is stood a metre off the other.
+        /// </summary>
         private static Vector3 MarkInFrontOf(Ped player)
         {
+            try
+            {
+                var car = player.CurrentVehicle;
+
+                if (player.IsInVehicle() && car != null && car.Exists())
+                {
+                    var wide = 1.2f;
+
+                    try
+                    {
+                        var min = new OutputArgument();
+                        var max = new OutputArgument();
+                        Function.Call(Hash.GET_MODEL_DIMENSIONS, car.Model.Hash, min, max);
+
+                        wide = Math.Abs(max.GetResult<Vector3>().X) + WindowStep;
+                    }
+                    catch
+                    {
+                        // The default is a saloon, which most of them are.
+                    }
+
+                    // Out of the driver's side, which is the car's left, and a little back
+                    // from the mirror so he is at the glass rather than in front of it.
+                    return car.Position
+                           + car.RightVector * -wide
+                           + car.ForwardVector * WindowBack
+                           + new Vector3(0f, 0f, -0.35f);
+                }
+            }
+            catch
+            {
+                // Fall through to the standing mark.
+            }
+
             var heading = player.Heading * (float)Math.PI / 180f;
 
             return player.Position + new Vector3(
@@ -887,6 +987,14 @@ namespace Hoodrich.Dealing
                 (float)Math.Cos(heading) * HandoffDistance,
                 0f);
         }
+
+        /// <summary>How far past the side of the car the buyer stands, and how far back from the middle.</summary>
+        private const float WindowStep = 0.75f;
+        private const float WindowBack = 0.35f;
+
+        /// <summary>Slower than this counts as stopped, and faster than this counts as driving off.</summary>
+        private const float Crawling = 0.6f;
+        private const float Rolling = 2.5f;
 
         private static float HeadingFrom(Vector3 from, Vector3 to)
         {
@@ -907,7 +1015,11 @@ namespace Hoodrich.Dealing
                 // Wait for him to actually reach the mark. Firing the clips the moment the
                 // dictionary loads is what had the two of them miming at each other across a
                 // metre of pavement.
-                if (player.Position.DistanceTo(_customer.Position) > HandoffDistance + 0.7f) return;
+                // Measured against the MARK rather than against him, because when he is in a
+                // car the two are not the same place -- he is a seat's width further in, and
+                // waiting for the buyer to get within arm's reach of the middle of the car is
+                // waiting for something that never happens.
+                if (_customer.Position.DistanceTo(MarkInFrontOf(player)) > HandoffDistance + 0.7f) return;
 
                 _animRequested = false;
                 PlayHandoff(player, _customer);
@@ -930,7 +1042,14 @@ namespace Hoodrich.Dealing
         /// </summary>
         private void PlayHandoff(Ped player, Ped buyer)
         {
-            PlayAnim(player, AnimPlayer);
+            // SEATED, HE KEEPS HIS SEAT. The give-and-take pair is authored for two people
+            // stood up, and played whole on a man in a driver's seat it stands him up through
+            // the roof of his own car. Upper body only and as a secondary task leaves the
+            // sitting pose alone and moves the arm, which is the half of it that matters --
+            // the hand goes out of the window and the bag is in it.
+            if (player.IsInVehicle()) PlayAnim(player, AnimPlayer, SeatedFlags);
+            else PlayAnim(player, AnimPlayer);
+
             PlayAnim(buyer, AnimBuyer);
 
             // AND SOMETHING ACTUALLY CHANGES HANDS. The handshake was two people miming an
@@ -1013,12 +1132,15 @@ namespace Hoodrich.Dealing
         private static readonly Vector3 BaggieSits = new Vector3(0.02f, 0.01f, 0.0f);
         private static readonly Vector3 BaggieTurned = new Vector3(0f, 0f, 0f);
 
-        private static void PlayAnim(Ped ped, string anim)
+        /// <summary>Upper body, as a secondary task: 16 is upper body only, 32 is secondary.</summary>
+        private const int SeatedFlags = 48;
+
+        private static void PlayAnim(Ped ped, string anim, int flags = 0)
         {
             try
             {
                 Function.Call(Hash.TASK_PLAY_ANIM, ped.Handle, AnimDict, anim,
-                              8f, -8f, -1, 0, 0f, false, false, false);
+                              8f, -8f, -1, flags, 0f, false, false, false);
             }
             catch
             {

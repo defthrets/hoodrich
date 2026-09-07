@@ -496,6 +496,16 @@ namespace Hoodrich.State
         public readonly List<string> Outfits = new List<string>();
 
         /// <summary>
+        /// How he walks and how he holds a gun, by index into the lists on the closet rail.
+        ///
+        /// Kept as numbers rather than as the clipset names, because the names are the rail's
+        /// business and a save that carried them would pin the rail's contents forever. Zero
+        /// is his own, which is what a save that has never seen this reads as.
+        /// </summary>
+        public int Walk;
+        public int Shoot;
+
+        /// <summary>
         /// Cars you have actually paid for, and enough about each to stand it back up.
         ///
         /// CarsBought is only a list of ids, and its whole job is stopping Hao restocking
@@ -695,6 +705,8 @@ namespace Hoodrich.State
             VoiceHeard.Clear();
             Outfit.Clear();
             Outfits.Clear();
+            Walk = 0;
+            Shoot = 0;
             Owned.Clear();
 
             SeenWelcome = false;
@@ -1122,6 +1134,8 @@ namespace Hoodrich.State
                 .Set("voiceHeard", VoiceHeardJson())
                 .Set("outfit", OutfitJson())
                 .Set("outfits", OutfitsJson())
+                .Set("walk", Walk)
+                .Set("shoot", Shoot)
                 .Set("triggerIsYours", TriggerIsYours)
                 .Set("ownedCars", OwnedJson())
                 .Set("missionsOffered", OfferedJson())
@@ -1273,6 +1287,9 @@ namespace Hoodrich.State
                     var row = node.AsString("");
                     if (!string.IsNullOrEmpty(row)) Outfits.Add(row);
                 }
+
+                Walk = doc["walk"].AsInt(0);
+                Shoot = doc["shoot"].AsInt(0);
 
                 LeadersMet.Clear();
                 foreach (var node in doc["leadersMet"].Items)

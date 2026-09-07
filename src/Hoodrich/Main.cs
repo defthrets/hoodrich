@@ -138,6 +138,7 @@ namespace Hoodrich
         private readonly WardrobeScreen _wardrobeScreen;
         private readonly Wardrobe _wardrobe;
         private bool _dressed;
+        private bool _carrying;
         private int _dressedBody;
 
         /// <summary>The inbox. Its store is static; only the screen is an object.</summary>
@@ -3244,6 +3245,11 @@ namespace Hoodrich
                     }
 
                     if (!_dressed) _dressed = Wardrobe.Apply(_state);
+
+                    // AND HOW HE CARRIES HIMSELF, on the same terms: a movement clipset asked
+                    // for before it has streamed in is silently ignored, so this keeps asking
+                    // until it lands rather than trying once and walking normally all night.
+                    if (!_carrying) _carrying = Wardrobe.Carry(_state);
 
                     if (_paint.TintTheCan) _can.Match(_graffiti.Colour, _paint.PaintEnabled);
 
