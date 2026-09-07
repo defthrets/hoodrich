@@ -1018,20 +1018,23 @@ namespace Hoodrich
                     .Stand(new Vector3(-186.874f, -1700.152f, 32.920f), 308.772f,
                            "WORLD_HUMAN_GUARD_STAND", Fam(0), armed: false);
 
-                // The sound van, next to the decks. A MOONBEAM CUSTOM: the Minivan Custom
-                // that used to sit here is a Benny's body and it is still a people carrier
-                // with a kit on it, and dropping it only made a low people carrier. The
-                // Moonbeam is the lowrider van -- the shape the whole thing is named after --
-                // and it keeps every part of why a van is here rather than a saloon: a boot
-                // that opens on a load space, two back doors that open with it, and room for
-                // the music to be coming from somewhere rather than from a boot lid.
+                // The car by the decks. AN ALBANY BUCCANEER CUSTOM, and it stopped being a
+                // van to get here.
+                //
+                // The argument for a van was that a boot opening on a load space is where
+                // music comes from, and a saloon parked by a set of decks is just a car. That
+                // held while the thing was a Minivan Custom pretending, and it did not survive
+                // the car actually being a lowrider: a Buccaneer with the boot up over the
+                // pumps and the batteries IS where the sound is, and it is the shape anybody
+                // means when they say lowrider. The load space was solving a problem the boot
+                // lid already solves.
                 //
                 // Paint 49 is metallic dark green -- the set's colour with flake in it rather
                 // than the flat poster green an RGB triple gives you -- and the underglow is
-                // the same green, so the van reads as theirs after dark as well.
+                // the same green, so it reads as theirs after dark as well.
                 _cars.Add(new ParkedCar(new Vector3(-196.745f, -1718.838f, 32.664f), 319.530f,
                                         MetallicDarkGreen,
-                                        "moonbeam2", "moonbeam", "minivan2", "voodoo2")
+                                        "buccaneer2", "buccaneer", "voodoo2", "moonbeam2")
                 {
                     Built = true,
 
@@ -1041,12 +1044,14 @@ namespace Hoodrich
                     Hydraulics = true,
                     Lowered = true,
 
+                    // THE BOOT, AND ONLY THE BOOT. The van had its two rear side doors open
+                    // with it, which is what made a van read as the thing the party was
+                    // coming out of. A Buccaneer is a two-door and has no rear pair to open --
+                    // and it does not need one, because the boot of a lowrider open over the
+                    // pumps is already the picture. Asking for doors 2 and 3 on a body that
+                    // has neither is a call that quietly does nothing, so they are gone rather
+                    // than left in to look deliberate.
                     BootOpen = true,
-
-                    // AND THE BACK DOORS. 2 and 3 are the rear pair -- a van with its boot up
-                    // and its sides shut is a van being loaded; one with all three open is the
-                    // thing the party is coming out of.
-                    Doors = new[] { 2, 3 },
 
                     Plate = "DAVIS88",
 
