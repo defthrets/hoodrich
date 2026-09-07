@@ -1,4 +1,34 @@
-﻿THE GUARDS TAKE BREAKS.
+﻿THE LEAD PAYS OUT, AND IT SNAPS.
+
+A rope in this game is a fixed length, which is why the old lead was wrong
+at every distance but one: at the dog's heel it hung in a loop through the
+pavement, and past the end of it the animal was dragged on a line that had
+already run out. It is made at twenty metres now and forced to the gap
+between them every tick, so it is exactly as long as they are apart.
+
+At twenty it goes. Something has gone wrong by then -- a wall between them,
+a car, a fight -- and a rope stretched across a street to an animal nobody
+can see is worse than a dog off its lead. The dog is not lost with it: he
+is still tasked to the man and still walks at his knee, because the follow
+was never the rope's doing. What you see is a dog that got away from
+somebody and came back on its own.
+
+It runs hand to HEAD now rather than hand to neck.
+
+And how many of them there are is a setting. WalkerCrews goes up to eight
+rather than five, and WalkerDogs is the percentage of those crews walking
+one -- a quarter by default, 0 for none, 100 for all of them.
+
+
+THE ONE BY THE CAR AT THE MEET IS FILMING IT.
+
+On the same scenario the takeover crowd films on, so there is one filming
+pose in the mod rather than two. He is also the one man there who does not
+drift: somebody with a phone up is pointed at something, and wandering off
+mid-shot is the one thing that would not read.
+
+
+THE GUARDS TAKE BREAKS.
 
 A man who never stops is a turret. Standing at a gate for twenty hours in
 the same pose is the tell that a yard is scenery, so every guard on every

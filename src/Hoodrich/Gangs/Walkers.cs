@@ -159,15 +159,31 @@ namespace Hoodrich.Gangs
             "a_c_pug", "a_c_pug_02", "a_c_rottweiler_02", "a_c_shepherd"
         };
 
-        private const int DogChance = 25;
+        private int DogChance => _cfg == null ? 25 : _cfg.WalkerDogs;
 
         /// <summary>Where the dog walks, relative to whoever has it: at the knee and a step back.</summary>
         private const float DogSide = 0.9f;
         private const float DogBack = -0.5f;
 
-        /// <summary>How long the lead is, and how far the dog may get before it is walked back.</summary>
+        /// <summary>How long the lead is slack, and how far the dog may get before it is called back.</summary>
         private const float LeadLength = 1.9f;
         private const float DogStray = 2.6f;
+
+        /// <summary>
+        /// How far the lead will pay out, and the distance it lets go at.
+        ///
+        /// A ROPE IN THIS GAME IS A FIXED LENGTH, which is why the old lead looked wrong at
+        /// every distance except one: at his knee it hung in a loop through the pavement, and
+        /// off the end of it the dog was dragged on a line that had already run out. It is
+        /// made at its full twenty now and forced to the gap between them every tick, so it is
+        /// as long as the two of them are apart and no longer.
+        ///
+        /// And at twenty it goes. Something has gone wrong by then -- a wall between them, a
+        /// car, a fight -- and a rope stretched across a street to an animal nobody can see is
+        /// worse than a dog off its lead. The dog is not taken with it: he is loose after that,
+        /// and he keeps following because the follow was never the rope's doing.
+        /// </summary>
+        private const float LeadMost = 20f;
 
         /// <summary>
         /// FASTER THAN THE MAN WALKS, which is the whole of why it was being dragged.
@@ -1096,7 +1112,7 @@ namespace Hoodrich.Gangs
                 var rope = Function.Call<int>(Hash.ADD_ROPE,
                                               at.X, at.Y, at.Z + 0.4f,
                                               0f, 0f, 0f,
-                                              LeadLength, LeashType, LeadLength, 0f, 0f,
+                                              LeadMost, LeashType, LeadLength, 0f, 0f,
                                               false, false, false, 1f, false, 0);
 
                 if (rope == 0) return;
@@ -1123,7 +1139,8 @@ namespace Hoodrich.Gangs
                               crew.Dog.Handle, crew.Owner.Handle,
                               neck.X, neck.Y, neck.Z,
                               hand.X, hand.Y, hand.Z,
-                              LeadLength, false, false, bone, HandBones[0]);
+                              crew.Dog.Position.DistanceTo(crew.Owner.Position),
+                              false, false, bone, HandBones[0]);
             }
             catch (Exception ex)
             {
@@ -1141,7 +1158,7 @@ namespace Hoodrich.Gangs
         /// </summary>
         private static readonly string[] DogNeckBones =
         {
-            "SKEL_Neck_1", "BONETAG_NECK", "SKEL_Head", "SKEL_Spine3", "SKEL_ROOT"
+            "SKEL_Head", "SKEL_Neck_1", "BONETAG_NECK", "SKEL_Spine3", "SKEL_ROOT"
         };
 
         private static readonly string[] HandBones = { "SKEL_R_Hand", "PH_R_Hand" };
@@ -1202,6 +1219,24 @@ namespace Hoodrich.Gangs
                 return;
             }
 
+            var gap = dog.Position.DistanceTo(man.Position);
+
+            // THE LEAD IS AS LONG AS THEY ARE APART. Forced rather than left to the rope's own
+            // simulation, which pays out at its own speed and lags a pace behind a dog that
+            // has just bolted.
+            if (crew.Leash != -1)
+            {
+                if (gap > LeadMost)
+                {
+                    Snap(crew);
+                }
+                else
+                {
+                    try { Function.Call(Hash.ROPE_FORCE_LENGTH, crew.Leash, gap < LeadLength ? LeadLength : gap); }
+                    catch { /* it stays the length it was */ }
+                }
+            }
+
             // Off the end of the lead. The follow task is dropped by all sorts of things and a
             // dog whose follow has lapsed stands in the road with a rope stretching off it.
             //
@@ -1217,6 +1252,25 @@ namespace Hoodrich.Gangs
 
             crew.Heeled = now;
             Heel(crew);
+        }
+
+        /// <summary>
+        /// The lead lets go, and the dog does not.
+        ///
+        /// Only the rope. He is still tasked to the man and still walks at his knee -- the
+        /// follow was never the rope's doing -- so what you see is a dog that got away from
+        /// somebody and came back on its own.
+        /// </summary>
+        private static void Snap(Crew crew)
+        {
+            if (crew.Leash == -1) return;
+
+            try { Function.Call(Hash.DELETE_ROPE, new OutputArgument(crew.Leash)); }
+            catch { /* it goes with the session */ }
+
+            crew.Leash = -1;
+
+            Log.Debug("Walkers: the lead went at twenty metres.");
         }
 
         /// <summary>The lead comes down. The dog is handed back rather than deleted if it is alive.</summary>

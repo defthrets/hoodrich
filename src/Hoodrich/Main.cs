@@ -1173,8 +1173,12 @@ namespace Hoodrich
                     .Stand(new Vector3(-230.016f, -1702.362f, 33.297f), 313.000f,
                            "WORLD_HUMAN_DRINKING", Women, armed: false, drift: 5f)
 
+                    // FILMING IT, and the one man here who does not drift. Somebody with a
+                    // phone up is pointed at something; wandering off mid-shot is the one
+                    // thing that would not read. The same scenario the takeover crowd films
+                    // on, so there is one filming pose in the mod rather than two.
                     .Stand(new Vector3(-230.405f, -1698.777f, 33.297f), 300.000f,
-                           "WORLD_HUMAN_LEANING", Fam(2), armed: false)
+                           "WORLD_HUMAN_MOBILE_FILM_SHOCKING", Fam(2), armed: false)
 
                     .Stand(new Vector3(-231.893f, -1694.656f, 33.297f), 239.000f,
                            "WORLD_HUMAN_DRINKING", Fam(0), armed: false, drift: 5f)

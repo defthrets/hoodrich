@@ -482,6 +482,15 @@ namespace Hoodrich.Core
         public int WalkerCrews = 2;
 
         /// <summary>
+        /// How many of those crews are walking a dog, as a percentage.
+        ///
+        /// A quarter by default. A dog is a thing you notice, and a thing you notice every
+        /// single time is scenery -- three men and a dog is a street, four crews all walking
+        /// dogs is a park. Nought turns them off entirely.
+        /// </summary>
+        public int WalkerDogs = 25;
+
+        /// <summary>
         /// What Franklin's own bike is, in place of the Bagger the game gives him, and which
         /// of its liveries it wears. Blank, or "bagger", leaves the game's own.
         /// </summary>
@@ -767,7 +776,8 @@ namespace Hoodrich.Core
             s.TakeoverRadius = Clamp(ini.GetFloat("Block", "TakeoverRadius", s.TakeoverRadius), 0f, 60f);
 
             s.WalkersEnabled = ini.GetBool("Block", "WalkersEnabled", s.WalkersEnabled);
-            s.WalkerCrews = (int)Clamp(ini.GetInt("Block", "WalkerCrews", s.WalkerCrews), 0f, 5f);
+            s.WalkerCrews = (int)Clamp(ini.GetInt("Block", "WalkerCrews", s.WalkerCrews), 0f, 8f);
+            s.WalkerDogs = (int)Clamp(ini.GetInt("Block", "WalkerDogs", s.WalkerDogs), 0f, 100f);
 
             s.TriggerBreed = (ini.GetString("Cars", "TriggerBreed", s.TriggerBreed) ?? "").Trim();
             s.FranklinsBike = (ini.GetString("Cars", "FranklinsBike", s.FranklinsBike) ?? "").Trim();
