@@ -98,6 +98,36 @@ namespace Hoodrich.Gangs
         private readonly List<string> _weapons = new List<string>();
 
         /// <summary>
+        /// Breaks. When the next one is due, when the one he is on ends, and which it is.
+        ///
+        /// A MAN WHO NEVER STOPS IS A TURRET. Standing at a gate for twenty hours holding the
+        /// same pose is the tell that a yard is scenery: real people put the gun down, have a
+        /// cigarette, and pick it back up. This is the same station doing something else for
+        /// twenty seconds -- same mark, same heading, same man -- and then going back to it.
+        ///
+        /// Only guards. Everybody else on a list is already doing something with their hands,
+        /// and a dancer who stops for a smoke is a dancer who stopped dancing.
+        /// </summary>
+        private readonly List<int> _restAt = new List<int>();
+        private readonly List<int> _restUntil = new List<int>();
+        private readonly List<int> _restPick = new List<int>();
+
+        /// <summary>Its own, so a break never lands on the same frame as a line of dialogue.</summary>
+        private readonly Random _rest = new Random();
+
+        /// <summary>What a break looks like. Both are hands-free, which is why the gun goes away.</summary>
+        private static readonly string[] RestDoing =
+        {
+            "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_DRINKING"
+        };
+
+        /// <summary>How long between breaks, and how long one lasts.</summary>
+        private const int RestEveryMinMs = 100000;
+        private const int RestEveryMaxMs = 260000;
+        private const int RestForMinMs = 13000;
+        private const int RestForMaxMs = 27000;
+
+        /// <summary>
         /// Per station: whether the height given is furniture rather than floor.
         /// </summary>
         private readonly List<bool> _onProp = new List<bool>();
@@ -402,6 +432,19 @@ namespace Hoodrich.Gangs
             _partyOnly.Add(party);
             _walkingIn.Add(false);
             _walkDue.Add(0);
+
+            // WHEN HE FIRST PUTS THE GUN DOWN, spread across the whole gap rather than
+            // counted from now.
+            //
+            // Every station on a list is created in the same frame, so a fixed first gap
+            // starts every clock together and the yard smokes in unison forever after -- the
+            // stagger has to be in the FIRST interval, not just the ones after it. A random
+            // point inside the gap means two men on the same wall are minutes apart from the
+            // moment they spawn and stay that way, because each one's next break is measured
+            // from the end of his own.
+            _restAt.Add(_rest.Next(RestEveryMinMs, RestEveryMaxMs));
+            _restUntil.Add(0);
+            _restPick.Add(_rest.Next(RestDoing.Length));
 
             // Staggered at the door rather than at spawn: a fixed offset per station means the
             // yard never starts everybody's clock on the same frame, whatever order they got
@@ -875,11 +918,114 @@ namespace Hoodrich.Gangs
             return index < _facings.Count ? _facings[index] : _heading;
         }
 
-        private string Doing(int index)
+        /// <summary>What the station was authored as, whatever he happens to be doing now.</summary>
+        private string Station(int index)
         {
             if (index < _doing.Count && !string.IsNullOrEmpty(_doing[index])) return _doing[index];
 
             return Scenarios[index % Scenarios.Length];
+        }
+
+        /// <summary>
+        /// What he is doing this second -- his break if he is on one, his station if he is not.
+        ///
+        /// Everything that re-poses a man goes through here, so a break survives being knocked
+        /// out of it by a fight or a shove: he is put back on the cigarette, not on the gun,
+        /// until his time is up.
+        /// </summary>
+        private string Doing(int index)
+        {
+            if (index < _restUntil.Count && _restUntil[index] != 0)
+            {
+                return RestDoing[_restPick[index] % RestDoing.Length];
+            }
+
+            return Station(index);
+        }
+
+        /// <summary>Whether this station is somebody stood on a gate rather than at a party.</summary>
+        private bool Guarding(int index)
+        {
+            return Station(index).IndexOf("GUARD", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>
+        /// Start a break, end one, or leave him alone.
+        ///
+        /// Returns true only when he has just been re-tasked, so the caller stops working on
+        /// him this pass rather than immediately testing a scenario issued one line ago -- the
+        /// same mistake the seated stations were built to avoid.
+        /// </summary>
+        private bool Resting(int index, Ped ped)
+        {
+            if (index >= _restAt.Count) return false;
+
+            // Anybody already holding something, sitting, dancing or wandering has a break of
+            // his own by definition.
+            if (!Guarding(index)) return false;
+            if (AnimAt(index) != null || WanderAt(index) > 0f || Sits(index) || Seated(index)) return false;
+
+            var now = Game.GameTime;
+
+            if (_restUntil[index] != 0)
+            {
+                if (now < _restUntil[index]) return false;
+
+                _restUntil[index] = 0;
+                _restAt[index] = now + _rest.Next(RestEveryMinMs, RestEveryMaxMs);
+                _restPick[index] = _rest.Next(RestDoing.Length);
+
+                Shoulder(index, ped, true);
+                Idle(index, ped, Doing(index), Facing(index), MarkAt(index), Seated(index), null);
+
+                return true;
+            }
+
+            if (now < _restAt[index]) return false;
+
+            _restUntil[index] = now + _rest.Next(RestForMinMs, RestForMaxMs);
+
+            Shoulder(index, ped, false);
+            Idle(index, ped, Doing(index), Facing(index), MarkAt(index), Seated(index), null);
+
+            return true;
+        }
+
+        /// <summary>
+        /// The gun, away for a break and back after it.
+        ///
+        /// BOTH SCENARIOS NEED HIS HANDS. A man smoking with a rifle in them plays the
+        /// scenario through the gun and reads as neither -- and an armed station is deliberately
+        /// stopped from changing weapons, so the game cannot put it away for him either. The
+        /// switch is unlocked for exactly as long as the break lasts.
+        /// </summary>
+        private void Shoulder(int index, Ped ped, bool back)
+        {
+            if (!ArmedAt(index)) return;
+
+            try
+            {
+                Function.Call(Hash.SET_PED_CAN_SWITCH_WEAPON, ped.Handle, true);
+
+                if (!back)
+                {
+                    Function.Call(Hash.SET_CURRENT_PED_WEAPON, ped.Handle,
+                                  Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_UNARMED"), true);
+                    return;
+                }
+
+                var gun = WeaponAt(index);
+                if (string.IsNullOrEmpty(gun)) gun = Arms.GuardAt(MarkAt(index));
+
+                Function.Call(Hash.SET_CURRENT_PED_WEAPON, ped.Handle,
+                              Function.Call<uint>(Hash.GET_HASH_KEY, gun), true);
+
+                Function.Call(Hash.SET_PED_CAN_SWITCH_WEAPON, ped.Handle, false);
+            }
+            catch
+            {
+                // He keeps whatever is in his hands, which is what he had before.
+            }
         }
 
         /// <summary>How close another one of him has to be to count as him already being there.</summary>
@@ -1560,6 +1706,12 @@ namespace Hoodrich.Gangs
 
                 if (away <= LeashAt(i))
                 {
+                    // BEFORE ANYTHING ELSE LOOKS AT HIM. Starting or ending a break re-tasks
+                    // him, and everything below is about a man whose task has lapsed -- so
+                    // asking those questions on the same pass would test a scenario issued a
+                    // line ago and always get the wrong answer.
+                    if (Resting(i, ped)) continue;
+
                     // Home, but knocked out of what he was doing -- put him back to it once,
                     // not every pass, or he restarts the scenario forever.
                     //
