@@ -651,10 +651,17 @@ namespace Hoodrich.Dealing
                 return;
             }
 
-            // THE SAME RULE AS WALKING OFF, applied to the car. It is not being in a car
-            // that ends a pitch, it is leaving the pitch -- and a car that is moving is a
-            // pitch being left. The leash below catches the rest, including getting out and
-            // walking away, because the anchor does not move when you do.
+            // THE SAME RULE AS WALKING OFF, applied to the car: leaving the pitch ends it.
+            //
+            // MEASURED IN METRES, NOT IN SPEED, and that is the second go at this. The first
+            // ended the pitch the moment the car was moving at all -- so shuffling forward a
+            // yard to let somebody past, or rolling back off a kerb, or being nudged by the
+            // traffic, all read as driving off. Nobody packs up a corner because the car
+            // rolled a foot.
+            //
+            // Ten metres is the number: far enough that everything you do while staying put
+            // is staying put, close enough that pulling out is unmistakable. The car may idle,
+            // creep and be shoved as much as it likes inside it.
             if (player.IsInVehicle())
             {
                 var seat = player.CurrentVehicle;
@@ -665,7 +672,7 @@ namespace Hoodrich.Dealing
                     return;
                 }
 
-                if (Function.Call<float>(Hash.GET_ENTITY_SPEED, seat.Handle) > Rolling)
+                if (player.Position.DistanceTo(_anchor) > CarLeash)
                 {
                     Stop("You drove off.");
                     return;
@@ -992,9 +999,17 @@ namespace Hoodrich.Dealing
         private const float WindowStep = 0.75f;
         private const float WindowBack = 0.35f;
 
-        /// <summary>Slower than this counts as stopped, and faster than this counts as driving off.</summary>
+        /// <summary>Slower than this counts as stopped, for the purpose of starting one.</summary>
         private const float Crawling = 0.6f;
-        private const float Rolling = 2.5f;
+
+        /// <summary>
+        /// How far the car may go before the pitch is over.
+        ///
+        /// Tighter than the walking leash of forty metres, and deliberately: a man on foot
+        /// wanders round his corner and a car does not wander, it drives. Ten metres is every
+        /// creep, shuffle and shunt a parked car does, and nothing that looks like leaving.
+        /// </summary>
+        private const float CarLeash = 10f;
 
         private static float HeadingFrom(Vector3 from, Vector3 to)
         {
