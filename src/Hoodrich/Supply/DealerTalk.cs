@@ -335,6 +335,9 @@ namespace Hoodrich.Supply
         /// The third is the one nobody would ever work out on their own: buying enough in one
         /// go arrives uncut. That is the whole shape of the shop and it was invisible.
         /// </summary>
+        /// <summary>At or above this, the multiplier is a "never" rather than a number.</summary>
+        private const float NeverUncut = 50f;
+
         private string Standing()
         {
             var cash = Game.Player.Money;
@@ -343,7 +346,12 @@ namespace Hoodrich.Supply
             var line = "\n\n$" + cash.ToString("N0") + " on you  --  " +
                        Room(room) + " room at the house";
 
-            if (Def != null && Def.PurityNow < 0.999f)
+            // A LOT NOBODY CAN REACH IS NOT AN OFFER. Gerald's uncut multiplier is 999,
+            // which is not a number he means -- it is how the data says "this one never sells
+            // uncut, ever". Printed literally it came out as "uncut from 999x", which reads
+            // as a broken number rather than as a rule, and the rule it is standing in for is
+            // better said by saying nothing.
+            if (Def != null && Def.PurityNow < 0.999f && Def.UncutFromLots < NeverUncut)
             {
                 line += "  --  uncut from " + Def.UncutFromLots.ToString("0.#") + "x";
             }

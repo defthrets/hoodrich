@@ -1047,7 +1047,7 @@ namespace Hoodrich.Dealing
             // the roof of his own car. Upper body only and as a secondary task leaves the
             // sitting pose alone and moves the arm, which is the half of it that matters --
             // the hand goes out of the window and the bag is in it.
-            if (player.IsInVehicle()) PlayAnim(player, AnimPlayer, SeatedFlags);
+            if (player.IsInVehicle()) OutTheWindow(player);
             else PlayAnim(player, AnimPlayer);
 
             PlayAnim(buyer, AnimBuyer);
@@ -1134,6 +1134,88 @@ namespace Hoodrich.Dealing
 
         /// <summary>Upper body, as a secondary task: 16 is upper body only, 32 is secondary.</summary>
         private const int SeatedFlags = 48;
+
+        /// <summary>
+        /// The arm out of the window, holding something.
+        ///
+        /// THE GAME ALREADY HAS THIS ANIMATION AND IT IS A TRAFFIC STOP. veh@busted_*, clip
+        /// issue_ticket_crim, is a driver passing his licence out to an officer stood at the
+        /// door: one hand stays on the wheel, the other goes out through the window with
+        /// something in it. That is the same gesture with a different thing in the hand, and
+        /// it is authored for a seated man, which the standing give-and-take is not.
+        ///
+        /// One dictionary per body class, because the game has one per body class and the
+        /// pose is fitted to the door height -- a saloon's reach out of a van reaches through
+        /// the window frame. Tried in order and the first that loads wins; there is no truck
+        /// one in the list, so a truck falls through to the van's, which is the closest thing
+        /// to the same door.
+        ///
+        /// Upper body and secondary, so his legs, his seat and his steering are left alone.
+        /// </summary>
+        private void OutTheWindow(Ped player)
+        {
+            var car = player.CurrentVehicle;
+
+            var order = Ladder(car);
+
+            foreach (var dict in order)
+            {
+                try
+                {
+                    Function.Call(Hash.REQUEST_ANIM_DICT, dict);
+
+                    if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict)) continue;
+
+                    Function.Call(Hash.TASK_PLAY_ANIM, player.Handle, dict, WindowClip,
+                                  8f, -8f, DealDurationMs, SeatedFlags, 0f, false, false, false);
+                    return;
+                }
+                catch
+                {
+                    // Next one down.
+                }
+            }
+
+            // None of them in yet. The standing pair on his upper body is not right, but it
+            // is an arm moving rather than a man sitting perfectly still through a deal.
+            PlayAnim(player, AnimPlayer, SeatedFlags);
+        }
+
+        /// <summary>Which door this is, best first.</summary>
+        private static string[] Ladder(Vehicle car)
+        {
+            try
+            {
+                if (car != null && car.Exists())
+                {
+                    // THE GAME'S OWN CLASSES, asked for by number. 12 is Van and 5 is Muscle;
+                    // there is no "is this a van" native in this library, and the class table
+                    // is the thing that actually decides which seat a body uses.
+                    var cls = Function.Call<int>(Hash.GET_VEHICLE_CLASS, car.Handle);
+
+                    if (cls == 12) return new[] { "veh@busted_van", "veh@busted_std", "veh@busted_low" };
+
+                    // And a car sitting low takes the low door, measured rather than listed:
+                    // the same Buccaneer is low with the rams down and is not with them up.
+                    if (car.HeightAboveGround < LowCar)
+                    {
+                        return new[] { "veh@busted_low", "veh@busted_std", "veh@busted_van" };
+                    }
+                }
+            }
+            catch
+            {
+                // The saloon order is right for most things.
+            }
+
+            return new[] { "veh@busted_std", "veh@busted_low", "veh@busted_van" };
+        }
+
+        /// <summary>The licence going out of the window.</summary>
+        private const string WindowClip = "issue_ticket_crim";
+
+        /// <summary>Under this off the ground and it is treated as a low car.</summary>
+        private const float LowCar = 0.55f;
 
         private static void PlayAnim(Ped ped, string anim, int flags = 0)
         {
