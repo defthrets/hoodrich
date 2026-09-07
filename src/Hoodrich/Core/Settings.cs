@@ -496,25 +496,6 @@ namespace Hoodrich.Core
         /// </summary>
         public string TriggerBreed = "a_c_rottweiler";
 
-        /// <summary>
-        /// How big Trigger is, against the size the model ships at.
-        ///
-        /// THIS IS THE ONE SETTING IN THE MOD THAT CAN TAKE THE GAME DOWN, and it is a setting
-        /// rather than a number in the code for exactly that reason. Scaling a ped is not
-        /// something Script Hook V Dot Net offers -- there is no ped-scale native in its table
-        /// and nothing installed on this machine carries one -- so it is called by raw hash,
-        /// and a raw hash the game does not recognise is an access violation rather than an
-        /// exception anything can catch.
-        ///
-        /// It is documented, it is what every ped-scale trainer uses, and it has been fine
-        /// here. But if the game ever dies the moment Trigger appears, this is the line to put
-        /// back to 1 -- from outside the game, before it starts, which is the whole point of
-        /// it living in a text file.
-        ///
-        /// One is his own size and turns the call off entirely.
-        /// </summary>
-        public float TriggerScale = 0.5f;
-
         public string FranklinsBike = "sanchez";
         public int FranklinsBikeLivery = 0;
 
@@ -887,7 +868,6 @@ namespace Hoodrich.Core
             s.WalkerCrews = (int)Clamp(ini.GetInt("Block", "WalkerCrews", s.WalkerCrews), 0f, 5f);
 
             s.TriggerBreed = (ini.GetString("Cars", "TriggerBreed", s.TriggerBreed) ?? "").Trim();
-            s.TriggerScale = Clamp(ini.GetFloat("Cars", "TriggerScale", s.TriggerScale), 0.3f, 2f);
             s.FranklinsBike = (ini.GetString("Cars", "FranklinsBike", s.FranklinsBike) ?? "").Trim();
             s.FranklinsBikeLivery = (int)Clamp(ini.GetInt("Cars", "FranklinsBikeLivery", s.FranklinsBikeLivery), 0f, 30f);
 

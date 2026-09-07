@@ -40,23 +40,23 @@ This is a diagnostic, not a fix. It exists to tell us which of three
 things is wrong with the grow room and the pill press.
 
 
-TRIGGER IS A ROTTWEILER AGAIN, AND HE IS SMALLER.
+THE ATTEMPT TO MAKE TRIGGER SMALLER IS OUT, AND IT WAS WRONG TO SHIP IT.
 
-Three quarters of his own size, from TriggerScale in the ini.
+There is no ped-scale native in this game's table. Not one ScriptHookVDotNet
+does not expose -- one that is not there at all: Script Hook V answered the
+call with "FATAL: Can't find native 0x25ACFC650B65C538" and stopped every
+script in the game a second after the dog appeared.
 
-Scaling a ped is not something ScriptHookVDotNet offers -- there is no
-ped-scale native in its table, and nothing installed on this machine
-carries one either -- so the game is called directly by hash. That is the
-one thing in this mod that can take the process down rather than raise an
-error, because a hash the game does not know is an access violation and no
-catch reaches it. It is why the size is a setting: if the game ever dies
-the moment he turns up, put TriggerScale back to 1 from outside the game,
-before it starts, and nothing is called at all.
+That was the risk written into the setting's own comment, and writing the
+risk down is not the same as being entitled to take it. The call, the
+setting, the ini key and the field are all gone; nothing in the mod calls a
+native by raw hash any more.
 
-The per-breed petting from the last build stays. He is a rottweiler by
-default and keeps Franklin's own petting animation, but any of the eleven
-breeds the game has a petting pair for can still be set in TriggerBreed,
-and the clips follow whichever dog turns up.
+What survives from that work is worth keeping: he is a rottweiler with
+Franklin's own petting animation, TriggerBreed still moves him to any of
+the eleven breeds the game ships a petting pair for, and the clips follow
+whichever dog turns up. The small breeds are the only real way to have a
+smaller dog.
 
 
 TRIGGER IS A SMALLER DOG, AND THE PETTING FOLLOWS THE BREED.
