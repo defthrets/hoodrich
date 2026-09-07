@@ -45,6 +45,11 @@ namespace Hoodrich.Gangs
         /// <summary>A stop on the way: until when, and when the next one may be.</summary>
         public int PausedUntil;
         public int NextPause;
+
+        /// <summary>The dog, whose lead it is on, and the rope between them.</summary>
+        public Ped Dog;
+        public Ped Owner;
+        public int Leash = -1;
     }
 
     /// <summary>
@@ -134,6 +139,32 @@ namespace Hoodrich.Gangs
             new[] { "GENERIC_CURSE_HIGH", "GENERIC_SHOCKED_MED" },
             new[] { "GENERIC_CURSE_MED", "CHAT_RESP" }
         };
+
+        /// <summary>
+        /// The dogs, and how often one comes out with a crew.
+        ///
+        /// FOUR NAMES, ALL FOUR ON THIS INSTALL. Checked against the game's own ped list
+        /// rather than remembered -- a_c_pug_02 and a_c_rottweiler_02 are separate models from
+        /// their unnumbered versions and the numbered ones are not on every build.
+        ///
+        /// One crew in four, because a dog is a thing you notice and a thing you notice every
+        /// time is scenery. Three men and a dog is a street; four crews all walking dogs is a
+        /// park.
+        /// </summary>
+        private static readonly string[] Dogs =
+        {
+            "a_c_pug", "a_c_pug_02", "a_c_rottweiler_02", "a_c_shepherd"
+        };
+
+        private const int DogChance = 25;
+
+        /// <summary>Where the dog walks, relative to whoever has it: at the knee and a step back.</summary>
+        private const float DogSide = 0.9f;
+        private const float DogBack = -0.5f;
+
+        /// <summary>How long the lead is, and how far the dog may get before it is walked back.</summary>
+        private const float LeadLength = 1.9f;
+        private const float DogStray = 6f;
 
         /// <summary>
         /// What one of them might be holding. Some of them hold nothing.
@@ -309,6 +340,7 @@ namespace Hoodrich.Gangs
             if (crew.Lead == null || !crew.Lead.Exists() || !crew.Lead.IsAlive) return true;
 
             Talk(crew, now);
+            Dogs_(crew);
 
             if (crew.PausedUntil != 0)
             {
@@ -932,11 +964,196 @@ namespace Hoodrich.Gangs
 
             crew.Lead = crew.Men[0].Man;
 
+            if (_rng.Next(100) < DogChance) Walkies(crew);
+
             _out.Add(crew);
             Aim(crew, Game.GameTime);
 
             Log.Info("Walkers: " + crew.Men.Count + " out on " +
                      (_turf == null ? "the block" : _turf.ZoneName) + ".");
+        }
+
+        /// <summary>
+        /// Somebody in this crew is walking a dog.
+        ///
+        /// THE LEAD IS ONE OF THE GAME'S OWN ROPES, not a drawn line. It is pinned between the
+        /// dog and the hand and it hangs, swings and goes taut on its own, which is most of
+        /// why a lead reads as a lead. The type is the thinnest the game has that this mod
+        /// will offer -- see Settings.LeashRope, and see Fumes' RopeProbe for why the number
+        /// is clamped rather than trusted: ADD_ROPE's type is an unvalidated index into a
+        /// table and one past the end takes the process down with no exception to catch.
+        ///
+        /// The dog is tasked to the man rather than to the rope. A rope in this game pulls on
+        /// physics, and physics on a ped is a ragdoll -- so the walking is a follow task at an
+        /// offset and the rope is only ever the thing you can see between them.
+        /// </summary>
+        private void Walkies(Crew crew)
+        {
+            var owner = crew.Lead;
+            if (owner == null || !owner.Exists()) return;
+
+            try
+            {
+                var name = Dogs[_rng.Next(Dogs.Length)];
+
+                var model = new Model(name);
+                if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) return;
+
+                var at = Ground(owner.Position.Around(1.2f));
+
+                var handle = Function.Call<int>(Hash.CREATE_PED, DogType, model.Hash,
+                                                at.X, at.Y, at.Z, owner.Heading, false, false);
+
+                model.MarkAsNoLongerNeeded();
+                if (handle == 0) return;
+
+                var dog = Entity.FromHandle(handle) as Ped;
+                if (dog == null || !dog.Exists()) return;
+
+                dog.IsPersistent = true;
+
+                Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, dog.Handle, true, true);
+
+                // It walks with him and it does not decide anything for itself. A dog that can
+                // hear the world wanders into a road and dies on the way to the shops.
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, dog.Handle, true);
+                Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, dog.Handle, 0, false);
+                Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, dog.Handle, false);
+
+                crew.Dog = dog;
+                crew.Owner = owner;
+
+                Heel(crew);
+                Leash(crew);
+
+                Log.Info("Walkers: one of them has a " + name + " with them.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not put a dog on a lead: " + ex.Message);
+            }
+        }
+
+        /// <summary>The dog walks at his knee. Re-issued whenever the crew is aimed, like the men.</summary>
+        private static void Heel(Crew crew)
+        {
+            if (crew.Dog == null || !crew.Dog.Exists() || !crew.Dog.IsAlive) return;
+            if (crew.Owner == null || !crew.Owner.Exists() || !crew.Owner.IsAlive) return;
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, crew.Dog.Handle);
+
+                Function.Call(Hash.TASK_FOLLOW_TO_OFFSET_OF_ENTITY, crew.Dog.Handle,
+                              crew.Owner.Handle, DogSide, DogBack, 0f, Pace, -1, 1.0f, true);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, crew.Dog.Handle, true);
+            }
+            catch
+            {
+                // It follows next time they are aimed.
+            }
+        }
+
+        /// <summary>The rope between the dog's neck and his hand.</summary>
+        private void Leash(Crew crew)
+        {
+            if (crew.Dog == null || !crew.Dog.Exists()) return;
+            if (crew.Owner == null || !crew.Owner.Exists()) return;
+
+            try
+            {
+                Function.Call(Hash.ROPE_LOAD_TEXTURES);
+                if (!Function.Call<bool>(Hash.ROPE_ARE_TEXTURES_LOADED)) return;
+
+                var at = crew.Dog.Position;
+
+                // Type from the settings, clamped there. Not breakable, not winding, and
+                // collision off -- a lead that catches on a kerb drags a dog through it.
+                var rope = Function.Call<int>(Hash.ADD_ROPE,
+                                              at.X, at.Y, at.Z + 0.4f,
+                                              0f, 0f, 0f,
+                                              LeadLength, LeashType, LeadLength, 0f, 0f,
+                                              false, false, false, 1f, false, 0);
+
+                if (rope == 0) return;
+
+                crew.Leash = rope;
+
+                var neck = Function.Call<Vector3>(Hash.GET_PED_BONE_COORDS, crew.Dog.Handle, DogNeck, 0f, 0f, 0f);
+                var hand = Function.Call<Vector3>(Hash.GET_PED_BONE_COORDS, crew.Owner.Handle, HandBone, 0f, 0f, 0f);
+
+                Function.Call(Hash.ATTACH_ENTITIES_TO_ROPE, rope,
+                              crew.Dog.Handle, crew.Owner.Handle,
+                              neck.X, neck.Y, neck.Z,
+                              hand.X, hand.Y, hand.Z,
+                              LeadLength, false, false, 0, 0);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not put a lead on it: " + ex.Message);
+            }
+        }
+
+        /// <summary>The dog's neck, and the hand that holds it. See GangPeds for the hand bone.</summary>
+        private const int DogNeck = 39317;
+
+        /// <summary>The ped type CREATE_PED wants. Four is a civilian, which an animal counts as.</summary>
+        private const int DogType = 4;
+        private const int HandBone = 28422;
+
+        /// <summary>The rope type, clamped where it is read. Never past seven -- see Walkies.</summary>
+        private int LeashType => _cfg == null ? 4 : _cfg.LeashRope;
+
+        /// <summary>Keeps the dog with him, and takes the lead down when either is gone.</summary>
+        private void Dogs_(Crew crew)
+        {
+            if (crew.Dog == null) return;
+
+            var dog = crew.Dog;
+            var man = crew.Owner;
+
+            var lost = dog == null || !dog.Exists() || !dog.IsAlive
+                       || man == null || !man.Exists() || !man.IsAlive;
+
+            if (lost)
+            {
+                Unleash(crew);
+                return;
+            }
+
+            // Off the end of the lead. The follow task is dropped by all sorts of things and a
+            // dog whose follow has lapsed stands in the road with a rope stretching off it.
+            if (dog.Position.DistanceTo(man.Position) > DogStray) Heel(crew);
+        }
+
+        /// <summary>The lead comes down. The dog is handed back rather than deleted if it is alive.</summary>
+        private void Unleash(Crew crew)
+        {
+            if (crew.Leash != -1)
+            {
+                try { Function.Call(Hash.DELETE_ROPE, new OutputArgument(crew.Leash)); }
+                catch { /* it goes with the session */ }
+
+                crew.Leash = -1;
+            }
+
+            try
+            {
+                if (crew.Dog != null && crew.Dog.Exists())
+                {
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, crew.Dog.Handle, false);
+                    crew.Dog.IsPersistent = false;
+                    crew.Dog.MarkAsNoLongerNeeded();
+                }
+            }
+            catch
+            {
+                // It is somebody else's dog now either way.
+            }
+
+            crew.Dog = null;
+            crew.Owner = null;
         }
 
         /// <summary>The set's models in a different order each time, so a crew is not four twins.</summary>
@@ -1145,6 +1362,8 @@ namespace Hoodrich.Gangs
                     // Letting go of something already gone.
                 }
             }
+
+            Unleash(crew);
 
             crew.Men.Clear();
             crew.Lead = null;

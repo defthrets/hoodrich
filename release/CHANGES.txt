@@ -29,6 +29,21 @@ straight it read "uncut from 999x". A rule that says never is better said by
 saying nothing.
 
 
+ONE OF THE CREWS ON FOOT IS WALKING A DOG. A quarter of the groups that come out
+have one with them: a pug, the other pug, a rottweiler or a shepherd, checked
+against the game's own ped list rather than remembered, because the numbered
+ones are separate models and are not on every build.
+
+THE LEAD IS A REAL ROPE. One of the game's own, pinned between the dog's neck
+and the man's hand, so it hangs and swings and goes taut on its own. The dog is
+tasked to the MAN rather than pulled by the rope -- a rope in this game acts on
+physics and physics on a ped is a ragdoll -- so the rope is only ever the thing
+you can see between them, and the walking is a follow at his knee. Its type is
+LeashRope under [Block], four by default, clamped nought to seven because that
+number is an unchecked index into the game's rope table and one past the end
+takes the whole process down with nothing in any log.
+
+
 FIVE MORE OF THE SET'S CARS, and they are the old metal: a Greenwood, an
 Impaler LX, a Manana Custom, a Tahoma Coupe and a Vamos. Every name was hashed
 and checked against the hash the game shows for the car rather than typed from

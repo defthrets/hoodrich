@@ -448,6 +448,18 @@ namespace Hoodrich.Core
         /// </summary>
         public int RollerPearl = 53;
 
+        /// <summary>
+        /// Which of the game's ropes a dog lead is made of.
+        ///
+        /// CLAMPED, AND THE CLAMP IS THE POINT. ADD_ROPE's type is an unvalidated index into
+        /// the game's rope table -- hand it one past the end and the engine reads off the end
+        /// of the array and the process dies, with no managed exception and nothing in the
+        /// log. Eight did exactly that on this machine while the fuel mod was being built.
+        /// Nought to seven are inside the table; four is the thinnest of them that reads as a
+        /// lead rather than as a tow rope.
+        /// </summary>
+        public int LeashRope = 4;
+
         /// <summary>Whether the junction gets taken over at night. See Locations.Takeover.</summary>
         public bool TakeoverEnabled = true;
 
@@ -862,6 +874,7 @@ namespace Hoodrich.Core
             // Never read until now. It was declared, documented and written into the ini, and
             // nothing ever loaded it -- so the number in the file did nothing at all.
             s.RollerPearl = (int)Clamp(ini.GetInt("Block", "RollerPearl", s.RollerPearl), 0f, 160f);
+            s.LeashRope = (int)Clamp(ini.GetInt("Block", "LeashRope", s.LeashRope), 0f, 7f);
 
             s.RollerWheelies = ini.GetBool("Block", "RollerWheelies", s.RollerWheelies);
             s.RollerWheelieLift = Clamp(ini.GetFloat("Block", "RollerWheelieLift",
