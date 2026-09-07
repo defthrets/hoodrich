@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="ISO-8859-1"?>
 <SpoonerPlacements>
-	<Note>absorbs: newnew, newlamar, newlamarnew, newlamar1, newlamar2</Note>
+	<Note>absorbs: newnew, newlamar, newlamarnew, newlamar1, newlamar2, before, after</Note>
 	<AudioFile volume="400" />
 	<ClearDatabase>false</ClearDatabase>
 	<ClearWorld>0</ClearWorld>
@@ -1917,12 +1917,12 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-191.323761</X>
-			<Y>-1733.2865</Y>
-			<Z>34.9067459</Z>
-			<Pitch>0</Pitch>
-			<Roll>0</Roll>
-			<Yaw>56.2538567</Yaw>
+		<X>-195.943878</X>
+		<Y>-1734.1012</Y>
+		<Z>32.6590881</Z>
+		<Pitch>0.000254419254</Pitch>
+		<Roll>-1.30275513e-11</Roll>
+		<Yaw>20.9135723</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>
@@ -1985,12 +1985,12 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-189.715317</X>
-			<Y>-1730.95312</Y>
-			<Z>34.8961906</Z>
-			<Pitch>0.0131629482</Pitch>
-			<Roll>1.0422041e-10</Roll>
-			<Yaw>97.344223</Yaw>
+		<X>-189.119293</X>
+		<Y>-1731.70386</Y>
+		<Z>34.9105797</Z>
+		<Pitch>0</Pitch>
+		<Roll>-0</Roll>
+		<Yaw>97.2927933</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>
@@ -2053,12 +2053,12 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-195.75592</X>
-			<Y>-1736.87305</Y>
-			<Z>34.4586067</Z>
-			<Pitch>0</Pitch>
-			<Roll>0</Roll>
-			<Yaw>52.4810982</Yaw>
+		<X>-201.372589</X>
+		<Y>-1727.97449</Y>
+		<Z>32.6641273</Z>
+		<Pitch>0</Pitch>
+		<Roll>-0</Roll>
+		<Yaw>-156.857056</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>

@@ -787,9 +787,20 @@ namespace Hoodrich.Locations
                     if (other == null || !other.Exists()) continue;
                     if (other == Game.Player.Character) continue;
 
-                    if (other.Model.Hash != model.Hash) continue;
+                    // NAMED EVEN WHEN IT IS NOT A MATCH. A mark that already has somebody on
+                    // it who is NOT this placement is the interesting case: it means another
+                    // system got there first, and knowing which model it put there is the
+                    // whole of what is needed to find it. Info rather than Debug, because it
+                    // should never happen twice and a log nobody turned up is no use.
+                    if (other.Model.Hash != model.Hash)
+                    {
+                        Log.Info("Scenery: something else is stood on " + Say(item) +
+                                 " -- model " + other.Model.Hash + ", " +
+                                 other.Position.DistanceTo(item.At).ToString("0.00") + "m off the mark.");
+                        continue;
+                    }
 
-                    Log.Debug("Scenery: " + Say(item) + " is already stood there; not making a second.");
+                    Log.Info("Scenery: " + Say(item) + " is already stood there; not making a second.");
                     return true;
                 }
             }
