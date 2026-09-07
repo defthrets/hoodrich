@@ -1,4 +1,26 @@
-﻿THE ASBO HAS SPEAKERS IN THE BACK.
+﻿THE DOG WALKS WITH HIM NOW, AND THE LEAD IS ON ITS NECK.
+
+Two things were wrong and they made each other worse.
+
+The follow was issued at the crew's own walking speed, so the dog could
+match him and never close a gap. Anything that put it behind -- the spawn
+a metre off him included -- was permanent: it trailed at the end of the
+rope for the whole walk, leaning against it and pointing wherever it had
+last been going. It trots now. It closes the gap, arrives at his knee and
+waits there, which is what being on a lead looks like. The range at which
+it is called back came down from six metres to under three, on a timer so
+that calling it back does not interrupt the step it is taking.
+
+And the lead was tied to its back end. The bone was asked for by number --
+39317, which is the neck on a PERSON. A dog is not built on the human
+skeleton and that index lands near the tail. Bones are asked for by name
+now, from a list, taking the first the model admits to, because a pug and
+a shepherd are not the same skeleton either. The name goes to the rope as
+well as the point, so the lead rides the animation instead of swimming
+about after it. Which bone answered is in the log on Debug.
+
+
+THE ASBO HAS SPEAKERS IN THE BACK.
 
 It was asking for slots 36 and 37 -- the speaker rack and the boot lining --
 and it has neither of them, so the boot was held open over an empty well.

@@ -50,6 +50,9 @@ namespace Hoodrich.Gangs
         public Ped Dog;
         public Ped Owner;
         public int Leash = -1;
+
+        /// <summary>When the dog was last told to heel. See Dogs_.</summary>
+        public int Heeled;
     }
 
     /// <summary>
@@ -164,7 +167,27 @@ namespace Hoodrich.Gangs
 
         /// <summary>How long the lead is, and how far the dog may get before it is walked back.</summary>
         private const float LeadLength = 1.9f;
-        private const float DogStray = 6f;
+        private const float DogStray = 2.6f;
+
+        /// <summary>
+        /// FASTER THAN THE MAN WALKS, which is the whole of why it was being dragged.
+        ///
+        /// The follow was issued at Pace -- exactly the speed the crew walks at -- so the dog
+        /// could match him and never close a gap. Anything that put it behind, the spawn a
+        /// metre off him included, was permanent: it trailed at the end of the rope for the
+        /// rest of the walk, pulling against him and pointing wherever it had last been going.
+        ///
+        /// Two is a trot. It closes the gap, arrives at the offset and settles there, which is
+        /// what a dog on a lead actually does -- it is never walking at exactly your speed, it
+        /// is catching up and then waiting for you.
+        /// </summary>
+        private const float DogPace = 2.0f;
+
+        /// <summary>How near the offset counts as arrived. Tight, or it settles a stride out.</summary>
+        private const float DogArrived = 0.5f;
+
+        /// <summary>How long before it may be told to heel again. See Dogs_.</summary>
+        private const int HeelEveryMs = 1500;
 
         /// <summary>
         /// What one of them might be holding. Some of them hold nothing.
@@ -1045,7 +1068,7 @@ namespace Hoodrich.Gangs
                 Function.Call(Hash.CLEAR_PED_TASKS, crew.Dog.Handle);
 
                 Function.Call(Hash.TASK_FOLLOW_TO_OFFSET_OF_ENTITY, crew.Dog.Handle,
-                              crew.Owner.Handle, DogSide, DogBack, 0f, Pace, -1, 1.0f, true);
+                              crew.Owner.Handle, DogSide, DogBack, 0f, DogPace, -1, DogArrived, true);
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, crew.Dog.Handle, true);
             }
@@ -1080,14 +1103,27 @@ namespace Hoodrich.Gangs
 
                 crew.Leash = rope;
 
-                var neck = Function.Call<Vector3>(Hash.GET_PED_BONE_COORDS, crew.Dog.Handle, DogNeck, 0f, 0f, 0f);
-                var hand = Function.Call<Vector3>(Hash.GET_PED_BONE_COORDS, crew.Owner.Handle, HandBone, 0f, 0f, 0f);
+                // BY NAME, NOT BY NUMBER. The old code asked for bone 39317, which is
+                // SKEL_Neck_1 on a PERSON. A dog is not built on the human skeleton and that
+                // index lands somewhere near its back end, which is where the lead was tied.
+                //
+                // A bone index the model has not got comes back as -1 and the call quietly
+                // gives you the entity's origin instead, so a wrong name is silent -- hence
+                // asking for several, taking the first the model admits to, and saying in the
+                // log which one it was.
+                string bone;
+                var neck = Knuckle(crew.Dog, DogNeckBones, out bone);
+                string grip;
+                var hand = Knuckle(crew.Owner, HandBones, out grip);
 
+                // And the bone NAMES go to the rope as well as the points. Given them, the
+                // rope pins to the bones and rides the animation; given nothing, it pins to
+                // two spots in the world and swims about as they move.
                 Function.Call(Hash.ATTACH_ENTITIES_TO_ROPE, rope,
                               crew.Dog.Handle, crew.Owner.Handle,
                               neck.X, neck.Y, neck.Z,
                               hand.X, hand.Y, hand.Z,
-                              LeadLength, false, false, 0, 0);
+                              LeadLength, false, false, bone, HandBones[0]);
             }
             catch (Exception ex)
             {
@@ -1095,8 +1131,52 @@ namespace Hoodrich.Gangs
             }
         }
 
-        /// <summary>The dog's neck, and the hand that holds it. See GangPeds for the hand bone.</summary>
-        private const int DogNeck = 39317;
+        /// <summary>
+        /// The dog's neck, and the hand that holds it, as names the model can be asked for.
+        ///
+        /// In order of how much it looks like a collar. Animals in this game do carry
+        /// SKEL_-prefixed bones, but not the same set as a person and not the same set as each
+        /// other -- a pug and a shepherd are different skeletons -- so this is a list rather
+        /// than an answer.
+        /// </summary>
+        private static readonly string[] DogNeckBones =
+        {
+            "SKEL_Neck_1", "BONETAG_NECK", "SKEL_Head", "SKEL_Spine3", "SKEL_ROOT"
+        };
+
+        private static readonly string[] HandBones = { "SKEL_R_Hand", "PH_R_Hand" };
+
+        /// <summary>
+        /// Where a named bone is in the world, and which name answered.
+        ///
+        /// Falls back to a point off the front of the animal rather than to its origin, so a
+        /// model that admits to none of the names still has the lead at its head end.
+        /// </summary>
+        private static Vector3 Knuckle(Ped who, string[] names, out string used)
+        {
+            used = "";
+
+            try
+            {
+                foreach (var name in names)
+                {
+                    var bone = Function.Call<int>(Hash.GET_ENTITY_BONE_INDEX_BY_NAME, who.Handle, name);
+                    if (bone < 0) continue;
+
+                    used = name;
+
+                    Log.Debug("Walkers: the lead goes on " + name + ".");
+
+                    return Function.Call<Vector3>(Hash.GET_WORLD_POSITION_OF_ENTITY_BONE, who.Handle, bone);
+                }
+            }
+            catch
+            {
+                // The front of it, then.
+            }
+
+            return who.Position + who.ForwardVector * 0.32f + new Vector3(0f, 0f, 0.22f);
+        }
 
         /// <summary>The ped type CREATE_PED wants. Four is a civilian, which an animal counts as.</summary>
         private const int DogType = 4;
@@ -1124,7 +1204,19 @@ namespace Hoodrich.Gangs
 
             // Off the end of the lead. The follow task is dropped by all sorts of things and a
             // dog whose follow has lapsed stands in the road with a rope stretching off it.
-            if (dog.Position.DistanceTo(man.Position) > DogStray) Heel(crew);
+            //
+            // ON A TIMER, because heeling clears its tasks: at the old six metres that was
+            // rare enough not to matter, and at a range tight enough to keep it at his knee it
+            // would fire every frame it was a stride behind and the animal would never finish
+            // a step. Once and a half seconds is long enough to let the follow do its job and
+            // short enough that a dropped task is not a dog left in the road.
+            if (dog.Position.DistanceTo(man.Position) <= DogStray) return;
+
+            var now = Game.GameTime;
+            if (now - crew.Heeled < HeelEveryMs) return;
+
+            crew.Heeled = now;
+            Heel(crew);
         }
 
         /// <summary>The lead comes down. The dog is handed back rather than deleted if it is alive.</summary>
