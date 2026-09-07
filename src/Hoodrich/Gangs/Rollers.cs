@@ -271,7 +271,15 @@ namespace Hoodrich.Gangs
             "sentinel5", "sentinel5", "sentinel5",
 
             "cavalcade3", "fq2", "rebla", "fr36", "dominator3", "dominator9",
-            "gauntlet4", "ruiner4", "vigero2", "s95", "outlaw"
+            "gauntlet4", "ruiner4", "vigero2", "s95", "outlaw",
+
+            // THE OLD METAL, checked the same way the rest of this list was: the spawn name
+            // hashed and compared against the hash the game itself shows for the car, rather
+            // than typed from memory. Greenwood 0x026ED430, Impaler LX 0xF55D2F7A (which is
+            // impaler6, not impaler5), Manana Custom 0x665F785D, Tahoma Coupe 0xE478B977,
+            // Vamos 0xFD128DFD. Every one of those matched on the first name tried except the
+            // Impaler, which is exactly the reason the check exists.
+            "greenwood", "impaler6", "manana2", "tahoma", "vamos"
         };
 
         /// <summary>
@@ -358,6 +366,9 @@ namespace Hoodrich.Gangs
 
         /// <summary>Dark green, out of the game's own paint table.</summary>
         private const int DarkGreen = 49;
+
+        /// <summary>Metallic black. Index nought, which is the first entry in the game's own table.</summary>
+        private const int MetallicBlack = 0;
 
         /// <summary>
         /// The flake over the top of it. A brighter green, so it lifts rather than flattens.
@@ -1519,8 +1530,22 @@ namespace Hoodrich.Gangs
 
                 // The set's own index rather than a second copy of the number. This file and
                 // gangs.json both said 49 and only one of them could be the place to change it.
+                // BLACK OR THE SET'S GREEN, and never anything else.
+                //
+                // Every car on the block was the same green, which is a fleet rather than a
+                // set -- nine of them parked down one street read as a livery somebody bought
+                // in bulk. Half of them are metallic black now. It is still obviously the same
+                // people, because the ones that are green are the exact same green and the
+                // black ones are on the same glass and the same springs; what it stops being
+                // is a colour scheme.
+                //
+                // The set's own index rather than a second copy of the number. This file and
+                // gangs.json both said 49 and only one of them could be the place to change it.
                 var gang = _gangs == null ? null : _gangs.Get(_gangId);
-                var paint = gang != null && gang.Paint >= 0 ? gang.Paint : DarkGreen;
+                var green = gang != null && gang.Paint >= 0 ? gang.Paint : DarkGreen;
+
+                var black = _rng.Next(2) == 0;
+                var paint = black ? MetallicBlack : green;
 
                 // PRIMARY DARK, PEARL BRIGHT, and the gap between them is the whole effect.
                 //
@@ -1534,7 +1559,11 @@ namespace Hoodrich.Gangs
                 // we can check and the difference between "green" and the wrong green is one
                 // number. The body is not: that is the set's own colour and it belongs to the
                 // set, not to a taste.
-                var pearl = _cfg == null ? DefaultPearl : _cfg.RollerPearl;
+                // AND THE PEARL ONLY ON THE GREEN ONES. A bright green flake suspended in
+                // black is not a black car, it is a green car that has gone wrong under a
+                // street light. Black gets its own index over itself, which is a plain
+                // metallic black and is the whole point of picking it.
+                var pearl = black ? MetallicBlack : (_cfg == null ? DefaultPearl : _cfg.RollerPearl);
 
                 Function.Call(Hash.SET_VEHICLE_COLOURS, car.Handle, paint, paint);
                 Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, car.Handle, pearl, 0);
