@@ -140,30 +140,6 @@ namespace Hoodrich.Locations
         private Spot[] Stages => _here.Stages;
 
         /// <summary>
-        /// Whether a performer has wandered in among the people watching it.
-        ///
-        /// Asked of the ring itself rather than of a radius from the middle, because the ring
-        /// is not a circle -- it is however the pavements at this junction happen to run, and
-        /// on both of them the people stand between fourteen and twenty-seven metres out on
-        /// different sides. A number would be wrong on one side of every junction.
-        /// </summary>
-        private bool AmongThem(Runner r)
-        {
-            if (r == null || r.Car == null || !r.Car.Exists()) return false;
-
-            var at = r.Car.Position;
-
-            foreach (var w in _crowd)
-            {
-                if (w == null || w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
-
-                if (w.Man.Position.DistanceTo(at) < CrowdNear) return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
         /// How close counts as being on a marker.
         ///
         /// FIVE, DOWN FROM EIGHT. Eight metres is most of a car length either side of a
@@ -177,30 +153,18 @@ namespace Hoodrich.Locations
         /// <summary>
         /// How far a performer may travel off its place before it is sent back.
         ///
-        /// A BACKSTOP RATHER THAN A LEASH, and that is a change of job.
+        /// THE ONLY THING THAT INTERRUPTS A SHOW. It used to be interrupted for reaching the
+        /// people as well, and before that for drifting a few metres, and each time the
+        /// result was the same: a performer braking, gathering itself and re-driving its
+        /// own mark, so the show was mostly cars stopping. A donut that travels is a donut,
+        /// and a donut that reaches the crowd is the crowd's problem.
         ///
-        /// It used to send a car back the moment it had drifted a few metres, which meant a
-        /// performer braked, gathered itself and re-drove its own mark every few seconds --
-        /// so the show was mostly cars stopping. A donut that travels is a donut; the only
-        /// reason to interrupt one is that it has arrived somewhere it should not be, and
-        /// the thing that makes that true is people, not metres. See AmongThem.
-        ///
-        /// So this is now only the case AmongThem cannot see: a car that has slid clean off
-        /// the junction and down a street, where there is nobody to be near. Eighteen metres
-        /// is past the ring on both junctions, so anything that reaches it is out of the
-        /// event entirely. It still has to be wider than StageArrived or a car would be sent
-        /// back to a marker it is already at, for ever.
+        /// Twelve metres is a car that has slid clean off its place rather than one working
+        /// a wide loop round it -- and on tyres with two fifths of their grip the loops are
+        /// wide. It still has to be wider than StageArrived or a car would be sent back to
+        /// a marker it is already at, for ever.
         /// </summary>
-        private const float StageLeash = 18f;
-
-        /// <summary>
-        /// How close to one of the people watching counts as being in the crowd.
-        ///
-        /// A car is about two and a half wide and five long and this is measured centre to
-        /// centre, so seven metres is a spinning car close enough to be alarming rather than
-        /// one that has already hit somebody. The point is to gather it up BEFORE.
-        /// </summary>
-        private const float CrowdNear = 7f;
+        private const float StageLeash = 12f;
 
         /// <summary>
         /// How long a performer tries to reach its marker before waiting where it is.
@@ -931,12 +895,6 @@ namespace Hoodrich.Locations
             /// <summary>When the lock swaps to the other side. See Working.</summary>
             public int SwapAt;
 
-            /// <summary>When he was first seen not moving with the lock on, or nought.</summary>
-            public int Stalled;
-
-            /// <summary>Held on the spot with the rears going, because something is in the way.</summary>
-            public bool Burning;
-
             /// <summary>Driving back to the middle after sliding wide.</summary>
             public bool Returning;
         }
@@ -1144,7 +1102,6 @@ namespace Hoodrich.Locations
             if (State == TakeoverState.Running)
             {
                 Bounce();
-                Boost();
 
                 // Per frame with the hydraulics and for the same reason: a wheelie is held by
                 // pushing on the bike every frame it lasts, and the same push at tick intervals
@@ -3725,51 +3682,38 @@ namespace Hoodrich.Locations
                             // He waits where he stopped.
                         }
                     }
-                    else if (AmongThem(r) || r.Car.Position.DistanceTo(bay.At) > StageLeash)
+                    else if (r.Car.Position.DistanceTo(bay.At) > StageLeash)
                     {
-                        // IT HAS REACHED THE PEOPLE. A car going round on reduced grip travels,
-                        // and the one thing that has to interrupt it is arriving among the
-                        // crowd -- not a distance. It keeps spinning for as long as there is
-                        // empty road under it, however far that carries it from the mark, and
-                        // gathers itself up when there is somebody in front of it. The
-                        // distance below it is only the case this cannot see: a car that has
-                        // slid clean off the junction, where there is nobody to be near.
+                        // IT HAS SLID OFF ITS MARK, and only that. It used to be interrupted
+                        // for reaching the people too -- brake, gather itself, sit until the
+                        // hold noticed it had stopped, drive back, start again -- and on a
+                        // ring of fifty that was a show made of stops. Nothing stops it now.
+                        // Anybody in the way is hit; getting out of it is the crowd's job.
+                        // This is the one case left, a car that has travelled clean off its
+                        // place.
                         //
-                        // Sent back the way it came in rather than teleported: AtStage is
-                        // dropped and the clock restarted, which hands it straight back to the
-                        // arrival branch above -- drive to the marker, snap onto it, start the
-                        // show again. The same code that put it there in the first place.
-                        //
-                        // GRIP COMES BACK FOR THE DRIVE. A car asked to route anywhere on
-                        // drift tyres does not so much drive as slither; Show puts both back
-                        // on the moment it lands, so nothing is lost but the sliding.
+                        // STRAIGHT BACK, STILL SIDEWAYS. No brake first, and the route is
+                        // issued here rather than left for the hold, which only asks after
+                        // a car has sat still for four seconds. On the tyres it has: this is
+                        // a correction inside his go, not the end of it. AtStage is dropped
+                        // and the clock restarted, which hands it to the arrival branch
+                        // above -- onto the mark, and the show again.
                         try
                         {
-                            // GRIP BACK, THEN STOP, THEN DRIVE. A car that has slid wide is
-                            // still sideways and still sliding; handing it a route in that
-                            // state is a car that understeers off in the direction it was
-                            // already going. Braking for a moment first is what a person does
-                            // -- gather it up, then turn round and come back.
-                            Slick(r.Car, false);
-                            Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, false);
                             Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
-
-                            // 1 is brake. Long enough to gather it, short enough that it reads
-                            // as a correction rather than a stop.
-                            Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle,
-                                          r.Car.Handle, 1, GatherMs);
+                            Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle,
+                                          r.Car.Handle, bay.At.X, bay.At.Y, bay.At.Z,
+                                          12f, 0, r.Car.Model.Hash, RushStyle, 3f, true);
                         }
                         catch
                         {
-                            // It is being sent back either way.
+                            // The hold asks again in a few seconds.
                         }
 
                         r.AtStage = false;
                         r.Sent = now;
-
-                        // Nothing asked of it while the brake has its moment; the arrival
-                        // branch takes over from there and drives it back.
-                        r.NextAction = now + GatherMs;
+                        r.Stuck = 0;
+                        r.NextAction = 0;
                     }
                     else if (now >= r.NextAction)
                     {
@@ -3821,8 +3765,6 @@ namespace Hoodrich.Locations
                     // after arriving is a brake, and the lock does not start until it is done.
                     r.NextAction = now + SettleMs;
                     r.SwapAt = now + SettleMs + SwapMs;
-                    r.Stalled = 0;
-                    r.Burning = false;
                     r.Returning = false;
 
                     try
@@ -4703,7 +4645,6 @@ namespace Hoodrich.Locations
                     if (!r.Returning)
                     {
                         r.Returning = true;
-                        r.Burning = false;
                         r.NextAction = 0;
                     }
 
@@ -4738,7 +4679,6 @@ namespace Hoodrich.Locations
                 {
                     r.Returning = false;
                     r.NextAction = 0;
-                    r.Stalled = 0;
                 }
 
                 // EVERY THIRTY SECONDS, THE OTHER WAY.
@@ -4749,53 +4689,16 @@ namespace Hoodrich.Locations
                     r.Way = r.Way > 0 ? -1 : 1;
                     r.SwapAt = now + SwapMs;
                     r.NextAction = 0;
-                    r.Stalled = 0;
                 }
 
-                // SOMETHING IN THE WAY. A temp action is a driver input, not a route -- there
-                // is no avoidance in it at all -- so the tell is the car itself: full lock
-                // and the throttle planted against a bumper or a kerb is a car that is not
-                // moving. He holds a burnout on the spot, tries the lock again every couple
-                // of seconds, and carries on the moment it takes.
-                //
-                // LIFTING OFF FOR PEOPLE IS GONE. It looked up the nose for anybody in the
-                // arc and coasted if it found somebody, and on a ring of fifty people that
-                // was a car doing a second of lock and then sitting there, all night. The
-                // crowd steps aside for cars now; that is their job, not his.
-                var moving = r.Car.Speed > StallSpeed;
-
-                if (moving) r.Stalled = 0;
-                else if (r.Stalled == 0) r.Stalled = now;
-
-                if (r.Burning)
-                {
-                    if (now < r.NextAction) continue;
-
-                    // The lock again, with a moment to get rolling before it is called stuck.
-                    r.Burning = false;
-                    r.Stalled = now;
-                    Lock(r, now);
-                    continue;
-                }
-
-                if (!moving && now - r.Stalled > StallMs)
-                {
-                    r.Burning = true;
-                    r.NextAction = now + RetryMs;
-
-                    try
-                    {
-                        Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
-                        Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, true);
-                    }
-                    catch
-                    {
-                        // He tries the lock again shortly either way.
-                    }
-
-                    continue;
-                }
-
+                // NOTHING IN THE WAY STOPS HIM. A temp action is a driver input, not a route
+                // -- there is no avoidance in it at all -- and there is no stall handling
+                // round it either, any more. There was: a car not moving was called
+                // blocked, cleared, held in a stationary burnout and given the lock again a
+                // few seconds later, and on a junction full of people that was a show made
+                // of stops. Lifting off for anybody in the arc went before it, for the same
+                // reason. He holds the lock. Anybody in the way is hit, and getting out of
+                // it is the crowd's job -- see Crowding.
                 if (now < r.NextAction) continue;
 
                 Lock(r, now);
@@ -4825,57 +4728,19 @@ namespace Hoodrich.Locations
             }
         }
 
-        /// <summary>How long the lock is asked for at a time, how often it swaps sides, and what counts as stuck.</summary>
-        private const int LockMs = 6000;
+        /// <summary>
+        /// How long the lock is asked for at a time, and how often it swaps sides.
+        ///
+        /// TWELVE SECONDS, UP FROM SIX, AND THE SHOW ON A MARK USES IT TOO. Re-issuing a
+        /// temp action a car is already performing is meant to simply continue it, and
+        /// every top-up is one more chance for that to be a hair less than true. Fewer of
+        /// them is fewer chances.
+        /// </summary>
+        private const int LockMs = 12000;
         private const int SwapMs = 30000;
-        private const float StallSpeed = 0.9f;
-        private const int StallMs = 1200;
-        private const int RetryMs = 2500;
-
-        /// <summary>Three times the engine, for as long as he is working. See Boost.</summary>
-        private const float TorqueBoost = 3f;
 
         /// <summary>
-        /// The torque, per frame. The cheat-power native is a multiplier the game reads on
-        /// the frame it is set, so it is set every frame -- once a tick would be a car with
-        /// a boost for one frame in forty.
-        /// </summary>
-        private void Boost()
-        {
-            foreach (var r in _running)
-            {
-                if (!r.Circling || r.Car == null) continue;
-
-                try
-                {
-                    if (r.Car.Exists()) Function.Call(Hash.SET_VEHICLE_CHEAT_POWER_INCREASE, r.Car.Handle, TorqueBoost);
-                }
-                catch
-                {
-                    // Next frame.
-                }
-            }
-        }
-
-        /// <summary>
-        /// The longest a waypoint is chased before it is re-issued.
-        ///
-        /// A backstop rather than a clock: the re-aim happens on ARRIVAL, and this only exists
-        /// for a car that has been shoved off the line or wedged against a bumper and would
-        /// otherwise sit forever chasing a coordinate it can no longer reach.
-        /// </summary>
-
-        /// <summary>
-        /// The stunt action for a donut, one way or the other.
-        ///
-        /// THESE TWO NUMBERS ARE THE ONE THING IN HERE THAT CANNOT BE CHECKED FROM A DESK. The
-        /// temp action list is not documented by Rockstar and the community numbering is the
-        /// only source there is; 30 and 31 are what everybody uses for a spinning donut. If
-        /// they are something else on a given build they are in the ini, so finding the right
-        /// pair is a matter of trying two numbers rather than rebuilding anything.
-        /// </summary>
-        /// <summary>
-        /// The show on a marker: a spinning burnout, in a burst re-issued before it runs out.
+        /// The show on a marker: full lock and the throttle, re-issued before it runs out.
         ///
         /// BURNOUT MODE OFF, GRIP DOWN. Those two are the whole trick. Burnout mode holds a car
         /// on the spot with its rears going, which is the opposite of what is wanted here, so
@@ -4885,18 +4750,18 @@ namespace Hoodrich.Locations
         /// </summary>
         private void Show(Runner r, int now)
         {
-            r.NextAction = now + BurstMs - TopUpLead;
+            r.NextAction = now + LockMs - TopUpLead;
 
             try
             {
                 Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
                 Slick(r.Car, true);
                 Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
-                Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, r.Car.Handle, Spin(r.Way), BurstMs);
+                Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, r.Car.Handle, Spin(r.Way), LockMs);
             }
             catch
             {
-                r.NextAction = now + BurstMs;
+                r.NextAction = now + 1000;
             }
         }
 
@@ -4945,12 +4810,6 @@ namespace Hoodrich.Locations
         {
             return way > 0 ? 7 : 8;
         }
-
-        /// <summary>How long a car that slid wide is given to gather itself before it drives back.</summary>
-        private const int GatherMs = 900;
-
-        /// <summary>How long one burst of lock lasts, and how far they may wander.</summary>
-        private const int BurstMs = 3200;
 
         /// <summary>
         /// How far ahead of a burst ending the next one is asked for.
@@ -6179,8 +6038,14 @@ namespace Hoodrich.Locations
         private readonly Dictionary<int, Grip> _grip = new Dictionary<int, Grip>();
         private readonly HashSet<int> _slick = new HashSet<int>();
 
-        /// <summary>What share of its grip a car keeps on the circle. Nought is ice; one is a road car.</summary>
-        private const float SlickTraction = 0.6f;
+        /// <summary>
+        /// What share of its grip a car keeps on the circle. Nought is ice; one is a road car.
+        ///
+        /// Two fifths, down from three. The donut comes from the tyres and nowhere else now
+        /// -- the engine is the car's own -- so this is the figure that decides whether full
+        /// lock and the throttle is a loop of wheelspin or a car pulling itself round.
+        /// </summary>
+        private const float SlickTraction = 0.42f;
 
         // ==================================================================
         // The kerb
