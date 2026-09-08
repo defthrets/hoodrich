@@ -27,7 +27,13 @@ namespace Hoodrich.UI
     /// </summary>
     internal sealed class SocialScreen
     {
-        private const float PanelWidth = 0.360f;
+        /// <summary>
+        /// Sized in HEIGHT fractions and converted, so the column keeps its shape: a phone
+        /// app's column on a widescreen, and still one on an ultrawide rather than a
+        /// letterbox with a sentence a metre long across it.
+        /// </summary>
+        private const float PanelWidthH = 0.66f;
+        private static float PanelWidth => Hud.ToX(PanelWidthH);
         /// <summary>
         /// Where the panel's top edge is THIS FRAME.
         ///
@@ -49,34 +55,6 @@ namespace Hoodrich.UI
         private const float BodyScale = 0.315f;
         private const float LineHeight = 0.0248f;
 
-        /// <summary>
-        /// Gap BETWEEN two cards now, rather than under a post before the next one's rule.
-        ///
-        /// Wider than it was, and the width is the point. A hairline between two blocks of text
-        /// separates them the way a ruled notebook separates lines -- they are still one sheet.
-        /// Air between two shapes makes them two objects, and a feed is a stack of objects.
-        ///
-        /// It costs about one post a screenful. Worth it: eight posts you scan as a wall are
-        /// worth less than seven you read.
-        /// </summary>
-        private const float PostGap = 0.017f;
-
-        /// <summary>Breathing room inside a card, above the name and below the figures.</summary>
-        private const float CardPad = 0.006f;
-
-        /// <summary>The card itself, and the two edges that make it a raised surface.</summary>
-        private static readonly Color CardFace = Color.FromArgb(64, 150, 158, 152);
-
-        /// <summary>Top and left: lit. Bottom and right: in its own shade.</summary>
-        private static readonly Color CardEdge = Color.FromArgb(46, 215, 225, 219);
-        private static readonly Color CardFloor = Color.FromArgb(70, 0, 0, 0);
-
-        /// <summary>
-        /// What is under it. Two hard offsets rather than a blur, which is not available here
-        /// and would not be worth the fill if it were.
-        /// </summary>
-        private static readonly Color ShadowNear = Color.FromArgb(90, 0, 0, 0);
-        private static readonly Color ShadowFar = Color.FromArgb(45, 0, 0, 0);
 
         /// <summary>
         /// The display name, in one place because two things measure it.
@@ -86,78 +64,15 @@ namespace Hoodrich.UI
         /// out who is talking -- which is the whole reason the screen looked like a list of
         /// sentences rather than a feed. A name has to win its line.
         /// </summary>
-        private const float NameScale = 0.385f;
+        private const float NameScale = 0.34f;
 
         /// <summary>The handle and the stamp. Down, and further out of the way.</summary>
-        private const float StampScale = 0.245f;
+        private const float StampScale = 0.26f;
 
         private const int OpenGraceMs = 220;
 
-        /// <summary>The fixed identity card. Everything under it scrolls; this does not.</summary>
-        /// <summary>
-        /// The header card: the wordmark, the screen's name, your avatar and your numbers.
-        ///
-        /// Grew by 0.023 when the mark went in above the title, and everything under it moved
-        /// by the same amount. This one number is where the FEED starts, so getting it wrong
-        /// does not clip the header -- it slides the whole timeline up over it.
-        /// </summary>
-        /// <summary>
-        /// Taller than it was, because the masthead is now three storeys rather than two.
-        ///
-        /// The mark, the word under it, and the account under that. Everything below the header
-        /// is laid out from what this method RETURNS rather than from a second constant, so the
-        /// tab strip and the whole feed move down with it on their own.
-        /// </summary>
-        private const float CardHeight = 0.128f;
-
-        /// <summary>
-        /// The masthead word, and where it sits.
-        ///
-        /// Down from a half. At a half it competed with the mark above it rather than sitting
-        /// under it, and a title the same weight as the logo is two logos.
-        ///
-        /// Not smaller than that. The account name below is 0.42, and a masthead that loses to
-        /// the name under it has stopped being a masthead -- this is the floor, not a target.
-        ///
-        /// The top edge stays where it was, near enough. Text places by its TOP, so a smaller
-        /// line at the same top can only free space BELOW it, which is where the hairline is
-        /// and where a collision would actually show. Moving the top down to re-centre it
-        /// optically would have walked the caps into that hairline for a gain nobody can see.
-        /// </summary>
-        private const float TitleScale = 0.42f;
-        private float TitleTop => PanelTop + 0.0395f;
-
-        /// <summary>Your own face. Larger than a stranger's, and the best-rendered thing here.</summary>
-        private const float HeadSize = 0.046f;
-
-        /// <summary>Name/handle/stamp row above the body. DrawPost and PostHeight share it.</summary>
-        private const float MetaHeight = 0.023f;
-
-        /// <summary>Gap between the last body line and the engagement row.</summary>
-        private const float MetricGap = 0.004f;
-
-        /// <summary>
-        /// The engagement row. NOT grown for the icons, and that is deliberate -- the row went
-        /// from a 0.0143 text cap to a 0.016 icon and still fits inside the clearance that was
-        /// already there. Growing it would cost 0.004 on every post, which is roughly one fewer
-        /// post per screenful, to buy room nobody needed.
-        /// </summary>
-        private const float MetricsHeight = 0.022f;
-
         /// <summary>Engagement art. The one size in this mod proven to render these files.</summary>
         private const float MetricIcon = 0.016f;
-
-        /// <summary>
-        /// Fixed pitch for the three engagement figures.
-        ///
-        /// Columns, not a flowed run of words. As words the three groups slid left and right by
-        /// however many digits each post happened to have, so nothing lined up down the page and
-        /// the eye had to re-find them on every single post.
-        /// </summary>
-        private const float MetricPitch = 0.052f;
-
-        private static readonly Color MetricArt = Color.FromArgb(120, 150, 158, 152);
-        private static readonly Color MetricNum = Color.FromArgb(170, 158, 164, 160);
 
         /// <summary>
         /// ALL, and the ones about you.
@@ -192,14 +107,9 @@ namespace Hoodrich.UI
         private const float RowHeight = 0.030f;
         private const float NoteGap = 0.014f;
 
-        private const float TabGap = 0.022f;
-
         /// <summary>The picture on a composer or diss row.</summary>
         private const float RowArt = 0.017f;
-        private const float SplitGap = 0.034f;
 
-
-        private static readonly Color SplitInk = Color.FromArgb(70, 200, 205, 200);
 
         /// <summary>One line you can put out that costs nothing.</summary>
         private struct Sayable
@@ -272,11 +182,6 @@ namespace Hoodrich.UI
 
         private readonly List<GangDef> _dissList = new List<GangDef>();
 
-        /// <summary>Strip metrics, measured once when the screen opens rather than every frame.</summary>
-        private readonly float[] _stripW = new float[4];
-        private float _stripScale = 0.26f;
-        private float _stripGap = TabGap;
-        private float _stripSplit = SplitGap;
 
         private int _tab;
 
@@ -346,7 +251,6 @@ namespace Hoodrich.UI
             _nudge = null;
 
             BuildLists();
-            Strip();
 
             RequestMugshot();
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
@@ -388,53 +292,6 @@ namespace Hoodrich.UI
                 {
                     _dissList.Add(gang);
                 }
-            }
-        }
-
-        /// <summary>
-        /// Fits five labels and a right-hand readout across the panel, stepping down if it has to.
-        ///
-        /// Measured once here rather than twice a frame in Tabs, which is a net saving on what
-        /// it replaces. No label is ever dropped or cut -- the gaps close first, then the type
-        /// comes down, because a strip you cannot read all of is worse than a slightly tighter
-        /// one.
-        /// </summary>
-        private void Strip()
-        {
-            _stripScale = 0.26f;
-            _stripGap = TabGap;
-            _stripSplit = SplitGap;
-
-            var readout = 0.05f;
-
-            try
-            {
-                readout = Math.Max(Hud.MeasureText("999 POSTS", 0.24f, Hud.FontLabel),
-                                   Hud.MeasureText("WAR ON", 0.24f, Hud.FontLabel));
-            }
-            catch { /* the estimate will do */ }
-
-            for (var pass = 0; pass < 3; pass++)
-            {
-                var run = 0f;
-
-                for (var i = 0; i < TabNames.Length; i++)
-                {
-                    _stripW[i] = 0.02f;
-
-                    try { _stripW[i] = Hud.MeasureText(TabNames[i], _stripScale, Hud.FontLabel); }
-                    catch { /* the estimate will do */ }
-
-                    run += _stripW[i];
-                }
-
-                var left = 0.5f - PanelWidth * 0.5f;
-                var need = left + Pad + run + _stripGap * 3f + _stripSplit + 0.010f + readout;
-
-                if (need <= left + PanelWidth - Pad) return;
-
-                if (pass == 0) { _stripGap = 0.015f; _stripSplit = 0.024f; }
-                else if (pass == 1) _stripScale = 0.235f;
             }
         }
 
@@ -869,40 +726,79 @@ namespace Hoodrich.UI
         }
 
         // ---- drawing -----------------------------------------------------------
+        //
+        // A TIMELINE, DRAWN THE WAY THE REAL ONES ARE. This is the one screen in the mod that
+        // does not wear the house style, on purpose: it is a phone app pretending to be the
+        // bird app, and the bird app in the stash house's letterhead was a spreadsheet with
+        // avatars. Black ground, a hairline between posts instead of a card round each one,
+        // the name in the reading face with a blue tick after it, the handle and the age in
+        // grey on the same line, three grey glyphs with numbers under the words. Nothing is
+        // raised, nothing has a shadow, nothing is rounded.
+        //
+        // AND IT IS CHEAP, WHICH IS NOT A SIDE EFFECT. The cards cost about ten rectangles
+        // each and every blue tick was twenty more (a disc is a rectangle per pixel row), so
+        // a screenful came to five hundred and the game dropped the tail of the frame -- the
+        // phone flickering with everything on was this screen. A post is now one hairline;
+        // a whole screenful is a few dozen rectangles.
+
+        /// <summary>The app's own palette. The bird app's dark theme, near enough, and nobody else's.</summary>
+        private static readonly Color Ground = Color.FromArgb(246, 0, 0, 0);
+        private static readonly Color Hairline = Color.FromArgb(255, 47, 51, 54);
+        private static readonly Color Ink = Color.FromArgb(255, 231, 233, 234);
+        private static readonly Color Quiet = Color.FromArgb(255, 113, 118, 123);
+        private static readonly Color Blue = Color.FromArgb(255, 29, 155, 240);
+        private static readonly Color Pink = Color.FromArgb(255, 249, 24, 128);
+        private static readonly Color Green = Color.FromArgb(255, 0, 186, 124);
+
+        /// <summary>The bar, the profile block, the tabs, the bottom bar: the fixed furniture, top to bottom.</summary>
+        private const float TopBarH = 0.050f;
+        private const float ProfileH = 0.104f;
+        private const float TabsH = 0.042f;
+        private const float BottomH = 0.038f;
+
+        /// <summary>Inside a post: air above the name and below the figures, the name line, the figures line.</summary>
+        private const float PostPad = 0.009f;
+        private const float MetaH = 0.026f;
+        private const float ActionsH = 0.026f;
+
+        /// <summary>What the tabs say. TabNames is the code's names for them; these are the app's.</summary>
+        private static readonly string[] Labels = { "All", "About you", "Post", "Diss" };
 
         public void Draw()
         {
             if (!IsOpen) return;
 
             var left = 0.5f - PanelWidth * 0.5f;
+            var right = left + PanelWidth;
             var x = left + Pad;
-            var right = left + PanelWidth - Pad;
+            var inner = right - Pad;
 
-            // The same panel as every other screen: rounded black with the ember wash, and no
-            // bar, frame or corner tick anywhere round it. The one mode signal -- red on the
-            // two tabs that start fights -- lives on the tab strip's marker and the rules,
-            // which is where you are looking when you change tabs.
-            var edge = _tab >= TabDiss ? Palette.Danger : Palette.BrandDeep;
-
-            Theme.Panel(left, PanelTop, PanelWidth, PanelHeight);
+            // One rectangle. Black because the app's is, and because a rounded panel with a
+            // wash on it is the house style this screen is deliberately not in.
+            Hud.RectFrom(left, PanelTop, PanelWidth, PanelHeight, Ground);
 
             Count();
 
+            // The cursor frame in the app's blue rather than the panels' gold.
+            _glide.RimInk = Blue;
+            _glide.GlowInk = Blue;
             _glide.Begin();
 
-            var y = DrawHeader(left, right, edge);
-            y = Tabs(x, right, y + 0.010f, edge);
+            var y = TopBar(left, x, inner);
+            y = Profile(left, x, inner, y);
+            y = Tabs(left, y);
+
+            var bottom = PanelTop + PanelHeight - BottomH;
 
             if (!IsFeedTab)
             {
-                Action(left, x, right, y);
-                Keys(x, right);
+                Action(left, x, inner, y, bottom);
+                BottomBar(left, x, inner);
                 _glide.Draw();
                 return;
             }
 
             var feedTop = y;
-            var bottom = PanelTop + PanelHeight - 0.030f;
             var count = _tally[_tab];
 
             var shown = 0;
@@ -929,125 +825,207 @@ namespace Hoodrich.UI
             _lastShown = shown;
 
             if (count == 0) Nothing(feedTop);
-            else Rail(left, feedTop, bottom, count, shown);
+            else Rail(right, feedTop, bottom, count, shown);
 
-            Keys(x, right);
+            BottomBar(left, x, inner);
             _glide.Draw();
         }
 
+        // ---- the furniture -----------------------------------------------------
+
+        /// <summary>The bar along the top: your face, the app's mark in the middle, the light that says it is on.</summary>
+        private float TopBar(float left, float x, float inner)
+        {
+            var top = PanelTop;
+            var cy = top + TopBarH * 0.5f;
+
+            Face(x + Hud.ToX(0.026f) * 0.5f, cy, 0.026f);
+
+            Hud.File("socials.png", left + PanelWidth * 0.5f, cy, 0.028f, 0f, Ink);
+
+            Live(inner - Hud.ToX(0.004f), cy);
+
+            Hud.RectFrom(left, top + TopBarH - 0.0012f, PanelWidth, 0.0012f, Hairline);
+
+            return top + TopBarH;
+        }
+
         /// <summary>
-        /// The tab strip, which is the armourer's shelf strip with the array swapped.
-        ///
-        /// The count is right-aligned to a FIXED edge rather than folded into a label. Labels
-        /// are measured and laid out one after another, so "ALL 79" going to "ALL 80" would
-        /// shove ABOUT YOU sideways every ten seconds -- fine in a still, twitching all evening
-        /// in motion.
+        /// Your profile, the way the app lays one out: the face, the name with its tick, the
+        /// handle under it, then "118 Following  1,520 Followers" with the numbers in white
+        /// and the words in grey. The post count on the right, where the profile keeps it --
+        /// or, when somebody is on their way, that, in the colour of the tab that caused it.
         /// </summary>
-        /// <summary>The marker under the tab strip, which travels rather than teleports.</summary>
+        private float Profile(float left, float x, float inner, float top)
+        {
+            const float size = 0.054f;
+
+            Face(x + Hud.ToX(size) * 0.5f, top + 0.010f + size * 0.5f, size);
+
+            var tx = x + Hud.ToX(size) + 0.010f;
+
+            Hud.Text(_feed.DisplayName, tx, top + 0.006f, 0.40f, Ink, Hud.FontChaletLondon, centre: false);
+
+            var nw = Measure(_feed.DisplayName, 0.40f, Hud.FontChaletLondon, 0.06f);
+            Badge(tx + nw + 0.006f, top + 0.024f, 0.017f);
+
+            Hud.Text(_feed.Handle, tx, top + 0.036f, 0.27f, Quiet, Hud.FontChaletLondon, centre: false);
+
+            var ly = top + 0.064f;
+            var fx = Stat(tx, ly, _feed.Following.ToString("N0"), "Following", Ink);
+            Stat(fx + 0.014f, ly, _feed.Followers.ToString("N0"), "Followers", Gained());
+
+            var payback = PaybackDue != null && PaybackDue();
+            var n = _tally[0];
+
+            Hud.TextRight(payback ? "Somebody's coming" : n + (n == 1 ? " post" : " posts"),
+                          inner, top + 0.010f, 0.25f, payback ? Pink : Quiet, Hud.FontChaletLondon);
+
+            Hud.RectFrom(left, top + ProfileH - 0.0012f, PanelWidth, 0.0012f, Hairline);
+
+            return top + ProfileH;
+        }
+
+        /// <summary>A number in white and its word in grey, on one line. Returns where the next starts.</summary>
+        private static float Stat(float x, float y, string number, string word, Color ink)
+        {
+            Hud.Text(number, x, y, 0.28f, ink, Hud.FontChaletLondon, centre: false);
+
+            var w = Measure(number, 0.28f, Hud.FontChaletLondon, 0.03f);
+
+            Hud.Text(word, x + w + 0.004f, y, 0.28f, Quiet, Hud.FontChaletLondon, centre: false);
+
+            return x + w + 0.004f + Measure(word, 0.28f, Hud.FontChaletLondon, 0.05f);
+        }
+
+        /// <summary>The underline under the tab you are on, which travels rather than teleports.</summary>
         private readonly Eased _tabX = new Eased();
         private readonly Eased _tabW = new Eased();
 
-        private float Tabs(float x, float right, float y, Color edge)
+        /// <summary>
+        /// Four tabs across the whole width, evenly, the app's way: the one you are on in
+        /// white with a blue line under it, the rest in grey. DISS is pink whether or not you
+        /// are on it, because it is the one that starts fights, and an empty feed tab is
+        /// fainter so it says so before you press it.
+        /// </summary>
+        private float Tabs(float left, float top)
         {
-            // WHERE THE MARKER IS HEADED, worked out before a single label is drawn.
-            //
-            // It used to be painted inside the loop at whichever tab happened to be the
-            // current one, which means it does not move between tabs -- it stops existing in
-            // one place and starts existing in another. That is the difference between a
-            // selection you can follow and one you have to go and find again, and on a strip
-            // where two of the four tabs start fights, following it matters.
-            var goingTo = x;
+            var w = PanelWidth / Labels.Length;
+            var ty = top + 0.010f;
 
-            for (var i = 0; i < _tab && i < TabNames.Length; i++)
-            {
-                goingTo += _stripW[i] + (i == 1 ? _stripSplit : _stripGap);
-            }
-
-            var markX = _tabX.To(goingTo, 13f);
-            var markW = _tabW.To(_stripW[_tab] + 0.008f, 13f);
-
-            // Under the labels, so it slides behind the words rather than over them. Gold,
-            // faintly, with the mode colour underlining it.
-            Hud.RectFrom(markX - 0.004f, y - 0.004f, markW, 0.024f, Palette.Alpha(Palette.Brand, 26));
-
-            Hud.RectFrom(markX - 0.004f, y + 0.019f, markW, 0.0022f, edge);
-
-            var cx = x;
-
-            for (var i = 0; i < TabNames.Length; i++)
+            for (var i = 0; i < Labels.Length; i++)
             {
                 var here = i == _tab;
-
-                // _tally has TWO entries and the strip has FOUR.
                 var empty = i < 2 && _tally[i] == 0;
 
-                // One of the four in warning colour. POST costs nothing and should not be
-                // dressed as though it did, so DISS is the only label that arrives amber.
-                //
-                // An empty feed tab says so before you press it. NOT Palette.TextDisabled: that
-                // is full alpha and composites BRIGHTER than TextDim, which would make the
-                // empty tab the loudest thing on the row.
-                var ink = here ? (i >= TabDiss ? Palette.Danger : Palette.Text)
-                    : i < 2 ? (empty ? Palette.Alpha(Palette.TextDim, 90) : Palette.TextDim)
-                    : i == TabPost ? Palette.TextDim
-                    : Palette.Alpha(Palette.Warn, 170);
+                var ink = here ? (i == TabDiss ? Pink : Ink)
+                    : i == TabDiss ? Palette.Alpha(Pink, 200)
+                    : empty ? Palette.Alpha(Quiet, 150)
+                    : Quiet;
 
-                Hud.Text(TabNames[i], cx, y, _stripScale, ink, Hud.FontLabel, centre: false);
-
-                cx += _stripW[i] + (i == 1 ? _stripSplit : _stripGap);
-
-                // Looking, and doing. A wide GAP does the work here -- a hairline on its own is
-                // two pixels and cannot carry a divide this important, so the rule sits inside
-                // the gap rather than replacing it.
-                if (i == 1)
-                {
-                    Hud.RectFrom(cx - _stripSplit * 0.5f, y - 0.002f, 0.0022f, 0.020f, SplitInk);
-                }
+                Hud.Text(Labels[i], left + w * (i + 0.5f), ty, 0.30f, ink, Hud.FontChaletLondon);
             }
 
-            if (IsFeedTab)
-            {
-                var n = _tally[_tab];
+            var wide = Measure(Labels[_tab], 0.30f, Hud.FontChaletLondon, 0.03f) + 0.004f;
+            var markX = _tabX.To(left + w * (_tab + 0.5f) - wide * 0.5f, 13f);
+            var markW = _tabW.To(wide, 13f);
 
-                Hud.TextRight(n + (n == 1 ? " POST" : " POSTS"), right, y + 0.0015f, 0.24f,
-                              Palette.TextDim, Hud.FontLabel);
-            }
-            y += 0.032f;
-            ModeRule(x, y, PanelWidth - Pad * 2f, edge);
-            return y + 0.012f;
+            Hud.RectFrom(markX, top + TabsH - 0.0046f, markW, 0.0034f, _tab == TabDiss ? Pink : Blue);
+
+            Hud.RectFrom(left, top + TabsH - 0.0012f, PanelWidth, 0.0012f, Hairline);
+
+            return top + TabsH;
         }
 
-        /// <summary>The list of things you can put out, and what each one costs you.</summary>
+        /// <summary>The keys, in the app's grey, and how far above you the feed goes on.</summary>
+        private void BottomBar(float left, float x, float inner)
+        {
+            var top = PanelTop + PanelHeight - BottomH;
+
+            Hud.RectFrom(left, top, PanelWidth, 0.0012f, Hairline);
+
+            var pad = Hud.OnPad;
+            var ud = pad ? "D-pad up/down" : "Up/down";
+            var lr = pad ? "D-pad left/right" : "Left/right";
+            var ok = pad ? "A" : "Enter";
+            var back = pad ? "B" : "Backspace";
+
+            string keys;
+
+            if (Progress() > 0f) keys = "Keep holding  ·  let go to stop";
+            else if (IsFeedTab) keys = ud + " scroll  ·  " + lr + " tabs  ·  " + back + " out";
+            else if (Rows() == 0) keys = lr + " tabs  ·  " + back + " out";
+            else if (!_live) keys = ud + " pick  ·  " + back + " out";
+            else if (_tab == TabPost) keys = ud + " pick  ·  " + ok + " post  ·  " + back + " out";
+            else keys = ud + " pick  ·  hold " + ok + " send  ·  " + back + " out";
+
+            Hud.Text(keys, x, top + 0.010f, 0.245f, Quiet, Hud.FontChaletLondon, centre: false);
+
+            // The other half of the scroll indicator. HoldPosition bumps the scroll when new
+            // posts land so the one you are reading stays put, which means posts silently
+            // pile up above you; _scroll is that number.
+            if (IsFeedTab && _scroll > 0)
+            {
+                Hud.TextRight(_scroll + " above", inner, top + 0.010f, 0.245f, Quiet, Hud.FontChaletLondon);
+            }
+        }
+
+        /// <summary>Where you are in the feed, down the right edge. Nothing drawn when it all fits.</summary>
+        private void Rail(float right, float top, float bottom, int count, int shown)
+        {
+            if (shown <= 0 || count <= shown) return;
+
+            var rx = right - Hud.ToX(0.0044f);
+            var rw = Hud.ToX(0.0022f);
+            var h = bottom - top;
+
+            Hud.RectFrom(rx, top, rw, h, Palette.Alpha(Quiet, 60));
+
+            var thumbH = Math.Max(h * 0.06f, h * (shown / (float)count));
+
+            var pos = _scroll / (float)(count - shown);
+            if (pos < 0f) pos = 0f;
+            if (pos > 1f) pos = 1f;
+
+            Hud.RectFrom(rx, top + (h - thumbH) * pos, rw, thumbH, Palette.Alpha(Quiet, 200));
+        }
+
+        /// <summary>An empty tab, saying which kind of empty it is, centred in the void.</summary>
+        private void Nothing(float top)
+        {
+            var head = _tab == 0 ? "Nothing here yet" : "Nobody's said your name";
+            var sub = _tab == 0 ? "Go and do something." : "Give them something to talk about.";
+
+            var ey = top + 0.150f;
+
+            Hud.File("reply.png", 0.5f, ey, 0.044f, 0f, Palette.Alpha(Quiet, 90));
+            Hud.Text(head, 0.5f, ey + 0.036f, 0.36f, Ink, Hud.FontChaletLondon);
+            Hud.Text(sub, 0.5f, ey + 0.068f, 0.28f, Quiet, Hud.FontChaletLondon);
+        }
+
+        // ---- the composer and the diss list --------------------------------------
+
         /// <summary>
-        /// The composer and the diss list, laid out from wherever the tabs actually finished.
+        /// The composer and the diss list, laid out from wherever the tabs finished.
         ///
-        /// It used to start at a fixed height and so did its rows -- two numbers typed in when
-        /// the header was a different size. The header has been rebuilt twice since, the tab
-        /// strip moved down with it, and this page stayed where it was: the section label ended
-        /// up printed through the tab labels, which is what "ALL" written over "SAY SOMETHING"
-        /// in a screenshot actually is.
-        ///
-        /// Everything on the page is measured from the top it is handed now, so it cannot come
-        /// apart again the next time anything above it changes height.
+        /// A list of things you can say rather than a box you type in, because there is no
+        /// keyboard here -- but dressed as the app's compose sheet: the question at the top,
+        /// the rows under it, the one you are on with the app's grey ground and a blue edge.
         /// </summary>
-        private void Action(float left, float x, float right, float top)
+        private void Action(float left, float x, float inner, float top, float bottom)
         {
             var rows = Rows();
-            var head = _tab == TabPost ? "SAY SOMETHING" : "WHO";
+            var head = _tab == TabPost ? "What's happening?" : "Who are you naming?";
 
-            Hud.Text(head, x, top, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
-            Theme.Rule(x, top + 0.022f, PanelWidth - Pad * 2f);
+            Hud.Text(head, x, top + 0.008f, 0.34f, Quiet, Hud.FontChaletLondon, centre: false);
 
-            var first = top + 0.034f;
+            var first = top + 0.040f;
             var t = Progress();
 
-            // The plate comes up under the row the cursor lands on and goes down under the one
-            // it left, and the frame travels between them. Same as every other screen.
             var grown = Theme.Grown(_pickedAt);
 
-            // Whatever fits between here and the floor, rather than a count that was true when
-            // the page began higher up.
-            var maxRows = (int)((PanelTop + PanelHeight - 0.120f - first) / RowPitch);
+            // Whatever fits between here and the note strip.
+            var maxRows = (int)((bottom - 0.116f - first) / RowPitch);
             var draw = Math.Min(rows, Math.Max(1, maxRows));
 
             for (var i = 0; i < draw; i++)
@@ -1064,13 +1042,8 @@ namespace Hoodrich.UI
                 {
                     label = Says[i].Label;
 
-                    // THE BUTTON NAMES WHAT IS ACTUALLY GOING OUT.
-                    //
-                    // It always read "About the day" and then posted about the corner you were
-                    // stood on, which is the one thing a compose button must not do -- you
-                    // press it to say a particular thing and it says a different one. Now the
-                    // row is rewritten from the same resolver that picks the post, so the two
-                    // cannot disagree.
+                    // THE BUTTON NAMES WHAT IS ACTUALLY GOING OUT. The row is rewritten from
+                    // the same resolver that picks the post, so the two cannot disagree.
                     if (i == 0 && Topic != null)
                     {
                         try
@@ -1086,8 +1059,9 @@ namespace Hoodrich.UI
                             // The written label is a perfectly good fallback.
                         }
                     }
-                    value = "FREE";
-                    valueInk = Palette.Cash;
+
+                    value = "Free";
+                    valueInk = Green;
                 }
                 else
                 {
@@ -1098,22 +1072,18 @@ namespace Hoodrich.UI
 
                     // A four-character tag that is readable beats a name that is cut off. It is
                     // a bad thing to aim a war at a name you cannot read.
-                    try
+                    if (Measure(label, 0.30f, Hud.FontChaletLondon, 0f) > PanelWidth * 0.62f)
                     {
-                        if (Hud.MeasureText(label, 0.30f, Hud.FontChaletLondon) > 0.230f)
-                        {
-                            label = gang.Tag;
-                        }
+                        label = gang.Tag;
                     }
-                    catch { /* the name will do */ }
 
                     var beefing = Crew != null && Crew.Beefing(gang.Id);
 
-                    value = beefing ? "ALREADY BEEFING" : gang.Tag;
-                    valueInk = beefing ? Palette.Warn : Palette.TextDim;
+                    value = beefing ? "Already beefing" : gang.Tag;
+                    valueInk = beefing ? Pink : Quiet;
                 }
 
-                Row(left, x, right, rowY, here, !_live, Theme.Lit(i, _pick, _lastPick, grown),
+                Row(left, x, inner, rowY, here, !_live, Theme.Lit(i, _pick, _lastPick, grown),
                     tick, label, value, valueInk, here && t > 0f ? t : 0f, Art(i));
             }
 
@@ -1122,29 +1092,23 @@ namespace Hoodrich.UI
                 Hud.Text(_tab == TabDiss
                              ? "Nobody worth the trouble"
                              : "There's nobody you're not already with",
-                         x + 0.006f, first + 0.006f, 0.30f,
-                         Palette.Alpha(Palette.TextDim, 110), Hud.FontChaletLondon, centre: false);
+                         x + 0.004f, first + 0.006f, 0.30f, Palette.Alpha(Quiet, 200),
+                         Hud.FontChaletLondon, centre: false);
             }
 
             var after = first + Math.Max(1, draw) * RowPitch;
 
-            NoteStrip(x, right, after + NoteGap, t);
+            NoteStrip(left, x, inner, after + NoteGap, t);
 
-            // Under the whole note strip rather than through the middle of it. The strip is a
-            // rule, a heading and three lines -- about a tenth of the panel -- and the gap that
-            // used to be here was half of that, which put "WHAT YOU'VE SAID" across the line
-            // explaining what the thing above it costs.
-            if (_tab == TabPost) Yours(left, x, after + NoteGap + NoteStripH);
+            if (_tab == TabPost) Yours(left, x, after + NoteGap + NoteStripH, bottom);
         }
 
         /// <summary>How tall the note strip is: its rule, its heading and its three lines.</summary>
         private const float NoteStripH = 0.100f;
 
         /// <summary>
-        /// The picture for one row of whichever list is up.
-        ///
-        /// The sets have their own art already -- it is on the wheel and in the war readouts --
-        /// and this was the one list of gangs in the mod that showed a coloured tick instead.
+        /// The picture for one row of whichever list is up: the sets have their own art, and
+        /// the things you can say get the phone.
         /// </summary>
         private string Art(int i)
         {
@@ -1157,27 +1121,18 @@ namespace Hoodrich.UI
         }
 
         /// <summary>
-        /// Everything you have said, under the box you say it in.
-        ///
-        /// The page used to be a button and a word. You pressed post, it said "Posted.", and
-        /// the thing you had just written went into a feed on another tab -- so the one screen
-        /// in the mod where you are the author was the one screen that never showed you what
-        /// you wrote. Now it does, newest first, which means the post you just made is the top
-        /// line before the confirmation has faded.
-        ///
-        /// Drawn with the feed's own card, deliberately. A second, simpler layout for the same
-        /// object would be two things to keep in step, and your posts are not a different kind
-        /// of post -- they are the same post with your name on it.
+        /// Everything you have said, under the box you say it in, newest first -- drawn with
+        /// the feed's own post, because your posts are not a different kind of post.
         /// </summary>
-        private void Yours(float left, float x, float top)
+        private void Yours(float left, float x, float top, float bottom)
         {
             if (_feed == null) return;
 
-            Hud.Text("WHAT YOU'VE SAID", x, top, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
-            Theme.Rule(x, top + 0.022f, PanelWidth - Pad * 2f);
+            Hud.Text("Your posts", x, top + 0.004f, 0.30f, Quiet, Hud.FontChaletLondon, centre: false);
+            Hud.RectFrom(left, top + 0.030f, PanelWidth, 0.0012f, Hairline);
 
-            var y = top + 0.034f;
-            var floor = PanelTop + PanelHeight - 0.034f;
+            var y = top + 0.032f;
+            var floor = bottom - 0.004f;
             var shown = 0;
 
             foreach (var post in _feed.Timeline)
@@ -1196,127 +1151,103 @@ namespace Hoodrich.UI
 
             if (shown > 0) return;
 
-            Hud.Text("Nothing yet. Say something.", x + 0.006f, y + 0.004f, 0.30f,
-                     Palette.Alpha(Palette.TextDim, 110), Hud.FontChaletLondon, centre: false);
+            Hud.Text("Nothing yet. Say something.", x + 0.004f, y + 0.006f, 0.30f,
+                     Palette.Alpha(Quiet, 200), Hud.FontChaletLondon, centre: false);
         }
 
         /// <summary>
-        /// Theme.Rule with the stroke in the MODE colour rather than the ember: red under the
-        /// tabs that start fights, ember everywhere else. The one place the mode colour lives
-        /// now the bar along the top is gone.
+        /// One row of the list: the app's grey ground under the one the cursor is on with a
+        /// blue edge, the set's colour as a tick, its art, its name, and what it costs on the
+        /// right. The hold fills a bar along the bottom in the colour of the tab.
         /// </summary>
-        private static void ModeRule(float x, float y, float width, Color edge)
-        {
-            Hud.RectFrom(x, y, width, 0.0012f, Theme.Hairline);
-            Hud.RectFrom(x, y - 0.0004f, width * 0.14f, 0.0020f, Palette.Alpha(edge, 215));
-        }
-
-        /// <summary>A darker version of a colour, for edges and rings.</summary>
-        private static Color Shade(Color c, float by)
-        {
-            return Color.FromArgb(c.A, (int)(c.R * by), (int)(c.G * by), (int)(c.B * by));
-        }
-
-        private void Row(float left, float x, float right, float top, bool here, bool dead, float lit,
+        private void Row(float left, float x, float inner, float top, bool here, bool dead, float lit,
                          Color tick, string label, string value, Color valueInk, float fill,
                          string art = "")
         {
             // Under a dead row the cursor is still visibly SOMEWHERE, but visibly on something
-            // inert: the plate at a third of its strength.
-            var plate = dead ? lit * 0.35f : lit;
+            // inert: the ground at a third of its strength.
+            var under = dead ? lit * 0.35f : lit;
 
-            Theme.Plate(left + 0.002f, top, PanelWidth - 0.012f, RowHeight, plate);
-            Theme.Sheen(left + 0.002f, top, PanelWidth - 0.012f, RowHeight, plate);
+            if (under > 0.01f)
+            {
+                Hud.RectFrom(left, top, PanelWidth, RowHeight, Color.FromArgb((int)(18f * under), 255, 255, 255));
+                Hud.RectFrom(left, top, Hud.ToX(0.0024f), RowHeight,
+                             Palette.Alpha(_tab == TabDiss ? Pink : Blue, (int)(255f * under)));
+            }
 
-            if (here) _glide.Target(left + 0.002f, top, PanelWidth - 0.012f, RowHeight);
+            if (here) _glide.Target(left, top, PanelWidth, RowHeight);
 
-            var textX = x + 0.006f;
+            var textX = x + 0.004f;
 
             if (tick.A > 0)
             {
                 // Their own colour, which is the one identity mark that costs no width.
-                Hud.RectFrom(x, top + 0.006f, 0.0022f, 0.018f,
-                             dead ? Palette.Alpha(tick, 90) : tick);
-
-                textX = x + 0.010f;
+                Hud.RectFrom(textX, top + 0.006f, Hud.ToX(0.0022f), 0.018f, dead ? Palette.Alpha(tick, 90) : tick);
+                textX += 0.008f;
             }
 
-            // And their own art after it, if this install has the file. A row with no picture
-            // simply keeps its words where they were.
             if (!string.IsNullOrEmpty(art) &&
                 Hud.File(art, textX + Hud.ToX(RowArt) * 0.5f, top + 0.015f, RowArt, 0f,
-                         Theme.Ink(dead ? Palette.Alpha(Palette.TextDim, 110) : Palette.Text, plate)))
+                         dead ? Palette.Alpha(Quiet, 160) : Ink))
             {
                 textX += Hud.ToX(RowArt) + 0.006f;
             }
 
-            var ink = Theme.Ink(dead ? Palette.Alpha(Palette.TextDim, 110)
-                             : here ? Palette.Text
-                             : Palette.Alpha(Palette.Text, 175), plate);
+            var ink = dead ? Palette.Alpha(Quiet, 200) : here ? Ink : Palette.Alpha(Ink, 190);
 
             Hud.Text(label, textX, top + 0.006f, 0.30f, ink, Hud.FontChaletLondon, centre: false);
 
             if (!string.IsNullOrEmpty(value))
             {
-                Hud.TextRight(value, right, top + 0.008f, 0.24f,
-                              Theme.Ink(dead ? Palette.Alpha(Palette.TextDim, 110) : valueInk, plate),
-                              Hud.FontLabel);
+                Hud.TextRight(value, inner, top + 0.008f, 0.25f, dead ? Palette.Alpha(Quiet, 200) : valueInk,
+                              Hud.FontChaletLondon);
             }
 
             if (fill > 0f)
             {
-                Hud.RectFrom(left + 0.002f, top + RowHeight - 0.0022f,
-                             (PanelWidth - 0.012f) * fill, 0.0022f, Palette.Danger);
+                Hud.RectFrom(left, top + RowHeight - 0.0024f, PanelWidth * fill, 0.0024f,
+                             _tab == TabDiss ? Pink : Blue);
             }
         }
 
         /// <summary>
-        /// What this row actually does, rewritten every frame from the row the cursor is on.
-        ///
-        /// Under the list rather than at the top of the tab, because on a nine-row list a
-        /// warning above the list is most of a screen away from the thing it warns about -- and
-        /// the moment that matters is the moment your thumb is on the key. Stronger than the
-        /// wheel page ever was: that showed one warning for a whole sub-page, this one names
-        /// the set.
+        /// What this row actually does, rewritten every frame from the row the cursor is on,
+        /// under the list, because the moment that matters is the moment your thumb is on
+        /// the key. A result or a refusal replaces the lines and keeps the head, so the set
+        /// you are aiming at never leaves the screen while you are aiming at it.
         /// </summary>
-        private void NoteStrip(float x, float right, float top, float t)
+        private void NoteStrip(float left, float x, float inner, float top, float t)
         {
-            Theme.Rule(x, top, PanelWidth - Pad * 2f);
+            Hud.RectFrom(left, top, PanelWidth, 0.0012f, Hairline);
 
             // The hold again, across the words it is about, so the bar and the warning read as
             // one object rather than two.
             if (t > 0f)
             {
-                Hud.RectFrom(x, top - 0.004f, (PanelWidth - Pad * 2f) * t, 0.0022f, Palette.Danger);
+                Hud.RectFrom(left, top - 0.0024f, PanelWidth * t, 0.0024f, _tab == TabDiss ? Pink : Blue);
             }
 
-            // Assigned here rather than by every branch. The chain below used to end in an
-            // unconditional else -- the call-out card -- so the compiler could see that one of
-            // them always ran. With that card gone the chain can fall through, and a header
-            // that draws nothing is better than one that cannot compile.
             var headTxt = "";
-            var headInk = Palette.TextDim;
+            var headInk = Quiet;
             var icon = "";
 
             string l1 = "", l2 = "", l3 = "";
-            Color i1 = Palette.TextDim, i2 = Palette.TextDim, i3 = Palette.TextDim;
+            Color i1 = Quiet, i2 = Quiet, i3 = Quiet;
 
             if (!_live)
             {
-                headTxt = "NOT RIGHT NOW";
-                headInk = Palette.Warn;
+                headTxt = "Not right now";
+                headInk = Pink;
                 l1 = _why;
             }
             else if (_tab == TabPost)
             {
                 headTxt = Says[_pick].Head;
-                headInk = Palette.TextDim;
                 icon = "reply.png";
                 l1 = Says[_pick].Line;
 
                 // The strip explains the row above it, so it has to be told the same thing the
-                // row was. A button reading "About the job you just did" over a heading reading
-                // ABOUT THE DAY is two answers to one question.
+                // row was.
                 if (_pick == 0 && Topic != null)
                 {
                     try
@@ -1325,7 +1256,7 @@ namespace Hoodrich.UI
 
                         if (topic != null && topic.Length > 2 && topic[2].Length > 0)
                         {
-                            headTxt = topic[2].ToUpperInvariant();
+                            headTxt = topic[2];
 
                             if (topic.Length > 1 && topic[1].Length > 0)
                             {
@@ -1343,19 +1274,17 @@ namespace Hoodrich.UI
             {
                 var g = _dissList[_pick];
 
-                headTxt = "NAMING " + g.Name.ToUpperInvariant();
-                headInk = Palette.Danger;
+                headTxt = "Naming " + g.Name;
+                headInk = Pink;
                 icon = "megaphone.png";
 
                 l1 = "They answer -- on here, within the minute.";
                 l2 = "Then -- somebody comes to find you.";
-                i2 = Palette.Danger;
+                i2 = Pink;
                 l3 = string.IsNullOrEmpty(g.TurfHint) ? "Say it where they can see it" : g.TurfHint;
-                i3 = Palette.Alpha(Palette.TextDim, 150);
+                i3 = Palette.Alpha(Quiet, 190);
             }
 
-            // A result or a refusal replaces the LINES and keeps the HEAD, so the set you are
-            // aiming at never leaves the screen at the moment you are aiming at it.
             if (_note != null && Game.GameTime - _noteAt < NoteMs)
             {
                 l1 = _note;
@@ -1373,268 +1302,260 @@ namespace Hoodrich.UI
                 hx = x + Hud.ToX(0.018f) + 0.006f;
             }
 
-            Hud.Text(headTxt, hx, top + 0.008f, 0.25f, headInk, Hud.FontLabel, centre: false);
+            Hud.Text(Heading(headTxt), hx, top + 0.008f, 0.29f, headInk, Hud.FontChaletLondon, centre: false);
 
             // The mark slot: the whole feedback channel for the hold, three states and no more.
             var mark = "";
-            var markInk = Palette.Warn;
+            var markInk = Blue;
 
-            if (t > 0f) mark = "RELEASE TO STOP";
+            if (t > 0f) mark = "Release to stop";
             else if (_nudge != null && Game.GameTime - _nudgeAt < NudgeMs)
             {
                 mark = _nudge;
-                markInk = Palette.Danger;
+                markInk = Pink;
             }
             else _nudge = null;
 
             if (mark != "")
             {
-                Hud.TextRight(mark, right, top + 0.008f, 0.24f, markInk, Hud.FontLabel);
+                Hud.TextRight(mark, inner, top + 0.008f, 0.25f, markInk, Hud.FontChaletLondon);
             }
 
-            var w = PanelWidth - Pad * 2f;
+            var w = inner - x;
 
-            if (l1 != "") Hud.Text(Hud.Fit(l1, w, 0.27f, Hud.FontBody), x, top + 0.030f, 0.27f,
-                                   i1, Hud.FontBody, centre: false);
-            if (l2 != "") Hud.Text(Hud.Fit(l2, w, 0.27f, Hud.FontBody), x, top + 0.052f, 0.27f,
-                                   i2, Hud.FontBody, centre: false);
-            if (l3 != "") Hud.Text(Hud.Fit(l3, w, 0.27f, Hud.FontBody), x, top + 0.074f, 0.27f,
-                                   i3, Hud.FontBody, centre: false);
+            if (l1 != "") Hud.Text(Hud.Fit(l1, w, 0.27f, Hud.FontBody), x, top + 0.032f, 0.27f, i1, Hud.FontBody, centre: false);
+            if (l2 != "") Hud.Text(Hud.Fit(l2, w, 0.27f, Hud.FontBody), x, top + 0.054f, 0.27f, i2, Hud.FontBody, centre: false);
+            if (l3 != "") Hud.Text(Hud.Fit(l3, w, 0.27f, Hud.FontBody), x, top + 0.076f, 0.27f, i3, Hud.FontBody, centre: false);
         }
+
+        /// <summary>The composer's headings were written in capitals for the condensed face; the app's face wants a sentence.</summary>
+        private static string Heading(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
+            if (s != s.ToUpperInvariant()) return s;
+
+            var lower = s.ToLowerInvariant();
+            return char.ToUpperInvariant(lower[0]) + lower.Substring(1);
+        }
+
+        // ---- a post -------------------------------------------------------------
 
         /// <summary>
-        /// Where you are in the feed, in the margin.
+        /// How new this one is, from 1 the instant it lands to 0 once it has settled in.
         ///
-        /// The rack has no equivalent because it shows everything at once, so this is
-        /// invented -- but invented in the hub's own vocabulary: the hub says "you are here in
-        /// a list" with a thin accent bar on a row's left edge, and this is the same sentence
-        /// on the other axis.
+        /// Two different windows because they are two different jobs. The SLIDE is a movement
+        /// and has to be over almost before you notice it; the GLOW is a marker and has to
+        /// outlast the movement, or the one thing it exists to point at is gone before you
+        /// have looked up.
         /// </summary>
-        private void Rail(float left, float top, float bottom, int count, int shown)
+        private static float Landing(Post post, int windowMs)
         {
-            // Nothing to scroll, so nothing drawn. A full-length thumb that never moves is
-            // furniture, and on a three-post tab it is a lie about there being more.
-            if (shown <= 0 || count <= shown) return;
-
-            var rx = left + PanelWidth - 0.0062f;
-            var h = bottom - top;
-
-            Hud.RectFrom(rx, top, 0.0022f, h, Color.FromArgb(30, 200, 205, 200));
-
-            // A floor, so an eighty-post feed still gets a thumb rather than a tick mark.
-            var thumbH = Math.Max(h * 0.06f, h * (shown / (float)count));
-
-            // count - shown, not count: it is what makes the thumb land flush at the bottom
-            // exactly when the last post is on screen, which is the one thing a scroll
-            // indicator has to be able to say.
-            var pos = _scroll / (float)(count - shown);
-            if (pos < 0f) pos = 0f;
-            if (pos > 1f) pos = 1f;
-
-            Hud.RectFrom(rx, top + (h - thumbH) * pos, 0.0022f, thumbH,
-                         Palette.Alpha(Palette.Brand, 160));
-        }
-
-        /// <summary>
-        /// An empty tab, saying which kind of empty it is.
-        ///
-        /// The only place on this panel where the left alignment is deliberately broken. An
-        /// empty panel has no column to align to, and a dim sentence hanging off the left edge
-        /// of a screen-tall void looks like something failed to draw.
-        /// </summary>
-        private void Nothing(float top)
-        {
-            var head = _tab == 0 ? "NOTHING YET" : "NOBODY'S SAID YOUR NAME";
-            var sub = _tab == 0 ? "Go and do something." : "Give them something to talk about.";
-
-            var ey = top + 0.150f;
-
-            // A ghost bubble: not a picture, a centre for the void, so the panel reads as empty
-            // on purpose rather than as broken. No new art -- it is reply.png at low alpha.
-            Hud.File("reply.png", 0.5f, ey, 0.044f, 0f, Color.FromArgb(34, 200, 205, 200));
-
-            Hud.Text(head, 0.5f, ey + 0.036f, 0.26f, Palette.TextDim, Hud.FontLabel);
-            Hud.Text(sub, 0.5f, ey + 0.060f, 0.28f, Palette.Alpha(Palette.TextDim, 140), Hud.FontBody);
-        }
-
-        private void Keys(float x, float right)
-        {
-            var y = PanelTop + PanelHeight - 0.019f;
-
-            Theme.Rule(x, PanelTop + PanelHeight - 0.026f, PanelWidth - Pad * 2f);
-
-            // "TABS" rather than "FILTER", which would be a lie about half the strip now. And
-            // every line ends in BACKSPACE OUT, so the way out is the last thing read in every
-            // state.
-            string keys;
-
-            if (Progress() > 0f) keys = "KEEP HOLDING      LET GO TO STOP";
-            else if (IsFeedTab) keys = "UP/DOWN  SCROLL      LEFT/RIGHT  TABS      BACKSPACE  OUT";
-            else if (Rows() == 0) keys = "LEFT/RIGHT  TABS      BACKSPACE  OUT";
-            else if (!_live) keys = "UP/DOWN  PICK      BACKSPACE  OUT";
-            else if (_tab == TabPost) keys = "UP/DOWN  PICK      ENTER  POST      BACKSPACE  OUT";
-            else keys = "UP/DOWN  PICK      HOLD ENTER  SEND      BACKSPACE  OUT";
-
-            Hud.Text(keys, x, y, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
-
-            // The other half of the scroll indicator, and nearly free. HoldPosition bumps the
-            // scroll when new posts land so the one you are reading stays put, which means the
-            // reader silently accumulates unread posts above them with nothing saying so.
-            // _scroll IS that number.
-            if (IsFeedTab && _scroll > 0)
+            try
             {
-                Hud.TextRight(_scroll + " ABOVE", right, y, 0.24f, Palette.TextDim, Hud.FontLabel);
+                var age = Game.GameTime - post.At;
+
+                // Out of a save. It landed in another session and is not new to anybody.
+                if (age < 0 || age >= windowMs) return 0f;
+
+                return 1f - age / (float)windowMs;
+            }
+            catch
+            {
+                return 0f;
+            }
+        }
+
+        private const int SlideMs = 420;
+        private const int GlowMs = 6000;
+
+        /// <summary>
+        /// How long each post waits behind the one above it on the way in, and how long its
+        /// own move takes. Short: a list that assembles itself in the half-second after the
+        /// button reads as a thing being fetched.
+        /// </summary>
+        private const int DealStepMs = 38;
+        private const int DealMoveMs = 260;
+
+        /// <summary>Where this post is in its own arrival, from 1 to 0.</summary>
+        private float Dealing(int slot)
+        {
+            try
+            {
+                var since = Game.GameTime - _openedAt - slot * DealStepMs;
+
+                if (since >= DealMoveMs) return 0f;
+                if (since <= 0) return 1f;
+
+                return 1f - since / (float)DealMoveMs;
+            }
+            catch
+            {
+                return 0f;
             }
         }
 
         /// <summary>
-        /// Your own card at the top: face, name, and the number that moves.
-        ///
-        /// The face sits BESIDE the title rather than under it, which is the whole rearrangement.
-        /// A 0.74 cursive line with flourishes stacked directly above content in the same column
-        /// is a collision waiting on one bad estimate; putting the face alongside removes the
-        /// possibility instead of budgeting for it. That also drops the card from 0.108 to
-        /// 0.084, which is where the tab strip's height comes from.
-        ///
-        /// And the text column here is now EXACTLY the post text column. It used to sit a few
-        /// thousandths to the right of it, which read as a second ragged left edge down a narrow
-        /// panel.
+        /// One post, the app's way: the face on the left, the name with its tick and then the
+        /// handle and the age in grey on the same line, the words, then reply, repost and like
+        /// as grey glyphs with grey numbers spread under them, and a hairline before the next.
+        /// Something about you gets the faint ground the app gives a highlighted post and a
+        /// blue edge; something new lands on a wash of blue that burns off.
         /// </summary>
-        private float DrawHeader(float left, float right, Color edge)
+        private void DrawPost(float left, float top, Post post, int slot = 0)
         {
-            // NO CARD GROUND. It was a square slab of grey drawn over the top of a panel whose
-            // top corners are round, and with the frame gone that squared them off. The panel's
-            // own wash is the masthead's ground now, which is what the wash is for.
-            var headX = left + Pad + Hud.ToX(AvatarSize) + 0.010f;
-            var middle = left + PanelWidth * 0.5f;
+            if (post == null || post.By == null) return;
 
-            // The mark over the middle of the panel, the same letterhead every other screen in
-            // the mod carries.
-            Hud.BrandCentre(middle, PanelTop + 0.023f, 0.024f,
-                            Palette.Alpha(Palette.Text, 225));
+            var lines = Lines(post);
 
-            // And the word under it, centred on the same axis, in the face the rest of the mod
-            // reads in rather than the script one.
-            //
-            // It used to sit out on the left in cursive, against the avatar, which put three
-            // different things -- a logo, a title and a name -- on three different alignments
-            // in one header. Logo and title share a centreline now and the account owns the
-            // left, which is two rules instead of none.
-            Hud.Text("SOCIALS", middle, TitleTop, TitleScale, Palette.Text,
-                     Hud.FontChaletLondon);
+            var slide = Landing(post, SlideMs);
+            var glow = Landing(post, GlowMs);
 
-            Live(middle, TitleTop + 0.0080f);
+            // Two reasons a post can be moving and they do not add up: the bigger of the two
+            // wins and the other is along for the ride.
+            var move = Math.Max(slide * slide, Dealing(slot));
+            var shift = move > 0f ? Hud.ToX(0.045f) * move : 0f;
 
-            // A rule under the two of them, so the masthead is visibly a masthead and the
-            // account below it is visibly the account.
-            Theme.Rule(left + Pad, PanelTop + 0.0635f, PanelWidth - Pad * 2f);
+            var h = PostHeight(post) - 0.0012f;
 
-            // The masthead's floor, in the mode colour: where the account stops and the strip
-            // starts, and red on the tabs that start fights.
-            Hud.RectFrom(left + Pad, PanelTop + CardHeight - 0.0012f, PanelWidth - Pad * 2f, 0.0012f,
-                         Palette.Alpha(edge, 110));
+            if (glow > 0f)
+            {
+                Hud.RectFrom(left, top, PanelWidth, h, Palette.Alpha(Blue, (int)(34f * glow)));
+            }
 
-            var cx = left + Pad + Hud.ToX(HeadSize) * 0.5f;
-            var cy = PanelTop + 0.0935f;
+            if (post.AboutYou)
+            {
+                Hud.RectFrom(left, top, PanelWidth, h, Color.FromArgb(14, 255, 255, 255));
+                Hud.RectFrom(left, top, Hud.ToX(0.0024f), h, Blue);
+            }
 
+            var x = left + Pad + shift;
+            var cx = x + Hud.ToX(AvatarSize) * 0.5f;
+            var cy = top + PostPad + AvatarSize * 0.5f;
+
+            if (!Avatar(post, cx, cy))
+            {
+                // A tinted square with the initial on it until the face arrives. One rectangle.
+                Hud.RectFrom(cx - Hud.ToX(AvatarSize) * 0.5f, cy - AvatarSize * 0.5f,
+                             Hud.ToX(AvatarSize), AvatarSize, post.By.Tint);
+
+                Hud.Text(post.By.Initial, cx, cy - 0.0135f, 0.46f,
+                         Color.FromArgb(235, 250, 250, 248), Hud.FontChaletLondon);
+            }
+
+            var textX = x + Hud.ToX(AvatarSize) + 0.010f;
+            var inner = left + PanelWidth - Pad;
+            var y = top + PostPad;
+
+            Hud.Text(post.By.Name, textX, y, NameScale, Ink, Hud.FontChaletLondon, centre: false);
+
+            var tail = textX + Measure(post.By.Name, NameScale, Hud.FontChaletLondon, 0.06f) + 0.005f;
+
+            if (post.By.Verified)
+            {
+                Badge(tail, y + 0.011f, 0.015f);
+                tail += Hud.ToX(0.015f) + 0.005f;
+            }
+
+            // The handle gives way to the column, never the name.
+            var stamp = Hud.Fit(post.By.Handle + " · " + SocialFeed.Ago(post.At),
+                                Math.Max(0.02f, inner - tail), StampScale, Hud.FontChaletLondon);
+
+            Hud.Text(stamp, tail, y + 0.0035f, StampScale, Quiet, Hud.FontChaletLondon, centre: false);
+
+            y += MetaH;
+
+            foreach (var line in lines)
+            {
+                // Through Emoji, which is a plain Hud.Text for any line without a picture in
+                // it and runs of text with sprites between them for the ones that have.
+                Emoji.Draw(line, textX, y, BodyScale, Ink, Hud.FontBody);
+                y += LineHeight;
+            }
+
+            y += 0.004f;
+
+            var span = inner - textX;
+
+            Metric("reply.png", "replies", post.RepliesNow, textX, y);
+            Metric("repost.png", "reposts", post.RepostsNow, textX + span * 0.30f, y);
+            Metric("like.png", "likes", post.LikesNow, textX + span * 0.60f, y);
+
+            Hud.RectFrom(left, top + h, PanelWidth, 0.0012f, Hairline);
+        }
+
+        /// <summary>One engagement figure: the glyph, then the number, both in the app's grey. The word only if the art is missing.</summary>
+        private static void Metric(string file, string word, int value, float x, float y)
+        {
+            var drawn = Hud.File(file, x + Hud.ToX(MetricIcon) * 0.5f, y + 0.0075f, MetricIcon, 0f,
+                                 Palette.Alpha(Quiet, 210));
+
+            Hud.Text(drawn ? value.ToString() : value + " " + word,
+                     drawn ? x + Hud.ToX(MetricIcon) + 0.005f : x, y, 0.25f, Quiet, Hud.FontChaletLondon,
+                     centre: false);
+        }
+
+        /// <summary>
+        /// How tall one post is. DrawPost MUST lay out inside this or posts overlap: air, the
+        /// name line, the words, a breath, the figures, air, and the hairline is the last
+        /// slice of the air.
+        /// </summary>
+        private float PostHeight(Post post)
+        {
+            var lines = Math.Max(1, Lines(post).Count);
+
+            return PostPad + MetaH + lines * LineHeight + 0.004f + ActionsH + PostPad;
+        }
+
+        // ---- faces and marks ----------------------------------------------------
+
+        /// <summary>Your own face at a size, or a square with your initial until the render lands.</summary>
+        private void Face(float cx, float cy, float size)
+        {
             if (MugshotReady())
             {
-                Hud.Sprite(_mugshotTxd, _mugshotTxd, cx, cy, Hud.ToX(HeadSize), HeadSize, 0f, Color.White);
-            }
-            else
-            {
-                // Until the render lands, a disc rather than a hole.
-                Hud.Disc(cx, cy, HeadSize * 0.5f, Color.FromArgb(255, 58, 72, 60));
-
-                // Your initial, not a hardcoded F. It stops being wrong the first time somebody
-                // renames the account.
-                var initial = string.IsNullOrEmpty(_feed.DisplayName)
-                    ? "F"
-                    : _feed.DisplayName.Substring(0, 1).ToUpperInvariant();
-
-                Hud.Text(initial, cx, cy - 0.016f, 0.60f, Palette.Text, Hud.FontChaletLondon);
+                Hud.Sprite(_mugshotTxd, _mugshotTxd, cx, cy, Hud.ToX(size), size, 0f, Color.White);
+                return;
             }
 
-            // The name where the title used to be, and the handle UNDER it rather than trailing
-            // off the end of it. A name and a handle on one line is one long string that reads
-            // as neither; stacked, the name is who and the handle is where.
-            Hud.Text(_feed.DisplayName, headX, PanelTop + 0.0695f, 0.42f, Palette.Text,
-                     Hud.FontChaletLondon, centre: false);
+            Hud.RectFrom(cx - Hud.ToX(size) * 0.5f, cy - size * 0.5f, Hud.ToX(size), size,
+                         Color.FromArgb(255, 58, 72, 60));
 
-            var nw = 0.06f;
-            try { nw = Hud.MeasureText(_feed.DisplayName, 0.42f, Hud.FontChaletLondon); }
-            catch { /* the estimate will do */ }
+            var initial = string.IsNullOrEmpty(_feed.DisplayName)
+                ? "F"
+                : _feed.DisplayName.Substring(0, 1).ToUpperInvariant();
 
-            // A tick after it, drawn rather than loaded: a filled disc with the tick art punched
-            // over it in the panel's own dark, which is the same two calls every other badge in
-            // this mod is made of.
-            var badge = headX + nw + 0.008f;
-
-            Hud.Disc(badge, PanelTop + 0.0785f, 0.0062f, Palette.Alpha(Palette.Cash, 225));
-            Hud.File("tick.png", badge, PanelTop + 0.0785f, 0.0092f, 0f,
-                     Color.FromArgb(255, 18, 20, 22));
-
-            Hud.Text(_feed.Handle, headX, PanelTop + 0.0955f, 0.28f,
-                     Palette.TextDim, Hud.FontLabel, centre: false);
-
-            // The wheel panel's "owed a visit" row, in a slot that already existed and was
-            // already right-aligned -- so it is visible the frame the screen opens rather than
-            // four tabs away, and it costs no layout.
-            // The one number, right, in the money colour -- the hub's exact title rhythm, with
-            // the little crowd beside it so it does not need the word FOLLOWERS to say what it
-            // counts.
-            var count = _feed.Followers.ToString("N0");
-
-            Hud.TextRight(count, right, PanelTop + 0.0625f, 0.42f, Gained(), Hud.FontChaletLondon);
-
-            var cw = 0.05f;
-            try { cw = Hud.MeasureText(count, 0.42f, Hud.FontChaletLondon); }
-            catch { /* the estimate will do */ }
-
-            Hud.File("people.png", right - cw - 0.011f, PanelTop + 0.0785f, 0.0145f, 0f,
-                     Palette.Alpha(Gained(), 200));
-
-            var payback = PaybackDue != null && PaybackDue();
-
-            Hud.TextRight(payback
-                              ? "SOMEBODY'S COMING"
-                              : _feed.Following.ToString("N0") + " FOLLOWING",
-                          right, PanelTop + 0.0895f, 0.24f,
-                          payback ? Palette.Danger : Palette.TextDim, Hud.FontLabel);
-
-            // No underline here. The tab strip's rule closes the masthead, and two full-width
-            // accent rules a few hundredths apart on a panel this narrow is a ladder.
-            return PanelTop + CardHeight;
+            Hud.Text(initial, cx, cy - size * 0.36f, size * 12f, Ink, Hud.FontChaletLondon);
         }
 
-        /// <summary>
-        /// The dot that says the feed is on, breathing rather than blinking.
-        ///
-        /// Blinking is an alarm. This fades between two alphas on a slow sine, which reads as a
-        /// light that is on rather than as something demanding to be looked at.
-        /// </summary>
-        private void Live(float middle, float y)
+        /// <summary>The blue tick. A sprite, so it costs no rectangles at all.</summary>
+        private static void Badge(float x, float cy, float h)
+        {
+            Hud.File("tick.png", x + Hud.ToX(h) * 0.5f, cy, h, 0f, Blue);
+        }
+
+        /// <summary>The dot that says the feed is on, breathing rather than blinking. One rectangle.</summary>
+        private static void Live(float x, float y)
         {
             const int PeriodMs = 1900;
 
             var t = (Game.GameTime % PeriodMs) / (float)PeriodMs;
             var glow = 0.5f + 0.5f * (float)Math.Sin(t * Math.PI * 2.0);
 
-            var alpha = (int)(90 + 130 * glow);
+            Hud.RectFrom(x - Hud.ToX(0.0028f), y - 0.0028f, Hud.ToX(0.0056f), 0.0056f,
+                         Palette.Alpha(Green, (int)(110 + 130 * glow)));
+        }
 
-            var wide = 0.05f;
-            try { wide = Hud.MeasureText("SOCIALS", TitleScale, Hud.FontChaletLondon); }
-            catch { /* the estimate will do */ }
-
-            Hud.Disc(middle - wide * 0.5f - 0.010f, y, 0.0038f,
-                     Palette.Alpha(Palette.Danger, alpha));
+        /// <summary>Measured through the game, or the caller's guess if it will not say.</summary>
+        private static float Measure(string text, float scale, int font, float fallback)
+        {
+            try { return Hud.MeasureText(text, scale, font); }
+            catch { return fallback; }
         }
 
         /// <summary>
-        /// The follower colour, flashed for a moment whenever the number goes up.
-        ///
-        /// A count that changes silently is a count nobody notices changing, and the number
-        /// going up is most of why anybody opens this screen.
+        /// The follower figure, flashed blue for a moment whenever it goes up. A count that
+        /// changes silently is a count nobody notices changing, and the number going up is
+        /// most of why anybody opens this screen.
         /// </summary>
         private Color Gained()
         {
@@ -1646,19 +1567,12 @@ namespace Hoodrich.UI
                 _followersWere = now;
             }
 
-            if (_gainedAt == 0) return Palette.Cash;
+            if (_gainedAt == 0) return Ink;
 
             var since = Game.GameTime - _gainedAt;
-            if (since > 1400) { _gainedAt = 0; return Palette.Cash; }
+            if (since > 1400) { _gainedAt = 0; return Ink; }
 
-            // Bright at the top of the flash, back to the money colour by the end of it.
-            var t = 1f - since / 1400f;
-            var lift = (int)(255 * t);
-
-            return Color.FromArgb(255,
-                                  Math.Min(255, Palette.Cash.R + lift),
-                                  Math.Min(255, Palette.Cash.G + lift / 3),
-                                  Math.Min(255, Palette.Cash.B + lift));
+            return Theme.Lerp(Blue, Ink, since / 1400f);
         }
 
         private int _followersWere = -1;
@@ -1667,10 +1581,10 @@ namespace Hoodrich.UI
         /// <summary>
         /// Draws the author's picture, and says whether it managed to.
         ///
-        /// A dictionary that is not in this install streams forever and never arrives, so the
-        /// caller needs a straight answer rather than a blank square -- false and it falls back
-        /// to the letter. Names that never resolve are logged once each, so a guessed contact
-        /// dictionary that does not exist tells us rather than quietly showing nothing.
+        /// A named character with a contact photo the game ships gets that; a business gets
+        /// nothing made for it (the face factory photographs a ped, and a cab company posting
+        /// over somebody's holiday snap is wrong); everybody else gets one made -- see
+        /// UI.Headshots. Asking for it is also what keeps it in the cache.
         /// </summary>
         private bool Avatar(Post post, float cx, float cy)
         {
@@ -1678,8 +1592,6 @@ namespace Hoodrich.UI
 
             var pic = post.By.Pic;
 
-            // A named character with a contact photo the game ships. Trevor looks like Trevor
-            // and always will; nothing below improves on that.
             if (!string.IsNullOrEmpty(pic))
             {
                 if (!Hud.EnsureTextureDict(pic))
@@ -1692,17 +1604,8 @@ namespace Hoodrich.UI
                 return true;
             }
 
-            // A COMPANY GETS NOTHING MADE FOR IT. The face factory stands a PED up and
-            // photographs it, so asking it for a picture of a taxi firm gets you a photograph
-            // of a man -- and then a cab company is posting its opening hours over somebody's
-            // holiday snap. If the game ships a logo for the business it is used above; if it
-            // does not, the initial is the honest answer.
             if (post.By.IsOrg) return false;
 
-            // EVERYBODY ELSE GETS ONE MADE. See UI.Headshots -- a ped model that suits the
-            // handle is stood up out of sight, photographed and deleted, and the picture is
-            // kept. Asking for it is also what keeps it in the cache, so the faces on screen
-            // are never the ones thrown away.
             var made = Headshots.Txd(post.By.Handle);
 
             if (string.IsNullOrEmpty(made))
@@ -1726,367 +1629,21 @@ namespace Hoodrich.UI
             Log.Debug("Avatar '" + pic + "' would not load; falling back to the initial.");
         }
 
-        /// <summary>
-        /// How new this one is, from 1 the instant it lands to 0 once it has settled in.
-        ///
-        /// Two different windows because they are two different jobs. The SLIDE is a movement
-        /// and has to be over almost before you notice it -- anything you can sit and watch
-        /// travel is a screen being slow rather than a post arriving. The GLOW is a marker and
-        /// has to outlast the movement, or the one thing it exists to point at is gone before
-        /// you have looked up.
-        /// </summary>
-        private static float Landing(Post post, int windowMs)
-        {
-            try
-            {
-                var age = Game.GameTime - post.At;
-
-                // Out of a save. It landed in another session and is not new to anybody.
-                if (age < 0 || age >= windowMs) return 0f;
-
-                return 1f - age / (float)windowMs;
-            }
-            catch
-            {
-                return 0f;
-            }
-        }
-
-        private const int SlideMs = 420;
-        private const int GlowMs = 6000;
+        // ---- the words ----------------------------------------------------------
 
         /// <summary>
-        /// How long each card waits behind the one above it, and how long its own move takes.
-        ///
-        /// Short. A cascade you can sit and watch complete is a screen that is slow to open;
-        /// what this is for is the half-second after the button, where a list that assembles
-        /// itself reads as a thing being fetched and a list that is simply THERE reads as a
-        /// static image somebody drew.
-        /// </summary>
-        private const int DealStepMs = 38;
-        private const int DealMoveMs = 260;
-
-        /// <summary>Where this card is in its own arrival, from 1 to 0.</summary>
-        private float Dealing(int slot)
-        {
-            try
-            {
-                var since = Game.GameTime - _openedAt - slot * DealStepMs;
-
-                if (since >= DealMoveMs) return 0f;
-                if (since <= 0) return 1f;
-
-                return 1f - since / (float)DealMoveMs;
-            }
-            catch
-            {
-                return 0f;
-            }
-        }
-
-        private void DrawPost(float left, float top, Post post, int slot = 0)
-        {
-            var lines = Lines(post);
-
-            if (post == null || post.By == null) return;
-
-            // IT ARRIVES RATHER THAN APPEARING.
-            //
-            // Everything below is placed off `left`, so moving that one number carries the
-            // whole post with it and nothing has to be threaded through forty draw calls.
-            // Squared, so it comes in quickly and settles rather than gliding at a constant
-            // speed the whole way, which reads as a slide rather than a thing landing.
-            var slide = Landing(post, SlideMs);
-            var glow = Landing(post, GlowMs);
-
-            // Two reasons a card can be moving and they do not add up -- a post that arrives
-            // in the same instant the screen opens should travel once, not twice as far. The
-            // bigger of the two wins and the other is along for the ride.
-            var move = Math.Max(slide * slide, Dealing(slot));
-
-            if (move > 0f) left += Hud.ToX(0.045f) * move;
-
-            if (glow > 0f)
-            {
-                // A wash that burns off. It does the work a NEW badge would do and then stops
-                // existing, which a badge cannot -- and it never competes with the about-you
-                // rail, because it is gone within six seconds and that one is permanent.
-                Hud.RectFrom(left + 0.002f, top, PanelWidth - 0.012f, PostHeight(post) - PostGap,
-                             Palette.Alpha(Palette.Brand, (int)(48f * glow)));
-            }
-
-            // Anything about you gets a change of ground as well as a rail.
-            //
-            // A hairline of near-white at the very edge of a narrow panel is genuinely hard to
-            // catch while the list is sliding, and sliding is exactly when you need to catch it.
-            // The wash is low -- a third of the hub's, because the hub marks one row for as
-            // long as a cursor sits on it whereas this is permanent and can cover three posts
-            // at once. It sits BEHIND the text and does not inset it, which matters: see the
-            // note on the wrap cache in Lines().
-            // SQUARE, AND THAT IS THE FIX RATHER THAN A PREFERENCE.
-            //
-            // RoundRect builds its corners out of discs, and a disc drawn over a dark panel at
-            // this size does not blend away -- it reads as four pale dots sat just outside the
-            // card, which is what the corners looked like. A rectangle has no corner problem.
-            var cardH = PostHeight(post) - PostGap;
-            var cardW = PanelWidth - 0.012f;
-            var cardX = left + 0.002f;
-
-            // UNDER IT FIRST. Two offset rectangles, the nearer one darker: not a real blur,
-            // but a hard shadow at one and two pixels reads as depth at this size and costs
-            // two draws. It goes down and right because everything else in this HUD is lit
-            // from the top left.
-            Hud.RectFrom(cardX + Hud.ToX(0.0022f), top + 0.0022f, cardW, cardH, ShadowFar);
-            Hud.RectFrom(cardX + Hud.ToX(0.0011f), top + 0.0011f, cardW, cardH, ShadowNear);
-
-            Hud.RectFrom(cardX, top, cardW, cardH, CardFace);
-
-            // A BORDER ON ALL FOUR SIDES, brighter along the top than the bottom. An even
-            // outline is a box; a lit top edge and a dark bottom one is a raised surface, and
-            // the whole reason for the shadow underneath is to say the same thing twice.
-            //
-            // A new post's edge is hotter and cools off. It is the same six-second window the
-            // wash uses, so the two are one gesture rather than two competing ones.
-            var edgeLift = glow > 0f ? (int)(120f * glow) : 0;
-
-            Hud.RectFrom(cardX, top, cardW, 0.0009f,
-                         Palette.Alpha(CardEdge, Math.Min(255, CardEdge.A + edgeLift)));
-
-            Hud.RectFrom(cardX, top + cardH - 0.0009f, cardW, 0.0009f, CardFloor);
-
-            Hud.RectFrom(cardX, top, Hud.ToX(0.0009f), cardH,
-                         Palette.Alpha(CardEdge, Math.Min(255, CardEdge.A + edgeLift)));
-
-            Hud.RectFrom(cardX + cardW - Hud.ToX(0.0009f), top, Hud.ToX(0.0009f), cardH, CardFloor);
-
-            if (post.AboutYou)
-            {
-                Hud.RectFrom(cardX, top, cardW, cardH, Color.FromArgb(26, 255, 255, 255));
-
-                // The rail down the left, which is the one permanent mark on this screen.
-                // Ember: about you is warm, the way you are everywhere else in the mod.
-                Hud.RectFrom(cardX, top, 0.0026f, cardH, Palette.BrandDeep);
-
-                var trim = Palette.Alpha(Palette.BrandDeep, 90);
-
-                Hud.RectFrom(cardX, top, cardW, 0.0010f, trim);
-                Hud.RectFrom(cardX, top + cardH - 0.0010f, cardW, 0.0010f, trim);
-                Hud.RectFrom(cardX + cardW - Hud.ToX(0.0010f), top, Hud.ToX(0.0010f), cardH, trim);
-            }
-
-            // AND A BAR THAT RUNS DOWN THE EDGE AS IT LANDS.
-            //
-            // The wash says "this one is new" and then sits there fading, which is a state. A
-            // bar travelling the height of the card is a MOVEMENT, and movement is the thing
-            // the eye actually catches out of the corner of itself while it is reading
-            // something else. It is over in the first fifth of the glow, so it is a stroke
-            // rather than a progress bar.
-            if (glow > 0.8f)
-            {
-                var run = (1f - glow) / 0.2f;
-
-                Hud.RectFrom(cardX, top, 0.0026f, cardH * run,
-                             Palette.Alpha(Palette.Brand, 220));
-            }
-
-            // Content sits inside the card from here down. One shift rather than a padding
-            // term added to every offset below it, which is how those go out of step.
-            top += CardPad;
-
-            var cx = left + Pad + Hud.ToX(AvatarSize) * 0.5f;
-            var cy = top + 0.004f + AvatarSize * 0.5f;
-
-            // The author's own face, if they have one.
-            //
-            // The field has always been there and the toasts have always drawn it -- this
-            // screen never looked at it, so the same author had a photograph on the right of
-            // the screen and a coloured circle with a letter in it here. A logo is the whole
-            // difference between a business account and a name.
-            // Whether they have a real face rather than a coloured circle with a letter in it.
-            // Kept, because it is also the answer to whether they get a tick.
-            var pictured = Avatar(post, cx, cy);
-
-            if (!pictured)
-            {
-                // A ring under the disc, one step darker than it. A flat circle with a letter
-                // in it is a placeholder; the same circle with an edge is an avatar, and it
-                // costs one more draw.
-                Hud.Disc(cx, cy, AvatarSize * 0.5f + 0.0016f, Shade(post.By.Tint, 0.55f));
-                Hud.Disc(cx, cy, AvatarSize * 0.5f, post.By.Tint);
-
-                Hud.Text(post.By.Initial, cx, cy - 0.0135f, 0.46f,
-                         Color.FromArgb(235, 250, 250, 248), Hud.FontChaletLondon);
-            }
-
-            // Still warm. A pip rather than a word: it is on for a few seconds and the eye
-            // catches a dot appearing without having to read anything.
-            if (glow > 0f)
-            {
-                // Breathing rather than simply fading, so it reads as something live rather
-                // than something being turned down. 0..1 -- see the note in the phone's call
-                // screen about what a bare sine does to an alpha.
-                var beat = 0.55f + 0.45f * (0.5f + 0.5f * (float)Math.Sin(Game.GameTime * 0.011));
-
-                Hud.Disc(left + PanelWidth - 0.018f, top + 0.010f, 0.0032f,
-                         Palette.Alpha(Palette.Brand, (int)(230f * glow * beat)));
-            }
-
-            var textX = left + Pad + Hud.ToX(AvatarSize) + 0.010f;
-            var y = top + 0.002f;
-
-            // Name, then handle and stamp trailing it in the quiet face. Measured so the handle
-            // sits directly after the name whatever the name happens to be.
-            Hud.Text(post.By.Name, textX, y, NameScale, Palette.Text, Hud.FontChaletLondon,
-                     centre: false);
-
-            var nameWidth = 0.06f;
-            try { nameWidth = Hud.MeasureText(post.By.Name, NameScale, Hud.FontChaletLondon); }
-            catch { /* the estimate above will do */ }
-
-            var tail = textX + nameWidth + 0.006f;
-
-            // A tick for anybody with a real photograph, as well as for anybody flagged.
-            //
-            // A display picture in this feed means a contact dictionary the game ships, which
-            // means a story character -- there is no way to have one by accident. So the two
-            // questions "is this somebody" and "does this somebody have a face" have the same
-            // answer, and the picture is the more reliable half of it: it is a fact about the
-            // game's own data rather than a flag somebody had to remember to set.
-            // ONLY THE FLAGGED ONES. The "or pictured" half was written when a picture meant
-            // one of the game's own contact dictionaries, which meant a story character -- a
-            // fact about the game's data rather than a flag somebody had to remember to set.
-            //
-            // That reasoning was sound and is now false: every account on this feed has a face,
-            // because the mod makes them. So the clause that used to identify the few now
-            // matches everybody, and a badge everybody has is not a badge.
-            if (post.By.Verified)
-            {
-                // A shape, not a dot. The mark was a small white disc immediately followed by
-                // the "  ·  " in the handle string -- a dot, a gap, then another dot, which
-                // reads as punctuation rather than as a badge.
-                //
-                // On a blue disc now, which is the one thing on this screen that is not saying
-                // something about you.
-                const float th = 0.014f;
-                var icx = tail + Hud.ToX(th) * 0.5f;
-
-                Hud.Disc(icx, y + 0.0098f, 0.0068f, Palette.Verified);
-
-                if (!Hud.File("tick.png", icx, y + 0.0095f, th * 0.72f, 0f,
-                              Color.FromArgb(255, 18, 20, 22)))
-                {
-                    // No tick art in this install, so the disc says it on its own.
-                    Hud.Disc(icx, y + 0.0098f, 0.0028f, Color.FromArgb(255, 18, 20, 22));
-                }
-
-                tail += Hud.ToX(th) + 0.004f;
-            }
-
-            Hud.Text(post.By.Handle + "  ·  " + SocialFeed.Ago(post.At), tail, y + 0.0045f,
-                     StampScale,
-                     Palette.TextDim, Hud.FontLabel, centre: false);
-
-            y += MetaHeight;
-
-            foreach (var line in lines)
-            {
-                // Through Emoji, which is a plain Hud.Text for any line without a picture in
-                // it -- which is most of them -- and runs of text with sprites between them
-                // for the ones that have.
-                Emoji.Draw(line, textX, y, BodyScale, Palette.Text, Hud.FontBody);
-                y += LineHeight;
-            }
-
-            y += MetricGap;
-
-            // Art and figures on three fixed columns.
-            //
-            // The words REPLIES / REPOSTS / LIKES are gone: forty-seven characters of shouting
-            // per post, eight posts on screen, nearly four hundred capitals competing with the
-            // bodies this screen exists to show. Largest single reduction in noise available
-            // here.
-            //
-            // Non-short-circuit &, deliberately, so all three are attempted and the fallback is
-            // all-or-nothing rather than one icon and two gaps.
-            var ok = Metric("reply.png", post.RepliesNow, textX, y)
-                   & Metric("repost.png", post.RepostsNow, textX + MetricPitch, y)
-                   & Metric("like.png", post.LikesNow, textX + MetricPitch * 2f, y);
-
-            if (!ok)
-            {
-                Hud.Text(post.RepliesNow + "   REPLIES        " + post.RepostsNow + "   REPOSTS        " +
-                         post.LikesNow + "   LIKES",
-                         textX, y, 0.235f, Color.FromArgb(150, 150, 158, 152),
-                         Hud.FontLabel, centre: false);
-            }
-
-            // No divider. The gap between two cards is the divider, and drawing a rule in it
-            // as well would put a line through the middle of the space that separates them.
-        }
-
-        /// <summary>
-        /// One engagement figure: art, then the number, on a column the whole feed shares.
-        ///
-        /// Hud.File centres what it draws while Hud.Text places by the TOP edge, so the two need
-        /// different anchors to sit on one line. The art goes a hair below the text's optical
-        /// centre because a solid filled glyph reads heavier than two digits.
-        ///
-        /// Grey, both of them. Not a red heart: the about-you wash is the one thing on this
-        /// screen that has to win, and a coloured glyph on every post would out-shout it.
-        /// </summary>
-        private static bool Metric(string file, int value, float x, float y)
-        {
-            if (!Hud.File(file, x + Hud.ToX(MetricIcon) * 0.5f, y + 0.0075f, MetricIcon, 0f, MetricArt))
-            {
-                return false;
-            }
-
-            Hud.Text(value.ToString(), x + Hud.ToX(MetricIcon) + 0.005f, y, 0.26f,
-                     MetricNum, Hud.FontLabel, centre: false);
-
-            return true;
-        }
-
-        /// <summary>
-        /// How tall one post is. DrawPost MUST lay out inside this or posts overlap.
-        ///
-        /// Unchanged in value -- only named into its parts, so the two methods cannot drift.
-        ///
-        ///   budget    MetaHeight + body + MetricsHeight + PostGap
-        ///   DrawPost  starts at top + 0.002, adds MetaHeight, the body, then MetricGap
-        ///
-        /// which puts the engagement row's top edge at top + 0.029 + body. The art is 0.016
-        /// centred 0.0075 under that, so it bottoms out at top + 0.0445 + body, the divider
-        /// sits at top + 0.0498 + body and the next post starts at top + 0.057 + body. The row
-        /// grew from a text cap to a taller icon and still clears, which is exactly why
-        /// MetricsHeight did not need to grow with it.
-        /// </summary>
-        private float PostHeight(Post post)
-        {
-            var lines = Math.Max(1, Lines(post).Count);
-
-            // The card's own padding is part of the post's height, so the gap between two of
-            // them stays PostGap however much is inside either one.
-            return CardPad * 2f + MetaHeight + lines * LineHeight + MetricsHeight + PostGap;
-        }
-
-        /// <summary>
-        /// Wrapped once and remembered.
-        ///
-        /// Wrapping measures text through the game, which is a native call per word per line --
-        /// doing that for every visible post every frame is hundreds of calls a frame for text
-        /// that never changes after it is written.
+        /// Wrapped once and remembered. Wrapping measures text through the game, a native call
+        /// per word per line, and the text never changes after it is written.
         /// </summary>
         private List<string> Lines(Post post)
         {
             List<string> cached;
             if (_wrapped.TryGetValue(post.Body, out cached)) return cached;
 
-            var width = PanelWidth - Pad * 2f - Hud.ToX(AvatarSize) - 0.012f;
+            var width = PanelWidth - Pad * 2f - Hud.ToX(AvatarSize) - 0.010f;
             var lines = Wrap(post.Body, width, BodyScale);
 
-            // Bounded, because the cache lives as long as the session and a very long game
-            // would otherwise keep every post ever written.
+            // Bounded, because the cache lives as long as the session.
             if (_wrapped.Count > 400) _wrapped.Clear();
 
             _wrapped[post.Body] = lines;
@@ -2105,9 +1662,7 @@ namespace Hoodrich.UI
             {
                 var candidate = current.Length == 0 ? word : current + " " + word;
 
-                // Measured with the pictures counted at the size they will DRAW at, not at
-                // the width of ":fire:" as six characters -- otherwise a line wraps against a
-                // width that has nothing to do with what ends up on screen.
+                // Measured with the pictures counted at the size they will DRAW at.
                 float measured;
                 try { measured = Emoji.Measure(candidate, scale, Hud.FontBody); }
                 catch { measured = candidate.Length * scale * 0.011f; }
