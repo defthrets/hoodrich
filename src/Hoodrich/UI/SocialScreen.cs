@@ -1628,6 +1628,9 @@ namespace Hoodrich.UI
                 return false;
             }
 
+            // The letter while the game says the picture is not there. See Headshots.Ready.
+            if (!Headshots.Ready(post.By.Handle)) return false;
+
             Hud.Sprite(made, made, cx, cy, Hud.ToX(AvatarSize), AvatarSize, 0f, Color.White);
             return true;
         }

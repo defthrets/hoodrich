@@ -51,6 +51,17 @@ car's class on a chip after its name, the way out where it is on every
 other panel -- and the boot's panel stands on the bottom of the screen,
 where the car is not.
 
+THE TWEET CARD IS FIVE RECTANGLES, and its face is never a blank square. Two
+cards up and the second was flickering: a card is the last thing drawn in
+the frame by the last script in the folder, out of a per-frame budget every
+script on the machine shares, and the game drops whatever comes last. The
+lift along the card's top edge, the bright head on its clock bar and the
+sixteen-row disc under a verified tick are gone -- the tick sits on a
+picture now. And a made face is checked with the game before every draw:
+a picture the game has let go or is still rendering used to leave a bare
+coloured square, no face and no letter; the letter stands in now, and the
+log says when it happened and how long the picture had been up.
+
 THE TAKEOVER CARS DO NOT STOP. The ones working the middle go to full lock
 with the throttle planted and stay there, swapping sides every thirty
 seconds, on tyres with two fifths of their grip: the donut is the tyres'

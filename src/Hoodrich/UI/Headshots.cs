@@ -88,6 +88,11 @@ namespace Hoodrich.UI
             public string Txd = "";
             public int Used;
 
+            /// <summary>When it was made, whether the game has ever said it was ready, and whether its going away has been logged. See Ready.</summary>
+            public int MadeAt;
+            public bool WasReady;
+            public bool Moaned;
+
             /// <summary>
             /// The ped the picture was taken of, kept alive for as long as the picture is.
             ///
@@ -200,6 +205,53 @@ namespace Hoodrich.UI
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Whether somebody's picture can actually be drawn this frame.
+        ///
+        /// ASKED OF THE GAME, NOT OF THE TABLE. Txd says what the picture is called, and a
+        /// name is not a texture: the game renders these into a pool of its own and can
+        /// have one not ready again -- re-rendering it, or having let it go -- while the
+        /// name is still good. A card that trusts the name draws nothing in that frame,
+        /// over a square it has stopped putting a letter on, which is a blank square. So
+        /// the card asks this before every draw and falls back to the letter on a no.
+        ///
+        /// The first no after a yes is logged, once a face, with how long the picture had
+        /// been up: that line is the difference between the game dropping the picture and
+        /// the game dropping the draw.
+        /// </summary>
+        public static bool Ready(string key)
+        {
+            if (string.IsNullOrEmpty(key)) return false;
+
+            Face face;
+            if (!Made.TryGetValue(key, out face) || face.Shot == 0) return false;
+
+            bool ready;
+
+            try
+            {
+                ready = Function.Call<bool>(Hash.IS_PEDHEADSHOT_READY, face.Shot)
+                        && Function.Call<bool>(Hash.IS_PEDHEADSHOT_VALID, face.Shot);
+            }
+            catch
+            {
+                ready = false;
+            }
+
+            if (ready)
+            {
+                face.WasReady = true;
+            }
+            else if (face.WasReady && !face.Moaned)
+            {
+                face.Moaned = true;
+                Log.Info("Headshot for " + key + " (" + face.Txd + ") is not ready any more, " +
+                         (Game.GameTime - face.MadeAt) + "ms after it was made. The letter stands in.");
+            }
+
+            return ready;
         }
 
         /// <summary>Asks for one. Does nothing if it exists, is queued, or recently failed.</summary>
@@ -406,6 +458,8 @@ namespace Hoodrich.UI
                 Shot = _shot,
                 Txd = txd,
                 Used = Game.GameTime,
+                MadeAt = Game.GameTime,
+                WasReady = true,
                 Model = _model
             };
 

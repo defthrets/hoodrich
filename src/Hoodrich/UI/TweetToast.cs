@@ -287,10 +287,9 @@ namespace Hoodrich.UI
 
             Hud.RectFrom(left, y, Width, card.Height, Color.FromArgb((int)(236 * fade), 13, 14, 16));
 
-            // A thin lift along the top edge, and the author's colour down the left. The colour
-            // belongs on the edge on a card this small -- anywhere else and a purple card and a
-            // green card stop reading as the same object.
-            Hud.RectFrom(left, y, Width, 0.0012f, Alpha(card.Tint, (int)(44 * fade)));
+            // The author's colour down the left. The colour belongs on the edge on a card this
+            // small -- anywhere else and a purple card and a green card stop reading as the
+            // same object. The lift along the top edge went: see FIVE RECTANGLES below.
             Hud.RectFrom(left, y, 0.0024f, card.Height, Alpha(card.Tint, solid));
 
             var cx = left + Pad + Hud.ToX(AvatarSize) * 0.5f;
@@ -365,6 +364,16 @@ namespace Hoodrich.UI
             //
             // So the letter is the one thing here that stays conditional. It is the fallback
             // and it is only drawn when there is nothing to fall back FROM.
+            //
+            // AND "NOTHING TO FALL BACK FROM" IS ASKED OF THE GAME EVERY FRAME. A made face
+            // is a name in a table and a texture in the game's own pool, and the second can
+            // be gone or not ready while the first is still good. The card used to trust the
+            // name: it drew a sprite that came out as nothing, over a square it had stopped
+            // putting a letter on -- a blank green square in the corner. Now the picture is
+            // drawn only when the game says it is there, and the letter every other frame.
+            var pictured = !string.IsNullOrEmpty(card.Art)
+                           && (card.Art == card.Pic || Headshots.Ready(card.By.Handle));
+
             {
                 // A square, not a disc. The width is converted through ToX so it comes out
                 // square on the screen rather than square in the coordinate system -- 0.03 by
@@ -373,7 +382,7 @@ namespace Hoodrich.UI
                 Hud.RectFrom(left + Pad, y + Pad, Hud.ToX(AvatarSize), AvatarSize,
                              Alpha(card.Tint, solid));
 
-                if (string.IsNullOrEmpty(card.Art))
+                if (!pictured)
                 {
                     Hud.Text(card.By.Initial, cx, cy - 0.0112f, 0.38f,
                              Color.FromArgb((int)(240 * fade), 250, 250, 248), Hud.FontChaletLondon);
@@ -381,7 +390,7 @@ namespace Hoodrich.UI
             }
 
             // And the face over the top of it, once there is one.
-            if (!string.IsNullOrEmpty(card.Art))
+            if (pictured)
             {
                 Hud.Sprite(card.Art, card.Art, cx, cy, Hud.ToX(AvatarSize), AvatarSize, 0f,
                            Color.FromArgb(solid, 255, 255, 255));
@@ -417,7 +426,15 @@ namespace Hoodrich.UI
                 var bx = textX + nameW + Hud.ToX(th) * 0.5f + 0.004f;
                 var by = line + 0.0052f;
 
-                Hud.Disc(bx, by, 0.0055f, Alpha(Palette.Verified, solid));
+                // A SPRITE, NOT A DISC. A disc is a rectangle a pixel row, sixteen of them
+                // at this size, out of the one per-frame budget every script on the machine
+                // shares; the badge is two pictures from a budget nobody is near. Sprites
+                // sit above everything whatever the order, which is fine for a badge with
+                // nothing under it but the ground.
+                if (!Hud.File("disc.png", bx, by, th * 0.92f, 0f, Alpha(Palette.Verified, solid)))
+                {
+                    Hud.Disc(bx, by, 0.0055f, Alpha(Palette.Verified, solid));
+                }
 
                 if (!Hud.File("tick.png", bx, by, th * 0.72f, 0f,
                               Alpha(Color.FromArgb(255, 18, 20, 22), solid)))
@@ -466,15 +483,16 @@ namespace Hoodrich.UI
                 // that disagreed about who wrote it. Same tint as the rail: one card, one set.
                 Hud.RectFrom(left + Pad, rule - 0.0003f, ruleW * run, 0.0017f,
                              Alpha(card.Tint, (int)(215 * fade)));
-
-                // A brighter head on the leading edge, so the eye has something to follow
-                // rather than a bar it has to remember the length of. The tint lifted toward
-                // white, so it reads as the same colour catching light rather than a fourth one.
-                var head = Math.Min(ruleW * run, Hud.ToX(0.010f));
-
-                Hud.RectFrom(left + Pad + ruleW * run - head, rule - 0.0005f, head, 0.0021f,
-                             Alpha(Theme.Lerp(card.Tint, Color.White, 0.45f), (int)(235 * fade)));
             }
+
+            // FIVE RECTANGLES A CARD, DOWN FROM SEVEN. The ground, the rail, the square
+            // under the face, the track and the bar. The lift along the top edge and the
+            // bright head on the bar went, because of what a card is: the last thing drawn
+            // in the frame by the last script in the folder, out of a per-frame budget
+            // every script on the machine shares and the game enforces by dropping
+            // whatever comes last. Two cards up and the second one was flickering, which
+            // is what that looks like. Every rectangle this does not draw is one more the
+            // second card gets to keep.
 
             line = rule + RuleGap;
 
