@@ -1713,6 +1713,31 @@ namespace Hoodrich.Social
             }
         }
 
+        /// <summary>
+        /// Followers for something he did on the feed himself, rather than for an event the
+        /// block reacted to. The same quiet period as On, so five posts in a minute say one
+        /// total rather than five lines.
+        /// </summary>
+        public void Gain(int followers)
+        {
+            if (followers == 0) return;
+
+            Followers = Math.Max(0, Followers + followers);
+            if (Changed != null) Changed();
+
+            _owed += followers;
+
+            var now = Game.GameTime;
+            if (_owed < 12 || now < _nextBrag) return;
+
+            _nextBrag = now + BragGapMs;
+
+            Hoodrich.UI.Notify.Ticker("~b~+" + _owed + " followers~s~  \u00b7  " +
+                                      Followers.ToString("N0") + " followers");
+
+            _owed = 0;
+        }
+
         private int FollowersFor(SocialEvent kind, int amount)
         {
             switch (kind)

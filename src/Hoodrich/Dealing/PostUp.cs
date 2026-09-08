@@ -546,6 +546,7 @@ namespace Hoodrich.Dealing
             State = PostState.Idle;
             _product = null;
             _cornerHeat = 0f;
+            _advertisedUntil = 0;
 
             // A buyer's reply is queued a second into the future. Packing up inside that second
             // left it to fire on the NEXT pitch, so the first thing a fresh corner did was have
@@ -830,6 +831,27 @@ namespace Hoodrich.Dealing
             "a_m_y_methhead_01", "a_m_m_tramp_01", "a_m_y_dhill_01", "a_f_m_trampbeac_01",
         };
 
+        /// <summary>Until when the block has been told where he is stood. See Advertise.</summary>
+        private int _advertisedUntil;
+
+        /// <summary>How much busier a corner is once it has been posted. Nearly double.</summary>
+        private const float AdvertiseBoost = 1.9f;
+
+        /// <summary>
+        /// He posted where he is. More people walk up for a while -- the roll below is
+        /// nearly doubled -- which is the whole reason to do it; the reason not to is that
+        /// the same post is read by everybody, and the caller adds the heat for that.
+        /// </summary>
+        public void Advertise(int forMs)
+        {
+            if (!IsPosted || forMs <= 0) return;
+
+            _advertisedUntil = Game.GameTime + forMs;
+            Log.Info("Post-up advertised for " + (forMs / 1000) + "s.");
+        }
+
+        private float Advertising => Game.GameTime < _advertisedUntil ? AdvertiseBoost : 1f;
+
         private void RollCustomer(Ped player)
         {
             // Each passer-by gets their own roll, so a busy pavement really is busier.
@@ -839,7 +861,7 @@ namespace Hoodrich.Dealing
             // the price, which meant a gram of weed quietly became $34 at two in the morning.
             // They move how often somebody walks up instead: a good corner at a good hour is
             // busier, and busier is the whole reward.
-            var per = _cfg.PostUpApproachChance / 100f * _pricing.Demand(_product);
+            var per = _cfg.PostUpApproachChance / 100f * _pricing.Demand(_product) * Advertising;
             if (per > 0.9f) per = 0.9f;
 
             var chance = 1f - (float)Math.Pow(1f - per, Footfall);

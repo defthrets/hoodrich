@@ -140,6 +140,15 @@ namespace Hoodrich.UI
         {
             new Sayable { Label = "About the day", Set = "YouDaily",
                           Head = "ABOUT THE DAY", Line = "Costs you nothing." },
+            new Sayable { Label = "Where you're posted up", Set = "YouWhereAt",
+                          Head = "WHERE YOU'RE AT",
+                          Line = "Tells the block where to find you. More custom for a while, and more eyes." },
+            new Sayable { Label = "Drop a diss track", Set = "YouDissTrack",
+                          Head = "A DISS TRACK",
+                          Line = "Named and recorded. They don't let a track go the way they let a post go." },
+            new Sayable { Label = "Big up the set", Set = "YouBigUp",
+                          Head = "FOR THE SET",
+                          Line = "Costs nothing. The block likes to hear it, and so do yours." },
         };
 
         /// <summary>Posts one of the free sets. True if anything actually went out.</summary>
@@ -1077,10 +1086,15 @@ namespace Hoodrich.UI
                         label = gang.Tag;
                     }
 
+                    // Where you stand with them, as a word and the number, so a few disses
+                    // visibly move it and a quiet while visibly moves it back.
+                    var st = Crew == null ? null : Crew.StandingFor(gang.Id);
+                    var rep = st == null ? 0f : st.Rep;
                     var beefing = Crew != null && Crew.Beefing(gang.Id);
 
-                    value = beefing ? "Already beefing" : gang.Tag;
-                    valueInk = beefing ? Pink : Quiet;
+                    value = (beefing ? "Beef" : rep <= -10f ? "Sour" : rep < 0f ? "Cold" : rep >= 20f ? "Tight" : "Cool")
+                            + "  " + rep.ToString("0");
+                    valueInk = beefing ? Pink : rep < 0f ? Palette.Warn : Quiet;
                 }
 
                 Row(left, x, inner, rowY, here, !_live, Theme.Lit(i, _pick, _lastPick, grown),

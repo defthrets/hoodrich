@@ -2544,6 +2544,57 @@ namespace Hoodrich
 
                 _socialScreen.Say = set =>
                 {
+                    switch (set)
+                    {
+                        // WHERE YOU'RE POSTED UP. Tells the block, which is more custom for
+                        // a while -- and more eyes, which is a little heat on the corner.
+                        // Only when he is actually stood on one; four minutes between.
+                        case "YouWhereAt":
+                        {
+                            if (_postUp == null || !_postUp.IsPosted) return false;
+
+                            var code = _postUp.CodeWord ?? "";
+                            if (_social.PostAsYouSometimes("YouWhereAt", code, 240000, 100) == null) return false;
+
+                            _postUp.Advertise(180000);
+                            _postUp.AddCornerHeat(0.5f);
+                            _social.Gain(6 + _rng.Next(10));
+                            return true;
+                        }
+
+                        // A DISS TRACK. Named and recorded, and they do not let it go: a
+                        // bigger hit to standing than a post, a bigger crowd of replies,
+                        // somebody on their way, and a lot of followers. Fifteen minutes
+                        // between, because a man who drops a track every minute is not
+                        // dropping tracks.
+                        case "YouDissTrack":
+                        {
+                            var target = TrackTarget();
+                            if (target == null) return false;
+
+                            if (_social.PostAsYouSometimes("YouDissTrack", target.Name, 900000, 100) == null) return false;
+
+                            _social.Dissed(target.Id, target.Name, 4 + _rng.Next(4));
+                            _payback.Owed(target.Id);
+                            _crew.Taunted(target.Id, Affiliation.TrackCost);
+                            _social.Gain(40 + _rng.Next(70));
+                            return true;
+                        }
+
+                        // FOR THE SET. Costs nothing, the block likes to hear it, and his
+                        // own people remember it a little.
+                        case "YouBigUp":
+                        {
+                            if (!_crew.IsAffiliated) return false;
+
+                            if (_social.PostAsYouSometimes("YouBigUp", _crew.Current.Name, 180000, 100) == null) return false;
+
+                            _crew.AddRep(2f, "for the post");
+                            _social.Gain(4 + _rng.Next(8));
+                            return true;
+                        }
+                    }
+
                     var topic = _socialScreen.Topic == null ? null : _socialScreen.Topic();
 
                     // The resolved topic first, and the plain day post behind it -- so a set
@@ -4466,6 +4517,41 @@ namespace Hoodrich
         /// and any spawned supplier. A mod that leaves the world altered after unloading is
         /// worse than one that never loaded.
         /// </summary>
+        /// <summary>
+        /// Who a diss track is aimed at: whoever you are deepest in beef with, else whoever
+        /// you are coldest with, else one of the set's own rivals. A track needs a name on
+        /// it, and this is the name the block would expect.
+        /// </summary>
+        private GangDef TrackTarget()
+        {
+            if (_crew == null || _gangs == null) return null;
+
+            var beefing = _crew.BeefingWith();
+            if (beefing.Count > 0) return beefing[0];
+
+            GangDef coldest = null;
+            var lowest = 0f;
+
+            foreach (var g in _gangs.All)
+            {
+                if (g == null) continue;
+                if (_crew.Current != null && string.Equals(g.Id, _crew.Current.Id, StringComparison.OrdinalIgnoreCase)) continue;
+
+                var s = _crew.StandingFor(g.Id);
+                if (s == null || s.Rep >= lowest) continue;
+
+                lowest = s.Rep;
+                coldest = g;
+            }
+
+            if (coldest != null) return coldest;
+
+            var mine = _crew.Current;
+            if (mine == null || mine.Rivals == null || mine.Rivals.Count == 0) return null;
+
+            return _gangs.Get(mine.Rivals[_rng.Next(mine.Rivals.Count)]);
+        }
+
         private void TryRestore()
         {
             // First, and outside every other try. Everything else in here is litter; this one

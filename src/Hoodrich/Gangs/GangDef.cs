@@ -235,5 +235,11 @@ namespace Hoodrich.Gangs
         /// <summary>Posts this set has put on the feed.</summary>
         public int Tweets;
 
+        /// <summary>
+        /// When you last did something to this set -- a body, a diss, a track. Not saved:
+        /// the clock that heals a standing starts again when the game does, which is the
+        /// lenient direction to be wrong in. See Affiliation.Repair.
+        /// </summary>
+        public int HostileAt;
     }
 }

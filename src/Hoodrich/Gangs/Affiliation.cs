@@ -456,6 +456,7 @@ namespace Hoodrich.Gangs
 
             var before = s.Rep;
             s.Rep = Math.Max(-100f, s.Rep - by);
+            s.HostileAt = Game.GameTime;
 
             Log.Info("Taunted " + gangId + ": " + before.ToString("0") + " -> " +
                      s.Rep.ToString("0") + (before > BeefAt && s.Rep <= BeefAt ? "  (that's beef)" : ""));
@@ -737,6 +738,7 @@ namespace Hoodrich.Gangs
                 ScanKills();
                 TickPresence(Turf);
                 ScanAllies();
+                Repair(now);
             }
         }
 
@@ -902,6 +904,12 @@ namespace Hoodrich.Gangs
                     try { RivalDropped?.Invoke(gang); }
                     catch (Exception ex) { Log.Debug("Kill hook threw: " + ex.Message); }
 
+                    // AND IT COSTS YOU WITH THEM, BEEF OR NO BEEF. A body is a body to the
+                    // set that lost it; enough of them and they cross into beef on their
+                    // own, the way enough disses do. It used to cost nothing unless you
+                    // were already at war, which made the first few free.
+                    Bodied(gang);
+
                     // Only counts for REP if you are actually at war with them. Shooting a man
                     // from a set nobody has a problem with is not a body for the block, it is
                     // a body.
@@ -914,9 +922,6 @@ namespace Hoodrich.Gangs
                     // most: it is done for the block, in front of people, at real risk.
                     var earned = WorkingACorner ? KillWhileDealingRep : KillRep;
                     AddRep(earned, "for that one");
-
-                    var theirs = StandingFor(gang.Id);
-                    theirs.Rep = Math.Max(-100f, theirs.Rep - 5f);
 
                     // The block hears about some of them and not others, which is the feed's
                     // own decision -- a neighbourhood that comments on every single one is a
@@ -939,6 +944,79 @@ namespace Hoodrich.Gangs
 
             if (_countedKills.Count > 400) _countedKills.Clear();
         }
+
+        /// <summary>One of theirs, dead by your hand. Costs the same whether or not there was beef.</summary>
+        private void Bodied(GangDef gang)
+        {
+            if (gang == null) return;
+
+            var s = StandingFor(gang.Id);
+            if (s == null) return;
+
+            var before = s.Rep;
+            s.Rep = Math.Max(-100f, s.Rep - BodyCost);
+            s.HostileAt = Game.GameTime;
+
+            if (before > BeefAt && s.Rep <= BeefAt)
+            {
+                Notify.Failure("that's beef with " + gang.Name + " now.");
+                Log.Info("A body cost him " + gang.Id + ": " + before.ToString("0") + " -> " +
+                         s.Rep.ToString("0") + "  (that's beef)");
+            }
+        }
+
+        /// <summary>
+        /// Standing heals when you leave a set alone.
+        ///
+        /// Six minutes without a body or a diss and it starts coming back, two a minute,
+        /// until it is where it started -- nought for most of the city, and for the two
+        /// sets Franklin has never been at peace with, only back to where they were seeded,
+        /// which is still beef. Nothing here ever pushes a standing above neutral; that is
+        /// earned with deeds, not with absence. The moment it crosses back over the beef
+        /// line is said out loud, because it is the moment the visits stop.
+        /// </summary>
+        private void Repair(int now)
+        {
+            if (_lastRepair == 0) { _lastRepair = now; return; }
+
+            var minutes = (now - _lastRepair) / 60000f;
+            if (minutes <= 0f) return;
+            _lastRepair = now;
+
+            foreach (var s in _standings.Values)
+            {
+                if (s == null || string.Equals(s.GangId, HomeSet, StringComparison.OrdinalIgnoreCase)) continue;
+
+                // Out of a save, or never touched: the clock starts now.
+                if (s.HostileAt == 0) { s.HostileAt = now; continue; }
+                if (now - s.HostileAt < RepairAfterMs) continue;
+
+                var ceiling = SeedFor(s.GangId);
+                if (s.Rep >= ceiling) continue;
+
+                var before = s.Rep;
+                s.Rep = Math.Min(ceiling, s.Rep + RepairPerMinute * minutes);
+
+                if (before <= BeefAt && s.Rep > BeefAt)
+                {
+                    var gang = _gangs == null ? null : _gangs.Get(s.GangId);
+                    var name = gang == null ? s.GangId : gang.Name;
+
+                    Notify.Ticker("~g~" + name + " cooled off.~s~  Leave them alone and it stays that way.");
+                    Log.Info("Cooled off with " + s.GangId + ": " + before.ToString("0") + " -> " + s.Rep.ToString("0") + ".");
+                }
+            }
+        }
+
+        private int _lastRepair;
+
+        /// <summary>What a body costs you with the set that lost it, and what a track costs -- a post is TauntCost.</summary>
+        private const float BodyCost = 6f;
+        public const float TrackCost = 25f;
+
+        /// <summary>How long they have to be left alone before it heals, and how fast.</summary>
+        private const int RepairAfterMs = 6 * 60 * 1000;
+        private const float RepairPerMinute = 2f;
 
         // ---- earning it --------------------------------------------------------
 
