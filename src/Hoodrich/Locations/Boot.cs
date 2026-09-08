@@ -152,6 +152,10 @@ namespace Hoodrich.Locations
 
             Prompt(now);
 
+            // SOMEBODY ELSE'S MENU IS UP, and D-pad right is their nudge, not our boot. Same
+            // courtesy the phone gives, from the same shared flag. See Menus.
+            if (Menus.Owner() != null) return;
+
             if (!Function.Call<bool>(Hash.IS_DISABLED_CONTROL_JUST_PRESSED, 0, (int)Control.Context) &&
                 !Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 0, (int)Control.Context)) return;
 

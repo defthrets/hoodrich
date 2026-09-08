@@ -474,8 +474,7 @@ namespace Hoodrich.Phone
         /// </summary>
         private static string MenuOwner()
         {
-            try { return AppDomain.CurrentDomain.GetData("MenuOpen") as string; }
-            catch { return null; }
+            return Menus.Owner();
         }
 
         private string _yielded;
