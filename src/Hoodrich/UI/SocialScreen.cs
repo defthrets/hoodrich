@@ -219,6 +219,19 @@ namespace Hoodrich.UI
         private int _tab;
 
         /// <summary>
+        /// The post you have opened, or null while you are on the timeline.
+        ///
+        /// The app's own behaviour: a post on a timeline is a summary with a reply count on
+        /// it, and opening one is a different screen with the post at the top and the
+        /// conversation under it. Backspace comes back here rather than leaving the phone.
+        /// </summary>
+        private Post _thread;
+        private int _threadScroll;
+
+        /// <summary>The post at the top of the timeline right now, which is the one ENTER opens.</summary>
+        private Post _topPost;
+
+        /// <summary>
         /// How many posts each tab can see.
         ///
         /// Counts, deliberately, and NOT a filtered list. With a list, Draw and Update can end
@@ -269,6 +282,8 @@ namespace Hoodrich.UI
             _tab = 0;
             _scroll = 0;
             _lastShown = 0;
+            _thread = null;
+            _threadScroll = 0;
             _seenCount = _tally[0];
             _openedAt = Game.GameTime;
 
@@ -295,6 +310,7 @@ namespace Hoodrich.UI
             if (IsOpen) Core.InputGuard.Swallow();
             _curtain.Close();
             _holdFrom = 0;
+            _thread = null;
             ReleaseMugshot();
         }
 
@@ -415,8 +431,24 @@ namespace Hoodrich.UI
             // never means anything else, on any tab, mid-hold included.
             if (Pressed(Control.PhoneCancel))
             {
+                // OUT OF THE POST FIRST, out of the phone second. Backspace on an open
+                // thread that shut the whole app would be the app losing your place.
+                if (Shut()) return;
+
                 Hud.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
                 Close();
+                return;
+            }
+
+            // A THREAD IS A SCREEN, so the tabs are not underneath it.
+            if (_thread != null)
+            {
+                var said = _feed == null ? null : _feed.CommentsOn(_thread);
+                var most = said == null ? 0 : Math.Max(0, said.Count - 1);
+
+                if (Pressed(Control.PhoneUp)) _threadScroll = Math.Max(0, _threadScroll - 1);
+                else if (Pressed(Control.PhoneDown)) _threadScroll = Math.Min(most, _threadScroll + 1);
+
                 return;
             }
 
@@ -428,8 +460,12 @@ namespace Hoodrich.UI
                 if (Pressed(Control.PhoneUp)) Scroll(-1);
                 else if (Pressed(Control.PhoneDown)) Scroll(1);
 
-                // ENTER does nothing on a feed tab. It used to close the screen, which made
-                // this the one screen in the mod where ENTER meant leave.
+                // ENTER OPENS THE POST AT THE TOP. It used to close the screen, which made
+                // this the one screen in the mod where ENTER meant leave, and then it did
+                // nothing at all -- which on a feed with a reply count under every post is
+                // a promise the screen was not keeping.
+                if (Pressed(Control.PhoneSelect) || Pressed(Control.FrontendAccept)) Open(_topPost);
+
                 return;
             }
 
@@ -439,6 +475,37 @@ namespace Hoodrich.UI
             else if (Pressed(Control.PhoneDown)) Move(1);
 
             Commit(rows);
+        }
+
+        /// <summary>Opens a post's replies. Does nothing for a post nobody answered.</summary>
+        private void Open(Post post)
+        {
+            if (post == null || _feed == null) return;
+
+            var said = _feed.CommentsOn(post);
+
+            if (said == null || said.Count == 0)
+            {
+                Note("nobody replied to that one.", Quiet);
+                return;
+            }
+
+            _thread = post;
+            _threadScroll = 0;
+
+            Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        /// <summary>Back to the timeline. True when there was a thread to come back from.</summary>
+        private bool Shut()
+        {
+            if (_thread == null) return false;
+
+            _thread = null;
+            _threadScroll = 0;
+
+            Hud.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+            return true;
         }
 
         private int Rows()
@@ -785,7 +852,11 @@ namespace Hoodrich.UI
 
         /// <summary>The bar, the profile block, the tabs, the bottom bar: the fixed furniture, top to bottom.</summary>
         private const float TopBarH = 0.050f;
-        private const float ProfileH = 0.104f;
+
+        /// <summary>The colour band the face hangs off. See Profile.</summary>
+        private const float BannerH = 0.046f;
+
+        private const float ProfileH = 0.140f;
         private const float TabsH = 0.042f;
         private const float BottomH = 0.038f;
 
@@ -818,6 +889,17 @@ namespace Hoodrich.UI
             _glide.Begin();
 
             var y = TopBar(left, x, inner);
+
+            // A POST YOU HAVE OPENED IS ITS OWN SCREEN. No profile, no tabs -- the app does
+            // not keep them either, because you are not on your profile any more.
+            if (_thread != null)
+            {
+                Thread(left, x, inner, y);
+                BottomBar(left, x, inner);
+                _glide.Draw();
+                return;
+            }
+
             y = Profile(left, x, inner, y);
             y = Tabs(left, y);
 
@@ -837,6 +919,8 @@ namespace Hoodrich.UI
             var shown = 0;
             var index = 0;
 
+            _topPost = null;
+
             for (var i = 0; i < _feed.Timeline.Count; i++)
             {
                 var post = _feed.Timeline[i];
@@ -850,6 +934,13 @@ namespace Hoodrich.UI
                 var height = PostHeight(post);
                 if (y + height > bottom) break;
 
+                if (shown == 0)
+                {
+                    // The one ENTER opens, and it says so: the cursor sits on it.
+                    _topPost = post;
+                    _glide.Target(left, y, PanelWidth, height - 0.0012f);
+                }
+
                 DrawPost(left, y, post, shown);
                 y += height;
                 shown++;
@@ -858,11 +949,150 @@ namespace Hoodrich.UI
             _lastShown = shown;
 
             if (count == 0) Nothing(feedTop);
-            else Rail(right, feedTop, bottom, count, shown);
+            else
+            {
+                Rail(right, feedTop, bottom, count, shown);
+
+                // THE END OF IT, SAID OUT LOUD. A tab with three posts on it left two thirds
+                // of the panel as black nothing, which reads as a screen that failed to draw
+                // rather than a timeline you have reached the end of.
+                if (y + 0.06f < bottom)
+                {
+                    Hud.Text(_tab == 1 ? "That's everything about you so far."
+                                              : "You're all caught up.",
+                             left + PanelWidth * 0.5f, y + 0.024f, 0.29f,
+                             Palette.Alpha(Quiet, 150), Hud.FontChaletLondon);
+                }
+            }
 
             BottomBar(left, x, inner);
             _glide.Draw();
         }
+
+        /// <summary>
+        /// One post, opened, with what people said under it.
+        ///
+        /// THE POST IS BIGGER HERE and the replies are smaller, which is the whole visual
+        /// argument of a thread: this one thing, and then everybody answering it. The
+        /// replies are indented past the avatar column so the eye reads them as hanging off
+        /// the post rather than as more timeline.
+        /// </summary>
+        private void Thread(float left, float x, float inner, float top)
+        {
+            var post = _thread;
+            if (post == null || post.By == null) { _thread = null; return; }
+
+            var bottom = PanelTop + PanelHeight - BottomH;
+
+            // ---- the header: back, and what you are looking at ----
+            Hud.Text("<", x, top + 0.008f, 0.40f, Ink, Hud.FontChaletLondon, centre: false);
+            Hud.Text("Post", x + 0.020f, top + 0.010f, 0.34f, Ink, Hud.FontChaletLondon, centre: false);
+
+            var said = _feed.CommentsOn(post);
+
+            Hud.TextRight(said.Count + (said.Count == 1 ? " reply" : " replies"),
+                          inner, top + 0.012f, 0.26f, Quiet, Hud.FontChaletLondon);
+
+            var y = top + ThreadHeadH;
+            Hud.RectFrom(left, y - 0.0012f, PanelWidth, 0.0012f, Hairline);
+
+            // ---- the post itself ----
+            const float big = 0.046f;
+
+            var cx = x + Hud.ToX(big) * 0.5f;
+            var cy = y + 0.012f + big * 0.5f;
+
+            if (!Avatar(post, cx, cy))
+            {
+                Hud.RectFrom(cx - Hud.ToX(big) * 0.5f, cy - big * 0.5f, Hud.ToX(big), big, post.By.Tint);
+
+                Hud.Text(post.By.Initial, cx, cy - 0.016f, 0.54f,
+                         Color.FromArgb(235, 250, 250, 248), Hud.FontChaletLondon);
+            }
+
+            var tx = x + Hud.ToX(big) + 0.010f;
+
+            Hud.Text(post.By.Name, tx, y + 0.010f, 0.36f, Ink, Hud.FontChaletLondon, centre: false);
+
+            if (post.By.Verified)
+            {
+                var nw = Measure(post.By.Name, 0.36f, Hud.FontChaletLondon, 0.05f);
+                Badge(tx + nw + 0.005f, y + 0.024f, 0.014f);
+            }
+
+            Hud.Text(post.By.Handle, tx, y + 0.033f, 0.27f, Quiet, Hud.FontChaletLondon, centre: false);
+
+            var by = y + 0.012f + big + 0.008f;
+
+            foreach (var line in Wrap(post.Plain, PanelWidth - Pad * 2f, 0.36f))
+            {
+                Hud.Text(line, x, by, 0.36f, Ink, Hud.FontChaletLondon, centre: false);
+                by += 0.028f;
+            }
+
+            by += 0.006f;
+
+            Hud.Text(post.LikesNow.ToString("N0") + " likes   ·   " +
+                     post.RepostsNow.ToString("N0") + " reposts",
+                     x, by, 0.27f, Quiet, Hud.FontChaletLondon, centre: false);
+
+            by += 0.026f;
+
+            Hud.RectFrom(left, by, PanelWidth, 0.0012f, Hairline);
+            by += 0.008f;
+
+            // ---- and everybody underneath ----
+            var rx = x + 0.014f;
+            var wide = PanelWidth - Pad * 2f - 0.014f;
+
+            for (var i = _threadScroll; i < said.Count; i++)
+            {
+                var c = said[i];
+                if (c == null || c.By == null) continue;
+
+                var lines = Wrap(c.Body, wide - Hud.ToX(ReplyFace) - 0.010f, 0.30f);
+                var h = 0.022f + Math.Max(1, lines.Count) * 0.023f + 0.008f;
+
+                if (by + h > bottom) break;
+
+                var fx = rx + Hud.ToX(ReplyFace) * 0.5f;
+                var fy = by + ReplyFace * 0.5f;
+
+                Hud.RectFrom(rx, by, Hud.ToX(ReplyFace), ReplyFace, c.By.Tint);
+
+                Hud.Text(c.By.Initial, fx, fy - 0.010f, 0.34f,
+                         Color.FromArgb(235, 250, 250, 248), Hud.FontChaletLondon);
+
+                var lx = rx + Hud.ToX(ReplyFace) + 0.008f;
+
+                Hud.Text(c.By.Name, lx, by - 0.002f, 0.28f, Ink, Hud.FontChaletLondon, centre: false);
+
+                var w = Measure(c.By.Name, 0.28f, Hud.FontChaletLondon, 0.04f);
+
+                Hud.Text(c.By.Handle, lx + w + 0.006f, by - 0.002f, 0.25f, Quiet,
+                         Hud.FontChaletLondon, centre: false);
+
+                var ly = by + 0.020f;
+
+                foreach (var line in lines)
+                {
+                    Hud.Text(line, lx, ly, 0.30f, Ink, Hud.FontChaletLondon, centre: false);
+                    ly += 0.023f;
+                }
+
+                by += h;
+            }
+
+            if (_threadScroll > 0)
+            {
+                Hud.TextRight(_threadScroll + " above", inner, top + 0.012f, 0.24f,
+                              Quiet, Hud.FontChaletLondon);
+            }
+        }
+
+        /// <summary>The header over an opened post, and how big a face is on a reply.</summary>
+        private const float ThreadHeadH = 0.038f;
+        private const float ReplyFace = 0.026f;
 
         // ---- the furniture -----------------------------------------------------
 
@@ -893,18 +1123,27 @@ namespace Hoodrich.UI
         {
             const float size = 0.054f;
 
-            Face(x + Hud.ToX(size) * 0.5f, top + 0.010f + size * 0.5f, size);
+            // THE BANNER, WHICH IS THE ONE THING EVERY VERSION OF THIS APP HAS KEPT. A
+            // colour across the top with the face hanging half off the bottom of it, and
+            // the colour is your set's rather than a stock blue -- the profile of somebody
+            // who runs with somebody. Two rectangles, and it makes the page read as a
+            // profile instead of a list with a name over it.
+            Hud.RectFrom(left, top, PanelWidth, BannerH, Banner());
+            Hud.RectFrom(left, top + BannerH - 0.0012f, PanelWidth, 0.0012f, Hairline);
+
+            Face(x + Hud.ToX(size) * 0.5f, top + BannerH - size * 0.28f, size);
 
             var tx = x + Hud.ToX(size) + 0.010f;
+            var ny = top + BannerH + 0.002f;
 
-            Hud.Text(_feed.DisplayName, tx, top + 0.006f, 0.40f, Ink, Hud.FontChaletLondon, centre: false);
+            Hud.Text(_feed.DisplayName, tx, ny, 0.40f, Ink, Hud.FontChaletLondon, centre: false);
 
             var nw = Measure(_feed.DisplayName, 0.40f, Hud.FontChaletLondon, 0.06f);
-            Badge(tx + nw + 0.006f, top + 0.024f, 0.017f);
+            Badge(tx + nw + 0.006f, ny + 0.018f, 0.017f);
 
-            Hud.Text(_feed.Handle, tx, top + 0.036f, 0.27f, Quiet, Hud.FontChaletLondon, centre: false);
+            Hud.Text(_feed.Handle, tx, ny + 0.030f, 0.27f, Quiet, Hud.FontChaletLondon, centre: false);
 
-            var ly = top + 0.064f;
+            var ly = ny + 0.058f;
             var fx = Stat(tx, ly, _feed.Following.ToString("N0"), "Following", Ink);
             Stat(fx + 0.014f, ly, _feed.Followers.ToString("N0"), "Followers", Gained());
 
@@ -912,11 +1151,37 @@ namespace Hoodrich.UI
             var n = _tally[0];
 
             Hud.TextRight(payback ? "Somebody's coming" : n + (n == 1 ? " post" : " posts"),
-                          inner, top + 0.010f, 0.25f, payback ? Pink : Quiet, Hud.FontChaletLondon);
+                          inner, top + BannerH + 0.006f, 0.25f, payback ? Pink : Quiet,
+                          Hud.FontChaletLondon);
 
             Hud.RectFrom(left, top + ProfileH - 0.0012f, PanelWidth, 0.0012f, Hairline);
 
             return top + ProfileH;
+        }
+
+        /// <summary>
+        /// The banner's colour: your set's, dimmed to a band rather than a paint job.
+        ///
+        /// Falls back to the app's own blue for somebody who runs with nobody, which is
+        /// exactly what a stock profile looks like -- and that is the right thing for a man
+        /// who has not picked a side yet.
+        /// </summary>
+        private Color Banner()
+        {
+            try
+            {
+                if (Crew != null && Crew.IsAffiliated && Crew.Current != null)
+                {
+                    var c = Crew.Current.Colour;
+                    return Color.FromArgb(255, c.R / 3 + 14, c.G / 3 + 14, c.B / 3 + 14);
+                }
+            }
+            catch
+            {
+                // The app's own colour, then.
+            }
+
+            return Color.FromArgb(255, 12, 34, 54);
         }
 
         /// <summary>A number in white and its word in grey, on one line. Returns where the next starts.</summary>
@@ -985,8 +1250,9 @@ namespace Hoodrich.UI
 
             string keys;
 
-            if (Progress() > 0f) keys = "Keep holding  ·  let go to stop";
-            else if (IsFeedTab) keys = ud + " scroll  ·  " + lr + " tabs  ·  " + back + " out";
+            if (_thread != null) keys = ud + " scroll  ·  " + back + " back to the feed";
+            else if (Progress() > 0f) keys = "Keep holding  ·  let go to stop";
+            else if (IsFeedTab) keys = ud + " scroll  ·  " + ok + " open  ·  " + lr + " tabs  ·  " + back + " out";
             else if (Rows() == 0) keys = lr + " tabs  ·  " + back + " out";
             else if (!_live) keys = ud + " pick  ·  " + back + " out";
             else if (_tab == TabPost) keys = ud + " pick  ·  " + ok + " post  ·  " + back + " out";

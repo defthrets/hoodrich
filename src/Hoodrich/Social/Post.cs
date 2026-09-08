@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using GTA;
 
@@ -74,6 +75,14 @@ namespace Hoodrich.Social
 
         /// <summary>The letter in the avatar disc.</summary>
         public string Initial => string.IsNullOrEmpty(Name) ? "?" : Name.Substring(0, 1).ToUpperInvariant();
+    }
+
+    /// <summary>One thing somebody said UNDER somebody else's post.</summary>
+    internal sealed class Comment
+    {
+        public Author By;
+        public string Body = "";
+        public int Likes;
     }
 
     /// <summary>One thing somebody said.</summary>
@@ -157,5 +166,25 @@ namespace Hoodrich.Social
         /// scrolling past everything else.
         /// </summary>
         public bool AboutYou;
+
+        /// <summary>
+        /// The set it was written from, and what it was about.
+        ///
+        /// Kept because the replies need them: which people would turn up under a post is
+        /// decided by what kind of post it is, and that is the set. See SocialFeed.CommentsOn.
+        /// </summary>
+        public string Set = "";
+        public string Subject = "";
+
+        /// <summary>
+        /// What people said under it, or null until somebody opens it.
+        ///
+        /// MADE ON DEMAND AND KEPT. A feed of forty posts with six replies each is two
+        /// hundred and forty lines of text nobody has read, generated for a screen nobody
+        /// opened -- so nothing is written until a post is actually opened, and then it is
+        /// kept, because a comment thread that says something different every time you
+        /// look at it is not a comment thread.
+        /// </summary>
+        public List<Comment> Comments;
     }
 }

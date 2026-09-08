@@ -505,6 +505,22 @@ namespace Hoodrich.Social
                     if (sets.Count > 0) feed._voices[voice] = sets;
                 }
 
+                // WHAT PEOPLE SAY UNDER A POST, by kind rather than by set: agreeing,
+                // doubting, arguing, buying, mourning. Which kind a post gets is decided
+                // in code from the set and who wrote it -- see CommentsOn.
+                foreach (var kind in doc["comments"].Keys)
+                {
+                    var lines = new List<string>();
+
+                    foreach (var line in doc["comments"][kind].Items)
+                    {
+                        var text = line.AsString("");
+                        if (!string.IsNullOrEmpty(text)) lines.Add(text);
+                    }
+
+                    if (lines.Count > 0) feed._comments[kind] = lines;
+                }
+
                 foreach (var key in doc["slots"].Keys)
                 {
                     var list = new List<string>();
@@ -532,7 +548,8 @@ namespace Hoodrich.Social
 
                 Log.Info("Socials loaded: " + feed._authors.Count + " people (" +
                          feed._voices.Count + " with their own voice), " +
-                         feed._templates.Count + " post sets, " + feed._slots.Count + " word lists.");
+                         feed._templates.Count + " post sets, " + feed._slots.Count +
+                         " word lists, " + feed._comments.Count + " kinds of reply.");
             }
             catch (Exception ex)
             {
@@ -1979,6 +1996,8 @@ namespace Hoodrich.Social
                 By = by,
                 Body = body,
                 Plain = plain,
+                Set = set,
+                Subject = subject ?? "",
                 At = Game.GameTime
             };
 
@@ -2109,6 +2128,202 @@ namespace Hoodrich.Social
                 // pulling up and hear what happens next.
                 default: return "";
             }
+        }
+
+        // ======================================================================
+        // What people said under it
+        // ======================================================================
+
+        /// <summary>
+        /// The replies under a post, made the first time somebody opens it.
+        ///
+        /// THE POINT OF THIS IS WHO IS TALKING, NOT WHAT IS SAID. A comment section where
+        /// a random account says a random encouraging thing is wallpaper. Under a diss it
+        /// has to be the set you named arguing back and your own lot behind you; under a
+        /// memorial it has to be people who knew him and nobody else; under a price it has
+        /// to be customers. So the KIND of reply is decided from the post, and the person
+        /// saying it is then drawn from whoever would say that kind of thing.
+        ///
+        /// The reply count on the post is what it was already showing, so the number under
+        /// the speech bubble and the number of replies you can read are the same number.
+        /// </summary>
+        public List<Comment> CommentsOn(Post post)
+        {
+            if (post == null) return new List<Comment>();
+            if (post.Comments != null) return post.Comments;
+
+            var made = new List<Comment>();
+            post.Comments = made;
+
+            try
+            {
+                var many = Math.Max(0, Math.Min(8, post.RepliesNow));
+                if (many == 0) return made;
+
+                var set = post.Set ?? "";
+                var target = Aimed(post);
+
+                // WHO ARGUES AND WHO AGREES, worked out once for the whole thread.
+                var hostile = Hostile(set);
+                var mourning = set.IndexOf("RIP", StringComparison.OrdinalIgnoreCase) >= 0
+                            || set.IndexOf("Mourns", StringComparison.OrdinalIgnoreCase) >= 0
+                            || string.Equals(set, "Hospital", StringComparison.OrdinalIgnoreCase);
+
+                var buying = string.Equals(set, "YouWhereAt", StringComparison.OrdinalIgnoreCase)
+                          || string.Equals(set, "YouPriceDrop", StringComparison.OrdinalIgnoreCase)
+                          || string.Equals(set, "YouPosted", StringComparison.OrdinalIgnoreCase)
+                          || string.Equals(set, "ProductGood", StringComparison.OrdinalIgnoreCase);
+
+                var police = post.By != null && post.By.Voice != null &&
+                             post.By.Voice.StartsWith("cop_", StringComparison.OrdinalIgnoreCase);
+
+                var used = new List<string>();
+
+                for (var i = 0; i < many; i++)
+                {
+                    string kind;
+
+                    if (police) kind = i == 0 ? "cops" : (_rng.Next(3) == 0 ? "angry" : "cops");
+                    else if (mourning) kind = "rip";
+                    else if (buying) kind = i % 3 == 2 ? "joke" : "buy";
+
+                    // A DISS IS AN ARGUMENT, SO IT ALTERNATES. Them, then yours, then them
+                    // again -- which is what a thread under one of these actually looks
+                    // like, rather than eight people agreeing with whoever posted.
+                    else if (hostile) kind = i % 2 == 0 ? "beef" : "hype";
+                    else if (string.Equals(set, "YouFlex", StringComparison.OrdinalIgnoreCase))
+                        kind = i == 0 ? "hype" : (i == 1 ? "warn" : (_rng.Next(2) == 0 ? "doubt" : "joke"));
+                    else if (string.Equals(set, "YouTruce", StringComparison.OrdinalIgnoreCase))
+                        kind = i % 2 == 0 ? "doubt" : "hype";
+                    else if (string.Equals(set, "YouBought", StringComparison.OrdinalIgnoreCase))
+                        kind = _rng.Next(3) == 0 ? "hype" : "doubt";
+                    else kind = _rng.Next(4) == 0 ? "doubt" : (_rng.Next(2) == 0 ? "hype" : "joke");
+
+                    var who = Commenter(kind, post, target);
+                    if (who == null) continue;
+
+                    var body = Line(kind, used, post, who);
+                    if (string.IsNullOrEmpty(body)) continue;
+
+                    used.Add(body);
+
+                    made.Add(new Comment
+                    {
+                        By = who,
+                        Body = body,
+                        Likes = _rng.Next(0, Math.Max(2, post.LikesNow / 6))
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not write the replies: " + ex.Message);
+            }
+
+            return made;
+        }
+
+        /// <summary>Whether this is the kind of post the other side answers.</summary>
+        private static bool Hostile(string set)
+        {
+            return set.IndexOf("Diss", StringComparison.OrdinalIgnoreCase) >= 0
+                || set.IndexOf("Taunt", StringComparison.OrdinalIgnoreCase) >= 0
+                || set.IndexOf("Gloat", StringComparison.OrdinalIgnoreCase) >= 0
+                || set.IndexOf("GangOnGang", StringComparison.OrdinalIgnoreCase) >= 0
+                || set.IndexOf("Wasted", StringComparison.OrdinalIgnoreCase) >= 0
+                || set.IndexOf("Dropped", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>
+        /// The set a post is aimed AT, so the right people turn up under it.
+        ///
+        /// READ OFF THE SET NAME through the same lookup the author pools use --
+        /// YouDissBallas is aimed at the Ballas, DissedBackVagos at the Vagos -- so nothing
+        /// has to match a display name back to an id. A post whose set names nobody falls
+        /// back to whoever the fight is with right now.
+        /// </summary>
+        private string Aimed(Post post)
+        {
+            var named = post == null ? "" : GangFor(post.Set ?? "");
+
+            return string.IsNullOrEmpty(named) ? (_rivalGang ?? "") : named;
+        }
+
+        /// <summary>
+        /// Who leaves a reply of this kind.
+        ///
+        /// BEEF COMES FROM THE SET THAT WAS NAMED, and from nobody else -- that is the
+        /// whole reason this method exists. Backing comes from your own lot. Customers and
+        /// bystanders come from the people with no set at all. Police answer police.
+        /// Nobody ever replies to their own post.
+        /// </summary>
+        private Author Commenter(string kind, Post post, string target)
+        {
+            var open = new List<Author>();
+
+            foreach (var author in _authors)
+            {
+                if (author == null) continue;
+                if (post.By != null && string.Equals(author.Handle, post.By.Handle,
+                                                     StringComparison.OrdinalIgnoreCase)) continue;
+
+                var cop = !string.IsNullOrEmpty(author.Voice) &&
+                          author.Voice.StartsWith("cop_", StringComparison.OrdinalIgnoreCase);
+
+                if (string.Equals(kind, "cops", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!cop) continue;
+                }
+                else
+                {
+                    // A uniform does not turn up under a corner post to say big up yourself.
+                    if (cop) continue;
+                    if (author.IsOrg) continue;
+                }
+
+                if (string.Equals(kind, "beef", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (string.IsNullOrEmpty(author.Gang)) continue;
+                    if (Ours(author)) continue;
+
+                    // Named somebody: it is THEM who answer, not any rival who fancies it.
+                    if (!string.IsNullOrEmpty(target) &&
+                        !string.Equals(author.Gang, target, StringComparison.OrdinalIgnoreCase)) continue;
+                }
+                else if (string.Equals(kind, "hype", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(kind, "rip", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Your own, and the neighbours who have known you since school.
+                    if (!Ours(author) && !string.IsNullOrEmpty(author.Gang)) continue;
+                }
+                else if (string.Equals(kind, "buy", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!string.IsNullOrEmpty(author.Gang) && !Ours(author)) continue;
+                }
+
+                open.Add(author);
+            }
+
+            if (open.Count == 0) return null;
+
+            return open[_rng.Next(open.Count)];
+        }
+
+        /// <summary>One reply of that kind, not one already under this post.</summary>
+        private string Line(string kind, List<string> used, Post post, Author by)
+        {
+            List<string> lines;
+            if (!_comments.TryGetValue(kind, out lines) || lines.Count == 0) return null;
+
+            for (var tries = 0; tries < 10; tries++)
+            {
+                var pick = lines[_rng.Next(lines.Count)];
+                if (used.Contains(pick)) continue;
+
+                return Fill(pick, post == null ? "" : post.Subject, 0, by);
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -2253,6 +2468,10 @@ namespace Hoodrich.Social
         /// What each set calls itself, so it can never be handed its own name as the enemy.
         /// Loaded from socials.json; a gang with no entry simply has nothing excluded.
         /// </summary>
+        /// <summary>What people say under a post, by kind. See CommentsOn.</summary>
+        private readonly Dictionary<string, List<string>> _comments =
+            new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
         private readonly Dictionary<string, List<string>> _selfWords =
             new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
