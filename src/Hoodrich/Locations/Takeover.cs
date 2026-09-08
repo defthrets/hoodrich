@@ -7348,7 +7348,13 @@ namespace Hoodrich.Locations
                     Function.Call(Hash.SET_VEHICLE_NEON_COLOUR, h, neon[0], neon[1], neon[2]);
                 }
 
-                Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, h, Plates[_rng.Next(Plates.Length)]);
+                // THE SET'S, MOSTLY. Two in three wear the Families' plates, because this is
+                // their junction and their cars; the rest keep the street's own -- SIDEWYS,
+                // NO GRIP -- which is what the builds that came from elsewhere would wear.
+                var setPlate = _rng.Next(3) < 2 ? Gangs.Plates.Pick("families", _rng) : null;
+
+                Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, h,
+                              setPlate ?? StreetPlates[_rng.Next(StreetPlates.Length)]);
 
                 // AND NO LIVERY, LAST OF ALL.
                 //
@@ -7424,7 +7430,7 @@ namespace Hoodrich.Locations
             new[] { 0, 90, 255 },     new[] { 255, 255, 255 }
         };
 
-        private static readonly string[] Plates =
+        private static readonly string[] StreetPlates =
         {
             "SIDEWYS", "NOGRIP", "8OS ONLY", "1 MORE", "SKIDZ", "LS 4EVA",
             "SMOKIN", "3RD GEAR", "NO TYRES", "SPIN IT", "DRIFTA", "LOUD 1"

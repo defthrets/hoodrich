@@ -368,6 +368,8 @@ namespace Hoodrich.Gangs
         {
             try
             {
+                Plates.Stamp(car, gang, _rng);
+
                 var donk = _look == Look.Donks;
 
                 Function.Call(Hash.SET_VEHICLE_MOD_KIT, car.Handle, 0);

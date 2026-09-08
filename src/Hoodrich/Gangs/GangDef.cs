@@ -141,6 +141,9 @@ namespace Hoodrich.Gangs
         /// <summary>Gang ids this gang is at war with.</summary>
         public readonly List<string> Rivals = new List<string>();
 
+        /// <summary>What its cars say on the plate. Eight characters, capitals, digits and spaces. See Gangs.Plates.</summary>
+        public readonly List<string> Plates = new List<string>();
+
         /// <summary>
         /// Zone codes this gang claims, as returned by GET_NAME_OF_ZONE (e.g. "DAVIS").
         /// Editable in gangs.json; use the wheel's Turf > "Log this zone" action in game to

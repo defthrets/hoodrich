@@ -247,6 +247,8 @@ namespace Hoodrich.Gangs
 
                 _car.IsPersistent = true;
 
+                Plates.Stamp(_car, _who, _rng);
+
                 // In their colours. This is the one carload in the mod that turns up because
                 // of something you SAID, and arriving in whatever the game handed out made it
                 // read as traffic that happened to stop.
@@ -511,6 +513,7 @@ namespace Hoodrich.Gangs
                 Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, bike.Handle);
 
                 _pack.Add(bike);
+                Plates.Stamp(bike, _who, _rng);
                 return bike;
             }
             catch (Exception ex)

@@ -622,6 +622,7 @@ namespace Hoodrich
                 _drugs = Drugs.Load();
                 Preflight.Step = "loading gangs.json";
                 _gangs = GangRegistry.Load();
+                Gangs.Plates.Registry = _gangs;
                 Preflight.Step = "loading dealers.json";
                 _dealers = DealerManager.Load(_cfg);
                 _delivery = new Delivery();
@@ -1117,6 +1118,7 @@ namespace Hoodrich
                 _meetOne = new ParkedCar(new Vector3(-227.440f, -1697.994f, 33.300f), 214.105f,
                                          MetallicDarkGreen, "gauntlet4", "gauntlet", "dominator")
                 {
+                    Plate = "CGF4LYF",
                     // Stock. Not a build -- no rims, no drop, no tint, nothing but the paint
                     // and what is glowing under it, which is what was asked for and is also
                     // the more convincing of the two: one car at a meet is somebody's project
@@ -1134,6 +1136,7 @@ namespace Hoodrich
                 _meetTwo = new ParkedCar(new Vector3(-223.179f, -1696.639f, 33.294f), 180.686f,
                                          MetallicDarkGreen, "hermes", "tornado", "buccaneer2")
                 {
+                    Plate = "FAM4EVA",
                     Built = true,
                     Running = true,
                     Lights = true,

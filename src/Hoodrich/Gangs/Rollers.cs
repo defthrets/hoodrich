@@ -1540,6 +1540,9 @@ namespace Hoodrich.Gangs
         {
             try
             {
+                // Whose it is, on the plate as well as in the paint.
+                Plates.Stamp(car, _gangs.Get(_gangId), _rng);
+
                 Function.Call(Hash.SET_VEHICLE_MOD_KIT, car.Handle, 0);
 
                 // Nothing over the top of it.

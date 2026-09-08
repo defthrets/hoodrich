@@ -45,7 +45,19 @@
       "joinRespect": 0,
       "joinable": false,
       "paint": 62,
-      "colourWord": "teal"
+      "colourWord": "teal",
+      "plates": [
+        "VLA4LYF",
+        "AZTEC4L",
+        "BANNING1",
+        "AZTECAS1",
+        "CHUY1",
+        "VLAGANG",
+        "TEAL4LYF",
+        "VLARIDE",
+        "AZTEC4EV",
+        "VLA 4L"
+      ]
     },
     {
       "id": "families",
@@ -79,7 +91,19 @@
       "joinable": true,
       "paint": 49,
       "starter": "xanax",
-      "colourWord": "green"
+      "colourWord": "green",
+      "plates": [
+        "CGF4LYF",
+        "CGF 4L",
+        "FAM4EVA",
+        "CHAMB4L",
+        "GREEN4L",
+        "FORUMDR",
+        "CGFGANG",
+        "CGF2DAY",
+        "STRWBRY",
+        "FAMSTAY"
+      ]
     },
     {
       "id": "ballas",
@@ -109,7 +133,19 @@
       "turfHint": "Davis and the blocks by the arena",
       "joinRespect": 0,
       "paint": 145,
-      "colourWord": "purple"
+      "colourWord": "purple",
+      "plates": [
+        "BALLAKLR",
+        "BALLAS4L",
+        "PURPLE1",
+        "GROVE4L",
+        "BALLA4L",
+        "PURP4LYF",
+        "BLLAGANG",
+        "GROVEST",
+        "DAVIS4L",
+        "OGREESE"
+      ]
     },
     {
       "id": "vagos",
@@ -141,7 +177,19 @@
       "turfHint": "Rancho, La Mesa, Murrieta and El Burro Heights",
       "joinRespect": 0,
       "paint": 88,
-      "colourWord": "yellow"
+      "colourWord": "yellow",
+      "plates": [
+        "VAGOS4L",
+        "YELLOW1",
+        "VAGO4LYF",
+        "RANCHO4L",
+        "ELTIO1",
+        "LSV4LYF",
+        "LAMESA4L",
+        "VAGOSLS",
+        "YLLW4LYF",
+        "VAGOGANG"
+      ]
     },
     {
       "id": "marabunta",
@@ -170,7 +218,19 @@
       "turfHint": "Cypress Flats and Textile City",
       "joinRespect": 250,
       "paint": 51,
-      "colourWord": "teal"
+      "colourWord": "teal",
+      "plates": [
+        "MARA4LYF",
+        "CYPRESS1",
+        "MGRANDE",
+        "CHAVO1",
+        "MARAGANG",
+        "TXTILE",
+        "MG4LYF",
+        "FLATS4L",
+        "MARABNTA",
+        "MGRIDE"
+      ]
     },
     {
       "id": "lost",
@@ -201,7 +261,19 @@
       "turfHint": "Stab City, Sandy Shores, Grapeseed, and the clubhouse in East Vinewood",
       "joinRespect": 250,
       "paint": 1,
-      "colourWord": "leather"
+      "colourWord": "leather",
+      "plates": [
+        "LOSTMC1",
+        "LOST4LYF",
+        "SANDY4L",
+        "LOSTRIDE",
+        "BULL1",
+        "MC4LYF",
+        "LOSTBRO",
+        "GRPSEED",
+        "LOST MC",
+        "LOSTBOYS"
+      ]
     },
     {
       "id": "triads",
@@ -231,7 +303,19 @@
       "turfHint": "Mirror Park and Hawick",
       "joinRespect": 900,
       "paint": 27,
-      "colourWord": "red"
+      "colourWord": "red",
+      "plates": [
+        "TRIAD1",
+        "WEI4LYF",
+        "MIRRORPK",
+        "UNCLEWEI",
+        "TRIADS4L",
+        "HAWICK1",
+        "WCTRIAD",
+        "CHENG1",
+        "TRIADLS",
+        "REDDRGN"
+      ]
     },
     {
       "id": "armenians",
@@ -260,7 +344,19 @@
       "turfHint": "Alta, Burton and Pillbox Hill",
       "joinRespect": 900,
       "paint": 4,
-      "colourWord": "black"
+      "colourWord": "black",
+      "plates": [
+        "SARKIS1",
+        "ARMENIA1",
+        "ALTA4LYF",
+        "BURTON1",
+        "ARMMOB",
+        "PILLBOX1",
+        "ARMEN4L",
+        "MOB4LYF",
+        "SARKIS4L",
+        "ARMRIDE"
+      ]
     },
     {
       "id": "koreans",
@@ -287,7 +383,19 @@
       "joinRespect": 0,
       "joinable": false,
       "paint": 12,
-      "colourWord": "black"
+      "colourWord": "black",
+      "plates": [
+        "MRKIM1",
+        "KKANG1",
+        "LSEOUL4L",
+        "KKANGPAE",
+        "SEOUL1",
+        "KIM4LYF",
+        "KKP4LYF",
+        "LSEOUL",
+        "KKPGANG",
+        "KKPRIDE"
+      ]
     }
   ]
 }

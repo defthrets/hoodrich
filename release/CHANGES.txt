@@ -74,6 +74,13 @@ It was also most of the phone flicker: the cards and the discs behind every
 tick came to five hundred rectangles a screenful and the game drops the tail
 of the frame past about four hundred. A post is one hairline now.
 
+THE SETS' CARS WEAR THEIR PLATES. Every car a set puts on the road says whose
+it is on the plate as well as in the paint: the rollers, the lowriders, the
+war cars, the ones that come looking for you after a diss, the two at the
+meet, and two in three at the takeover (the rest keep the street's own).
+CGF4LYF, FAM4EVA, BALLAKLR, VAGOS4L, LOSTMC1 and eighty-odd more, ten a set,
+in gangs.json under "plates" beside the colours.
+
 THE SET RIDES BMXs. Every Families member on a pedal bike -- the ones rolling
 the back streets, the homies on the bike ride, the lookout on a tag run --
 is on a BMX now. They used to draw from road bikes, a fixie, a mountain

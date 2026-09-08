@@ -155,6 +155,7 @@ namespace Hoodrich.Gangs
 
                 ReplaceList(g.Drugs, node["drugs"]);
                 ReplaceList(g.Rivals, node["rivals"]);
+                ReplaceList(g.Plates, node["plates"]);
                 ReplaceList(g.Turf, node["turf"]);
 
                 if (existing == null) Register(g);

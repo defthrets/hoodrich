@@ -1041,6 +1041,7 @@ namespace Hoodrich.Gangs
                 car.IsEngineRunning = true;
 
                 Paint(car, _attacker);
+                Plates.Stamp(car, _attacker, _rng);
                 _cars.Add(car);
 
                 Ped driver = null;
