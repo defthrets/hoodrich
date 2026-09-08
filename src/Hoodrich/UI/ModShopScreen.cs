@@ -59,6 +59,13 @@ namespace Hoodrich.UI
         private const int Shown = 11;
         private const int OpenGraceMs = 220;
 
+        /// <summary>The entrance: up and in over a sixth of a second, like every other panel.</summary>
+        private const int EnterMs = 170;
+        private const float EnterRise = 0.014f;
+
+        /// <summary>The cursor frame that glides between rows. See UI.Glide.</summary>
+        private readonly Glide _glide = new Glide();
+
         /// <summary>The 45 percent of the game's own prices that a shop with this many bricks on the floor charges.</summary>
         private const float LowEnd = 0.45f;
 
@@ -120,6 +127,7 @@ namespace Hoodrich.UI
             _inside = false;
             _top = 0;
             _pickedAt = _openedAt = Game.GameTime;
+            _glide.Reset();
 
             try { Function.Call(Hash.SET_VEHICLE_MOD_KIT, car.Handle, 0); }
             catch { }
@@ -458,6 +466,7 @@ namespace Hoodrich.UI
                 Scroll(_pick, cat.Count());
                 _inside = true;
                 _pickedAt = Game.GameTime;
+                _glide.Reset();
                 Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
                 return;
             }
@@ -508,6 +517,7 @@ namespace Hoodrich.UI
             _top = 0;
             Scroll(_cat, _cats.Count);
             _pickedAt = Game.GameTime;
+            _glide.Reset();
 
             if (sound) Hud.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
@@ -546,55 +556,65 @@ namespace Hoodrich.UI
             var pad = Hud.ToX(PadH);
             var n = _inside ? _cats[_cat].Count() : _cats.Count;
             var rows = Math.Max(1, Math.Min(Shown, n));
-            var height = 0.250f + rows * RowHeight;
+            var height = UiKit.HeadH + 0.026f + rows * RowHeight + 0.010f + UiKit.FootH;
+
             // Hung from its bottom rather than centred, so a long list grows upwards into
             // empty screen instead of downwards into the map.
             var top = FootY - height + _curtain.Lift;
 
-            Theme.Panel(left, top, width, height);
+            var age = Game.GameTime - _openedAt;
+            var arrive = age >= EnterMs ? 1f : age / (float)EnterMs;
+            arrive = 1f - (1f - arrive) * (1f - arrive);
+            top += EnterRise * (1f - arrive);
+
+            Theme.Panel(left, top, width, height, arrive);
 
             var x = left + pad;
             var right = left + width - pad;
-            var y = top + 0.020f;
+            var wide = right - x;
+            var caps = Palette.Alpha(Palette.TextDim, (int)(190f * arrive));
 
-            Hud.Text("MUFFLERS", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
-            Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, y + 0.010f, 0.34f, Palette.Cash);
+            // ---- the name over the door, the car in the bay, what is in your pocket ----
+            var y = UiKit.Head(left, top, width, pad, "garage.png", "HAO'S MUFFLER SHOP",
+                             _name.ToLowerInvariant(), "$" + Game.Player.Money.ToString("N0"), arrive);
 
-            y += 0.052f;
-
-            var head = _inside ? _cats[_cat].Name.ToUpperInvariant() : _name.ToUpperInvariant();
+            // What you are looking at, and what is on the car right now.
+            var head = _inside ? _cats[_cat].Name.ToUpperInvariant() : "WHAT IT CAN DO";
             var side = _inside
                 ? "ON IT NOW: " + _cats[_cat].Label(_wasOn).ToUpperInvariant()
-                : _cats.Count + " THINGS IT CAN DO";
+                : _cats.Count + (_cats.Count == 1 ? " THING" : " THINGS");
 
-            Hud.Text(head, x, y, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
-            Hud.TextRight(side, right, y, 0.24f, Palette.TextDim);
+            Hud.Text(head, x, y + 0.002f, 0.22f, caps, Hud.FontLabel, centre: false);
+            Hud.TextRight(side, right, y + 0.002f, 0.22f, caps, Hud.FontLabel);
 
             y += 0.026f;
-            Theme.Rule(x, y, right - x);
-            y += 0.010f;
 
             if (n == 0)
             {
-                Hud.Text("Nothing to be done to this one.", x, y + 0.014f, 0.30f, Palette.TextDim, Hud.FontBody, centre: false);
-                Keys(x, top + height - 0.030f);
+                Hud.Text("Nothing to be done to this one.", x, y + 0.006f, 0.30f,
+                         Palette.Alpha(Palette.TextDim, (int)(255f * arrive)), Hud.FontBody, centre: false);
+                Keys(x, right, top + height - UiKit.FootH + 0.006f, arrive);
                 return;
             }
 
             var grown = Theme.Grown(_pickedAt);
-            var barWide = (right - x) + pad * 0.7f;
+            var barWide = wide + pad * 0.7f;
             var selected = _inside ? _pick : _cat;
             var last = _inside ? _lastPick : _lastCat;
+
+            _glide.Begin();
 
             for (var i = _top; i < Math.Min(n, _top + Shown); i++)
             {
                 var here = i == selected;
                 var lit = Theme.Lit(i, selected, last, grown);
 
-                Theme.Plate(x - pad * 0.35f, y - 0.004f, barWide, RowHeight, lit);
-                Theme.Sheen(x - pad * 0.35f, y - 0.004f, barWide, RowHeight, lit);
+                Theme.Plate(x - pad * 0.35f, y - 0.004f, barWide, RowHeight, lit * arrive);
+                Theme.Sheen(x - pad * 0.35f, y - 0.004f, barWide, RowHeight, lit * arrive);
 
-                var ink = Theme.Ink(here ? Palette.Text : Palette.TextDim, lit);
+                if (here) _glide.Target(x - pad * 0.35f, y - 0.004f, barWide, RowHeight);
+
+                var ink = Theme.Ink(Palette.Alpha(here ? Palette.Text : Palette.TextDim, (int)(255f * arrive)), lit);
 
                 if (_inside)
                 {
@@ -604,7 +624,8 @@ namespace Hoodrich.UI
 
                     Hud.Text(cat.Label(i), x, y + 0.006f, 0.30f, ink, Hud.FontBody, centre: false);
                     Hud.TextRight(fitted ? "FITTED" : price > 0 ? "$" + price.ToString("N0") : "FREE",
-                                  right, y + 0.007f, 0.28f, fitted ? Palette.Brand : ink, Hud.FontLabel);
+                                  right, y + 0.007f, 0.28f,
+                                  fitted ? Palette.Alpha(Palette.Brand, (int)(255f * arrive)) : ink, Hud.FontLabel);
                 }
                 else
                 {
@@ -615,7 +636,7 @@ namespace Hoodrich.UI
                     try { now = cat.Label(Math.Max(0, Math.Min(cat.Count() - 1, cat.Current()))); }
                     catch { now = ""; }
 
-                    Hud.TextRight(now.ToUpperInvariant(), right, y + 0.008f, 0.24f, Palette.TextDim, Hud.FontLabel);
+                    Hud.TextRight(now.ToUpperInvariant(), right, y + 0.008f, 0.24f, caps, Hud.FontLabel);
                 }
 
                 y += RowHeight;
@@ -623,22 +644,35 @@ namespace Hoodrich.UI
 
             if (n > Shown)
             {
-                Hud.TextRight((selected + 1) + " / " + n, right, y + 0.002f, 0.22f, Palette.TextDim, Hud.FontLabel);
+                Hud.TextRight((selected + 1) + " / " + n, right, y + 0.002f, 0.22f, caps, Hud.FontLabel);
             }
 
-            Keys(x, top + height - 0.030f);
+            Keys(x, right, top + height - UiKit.FootH + 0.006f, arrive);
+
+            // Last, so it rides over the rows it is pointing at.
+            _glide.Draw(arrive);
         }
 
-        private void Keys(float x, float y)
+        /// <summary>The keys, drawn as keys. Inside a list the way out puts things back; outside it drives out.</summary>
+        private void Keys(float x, float right, float footY, float arrive)
         {
-            var pad = Hud.OnPad;
-            var words = _inside
-                ? (pad ? "D-PAD  TRY IT ON      A  BUY IT      B  PUT IT BACK"
-                       : "UP/DOWN  TRY IT ON      ENTER  BUY IT      BACKSPACE  PUT IT BACK")
-                : (pad ? "D-PAD  MOVE      A  OPEN      B  DRIVE OUT"
-                       : "UP/DOWN  MOVE      ENTER  OPEN      BACKSPACE  DRIVE OUT");
+            Theme.Rule(x, footY, right - x, arrive);
 
-            Hud.Text(words, x, y, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
+            var ky = footY + 0.011f;
+
+            if (_inside)
+            {
+                UiKit.KeyRight(right, ky, UiKit.Back, "PUT IT BACK", arrive);
+
+                var kx = UiKit.Key(x, ky, null, "arrow_updown.png", "TRY IT ON", arrive);
+                UiKit.Key(kx, ky, UiKit.Confirm, null, "BUY IT", arrive);
+                return;
+            }
+
+            UiKit.KeyRight(right, ky, UiKit.Back, "DRIVE OUT", arrive);
+
+            var mx = UiKit.Key(x, ky, null, "arrow_updown.png", "MOVE", arrive);
+            UiKit.Key(mx, ky, UiKit.Confirm, null, "OPEN", arrive);
         }
     }
 }

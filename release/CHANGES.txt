@@ -11,9 +11,9 @@ sprint to move the lot. Three pages -- product, guns, and food if Bare
 Minimum is installed -- on Q and Tab (the bumpers on a pad). Walk away and
 the lid shuts behind him.
 
-FROM THE SEAT TOO. Stopped, in the driver's seat, the same key opens the boot
-behind you and the same screen, without the bending, because you cannot
-bend into a boot from the front seat.
+FROM THE SEAT TOO. Stopped, in the driver's seat, the same key brings up the
+same screen -- lid shut, nobody bending, because you cannot get into a boot
+from the front seat.
 
 WHAT GOES IN COMES OUT THE SAME. Product keeps its purity and its bags. A gun
 goes in with its rounds, its magazine and whatever was bolted on it and
@@ -27,6 +27,21 @@ food, it is kept in the save under the car, and it is the same boot after
 the car has been stood back up, towed, resprayed or driven through a wall.
 The record survives selling the car back, too, so buying it again is
 buying it back with the boot as you left it.
+
+HAO'S MUFFLER SHOP. The bay next to the lot is his and says so now, on the map
+and over the door. The menu got the same letterhead and key caps as every
+other screen, a cursor that glides between rows, and our own pull-in prompt
+instead of the game's yellow box. Hao's lot got the same treatment -- the
+car's class on a chip after its name, the way out where it is on every
+other panel -- and the boot card moved to the bottom of the screen, slimmer,
+with the room left on each page beside the tabs where it was sat on the
+last row before.
+
+THE DIALOGUE PANEL keeps its shape on any monitor now (it was a fraction of
+the screen's width, which on an ultrawide was a strip), draws its keys as
+keys, and a line with a price or a reason on the right gives way to it
+instead of running through it -- selling a car back to Hao was the line
+that showed it.
 
 
 0.7.0 -- 8 September 2026

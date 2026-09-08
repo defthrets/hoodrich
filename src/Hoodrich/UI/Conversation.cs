@@ -279,7 +279,16 @@ namespace Hoodrich.UI
 
         /// <summary>Where the foot of the panel sits, as a fraction of the screen's height.</summary>
         private const float PanelFoot = 0.95f;
-        private const float PanelWidth = 0.42f;
+
+        /// <summary>
+        /// Sized in HEIGHT fractions and converted, so the card keeps its shape.
+        ///
+        /// It was 0.42 of the screen's width, which on a widescreen monitor is a card and on
+        /// an ultrawide is a letterbox strip with a sentence a metre long across it. The
+        /// stash screen made the same move for the same reason.
+        /// </summary>
+        private const float PanelWidthH = 0.75f;
+        private static float PanelWidth => Hud.ToX(PanelWidthH);
         private const float LineHeight = 0.030f;
         private const float ChoiceHeight = 0.032f;
         private const float BodyScale = 0.36f;
@@ -847,7 +856,7 @@ namespace Hoodrich.UI
                 if (bodyHeight < room) bodyHeight = room;
             }
 
-            var total = 0.075f + bodyHeight + 0.012f + choiceHeight + 0.030f;
+            var total = 0.075f + bodyHeight + 0.012f + choiceHeight + 0.038f;
             if (!string.IsNullOrEmpty(Title)) total += 0.036f;
             // STOOD ON THE BOTTOM OF THE SCREEN. Centred, it sat across the face of whoever
             // was talking; centred lower, across their chin. Hung from the bottom edge it
@@ -1021,7 +1030,17 @@ namespace Hoodrich.UI
 
                 // No caret. The plate and the frame say which line this is, and a mark that
                 // appears in front of the words shifts them sideways every time the cursor moves.
-                var labelled = choice.Label;
+                //
+                // FITTED TO WHAT IS LEFT. A line with a detail on the right -- a price, a
+                // reason it is locked -- used to run straight through it: "I want to sell the
+                // Vectre back." and "$14,000 -- full price" met in the middle of the panel.
+                // The detail is measured first and the words give way to it.
+                var note = !choice.Enabled ? choice.DisabledReason : picked ? choice.Detail : "";
+                var noteW = string.IsNullOrEmpty(note) ? 0f : Hud.MeasureText(note, 0.26f, Hud.FontLabel) + 0.012f;
+                var markW = string.IsNullOrEmpty(choice.MarkFile) ? 0f : Hud.ToX(MarkSize) + 0.008f;
+
+                var labelled = Hud.Fit(choice.Label, PanelX + PanelWidth - 0.014f - noteW - markW - textX,
+                                       ChoiceScale, Hud.FontBody);
 
                 Hud.Text(labelled, textX, y, ChoiceScale, colour, Hud.FontBody, centre: false);
 
@@ -1038,19 +1057,23 @@ namespace Hoodrich.UI
                              y + 0.0115f, MarkSize, 0f, colour);
                 }
 
-                var note = !choice.Enabled ? choice.DisabledReason : picked ? choice.Detail : "";
                 if (!string.IsNullOrEmpty(note))
                 {
-                    Hud.TextRight(note, PanelX + PanelWidth - 0.014f, y, 0.30f,
+                    Hud.TextRight(note, PanelX + PanelWidth - 0.014f, y + 0.004f, 0.26f,
                                       Theme.Ink(!choice.Enabled ? Palette.Danger : Palette.TextDim, under),
-                                      Hud.FontBody);
+                                      Hud.FontLabel);
                 }
 
                 y += ChoiceHeight;
             }
 
-            Hud.Text("D-PAD / ARROWS  CHOOSE      ENTER  SAY IT      BACKSPACE  WALK OFF",
-                         PanelX + 0.014f, y + 0.004f, 0.28f, Palette.TextDim, Hud.FontLabel, centre: false);
+            // The keys, drawn as keys, the way every other panel does it.
+            var ky = y + 0.008f;
+
+            UiKit.KeyRight(PanelX + PanelWidth - 0.014f, ky, UiKit.Back, "WALK OFF", arrive);
+
+            var kx = UiKit.Key(PanelX + 0.014f, ky, null, "arrow_updown.png", "CHOOSE", arrive);
+            UiKit.Key(kx, ky, UiKit.Confirm, null, "SAY IT", arrive);
 
             // Last, so it rides over the lines it is pointing at.
             _glide.Draw(arrive);

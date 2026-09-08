@@ -329,6 +329,63 @@ namespace Hoodrich.UI
             }
         }
 
+        // ======================================================================
+        // A prompt in the world
+        // ======================================================================
+
+        /// <summary>Where the bar sits, how it is spaced, and how long it takes to come up.</summary>
+        private const float PromptY = 0.905f;
+        private const float PromptScale = 0.27f;
+        private const float PromptPad = 0.014f;
+        private const float PromptIcon = 0.011f;
+        public const int PromptFadeMs = 160;
+
+        /// <summary>The bar's own ground. Darker and thinner than a panel -- it is a caption.</summary>
+        private static readonly Color PromptBack = Color.FromArgb(185, 8, 9, 11);
+
+        /// <summary>
+        /// One line at the bottom of the screen: a picture, what you are stood at, then the
+        /// key and what it does. For standing next to something -- a car, a bay -- in place
+        /// of the game's own yellow box, which was the one piece of stock chrome left on a
+        /// mod that draws everything else itself. The dog's bar, made shared.
+        ///
+        /// Fade is nought to one. Costs one rounded rectangle.
+        /// </summary>
+        public static void Prompt(string icon, string who, string what, float fade)
+        {
+            if (fade <= 0f) return;
+            if (fade > 1f) fade = 1f;
+
+            var iconW = string.IsNullOrEmpty(icon) ? 0f : Hud.ToX(PromptIcon) + 0.004f;
+
+            var width = iconW + Hud.MeasureText(who, PromptScale, Hud.FontLabel) + 0.016f
+                      + Hud.MeasureText(what, PromptScale, Hud.FontLabel);
+
+            var left = 0.5f - width * 0.5f;
+
+            Hud.RoundRect(left - PromptPad, PromptY - 0.007f, width + PromptPad * 2f, 0.027f, 0.0135f,
+                          Palette.Alpha(PromptBack, (int)(PromptBack.A * fade)), steps: 10);
+
+            var x = Hud.Hint(icon, who, left, PromptY, PromptScale,
+                             Palette.Alpha(Palette.Text, (int)(Palette.Text.A * fade)));
+
+            Hud.Text(what, x, PromptY, PromptScale,
+                     Palette.Alpha(Palette.TextDim, (int)(Palette.TextDim.A * fade)), Hud.FontLabel, centre: false);
+        }
+
+        /// <summary>
+        /// How far up the prompt is, nought to one, from when it first showed. Pass the
+        /// caller's own stamp; it is set on the first call and the caller clears it to
+        /// nought when the prompt goes away, so the next one fades in again.
+        /// </summary>
+        public static float PromptFade(ref int since, int now)
+        {
+            if (since == 0) since = now;
+
+            var age = now - since;
+            return age >= PromptFadeMs ? 1f : age / (float)PromptFadeMs;
+        }
+
         /// <summary>
         /// How far into a short flash we are, one at the moment and nought when it is over.
         /// </summary>

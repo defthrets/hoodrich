@@ -31,6 +31,13 @@ namespace Hoodrich.UI
         /// <summary>Long enough that the press which opened it cannot also buy something.</summary>
         private const int OpenGraceMs = 220;
 
+        /// <summary>The entrance: up and in over a sixth of a second, like every other panel.</summary>
+        private const int EnterMs = 170;
+        private const float EnterRise = 0.014f;
+
+        /// <summary>What he says about the one you are on, and the line of facts under it.</summary>
+        private const float NoteH = 0.050f;
+
         private readonly Hao _hao;
 
         private int _row;
@@ -201,37 +208,33 @@ namespace Hoodrich.UI
             var pad = Hud.ToX(PadH);
 
             var rows = Math.Max(1, stock.Count);
-            var height = 0.250f + rows * RowHeight;
+            var height = UiKit.HeadH + 0.004f + rows * RowHeight + 0.010f + 0.012f + NoteH + UiKit.FootH;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
 
-            Theme.Panel(left, top, width, height);
+            var age = Game.GameTime - _openedAt;
+            var arrive = age >= EnterMs ? 1f : age / (float)EnterMs;
+            arrive = 1f - (1f - arrive) * (1f - arrive);
+            top += EnterRise * (1f - arrive);
+
+            Theme.Panel(left, top, width, height, arrive);
 
             var x = left + pad;
             var right = left + width - pad;
+            var wide = right - x;
+            var caps = Palette.Alpha(Palette.TextDim, (int)(190f * arrive));
 
-            var y = top + 0.020f;
-
-            // ---- his name over the door ----
-            Hud.Text("HAO'S", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
-            Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, y + 0.010f, 0.34f,
-                          Palette.Cash);
-
-            y += 0.052f;
-
-            Hud.Text("EVERYTHING OUT FRONT", x, y, 0.26f, Palette.TextDim,
-                     Hud.FontLabel, centre: false);
-            Hud.TextRight(stock.Count + (stock.Count == 1 ? " motor" : " motors"),
-                          right, y, 0.24f, Palette.TextDim);
-
-            y += 0.026f;
-            Theme.Rule(x, y, right - x);
-            y += 0.010f;
+            // ---- his name over the door, and what is in your pocket ----
+            var y = UiKit.Head(left, top, width, pad, "car.png", "HAO'S LOT",
+                             "the row you just walked past",
+                             "$" + Game.Player.Money.ToString("N0") + " ON YOU", arrive);
+            y += 0.004f;
 
             if (stock.Count == 0)
             {
                 Hud.Text("Lot's empty. Bring me something and I'll put it right.",
-                         x, y + 0.014f, 0.30f, Palette.TextDim, Hud.FontBody, centre: false);
-                Keys(x, right, top + height - 0.030f);
+                         x, y + 0.014f, 0.30f, Palette.Alpha(Palette.TextDim, (int)(255f * arrive)),
+                         Hud.FontBody, centre: false);
+                Keys(x, right, top + height - UiKit.FootH + 0.006f, arrive);
                 return;
             }
 
@@ -241,7 +244,7 @@ namespace Hoodrich.UI
             // new row rises over a sixth of a second while the one under the old row sinks,
             // and the frame -- see Glide -- travels between them. Same as every other screen.
             var grown = Theme.Grown(_pickedAt);
-            var barWide = (right - x) + pad * 0.7f;
+            var barWide = wide + pad * 0.7f;
 
             _glide.Begin();
 
@@ -254,68 +257,71 @@ namespace Hoodrich.UI
 
                 var lit = Theme.Lit(i, _row, _lastRow, grown);
 
-                Theme.Plate(x - pad * 0.35f, y - 0.004f, barWide, RowHeight, lit);
-                Theme.Sheen(x - pad * 0.35f, y - 0.004f, barWide, RowHeight, lit);
+                Theme.Plate(x - pad * 0.35f, y - 0.004f, barWide, RowHeight, lit * arrive);
+                Theme.Sheen(x - pad * 0.35f, y - 0.004f, barWide, RowHeight, lit * arrive);
 
                 if (here) _glide.Target(x - pad * 0.35f, y - 0.004f, barWide, RowHeight);
 
-                var ink = Theme.Ink(here ? Palette.Text : Palette.TextDim, lit);
+                var ink = Theme.Ink(Palette.Alpha(here ? Palette.Text : Palette.TextDim, (int)(255f * arrive)), lit);
 
-                Hud.Text(car.Name, x, y, 0.32f, ink, Hud.FontBody, centre: false);
+                // The name, and what kind of car it is on a chip after it -- a tag is a
+                // different kind of thing from a name and now looks like one.
+                Hud.Text(car.Name, x, y + 0.006f, 0.30f, ink, Hud.FontBody, centre: false);
 
-                Hud.Text(car.Class, x + Hud.ToX(0.175f), y + 0.003f, 0.24f,
-                         Theme.Ink(Palette.TextDim, lit), Hud.FontBody, centre: false);
+                if (!string.IsNullOrEmpty(car.Class))
+                {
+                    var after = x + Hud.MeasureText(car.Name, 0.30f, Hud.FontBody) + 0.008f;
+                    UiKit.Tag(after, y + 0.0085f, car.Class.ToUpperInvariant(), Palette.TextDim,
+                              arrive * (0.75f + 0.25f * lit));
+                }
 
-                Hud.TextRight("$" + car.Price.ToString("N0"), right, y + 0.002f, 0.28f,
-                              Theme.Ink(afford ? Palette.Cash : Palette.Danger, lit));
+                Hud.TextRight("$" + car.Price.ToString("N0"), right, y + 0.007f, 0.28f,
+                              Theme.Ink(Palette.Alpha(afford ? Palette.Cash : Palette.Danger, (int)(255f * arrive)), lit),
+                              Hud.FontLabel);
 
                 y += RowHeight;
             }
 
             y += 0.010f;
-            Theme.Rule(x, y, right - x);
+            Theme.Rule(x, y, wide, arrive);
             y += 0.012f;
 
             // ---- what he says about the one you are on ----
             var pick = Chosen;
             if (pick != null)
             {
-                Hud.Text(pick.Note, x, y, 0.28f, Palette.Text, Hud.FontBody, centre: false);
+                Hud.Text(Hud.Fit(pick.Note, wide, 0.28f, Hud.FontBody), x, y, 0.28f,
+                         Palette.Alpha(Palette.Text, (int)(255f * arrive)), Hud.FontBody, centre: false);
 
                 y += 0.024f;
 
-                Hud.Text("COMPETITION SUSPENSION  ·  NO PAPERWORK  ·  PARKED OUTSIDE",
-                         x, y, 0.22f, Palette.TextDim, Hud.FontLabel, centre: false);
+                Hud.Text("COMPETITION SUSPENSION  \u00b7  NO PAPERWORK  \u00b7  PARKED OUTSIDE",
+                         x, y, 0.22f, caps, Hud.FontLabel, centre: false);
 
                 if (Game.Player.Money < pick.Price)
                 {
                     Hud.TextRight("SHORT BY $" + (pick.Price - Game.Player.Money).ToString("N0"),
-                                  right, y, 0.22f, Palette.Danger, Hud.FontLabel);
+                                  right, y, 0.22f, Palette.Alpha(Palette.Danger, (int)(255f * arrive)), Hud.FontLabel);
                 }
             }
 
-            Keys(x, right, top + height - 0.030f);
+            Keys(x, right, top + height - UiKit.FootH + 0.006f, arrive);
 
             // Last, so it rides over the rows it is pointing at.
-            _glide.Draw();
+            _glide.Draw(arrive);
         }
 
-        /// <summary>
-        /// What the buttons do, with a picture on each. Same treatment as the rest of the
-        /// panels -- and it finally uses the right edge it was already being handed, so the
-        /// way out is where it is on every other screen rather than at the end of a sentence.
-        /// </summary>
-        private static void Keys(float x, float right, float y)
+        /// <summary>The keys, drawn as keys, with the way out in the corner it is on every other screen.</summary>
+        private static void Keys(float x, float right, float footY, float arrive)
         {
-            var pad = Hud.OnPad;
-            var ink = Palette.TextDim;
+            Theme.Rule(x, footY, right - x, arrive);
 
-            var hx = Hud.Hint("arrow_updown.png", "LOOK", x, y, 0.22f, ink);
+            var ky = footY + 0.011f;
 
-            Hud.Hint("cash.png", (pad ? "A" : "ENTER") + "  BUY IT", hx, y, 0.22f, ink);
+            UiKit.KeyRight(right, ky, UiKit.Back, "WALK OFF", arrive);
 
-            Hud.TextRight(pad ? "B  WALK OFF" : "BACKSPACE  WALK OFF", right, y, 0.22f, ink,
-                          Hud.FontLabel);
+            var kx = UiKit.Key(x, ky, null, "arrow_updown.png", "LOOK", arrive);
+            UiKit.Key(kx, ky, UiKit.Confirm, null, "BUY IT", arrive);
         }
     }
 }

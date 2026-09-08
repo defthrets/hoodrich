@@ -18,9 +18,9 @@ namespace Hoodrich.Locations
     /// car and goes in head first -- the game's own bin-rummage, which is a man bent double
     /// over something at waist height and is exactly the shape of somebody going through a
     /// boot -- and the inventory comes up while he is in there. Sat in the driver's seat with
-    /// the car stopped, the same key opens the lid behind him and the same screen without the
-    /// bending, because you cannot bend into a boot from the front seat and it would be a
-    /// worse feature for pretending you could.
+    /// the car stopped, the same key brings up the same screen and nothing else: the lid
+    /// stays shut and nobody bends, because you cannot get into a boot from the front seat
+    /// and a lid that lifts itself behind you is a worse feature for pretending you could.
     ///
     /// WHAT COUNTS AS YOURS is what OwnedCars says: the plate. Not "a car you are near" and
     /// not "the car you drove here" -- a car off Hao's lot with your record on it. So there is
@@ -75,6 +75,9 @@ namespace Hoodrich.Locations
         private int _phaseAt;
         private bool _sat;
         private bool _changed;
+
+        /// <summary>Whether this class lifted the lid, so it only ever shuts what it opened.</summary>
+        private bool _lidUp;
 
         private Vehicle _car;
         private OwnedCar _record;
@@ -225,46 +228,16 @@ namespace Hoodrich.Locations
 
         // ---- the prompt ---------------------------------------------------------------------
 
-        private const float PromptY = 0.905f;
-        private const float PromptScale = 0.27f;
-        private const float PromptPad = 0.014f;
-        private const float PromptGap = 0.018f;
-        private const float PromptIcon = 0.011f;
-        private const int PromptFadeMs = 160;
-
-        private static readonly System.Drawing.Color Backdrop = System.Drawing.Color.FromArgb(185, 8, 9, 11);
-
         /// <summary>The same bottom bar the dog uses: the car's name, then what the key does.</summary>
         private void Prompt(int now)
         {
-            if (_promptSince == 0) _promptSince = now;
+            var fade = UiKit.PromptFade(ref _promptSince, now);
 
-            var age = now - _promptSince;
-            var fade = age >= PromptFadeMs ? 1f : age / (float)PromptFadeMs;
-
-            var who = (_nearRecord == null || string.IsNullOrEmpty(_nearRecord.Name) ? "YOUR CAR" : _nearRecord.Name).ToUpperInvariant();
+            var who = (_nearRecord == null || string.IsNullOrEmpty(_nearRecord.Name) ? "YOUR CAR" : _nearRecord.Name)
+                .ToUpperInvariant();
             var cap = Hud.OnPad ? "D-PAD RIGHT" : "E";
-            var what = cap + "   " + (_nearSat ? "OPEN THE BOOT" : "POP THE BOOT");
 
-            var iconW = Hud.ToX(PromptIcon) + 0.004f;
-
-            var width = iconW + Hud.MeasureText(who, PromptScale, Hud.FontLabel) + PromptGap
-                      + Hud.MeasureText(what, PromptScale, Hud.FontLabel);
-
-            var left = 0.5f - width * 0.5f;
-
-            Hud.RoundRect(left - PromptPad, PromptY - 0.007f, width + PromptPad * 2f, 0.027f, 0.0135f,
-                          Dim(Backdrop, fade), steps: 10);
-
-            var x = Hud.Hint("car.png", who, left, PromptY, PromptScale, Dim(Palette.Text, fade));
-
-            Hud.Text(what, x, PromptY, PromptScale, Dim(Palette.TextDim, fade), Hud.FontLabel, centre: false);
-        }
-
-        private static System.Drawing.Color Dim(System.Drawing.Color c, float by)
-        {
-            var a = (int)(c.A * (by < 0f ? 0f : by > 1f ? 1f : by));
-            return System.Drawing.Color.FromArgb(a < 0 ? 0 : a > 255 ? 255 : a, c.R, c.G, c.B);
+            UiKit.Prompt("car.png", who, cap + "   " + (_nearSat ? "CHECK THE BOOT" : "POP THE BOOT"), fade);
         }
 
         // ---- open ---------------------------------------------------------------------------
@@ -278,19 +251,24 @@ namespace Hoodrich.Locations
             _promptSince = 0;
             _near = null;
 
-            try { Function.Call(Hash.SET_VEHICLE_DOOR_OPEN, car.Handle, BootDoor, false, false); }
-            catch { /* a lid that will not lift is still a boot */ }
-
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
 
             if (sat)
             {
-                // Nothing to bend over from the seat. Straight to the screen.
+                // Nothing to bend over from the seat, and no lid: it stays shut behind him.
+                // Straight to the screen.
                 _phase = Phase.In;
                 _phaseAt = Game.GameTime;
                 Show();
                 return;
             }
+
+            try
+            {
+                Function.Call(Hash.SET_VEHICLE_DOOR_OPEN, car.Handle, BootDoor, false, false);
+                _lidUp = true;
+            }
+            catch { /* a lid that will not lift is still a boot */ }
 
             // Turn him to the car, then the going-in clip. Set rather than tasked, the way the
             // dog does it: a turn task takes a second he spends stood looking the wrong way.
@@ -420,9 +398,11 @@ namespace Hoodrich.Locations
 
             try
             {
-                if (_car != null && _car.Exists()) Function.Call(Hash.SET_VEHICLE_DOOR_SHUT, _car.Handle, BootDoor, false);
+                if (_lidUp && _car != null && _car.Exists()) Function.Call(Hash.SET_VEHICLE_DOOR_SHUT, _car.Handle, BootDoor, false);
             }
             catch { /* the car has gone, and the lid with it */ }
+
+            _lidUp = false;
 
             if (_changed)
             {

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -55,9 +55,19 @@ namespace Hoodrich.UI
         private const int MovedFlashMs = 520;
 
         /// <summary>Rows on the page at once. A list longer than this scrolls under the cursor.</summary>
-        private const int Shown = 9;
+        private const int Shown = 7;
 
-        private const string Blurb = "what's on you, and what's in the car";
+        /// <summary>
+        /// Where the bottom of the card rests, and how tall its own slim head is.
+        ///
+        /// STOOD ON THE BOTTOM OF THE SCREEN rather than centred, and without the wordmark
+        /// the room screens carry. This is a card about the car, the car is what the camera
+        /// is looking at, and a panel in the middle of the screen sat across the boot he
+        /// was leaning into.
+        /// </summary>
+        private const float BottomY = 0.945f;
+        private const float HeadH = 0.040f;
+        private const float HeadIcon = 0.017f;
 
         private readonly Curtain _curtain = new Curtain();
         private readonly Glide _glide = new Glide();
@@ -496,14 +506,15 @@ namespace Hoodrich.UI
             if (!IsOpen) return;
 
             var shown = Math.Min(Math.Max(_rows.Count, 1), Shown);
-            var height = UiKit.HeadH + TabsH + CapsH + shown * RowH + 0.008f + UiKit.FootH;
+            var height = HeadH + TabsH + CapsH + shown * RowH + 0.006f + UiKit.FootH;
 
             var panelWidth = Hud.ToX(PanelWidthH);
             var pad = Hud.ToX(PadH);
 
             var left = 0.5f - panelWidth * 0.5f;
-            var top = 0.5f - height * 0.5f + _curtain.Lift;
+            var top = BottomY - height + _curtain.Lift;
 
+            // Up and in, eased out so it slows as it lands, the same as every other panel.
             var age = Game.GameTime - _openedAt;
             var arrive = age >= EnterMs ? 1f : age / (float)EnterMs;
             arrive = 1f - (1f - arrive) * (1f - arrive);
@@ -514,26 +525,50 @@ namespace Hoodrich.UI
             var x = left + pad;
             var right = left + panelWidth - pad;
             var wide = right - x;
+            var caps = Palette.Alpha(Palette.TextDim, (int)(190f * arrive));
 
-            var y = UiKit.Head(left, top, panelWidth, pad, "car.png", "THE BOOT", Blurb,
-                             _carName.ToUpperInvariant(), arrive);
-
-            // ---- the pages, as tabs ----
-            var names = Pantry.Present ? new[] { "PRODUCT", "GUNS", "FOOD" } : new[] { "PRODUCT", "GUNS" };
+            // ---- the head: the mark, the name of the thing, whose car ----
+            var y = top + 0.010f;
             var tx = x;
+
+            if (Hud.File("car.png", x + Hud.ToX(HeadIcon) * 0.5f, y + 0.0085f, HeadIcon, 0f,
+                         Palette.Alpha(Palette.Brand, (int)(235f * arrive))))
+            {
+                tx = x + Hud.ToX(HeadIcon) + 0.006f;
+            }
+
+            Hud.Text("THE BOOT", tx, y, 0.31f, Palette.Alpha(Palette.Text, (int)(255f * arrive)),
+                     Hud.FontLabel, centre: false);
+            Hud.TextRight(_carName.ToUpperInvariant(), right, y + 0.002f, 0.25f,
+                          Palette.Alpha(Palette.TextDim, (int)(200f * arrive)), Hud.FontLabel);
+
+            Theme.Rule(x, top + HeadH - 0.004f, wide, arrive);
+            y = top + HeadH;
+
+            // ---- the pages, as tabs, and how much room this one has left ----
+            var names = Pantry.Present ? new[] { "PRODUCT", "GUNS", "FOOD" } : new[] { "PRODUCT", "GUNS" };
+            tx = x;
 
             for (var i = 0; i < names.Length; i++)
             {
                 var here = (int)_page == i;
                 var ink = Palette.Alpha(here ? Palette.Text : Palette.TextDim, (int)(255f * arrive));
 
-                Hud.Text(names[i], tx, y + 0.002f, 0.27f, ink, Hud.FontLabel, centre: false);
+                Hud.Text(names[i], tx, y + 0.003f, 0.27f, ink, Hud.FontLabel, centre: false);
 
                 var w = Hud.MeasureText(names[i], 0.27f, Hud.FontLabel);
-                if (here) Hud.RectFrom(tx, y + 0.024f, w, 0.0022f, Palette.Alpha(Palette.Brand, (int)(220f * arrive)));
+                if (here) Hud.RectFrom(tx, y + 0.0245f, w, 0.0022f, Palette.Alpha(Palette.Brand, (int)(220f * arrive)));
 
                 tx += w + Hud.ToX(0.028f);
             }
+
+            var room = _page == Page.Product ? Grams(_trunk.Stash.FreeSpace) + " ROOM"
+                     : _page == Page.Guns ? (Trunk.BootGuns - _trunk.Guns.Count) + " OF " + Trunk.BootGuns + " FREE"
+                     : (Trunk.BootFood - _trunk.FoodCount) + " OF " + Trunk.BootFood + " FREE";
+
+            if (_rows.Count > Shown) room = (_selected + 1) + " / " + _rows.Count + "   \u00b7   " + room;
+
+            Hud.TextRight(room, right, y + 0.005f, 0.22f, caps, Hud.FontLabel);
 
             y += TabsH;
 
@@ -551,8 +586,6 @@ namespace Hoodrich.UI
 
             Hud.RectFrom(youX, y, colW, CapsH + rowsH, Color.FromArgb((int)(12f * arrive), 255, 255, 255));
             Hud.RectFrom(bootX, y, colW, CapsH + rowsH, Color.FromArgb((int)(12f * arrive), 255, 255, 255));
-
-            var caps = Palette.Alpha(Palette.TextDim, (int)(190f * arrive));
 
             Hud.Text(names[(int)_page], x, y + 0.002f, 0.22f, caps, Hud.FontLabel, centre: false);
             Hud.TextRight("ON YOU", youX + colW - 0.004f, y + 0.002f, 0.22f, caps, Hud.FontLabel);
@@ -582,27 +615,21 @@ namespace Hoodrich.UI
             }
 
             // ---- the keys ----
-            var footY = top + height - UiKit.FootH + 0.006f;
+            //
+            // Four and the way out. Up and down need no telling; the two arrows are the
+            // whole idea of the screen and the words after them are short enough to sit
+            // beside the caps rather than run into the next one.
+            var footY = top + height - UiKit.FootH + 0.004f;
 
             Theme.Rule(x, footY, wide, arrive);
 
             var ky = footY + 0.011f;
 
-            // Where the cursor is in a list longer than the page, and how much room is left.
-            var room = _page == Page.Product ? Grams(_trunk.Stash.FreeSpace) + " ROOM"
-                     : _page == Page.Guns ? (Trunk.BootGuns - _trunk.Guns.Count) + " OF " + Trunk.BootGuns + " FREE"
-                     : (Trunk.BootFood - _trunk.FoodCount) + " OF " + Trunk.BootFood + " FREE";
-
-            if (_rows.Count > Shown) room = (_selected + 1) + " / " + _rows.Count + "   " + room;
-
-            Hud.TextRight(room, right, footY - 0.026f, 0.22f, caps, Hud.FontLabel);
-
             UiKit.KeyRight(right, ky, UiKit.Back, "SHUT IT", arrive);
 
-            var kx = UiKit.Key(x, ky, null, "arrow_updown.png", "PICK", arrive);
-            kx = UiKit.Key(kx, ky, null, "arrow_left.png", "TAKE OUT", arrive);
-            kx = UiKit.Key(kx, ky, null, "arrow_right.png", "PUT IN", arrive);
-            kx = UiKit.Key(kx, ky, UiKit.All, null, "ALL OF IT", arrive);
+            var kx = UiKit.Key(x, ky, null, "arrow_left.png", "OUT", arrive);
+            kx = UiKit.Key(kx, ky, null, "arrow_right.png", "IN", arrive);
+            kx = UiKit.Key(kx, ky, UiKit.All, null, "THE LOT", arrive);
             UiKit.Key(kx, ky, Hud.OnPad ? "LB / RB" : "TAB / Q", null, "PAGE", arrive);
 
             _glide.Draw(arrive);

@@ -102,7 +102,7 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_BLIP_SPRITE, _blip.Handle, Sprite);
                 _blip.Color = BlipColor.Green;
                 _blip.Scale = 0.85f;
-                _blip.Name = "Mufflers";
+                _blip.Name = "Hao's Muffler Shop";
                 _blip.IsShortRange = true;
             }
             catch (Exception ex)
@@ -127,6 +127,9 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>When the pull-in prompt first showed, and the last frame it was drawn.</summary>
+        private int _promptSince, _promptLast;
+
         private void Asking()
         {
             try
@@ -142,7 +145,15 @@ namespace Hoodrich.Locations
                 if (car.Position.DistanceTo(Bay) > AskRange) return;
                 if (car.Speed > 9f) return;
 
-                Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to pull in to the muffler shop.");
+                // Our own bar rather than the game's yellow box. The stamp restarts whenever
+                // the prompt has been away for a moment, so it fades in each time he rolls up.
+                var now = Game.GameTime;
+                if (now - _promptLast > 250) _promptSince = now;
+                _promptLast = now;
+
+                UI.UiKit.Prompt("garage.png", "HAO'S MUFFLER SHOP",
+                                (UI.Draw.OnPad ? "D-PAD RIGHT" : "E") + "   PULL IN",
+                                UI.UiKit.PromptFade(ref _promptSince, now));
 
                 if (!Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 0, (int)Control.Context)) return;
 
