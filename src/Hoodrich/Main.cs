@@ -1616,6 +1616,11 @@ namespace Hoodrich
                 // whole yard standing up together.
                 _party.Furniture = true;
 
+                // AND EVERY NOW AND THEN SOMEBODY DOES SOMETHING. A dance, a gang sign, a
+                // slow clap, being sick behind a car -- one of the party clips, as a break,
+                // while the party is on. See Gangs.PartyClips.
+                _party.PartyClips = PartyClips.Lamars;
+
                 _party.QuietFrom = 2;
                 _party.QuietTo = 6;
 

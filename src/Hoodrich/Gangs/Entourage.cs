@@ -155,6 +155,23 @@ namespace Hoodrich.Gangs
         private const int RestPose = 0;
         private const int RestWalk = 1;
         private const int RestSit = 2;
+        private const int RestClip = 3;
+
+        /// <summary>
+        /// Things people do at a party that nobody does on a gate: a dance, a gang sign, a
+        /// slow clap, being sick behind a car. See Gangs.PartyClips for the rows. Null for a
+        /// yard where breaks are cigarettes and walks. Only during party hours -- see
+        /// PartyFrom -- and only as a break, so it is still the same man on the same mark
+        /// doing something else for a few seconds and then going back to it.
+        /// </summary>
+        public string[][] PartyClips;
+
+        /// <summary>How often a break during the party is one of those rather than a cigarette, a walk or the couch.</summary>
+        private const int PartyClipChance = 40;
+
+        /// <summary>How long one runs. Shorter than a smoke: a gesture that goes on for half a minute is a tic.</summary>
+        private const int ClipForMinMs = 7000;
+        private const int ClipForMaxMs = 16000;
 
         /// <summary>Its own, so a break never lands on the same frame as a line of dialogue.</summary>
         private readonly Random _rest = new Random();
@@ -1018,14 +1035,17 @@ namespace Hoodrich.Gangs
             // WHICH KIND OF BREAK. Furniture first, because it is the one that depends on
             // there being something to use -- and the game answers that by simply not moving
             // him, which the settle pass then tidies up on its own.
-            var kind = Furniture && _rest.Next(100) < FurnitureChance ? RestSit
+            // A party clip first, because it is the one that only exists while the party
+            // is on; then the furniture, because it depends on there being something to use.
+            var kind = PartyClips != null && PartyClips.Length > 0 && PartyOn && _rest.Next(100) < PartyClipChance ? RestClip
+                     : Furniture && _rest.Next(100) < FurnitureChance ? RestSit
                      : roam > 0f ? RestWalk
                      : RestPose;
 
             _restKind[index] = kind;
 
-            _restUntil[index] = now + (kind == RestSit
-                                       ? _rest.Next(SatForMinMs, SatForMaxMs)
+            _restUntil[index] = now + (kind == RestSit ? _rest.Next(SatForMinMs, SatForMaxMs)
+                                       : kind == RestClip ? _rest.Next(ClipForMinMs, ClipForMaxMs)
                                        : _rest.Next(RestForMinMs, RestForMaxMs));
 
             Shoulder(index, ped, false);
@@ -1044,12 +1064,81 @@ namespace Hoodrich.Gangs
                               at.X, at.Y, at.Z, roam, WanderShortestWalk, WanderPause);
                 Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
             }
+            else if (kind == RestClip)
+            {
+                // Nothing for him, or the clip is not resident yet: an ordinary pose break
+                // instead. The dictionary has been asked for, so the next one usually starts.
+                if (!Perform(ped))
+                {
+                    _restKind[index] = RestPose;
+                    _restUntil[index] = now + _rest.Next(RestForMinMs, RestForMaxMs);
+                    Idle(index, ped, Doing(index), Facing(index), MarkAt(index), Seated(index), null);
+                }
+            }
             else
             {
                 Idle(index, ped, Doing(index), Facing(index), MarkAt(index), Seated(index), null);
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// One of the party clips on him, if there is one for him and it is in.
+        ///
+        /// Picked from the rows he may do -- the dances are the women's, the drunk ones are
+        /// the men's, the signs are anybody's -- and played on a loop for the break, or once
+        /// for the ones that happen and are over. False when the dictionary is not resident
+        /// yet, which is the first ask of every dictionary; it has been requested, so the
+        /// next break usually gets it.
+        /// </summary>
+        private bool Perform(Ped ped)
+        {
+            if (PartyClips == null) return false;
+
+            var male = true;
+            try { male = Function.Call<bool>(Hash.IS_PED_MALE, ped.Handle); }
+            catch { /* he is a man, then */ }
+
+            var fits = new List<string[]>();
+
+            foreach (var row in PartyClips)
+            {
+                if (row == null || row.Length < 2) continue;
+
+                var who = row.Length > 2 ? row[2] : "any";
+                if (who == "male" && !male) continue;
+                if (who == "female" && male) continue;
+
+                fits.Add(row);
+            }
+
+            if (fits.Count == 0) return false;
+
+            var pick = fits[_rest.Next(fits.Count)];
+            var once = pick.Length > 3 && pick[3] == "once";
+
+            try
+            {
+                Function.Call(Hash.REQUEST_ANIM_DICT, pick[0]);
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, pick[0])) return false;
+
+                Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+                Function.Call(Hash.TASK_PLAY_ANIM, ped.Handle, pick[0], pick[1],
+                              4f, -4f, -1, once ? 0 : LoopingAnim, 0f, false, false, false);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>On a break that took him off his scenario -- a walk, the furniture, a clip -- and not yet back.</summary>
+        private bool Away(int index)
+        {
+            return index < _restUntil.Count && _restUntil[index] != 0 &&
+                   index < _restKind.Count && _restKind[index] != RestPose;
         }
 
         /// <summary>
@@ -1772,6 +1861,13 @@ namespace Hoodrich.Gangs
                     // asking those questions on the same pass would test a scenario issued a
                     // line ago and always get the wrong answer.
                     if (Resting(i, ped)) continue;
+
+                    // ON A BREAK THAT TOOK HIM OFF HIS SCENARIO -- a walk, the furniture, a
+                    // party clip -- he is left entirely alone until it ends. Everything
+                    // below is about a man whose scenario task has lapsed, and a man
+                    // mid-walk or mid-clip has no scenario task by design: the test below
+                    // was re-posing every walker a pass after he set off.
+                    if (Away(i)) continue;
 
                     // Home, but knocked out of what he was doing -- put him back to it once,
                     // not every pass, or he restarts the scenario forever.

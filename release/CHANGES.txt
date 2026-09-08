@@ -74,6 +74,15 @@ It was also most of the phone flicker: the cards and the discs behind every
 tick came to five hundred rectangles a screenful and the game drops the tail
 of the frame past about four hundred. A post is one hairline now.
 
+SOMEBODY AT LAMAR'S IS ALWAYS DOING SOMETHING. While the party is on, a break
+is now sometimes one of thirty party clips instead of a cigarette, a walk or
+the couch: the women dance, the men throw up the set sign, slow clap, play
+air guitar, take the piss, are sick behind a car, wake up on the floor. Same
+man, same mark, a few seconds, then back to what he was doing. And the dog
+sleeps sometimes. Also fixed underneath it: a man on a walk break was being
+put back on his mark a pass after he set off, so the meet's drifting never
+quite happened.
+
 THE PHONE STOPPED WORKING NEAR DENISE'S. Two reports, same cause: the mod stood
 down for a "cutscene" that nobody could see. The game marks a cutscene active
 from the moment a story script requests it, and the story scripts request the

@@ -697,7 +697,10 @@ namespace Hoodrich.Locations
             new[] { "creatures@rottweiler@amb@world_dog_barking@base", "base" },
             new[] { "creatures@rottweiler@amb@world_dog_sitting@idle_a", "idle_a" },
             new[] { "creatures@rottweiler@amb@world_dog_sitting@base", "base" },
-            new[] { "creatures@rottweiler@amb@world_dog_sitting@enter", "enter" }
+            new[] { "creatures@rottweiler@amb@world_dog_sitting@enter", "enter" },
+
+            // And sometimes he is asleep, which is most of what a yard dog does.
+            new[] { "creatures@rottweiler@amb@sleep_in_kennel@", "sleep_in_kennel" }
         };
 
         /// <summary>
