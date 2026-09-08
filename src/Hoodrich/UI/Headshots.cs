@@ -61,12 +61,15 @@ namespace Hoodrich.UI
         /// author came round the feed asked again, the face came back, the one after evicted
         /// it again. A picture blinking in and out on a two-second cycle.
         ///
-        /// Twenty. Comfortably more than a full page plus the two or three on screen, and well
-        /// inside what the game will register at once. The eviction is still there for a
-        /// session that runs long enough to meet hundreds of people; it just is not firing
-        /// every time somebody opens their phone.
+        /// Twelve. More than a page of the feed plus the two or three on screen, and it
+        /// leaves the game slots to spare: it registers a fixed number of these for
+        /// everybody at once, and twenty of ours plus the phone's own and whatever else is
+        /// running was all of them -- the man you were talking to got none, and stood
+        /// there with no face. The eviction is still there for a session that runs long
+        /// enough to meet hundreds of people; it just is not firing every time somebody
+        /// opens their phone.
         /// </summary>
-        private const int Keep = 20;
+        private const int Keep = 12;
 
         /// <summary>How long one is given to render before it is written off.</summary>
         private const int PatienceMs = 4000;

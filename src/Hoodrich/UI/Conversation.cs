@@ -324,6 +324,8 @@ namespace Hoodrich.UI
         private int _shot;
         private string _shotOf = "";
         private string _shotTxd = "";
+        private int _shotRetryAt;
+        private bool _shotMoaned;
 
         private void Mugshot()
         {
@@ -339,13 +341,27 @@ namespace Hoodrich.UI
             // against the handle we took THIS one for.
             var id = who.Handle.ToString();
 
-            if (_shotOf != id)
+            // ASKED AGAIN IF THE GAME SAID NO. It keeps a fixed number of these and hands
+            // back nothing when they are all taken -- the feed's faces, the phone's own,
+            // whatever else is running -- and this used to ask once, on the frame the talk
+            // opened, and take the answer for the rest of the conversation. Hao stood there
+            // with no face for exactly that reason. A slot comes free within seconds; it
+            // is asked for again every couple.
+            if (_shotOf != id || (_shot == 0 && Game.GameTime >= _shotRetryAt))
             {
-                DropMugshot();
+                if (_shotOf != id) DropMugshot();
                 _shotOf = id;
+                _shotRetryAt = Game.GameTime + 1500;
 
                 try { _shot = Function.Call<int>(Hash.REGISTER_PEDHEADSHOT, who.Handle); }
                 catch (Exception ex) { Log.Debug("No headshot for the speaker: " + ex.Message); }
+
+                if (_shot == 0 && !_shotMoaned)
+                {
+                    _shotMoaned = true;
+                    Log.Info("No headshot slot for " + (_node == null ? "the speaker" : _node.Speaker) +
+                             "; the contact picture stands in until one frees up.");
+                }
             }
 
             if (_shot == 0 || !string.IsNullOrEmpty(_shotTxd)) return;

@@ -36,6 +36,7 @@ namespace Hoodrich.UI
         {
             "CHAR_LAMAR", "CHAR_MP_GERALD", "CHAR_MP_STRETCH", "CHAR_CHENG",
             "CHAR_DENISE", "CHAR_FRANKLIN", "CHAR_TANISHA", "CHAR_MICHAEL", "CHAR_TREVOR",
+            "CHAR_HAO",
 
             // The father. Only ever needed once a save, and on the one text where a silhouette
             // would land worst -- the new man at the port introducing himself.
@@ -76,6 +77,10 @@ namespace Hoodrich.UI
                 // guess at from here, so the first that loads wins.
                 case "TANYA": return FirstReady("CHAR_TOW_TRUCK", "CHAR_MP_MECHANIC",
                                                 "CHAR_LS_CUSTOMS", "CHAR_TANISHA");
+                // The man on the lot. His own contact picture where the game ships one --
+                // it does, for the street races -- and the shop's otherwise.
+                case "HAO": return FirstReady("CHAR_HAO", "CHAR_LS_CUSTOMS", "CHAR_MP_MECHANIC");
+
                 case "MICHAEL": return "CHAR_MICHAEL";
                 case "TREVOR": return "CHAR_TREVOR";
 
