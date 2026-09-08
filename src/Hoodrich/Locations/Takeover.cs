@@ -597,14 +597,6 @@ namespace Hoodrich.Locations
         };
 
         /// <summary>
-        /// What gets put sideways.
-        ///
-        /// The Hellcats and the Mustangs are the Gauntlets and the Dominators -- those are the
-        /// cars this game has for those cars, and the numbered variants are the hotted-up ones.
-        /// The drift* models lead where an install has them and everything after is a car every
-        /// install has, so nobody ends up with an empty circle.
-        /// </summary>
-        /// <summary>
         /// One of the cars that turns up to every takeover, whatever else does.
         ///
         /// THE FIELD USED TO BE ENTIRELY A DICE ROLL, and a field with no faces in it is a
@@ -612,8 +604,13 @@ namespace Hoodrich.Locations
         /// before they have stopped, and everything else that arrives is arriving to a scene
         /// that already has somebody in it.
         ///
-        /// Each carries its own fallbacks, because a name an install has not got is not worth
-        /// losing a regular over -- the drift variants are the same cars with the kit on.
+        /// ONE NAME EACH, AND EVERY ONE A DRIFT MODEL. They used to carry a fallback --
+        /// {"fr36", "driftfr36"} -- and Make picks a random start in the list it is
+        /// handed, so a fallback beside the real thing was not a fallback, it was a coin
+        /// flip: half the regulars turned up in the ordinary car. A regular whose model
+        /// this install has not got now falls through to Drifters below, which is a list
+        /// of nothing but drift cars, so the fallback still exists and cannot put a
+        /// stock car in the circle.
         /// </summary>
         private sealed class Headliner
         {
@@ -625,12 +622,14 @@ namespace Hoodrich.Locations
 
         private static readonly Headliner[] Headliners =
         {
-            // The Vectre in the set's own green, which is the one car at the junction that is
-            // plainly somebody's rather than just a fast car that turned up.
-            new Headliner { Models = new[] { "vectre" }, Paint = SetGreen },
+            // The drift Dominator in the set's own green, which is the one car at the
+            // junction that is plainly somebody's rather than just a fast car that turned
+            // up. It was the Vectre, which has no drift version -- and a car competing in
+            // the middle without the kit on was the one thing this list could not have.
+            new Headliner { Models = new[] { "driftdominator10" }, Paint = SetGreen },
 
-            new Headliner { Models = new[] { "fr36", "driftfr36" } },
-            new Headliner { Models = new[] { "gauntlet4", "driftgauntlet4" } }
+            new Headliner { Models = new[] { "driftfr36" } },
+            new Headliner { Models = new[] { "driftgauntlet4" } }
         };
 
         /// <summary>Metallic dark green: the set's colour with flake in it. See Main.</summary>
@@ -639,13 +638,54 @@ namespace Hoodrich.Locations
         /// <summary>How many of the regulars have turned up to this one. Reset with the takeover.</summary>
         private int _headed;
 
+        /// <summary>
+        /// What gets put sideways: the drift models, and nothing else.
+        ///
+        /// EVERY NAME HERE HAS THE KIT ON. It used to lead with five drift models and
+        /// carry ten ordinary ones behind them for a build that had none -- but Make
+        /// starts at a RANDOM place in the list it is given rather than at the top, so
+        /// "behind them" meant nothing: two cars in three came out stock. A takeover is
+        /// the one place in this game where the car is the point, and a Sultan doing
+        /// donuts next to a drift Chavos reads as the game filling in.
+        ///
+        /// All twenty-three of them, taken off the vehicle list rather than typed from
+        /// memory. Make walks past anything an install has not got, so a copy of the game
+        /// missing a pack loses that name and no more; Contender has the way out for a
+        /// copy that has none of them at all.
+        /// </summary>
         private static readonly string[] Drifters =
         {
-            "driftdominator10", "driftgauntlet4", "driftchavosv6", "driftfr36", "driftremus",
+            // The Mustangs and the Hellcats: Dominator and Gauntlet.
+            "driftdominator10", "driftdominator9", "driftgauntlet4",
+
+            // The imports.
+            "driftfr36", "driftremus", "drifteuros", "driftzr350", "driftfuto",
+            "driftfuto2", "driftjester", "driftjester3", "driftrt3000", "driftyosemite",
+            "driftkeitora", "driftnebula", "drifttampa", "driftl352", "drifthardy",
+            "driftcheburek", "driftchavosv6",
+
+            // Ubermacht.
+            "driftcypher", "driftsentinel", "driftsentinel2"
+        };
+
+        /// <summary>
+        /// The way out for a copy of the game with no drift models at all.
+        ///
+        /// NEVER REACHED ON A BUILD THAT HAS THEM, and that is the whole design: Contender
+        /// asks Drifters first and only comes here when every one of those twenty-three
+        /// names is missing, which on a current install cannot happen. The alternative to
+        /// having it is a takeover with an empty middle on an old copy, which is worse
+        /// than a takeover with the wrong cars in it.
+        /// </summary>
+        private static readonly string[] Plain =
+        {
             "gauntlet3", "gauntlet4", "gauntlet5",
             "dominator3", "dominator7", "dominator8",
             "dominator", "buffalo3", "sultan", "futo"
         };
+
+        /// <summary>Whether the log has said once that this install has no drift cars. See Contender.</summary>
+        private bool _moanedPlain;
 
         /// <summary>
         /// The cars round the ring: imports and Ubermachts.
@@ -6949,6 +6989,20 @@ namespace Hoodrich.Locations
             }
 
             if (car == null) car = Make(Drifters, from, true, false);
+
+            // NOT A DRIFT CAR ONLY IF THERE IS NO SUCH THING HERE. See Plain.
+            if (car == null)
+            {
+                car = Make(Plain, from, true, false);
+
+                if (car != null && !_moanedPlain)
+                {
+                    _moanedPlain = true;
+                    Log.Info("Takeover: this install has none of the drift models, so the " +
+                             "cars competing are ordinary ones.");
+                }
+            }
+
             if (car == null) return null;
 
             Competing(car);

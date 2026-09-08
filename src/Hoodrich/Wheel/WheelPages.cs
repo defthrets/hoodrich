@@ -333,6 +333,38 @@ namespace Hoodrich.Wheel
                 sections.Add(home);
             }
 
+            // ---- and what you can eat ----------------------------------------
+            //
+            // THE OTHER HALF OF YOUR POCKETS. Bare Minimum's food rides in the same
+            // pockets this panel is about and the boot moves it in and out like anything
+            // else, so a panel called Inventory that lists only the product is telling
+            // half the truth. Absent entirely when that mod is not installed -- an empty
+            // heading about a mod you do not have is worse than no heading.
+            if (Core.Larder.Present && Core.Larder.Total > 0)
+            {
+                var eat = new InfoSection { Title = "To eat" };
+
+                foreach (var id in Core.Larder.Ids())
+                {
+                    var many = Core.Larder.CountOf(id);
+                    if (many <= 0) continue;
+
+                    var art = Core.Larder.IconOf(id);
+
+                    eat.Row(Core.Larder.NameOf(id), many.ToString(), Palette.Text,
+                            r => { r.ArtFile = art; r.ArtTint = Core.Larder.TintOf(id); });
+                }
+
+                if (Core.Larder.Slots > 0)
+                {
+                    eat.Total = Core.Larder.Total + " of " + Core.Larder.Slots;
+                    eat.TotalColour = Core.Larder.Total >= Core.Larder.Slots
+                        ? Palette.Warn : Palette.Text;
+                }
+
+                sections.Add(eat);
+            }
+
             Info?.Open("Inventory",
                        _stash.AtDoor ? "At the stash house" : CarriedSummary(),
                        sections);
@@ -361,11 +393,32 @@ namespace Hoodrich.Wheel
             return space < 0 ? v + " it" : v.Substring(0, space) + " it " + v.Substring(space + 1);
         }
 
-        /// <summary>One line for the wheel: what is on you right now.</summary>
+        /// <summary>
+        /// One line for the wheel: what is on you right now.
+        ///
+        /// FOOD COUNTS, AND IT DID NOT. This asked the stash how many grams were in your
+        /// pockets and said "empty" for anything else -- so a man carrying four things to
+        /// eat and no product read as carrying nothing, on the one tile whose whole job is
+        /// saying what is on him. The screen behind it has always shown both.
+        ///
+        /// Grams and a count are different units and are not added up: "40g, 4 to eat" is
+        /// two facts said in the room a tile has, which is better than one number that is
+        /// not true about either.
+        /// </summary>
         private string CarriedSummary()
         {
-            var total = Stash.Total;
-            return total <= 0.005f ? "empty" : total.ToString("0.#") + "g";
+            var grams = Stash.Total;
+            var food = Core.Larder.Present ? Core.Larder.Total : 0;
+
+            if (grams > 0.005f && food > 0)
+            {
+                return grams.ToString("0.#") + "g, " + food + " to eat";
+            }
+
+            if (grams > 0.005f) return grams.ToString("0.#") + "g";
+            if (food > 0) return food == 1 ? "1 to eat" : food + " to eat";
+
+            return "empty";
         }
 
         /// <summary>Everything about you: rank, heat, money made, who rates you.</summary>

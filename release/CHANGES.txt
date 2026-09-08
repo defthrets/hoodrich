@@ -51,6 +51,14 @@ car's class on a chip after its name, the way out where it is on every
 other panel -- and the boot's panel stands on the bottom of the screen,
 where the car is not.
 
+THE INVENTORY APP COUNTS WHAT YOU CAN EAT. It asked the stash how many grams
+were in your pockets and said "empty" for anything else, so a man carrying
+four things and no product read as carrying nothing -- on the one tile whose
+whole job is saying what is on him. It says "4 to eat", or "40g, 4 to eat"
+when there is both, and the panel behind it lists the food under the product
+with what each one is and how many, out of the room your pockets have. Only
+with Bare Minimum installed; without it nothing about it appears at all.
+
 THE TWEET CARD IS FIVE RECTANGLES, and its face is never a blank square. Two
 cards up and the second was flickering: a card is the last thing drawn in
 the frame by the last script in the folder, out of a per-frame budget every
@@ -61,6 +69,20 @@ picture now. And a made face is checked with the game before every draw:
 a picture the game has let go or is still rendering used to leave a bare
 coloured square, no face and no letter; the letter stands in now, and the
 log says when it happened and how long the picture had been up.
+
+EVERY CAR COMPETING IS A DRIFT CAR. The middle used to be two thirds ordinary
+cars -- a Sultan doing donuts beside a drift Chavos -- because the list put
+five drift models at the top and ten stock ones behind them as a fallback,
+and the picker starts at a random place in a list rather than at the top, so
+"behind them" meant nothing. It is the drift models and nothing else now, all
+twenty-three of them, taken off the vehicle list rather than typed from
+memory: the Dominators and the Gauntlet, the FR36, Remus, Euros, ZR350, both
+Futos, both Jesters, the RT3000, Yosemite, Keitora, Nebula, Tampa, L352,
+Hardy, Cheburek, Chavos, and the Cypher and both Sentinels. The three
+regulars that turn up to every one wear the kit too -- the green one is a
+drift Dominator where it was a Vectre, which has no drift version. A copy of
+the game with none of these models still gets a field of ordinary cars
+rather than an empty circle, and says so once in the log.
 
 THE TAKEOVER CARS DO NOT STOP. The ones working the middle go to full lock
 with the throttle planted and stay there, swapping sides every thirty
