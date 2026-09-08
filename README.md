@@ -1,4 +1,4 @@
-# Hoodrich
+﻿# Hoodrich
 
 A drug-dealing and gang mod for GTA V, built from scratch, driven from a custom phone that
 replaces the in-game one. Your weapon wheel is left alone.
@@ -208,7 +208,8 @@ timeline with tabs for what is about you.
 - **The stash house** — Aunt Denise's. Holds 300kg. Sleep there to pass time.
 - **The muffler shop** — a low-end Los Santos Customs on Hao's corner. Drive up to the roller door;
   what it does to a car of yours is saved with the car.
-- **Knowai** — driverless cars off the phone. Pick the place, see it live, and it comes to you.
+- **LUber** — driverless cars off the phone, and food to your feet. Pick the place, see it
+  live, and it comes to you; order something to eat and a rider brings it over on a moped.
 - **The kitchen** — where weight becomes product.
 - **The grow room** and **the pill press** — real interiors, streamed in and waited on properly.
 - **Grimes** — sells guns and ammo out of the courtyard on Forum Drive, and says something when

@@ -83,6 +83,14 @@ namespace Hoodrich.Wheel
         public Func<string> RideGoing;
         public Action CancelRide;
 
+        /// <summary>Set by Main: order one off the menu. Hands back a refusal, or null.</summary>
+        public Func<string, string> OrderFood;
+
+        /// <summary>Set by Main: what the delivery is doing, and what it is.</summary>
+        public Func<Locations.FoodState> FoodState;
+        public Func<string> FoodWhat;
+        public Action CancelFood;
+
         /// <summary>Opens the can. See UI.GraffitiScreen.</summary>
         public Action ShowGraffiti;
 
@@ -1099,7 +1107,7 @@ namespace Hoodrich.Wheel
                 disabledReason: "You're working the counter");
             page.WithIcon(Icons.FromFile("baggie.png"));
 
-            // IN THE MIDDLE OF THE GRID, swapped with Knowai. It is the app with something
+            // IN THE MIDDLE OF THE GRID, swapped with Luber. It is the app with something
             // new in it most often, and it was sat on its own on a fourth row underneath three
             // apps you open once a session.
             page.Add("Socials", "@", () => ShowSocials?.Invoke(),
@@ -1193,8 +1201,8 @@ namespace Hoodrich.Wheel
             // the business, and the only app on here that will still be useful to somebody who
             // has stopped dealing -- which is a reason to keep it and not a reason to put it
             // in front of the work.
-            page.AddSub("Knowai", "~", BuildKnowaiPage,
-                detail: "Driverless cars. It comes to you and takes you where you say",
+            page.AddSub("LUber", "~", BuildLuberPage,
+                detail: "Cars with nobody in them and food with somebody on it. Slides in anywhere",
                 value: RideSummary());
             page.WithIcon(Icons.FromFile("car.png"));
 
@@ -1345,22 +1353,22 @@ namespace Hoodrich.Wheel
         /// own furniture, and it is one flick from the wheel rather than three.
         /// </summary>
         /// <summary>
-        /// Knowai. A list of places and a car that comes and takes you to one.
+        /// Luber. A list of places and a car that comes and takes you to one.
         ///
         /// A page rather than a screen of its own, and that is not a shortcut -- it is a list
         /// of rows you press, which is what every other list on this phone is. A bespoke screen
         /// for it would be a second way of drawing the same object, and the two would drift
         /// the first time anything about a row changed.
         /// </summary>
-        /// <summary>The Knowai page on its own, for the car to put in front of you.</summary>
-        public WheelPage KnowaiPage()
+        /// <summary>The Luber page on its own, for the car to put in front of you.</summary>
+        public WheelPage LuberPage()
         {
-            return BuildKnowaiPage();
+            return BuildLuberPage();
         }
 
-        private WheelPage BuildKnowaiPage()
+        private WheelPage BuildLuberPage()
         {
-            var page = new WheelPage("Knowai", RideSummary());
+            var page = new WheelPage("LUber", RideSummary());
             page.PanelTitle = "Where to?";
 
             var state = RideState == null ? Locations.RideState.None : RideState();
@@ -1376,6 +1384,8 @@ namespace Hoodrich.Wheel
                     disabledReason: "Not wired up");
 
                 page.WithIcon(Icons.FromFile("car.png"));
+
+                Food(page);
 
                 return page;
             }
@@ -1399,7 +1409,7 @@ namespace Hoodrich.Wheel
                 //
                 // Top of the list rather than the bottom, because if you have just set a
                 // marker it is almost certainly why you opened this.
-                var mark = Locations.Knowai.Waypoint();
+                var mark = Locations.Luber.Waypoint();
 
                 if (mark != null)
                 {
@@ -1416,7 +1426,7 @@ namespace Hoodrich.Wheel
                         disabledReason: "Not wired up");
                 }
 
-                foreach (var stop in Locations.Knowai.Stops)
+                foreach (var stop in Locations.Luber.Stops)
                 {
                     // Captured, because the loop variable is one variable and every row would
                     // otherwise ask for wherever the loop finished.
@@ -1453,6 +1463,98 @@ namespace Hoodrich.Wheel
         }
 
         /// <summary>What the app says on the home screen without being opened.</summary>
+        /// <summary>
+        /// The food half, on the app's front page.
+        ///
+        /// ABSENT WITHOUT BARE MINIMUM, and absent on a build of it too old to be asked
+        /// what it sells. Not greyed out: a row you can never press, for a mod you have
+        /// not got, is an advert. See Core.Pantry.CanOrder.
+        /// </summary>
+        private void Food(WheelPage page)
+        {
+            if (!Core.Pantry.CanOrder) return;
+
+            var state = FoodState == null ? Locations.FoodState.None : FoodState();
+
+            // ONE ORDER AT A TIME, so while there is one the row is about that one.
+            if (state != Locations.FoodState.None)
+            {
+                var what = FoodWhat == null ? "" : FoodWhat();
+
+                page.Add("Cancel the order", "x", () => CancelFood?.Invoke(),
+                    detail: state == Locations.FoodState.Leaving
+                        ? "He's been. That's yours"
+                        : "Somebody's riding it over. This calls it off and puts the money back",
+                    value: string.IsNullOrEmpty(what) ? "on the way" : what,
+                    enabled: CancelFood != null && state != Locations.FoodState.Leaving,
+                    disabledReason: "He's already been");
+
+                page.WithIcon(Icons.FromFile("deal.png"));
+                return;
+            }
+
+            page.AddSub("Order food", "+", BuildFoodPage,
+                detail: "Somebody brings it over on a moped. Goes straight in your pocket",
+                value: Core.Pantry.Slots > 0
+                    ? Core.Pantry.Total + " of " + Core.Pantry.Slots + " carried"
+                    : "");
+
+            page.WithIcon(Icons.FromFile("deal.png"));
+        }
+
+        /// <summary>
+        /// The menu: everything their counter sells, delivered.
+        ///
+        /// A LIST, NOT A GRID. It is names and prices, which are read rather than
+        /// recognised -- the same rule the ride's list of places follows.
+        ///
+        /// The prices are theirs plus the fee, asked of the delivery rather than worked
+        /// out here, so the number on the row is the number that leaves your pocket.
+        /// </summary>
+        private WheelPage BuildFoodPage()
+        {
+            var page = new WheelPage("Order food", "slides in anywhere");
+            page.PanelTitle = "What are you having?";
+            page.AsList = true;
+
+            var full = Core.Pantry.Slots > 0 && Core.Pantry.Total >= Core.Pantry.Slots;
+
+            var any = false;
+
+            foreach (var id in Core.Pantry.Menu())
+            {
+                var price = Locations.LuberFood.Quote(id);
+                if (price < 0) continue;
+
+                // Captured, because the loop variable is one variable and every row would
+                // otherwise order whatever the loop finished on.
+                var what = id;
+
+                any = true;
+
+                page.Add(Core.Pantry.NameOf(id), ">", () =>
+                {
+                    var no = OrderFood == null ? "Not wired up" : OrderFood(what);
+
+                    if (!string.IsNullOrEmpty(no)) UI.Notify.Failure(no);
+                },
+                    detail: Core.Pantry.DescOf(id),
+                    value: "$" + price,
+                    enabled: OrderFood != null && !full,
+                    disabledReason: full ? "Your pockets are full" : "Not wired up");
+            }
+
+            if (!any)
+            {
+                page.Add("Nothing on the menu", "-", null,
+                    detail: "Their counter isn't selling anything right now",
+                    enabled: false,
+                    disabledReason: "Nothing to order");
+            }
+
+            return page;
+        }
+
         private string RideSummary()
         {
             var state = RideState == null ? Locations.RideState.None : RideState();
@@ -1469,7 +1571,18 @@ namespace Hoodrich.Wheel
                 // menu rather than the app -- and it stopped being true the moment the flow
                 // changed to hailing a car first and choosing where from the back seat. The
                 // number was also the least interesting thing about it.
-                default: return "self driving taxi";
+                // THE APP'S OWN LINE, and the reason it is called what it is called. It
+                // is a caption on a tile, so it has about four words -- and a strapline
+                // is the one thing four words is actually enough for.
+                //
+                // The delivery talks over it when there is one, because a bag on its way
+                // to you is news and a slogan never is.
+                default:
+                    var food = FoodState == null ? Locations.FoodState.None : FoodState();
+
+                    if (food == Locations.FoodState.None) return "slides in anywhere";
+
+                    return food == Locations.FoodState.Leaving ? "delivered" : "food on the way";
             }
         }
 

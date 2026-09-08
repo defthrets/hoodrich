@@ -51,6 +51,29 @@ car's class on a chip after its name, the way out where it is on every
 other panel -- and the boot's panel stands on the bottom of the screen,
 where the car is not.
 
+KNOWAI IS LUBER, AND IT BRINGS FOOD NOW. Same app, same driverless cars, same
+places, and a second half underneath them: order something to eat and
+somebody rides it over. The name is the joke and the strapline says the rest
+-- slides in anywhere.
+
+THE FOOD COMES ON A MOPED, AND NOTHING ABOUT IT IS INSTANT. The rider is put
+on the map a hundred metres out or more, on a road, and has to actually get
+to you: he rides over, parks up, gets off, walks the last of it with the bag
+in his hand, and puts it in yours. Then he gets back on and goes. If he
+cannot reach you -- traffic, a wall, you walking off across a field -- the
+order times out and you get your money back, and the same goes for every
+other way it can fail, including a pocket that filled up while he rode.
+
+IT IS BARE MINIMUM'S FOOD, START TO FINISH. The menu, the prices, the names,
+the pictures and the pocket it lands in are all theirs, over the bridge --
+this mod has no food of its own and inventing some so the button worked
+would be two mods disagreeing about what a sandwich is. Without that mod
+installed the app never offers the row at all. Needs Bare Minimum 0.2.0 or
+later, which is the build that can be asked what it sells.
+
+The ini section is [LUber] now. One that still says [Knowai] is still read,
+so nobody loses a setting over a rename.
+
 A LINE WITH NO RECORDING SAYS SO ON THE LOG. The dealer's opening line has
 your money and the room at the house stapled to the end of it, so no hash
 could name a recording of it -- it asks for one called after the man and the

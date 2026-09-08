@@ -293,7 +293,7 @@ namespace Hoodrich.Core
         public bool DrugCamera = true;
 
         /// <summary>
-        /// Whether the Knowai picker shows you the place while you are choosing it: a slow
+        /// Whether the Luber picker shows you the place while you are choosing it: a slow
         /// circle of the destination, live, behind the sheet. He is held where he stands
         /// until it hands back. Off, the picker sits over the street you are on.
         /// </summary>
@@ -705,7 +705,12 @@ namespace Hoodrich.Core
             s.BustWantedStars = (int)Clamp(ini.GetInt("Risk", "BustWantedStars", s.BustWantedStars), 1f, 5f);
 
             s.DrugCamera = ini.GetBool("Highs", "DrugCamera", s.DrugCamera);
-            s.RidePreview = ini.GetBool("Knowai", "Preview", s.RidePreview);
+            // THE OLD SECTION STILL COUNTS. It was called Knowai until the app was, and
+            // an ini already on somebody's disk keeps its heading -- the deploy never
+            // overwrites one. Read the new name first and fall back to what they have,
+            // so a rename costs nobody their setting.
+            s.RidePreview = ini.GetBool("LUber", "Preview",
+                                        ini.GetBool("Knowai", "Preview", s.RidePreview));
 
             s.Scenery = ini.GetBool("Scenery", "Enabled", s.Scenery);
             s.SceneryFromMenyoo = ini.GetBool("Scenery", "FromMenyoo", s.SceneryFromMenyoo);

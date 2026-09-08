@@ -7,7 +7,7 @@ using Hoodrich.UI;
 
 namespace Hoodrich.Locations
 {
-    /// <summary>Where a Knowai is up to.</summary>
+    /// <summary>Where a Luber is up to.</summary>
     internal enum RideState
     {
         None,
@@ -31,7 +31,7 @@ namespace Hoodrich.Locations
         Arrived
     }
 
-    /// <summary>Somewhere a Knowai will take you.</summary>
+    /// <summary>Somewhere a Luber will take you.</summary>
     internal sealed class RideStop
     {
         public string Name = "";
@@ -40,7 +40,7 @@ namespace Hoodrich.Locations
     }
 
     /// <summary>
-    /// Knowai. A car with nobody in it that comes when you ask and takes you where you said.
+    /// Luber. A car with nobody in it that comes when you ask and takes you where you said.
     ///
     /// THE DRIVER IS A PED YOU CANNOT SEE, and there is no way round that. Nothing in this
     /// game drives a car except a ped -- the whole vehicle task system takes a driver handle,
@@ -56,7 +56,7 @@ namespace Hoodrich.Locations
     ///
     /// THE FARE IS TAKEN ON ARRIVAL, not when you hail it. You pay a taxi when you get out.
     /// </summary>
-    internal sealed class Knowai
+    internal sealed class Luber
     {
         // ---- shape --------------------------------------------------------------
 
@@ -76,7 +76,7 @@ namespace Hoodrich.Locations
         /// demand and takes a few frames, so the first card of a session may go out before it
         /// exists. See Theme.
         /// </summary>
-        private const string FaceKey = "knowai";
+        private const string FaceKey = "luber";
 
         private static readonly string[] Heads =
         {
@@ -84,7 +84,7 @@ namespace Hoodrich.Locations
             "s_m_y_swat_01", "s_m_m_movalien_01"
         };
 
-        private static string Face
+        internal static string Face
         {
             get
             {
@@ -104,7 +104,7 @@ namespace Hoodrich.Locations
         /// card goes out -- so by the time there is something to say, there is something to
         /// say it with.
         /// </summary>
-        private static void Theme()
+        internal static void Theme()
         {
             try { Headshots.WantAs(FaceKey, Heads); }
             catch { /* the contact photo is behind it */ }
@@ -357,11 +357,11 @@ namespace Hoodrich.Locations
 
             Begin(RideState.Coming);
 
-            Notify.Card(Face, "Knowai", "on the way",
+            Notify.Card(Face, "LUber", "on the way",
                         to == null ? "A car's been assigned. Sit tight."
                                    : "A car's been assigned for " + to.Name + ". Sit tight.");
 
-            Log.Info("Knowai: pickup requested" + (to == null ? "." : " for " + to.Name + "."));
+            Log.Info("LUber: pickup requested" + (to == null ? "." : " for " + to.Name + "."));
 
             return null;
         }
@@ -373,9 +373,9 @@ namespace Hoodrich.Locations
         public string Go(RideStop stop)
         {
             if (stop == null) return "Nowhere selected.";
-            if (State != RideState.Picking) return "Not in a Knowai.";
+            if (State != RideState.Picking) return "Not in a LUber.";
 
-            return Depart(stop) ? null : "Knowai doesn't go there.";
+            return Depart(stop) ? null : "LUber doesn't go there.";
         }
 
         /// <summary>
@@ -426,7 +426,7 @@ namespace Hoodrich.Locations
             // THE FARE ON ITS OWN. The destination is already on the row you just pressed,
             // on the blip, and out of the window in about a minute; the number is the only
             // thing here you did not already know.
-            Notify.Card(Face, "Knowai", stop.Name, "$" + _fare);
+            Notify.Card(Face, "LUber", stop.Name, "$" + _fare);
 
             return true;
         }
@@ -466,7 +466,7 @@ namespace Hoodrich.Locations
 
                 if (_car == null || !_car.Exists())
                 {
-                    Cancel("Your Knowai's gone.");
+                    Cancel("Your LUber's gone.");
                     return;
                 }
 
@@ -502,7 +502,7 @@ namespace Hoodrich.Locations
 
                 if (now - _phaseFrom > PhaseCapMs)
                 {
-                    Cancel("That Knowai never turned up.");
+                    Cancel("That LUber never turned up.");
                     return;
                 }
 
@@ -518,7 +518,7 @@ namespace Hoodrich.Locations
             }
             catch (Exception ex)
             {
-                Log.Debug("Knowai tripped: " + ex.Message);
+                Log.Debug("LUber tripped: " + ex.Message);
                 Cancel("");
             }
         }
@@ -527,7 +527,7 @@ namespace Hoodrich.Locations
         /// Whether it has stopped getting anywhere, and what to do about it.
         ///
         /// A CAR THAT CANNOT REACH YOU USED TO SIT THERE FOR FIVE MINUTES. The only limit was
-        /// the phase cap, so a Knowai that nosed into an alley wall was a Knowai you waited on
+        /// the phase cap, so a Luber that nosed into an alley wall was a Luber you waited on
         /// until the whole thing timed out -- and there is no worse outcome for a service whose
         /// entire promise is that it turns up.
         ///
@@ -565,7 +565,7 @@ namespace Hoodrich.Locations
             // and the route is asked for after that rather than before, from a place the car
             // can actually leave. Temp action 3 is reverse-straight; the drive task is issued
             // on the NEXT check, which is what the shortened look-again gap below is for.
-            Log.Info("Knowai: stuck, backing it off and re-routing (" + _nudges + ").");
+            Log.Info("LUber: stuck, backing it off and re-routing (" + _nudges + ").");
 
             try
             {
@@ -587,7 +587,7 @@ namespace Hoodrich.Locations
             if (Stuck(now, player.Position))
             {
                 Away();
-                Cancel("That Knowai couldn't reach you. Ask for another.");
+                Cancel("That LUber couldn't reach you. Ask for another.");
                 return;
             }
 
@@ -599,7 +599,7 @@ namespace Hoodrich.Locations
             try { Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, _car.Handle, 1); }
             catch { /* it was probably unlocked anyway */ }
 
-            Notify.Card(Face, "Knowai", "outside", "Your car's here.");
+            Notify.Card(Face, "LUber", "outside", "Your car's here.");
         }
 
         private void Waiting(Ped player, int now)
@@ -621,18 +621,18 @@ namespace Hoodrich.Locations
             // ONLY WHEN YOU ARE NEXT TO IT.
             //
             // The prompt used to show from the moment it parked, whatever street you were on --
-            // so a car waiting round the corner put "get in your Knowai" across the top of the
+            // so a car waiting round the corner put "get in your LUber" across the top of the
             // screen for two solid minutes while you were doing something else entirely. A
             // prompt for a thing you cannot do from where you are stood is not a prompt, it is
             // a caption.
             //
             // The keypress is gated on the same distance rather than just the text. A prompt
             // you cannot see is not a reason to still be able to press it -- and this key talks
-            // to everybody else in the mod, so an ungated one is a Knowai you board by accident
+            // to everybody else in the mod, so an ungated one is a Luber you board by accident
             // while trying to speak to somebody a street away from it.
             if (player.Position.DistanceTo(_car.Position) > BoardRange) return;
 
-            Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to get in your Knowai.");
+            Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to get in your LUber.");
 
             if (Tapped()) Board(player);
 
@@ -641,7 +641,7 @@ namespace Hoodrich.Locations
             if (now - _phaseFrom < WaitMs) return;
 
             Away();
-            Cancel("Your Knowai gave up waiting.");
+            Cancel("Your LUber gave up waiting.");
         }
 
         /// <summary>
@@ -720,7 +720,7 @@ namespace Hoodrich.Locations
             {
                 var paid = Charge == null || Charge(_fare);
 
-                Notify.Card(Face, "Knowai", "ride ended early",
+                Notify.Card(Face, "LUber", "ride ended early",
                             paid ? "$" + _fare : "Unpaid. $" + _fare + " owed.");
 
                 Away();
@@ -736,7 +736,7 @@ namespace Hoodrich.Locations
             {
                 Charge?.Invoke(_fare);
 
-                Notify.Card(Face, "Knowai", "ride ended", "Couldn't get through. $" + _fare);
+                Notify.Card(Face, "LUber", "ride ended", "Couldn't get through. $" + _fare);
 
                 Away();
                 Cancel("");
@@ -754,7 +754,7 @@ namespace Hoodrich.Locations
                 try { Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, _car.Handle, 1); }
                 catch { /* unlocked is the default */ }
 
-                Notify.Card(Face, "Knowai", "your stop", "It'll wait. Get out, or carry on.");
+                Notify.Card(Face, "LUber", "your stop", "It'll wait. Get out, or carry on.");
                 return;
             }
 
@@ -772,7 +772,7 @@ namespace Hoodrich.Locations
             }
             else
             {
-                Notify.Card(Face, "Knowai", "paid", "$" + _fare);
+                Notify.Card(Face, "LUber", "paid", "$" + _fare);
             }
         }
 
@@ -815,7 +815,7 @@ namespace Hoodrich.Locations
             Begin(RideState.Riding);
             Drive(_stopAt, 22f);
 
-            Notify.Card(Face, "Knowai", "stopping first", "Swinging by your marker on the way. $" + _fare);
+            Notify.Card(Face, "LUber", "stopping first", "Swinging by your marker on the way. $" + _fare);
         }
 
         /// <summary>
@@ -849,7 +849,7 @@ namespace Hoodrich.Locations
             if (now - _phaseFrom < WaitMs) return;
 
             Charge?.Invoke(_fare);
-            Notify.Card(Face, "Knowai", "ride ended", "It gave up waiting at your stop. $" + _fare);
+            Notify.Card(Face, "LUber", "ride ended", "It gave up waiting at your stop. $" + _fare);
             Away();
             Cancel("");
         }
@@ -867,7 +867,7 @@ namespace Hoodrich.Locations
             Begin(RideState.Riding);
             Drive(_dropAt, 22f);
 
-            Notify.Card(Face, "Knowai", "carrying on", _to.Name + ". $" + _fare);
+            Notify.Card(Face, "LUber", "carrying on", _to.Name + ". $" + _fare);
         }
 
         private void Arrived(Ped player)
@@ -919,7 +919,7 @@ namespace Hoodrich.Locations
 
                     if (_car == null || !_car.Exists()) continue;
 
-                    Log.Info("Knowai: sent a " + name + ".");
+                    Log.Info("LUber: sent a " + name + ".");
                     break;
                 }
 
@@ -956,7 +956,7 @@ namespace Hoodrich.Locations
             }
             catch (Exception ex)
             {
-                Log.Debug("Could not put a Knowai out: " + ex.Message);
+                Log.Debug("Could not put a LUber out: " + ex.Message);
                 return false;
             }
         }
@@ -1073,7 +1073,7 @@ namespace Hoodrich.Locations
             }
             catch (Exception ex)
             {
-                Log.Debug("Could not seat a Knowai driver: " + ex.Message);
+                Log.Debug("Could not seat a LUber driver: " + ex.Message);
                 return false;
             }
         }
@@ -1140,7 +1140,7 @@ namespace Hoodrich.Locations
                 }
 
                 Function.Call(Hash.SET_PED_INTO_VEHICLE, player.Handle, _car.Handle, seat);
-                Log.Info("Knowai: he got in the front, so he was moved to the back.");
+                Log.Info("LUber: he got in the front, so he was moved to the back.");
             }
             catch (Exception ex)
             {
@@ -1199,7 +1199,7 @@ namespace Hoodrich.Locations
             }
             catch (Exception ex)
             {
-                Log.Debug("Knowai: no front passenger: " + ex.Message);
+                Log.Debug("LUber: no front passenger: " + ex.Message);
 
                 _rider = null;
             }
@@ -1252,7 +1252,7 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
-        /// Knowai's own line on the map for the trip you are on.
+        /// Luber's own line on the map for the trip you are on.
         ///
         /// THE CAR IS DRIVING AND YOU ARE NOT, which is exactly why this is worth having: the
         /// one thing you can do in the back seat is watch where you are being taken, and until
@@ -1280,7 +1280,7 @@ namespace Hoodrich.Locations
                 _route.Sprite = BlipSprite.Standard;
                 _route.Color = BlipColor.Blue;
                 _route.Scale = 0.9f;
-                _route.Name = "Knowai -- " + _to.Name;
+                _route.Name = "LUber -- " + _to.Name;
                 _route.IsShortRange = false;
 
                 Function.Call(Hash.SET_BLIP_ROUTE, _route.Handle, true);
@@ -1288,7 +1288,7 @@ namespace Hoodrich.Locations
             }
             catch (Exception ex)
             {
-                Log.Debug("Knowai could not draw its route: " + ex.Message);
+                Log.Debug("LUber could not draw its route: " + ex.Message);
 
                 _route = null;
             }
@@ -1332,7 +1332,7 @@ namespace Hoodrich.Locations
             }
             catch (Exception ex)
             {
-                Log.Debug("Could not send a Knowai on: " + ex.Message);
+                Log.Debug("Could not send a LUber on: " + ex.Message);
             }
         }
 
@@ -1471,11 +1471,11 @@ namespace Hoodrich.Locations
                 _blip.Sprite = BlipSprite.PersonalVehicleCar;
                 _blip.Color = BlipColor.Blue;
                 _blip.Scale = 0.8f;
-                _blip.Name = "Knowai";
+                _blip.Name = "LUber";
             }
             catch (Exception ex)
             {
-                Log.Debug("Could not blip a Knowai: " + ex.Message);
+                Log.Debug("Could not blip a LUber: " + ex.Message);
             }
         }
 
@@ -1544,7 +1544,7 @@ namespace Hoodrich.Locations
             }
             catch (Exception ex)
             {
-                Log.Debug("Knowai cleanup: " + ex.Message);
+                Log.Debug("LUber cleanup: " + ex.Message);
             }
 
             _car = null;

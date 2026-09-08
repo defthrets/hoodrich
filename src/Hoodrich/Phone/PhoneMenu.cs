@@ -1850,7 +1850,7 @@ namespace Hoodrich.Phone
             // The wheel put this in its hub; a grid has no hub, so it goes with the name.
             //
             // A LONGER ONE GOES SMALLER RATHER THAN MISSING. The cut-off was twelve characters,
-            // which is why Knowai's caption never showed; a line of three words fits the tile
+            // which is why Luber's caption never showed; a line of three words fits the tile
             // at a slightly smaller size, and Fit still trims anything that will not.
             if (!string.IsNullOrEmpty(item.Value) && item.Value.Length <= 18)
             {

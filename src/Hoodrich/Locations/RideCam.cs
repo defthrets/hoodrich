@@ -7,7 +7,7 @@ using Hoodrich.Core;
 namespace Hoodrich.Locations
 {
     /// <summary>
-    /// The look at a place before you book a Knowai to it: a scripted camera out at the
+    /// The look at a place before you book a Luber to it: a scripted camera out at the
     /// destination, circling it slowly, while the picker sits across the bottom of the
     /// screen (see UI.RideScreen).
     ///

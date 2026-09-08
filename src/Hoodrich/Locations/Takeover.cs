@@ -1890,7 +1890,7 @@ namespace Hoodrich.Locations
         ///
         /// WHAT IS SAFE FROM IT is the important half, and one flag does nearly all of it:
         /// mission entities are skipped. Everything this mod spawns is one -- the dog, the
-        /// homies, the Knowai, the dealers, the cars in this very event -- and so is anything
+        /// homies, the Luber, the dealers, the cars in this very event -- and so is anything
         /// another script owns and anything the game has a story reason to keep. What is left
         /// is ambient population, which is what this is for.
         ///
@@ -4362,7 +4362,7 @@ namespace Hoodrich.Locations
         /// occupied cars and people stood in the road: the one place in the city where "stops
         /// for things but never goes round them" turns into a car nosing into the back of a
         /// donut because the donut is in its lane and it has no instruction to do anything but
-        /// wait. Same fault the Knowai had, in seven more places.
+        /// wait. Same fault the Luber had, in seven more places.
         ///
         ///     1   stop before vehicles          16   steer around peds
         ///     2   stop before peds              32   steer around objects

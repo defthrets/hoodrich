@@ -567,8 +567,11 @@ namespace Hoodrich
         /// <summary>What happens when he takes some of his own. See Economy.Highs.</summary>
         private readonly Economy.Highs _highs = new Economy.Highs();
 
-        /// <summary>The driverless cabs. See Locations.Knowai.</summary>
-        private readonly Knowai _ride = new Knowai();
+        /// <summary>The driverless cabs. See Locations.Luber.</summary>
+        private readonly Luber _ride = new Luber();
+
+        /// <summary>The other half of the same app: food, on a moped. See Locations.LuberFood.</summary>
+        private readonly LuberFood _food = new LuberFood();
         private readonly GangWar _war;
         private ArmourerTalk _bigjTalk;
         private GunScreen _gunScreen;
@@ -753,6 +756,32 @@ namespace Hoodrich
 
                     UI.Cash.Take(fare);
                     return true;
+                };
+
+                // The food half of the same app. Same money, same reason to stand down.
+                _food.Busy = () => _war != null && _war.IsRunning;
+
+                _food.Charge = price =>
+                {
+                    if (price <= 0) return true;
+                    if (Game.Player.Money < price) return false;
+
+                    UI.Cash.Take(price);
+                    return true;
+                };
+
+                // AN ORDER THAT DOES NOT ARRIVE COSTS NOTHING. Every way this can fail --
+                // a rider run over, a route that never got there, you walking off, a
+                // pocket that filled while he rode -- hands the money back, because none
+                // of them is something the player did wrong.
+                _food.Refund = price => { if (price > 0) UI.Cash.Give(price); };
+
+                // NOW AND THEN, NOT EVERY SANDWICH. Ten minutes between and a third of
+                // the time: a man who posts about every delivery is a different character
+                // from the one this feed is written for.
+                _food.Arrived = what =>
+                {
+                    if (_social != null) _social.PostAsYouSometimes("YouOrderedIn", what, 600000, 35);
                 };
                 _ownedCars.YardHours = () => _cfg == null ? 36f : _cfg.TowYardHours;
                 _tow.Fee = () => _cfg == null ? 500 : _cfg.TowFee;
@@ -2416,7 +2445,7 @@ namespace Hoodrich
                 pages.Tow = _tow;
                 pages.ShowSocials = () => _socialScreen.Open();
 
-                // Knowai. The page reads the state to decide whether it is a list of places or
+                // Luber. The page reads the state to decide whether it is a list of places or
                 // one row saying you already have a car coming, so all four go together.
                 pages.ShowRidePicker = () => _ridePick.Open();
                 _ridePick.Book = stop => _ride.Hail(stop);
@@ -2425,12 +2454,18 @@ namespace Hoodrich
                 pages.RideTo = stop => _ride.Go(stop);
 
                 // Sat in the back, and the car wants an answer. The phone comes out on the
-                // Knowai page with nothing behind it, so backing out of the question puts the
+                // Luber page with nothing behind it, so backing out of the question puts the
                 // phone away rather than dropping you on a home screen.
-                _ride.Choose = () => _phone.OpenAt(pages.KnowaiPage());
+                _ride.Choose = () => _phone.OpenAt(pages.LuberPage());
                 pages.RideState = () => _ride.State;
                 pages.RideGoing = () => _ride.Going;
                 pages.CancelRide = () => _ride.Cancel("Ride cancelled.");
+
+                // And the food, off the same page.
+                pages.OrderFood = id => _food.Order(id);
+                pages.FoodState = () => _food.State;
+                pages.FoodWhat = () => _food.What;
+                pages.CancelFood = () => _food.Cancel("Order cancelled. Money back.");
                 pages.ShowGraffiti = () => _graffiti.Open();
                 _graffiti.PutAway = PutCanAway;
 
@@ -3402,6 +3437,7 @@ namespace Hoodrich
                     _tow.Update(Game.Player.Character);
 
                     _ride.Update(Game.Player.Character);
+                    _food.Update(Game.Player.Character);
                     Locations.RideCam.Update();
 
                     _social.Update();
@@ -4614,6 +4650,7 @@ namespace Hoodrich
             // with nothing left running that could put it back.
             try { _highs?.RestoreWorld(); } catch { /* teardown */ }
             try { _ride?.RestoreWorld(); } catch { /* teardown */ }
+            try { _food?.RestoreWorld(); } catch { /* teardown */ }
             try { _bust?.RestoreWorld(); } catch { /* teardown */ }
             try { _leaders?.RestoreWorld(); } catch { /* teardown */ }
             try { _fixer?.RestoreWorld(); } catch { /* teardown */ }

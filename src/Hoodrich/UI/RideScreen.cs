@@ -29,7 +29,7 @@ namespace Hoodrich.UI
         /// <summary>Set by Main: the fare from where he is stood, or -1 when it will not go.</summary>
         public Func<RideStop, int> Quote;
 
-        /// <summary>Whether the place is shown live behind the sheet. Settings: Knowai / Preview.</summary>
+        /// <summary>Whether the place is shown live behind the sheet. Settings: Luber / Preview.</summary>
         public static bool Preview = true;
 
         private readonly Curtain _curtain = new Curtain();
@@ -54,10 +54,10 @@ namespace Hoodrich.UI
             // The marker first when there is one, then the places it knows.
             var list = new List<RideStop>();
 
-            var mark = Knowai.Waypoint();
+            var mark = Luber.Waypoint();
             if (mark != null) list.Add(mark);
 
-            list.AddRange(Knowai.Stops);
+            list.AddRange(Luber.Stops);
 
             _stops = list.ToArray();
             _quotes = new int[_stops.Length];
@@ -212,7 +212,7 @@ namespace Hoodrich.UI
             var bandText = bandTop + TopBand * 0.5f - 0.013f;
 
             Hud.File("car.png", SideX + Hud.ToX(0.016f), bandTop + TopBand * 0.5f, 0.034f, 0f, ink);
-            Hud.Text("KNOWAI", SideX + Hud.ToX(0.040f), bandText, 0.36f, ink, Hud.FontLabel, centre: false);
+            Hud.Text("LUBER", SideX + Hud.ToX(0.040f), bandText, 0.36f, ink, Hud.FontLabel, centre: false);
             Hud.Text("WHERE TO?", 0.5f, bandText, 0.36f, dim, Hud.FontLabel);
             Hud.TextRight((_pick + 1) + " / " + _stops.Length, 1f - SideX, bandText, 0.36f, dim, Hud.FontLabel);
 
@@ -319,7 +319,7 @@ namespace Hoodrich.UI
 
         /// <summary>
         /// How long the ride is, from a straight line. Roads wind about a third further than
-        /// the crow flies, and a Knowai in traffic averages nearer thirteen metres a second
+        /// the crow flies, and a Luber in traffic averages nearer thirteen metres a second
         /// than the twenty-two it is allowed -- the same two numbers a real app quietly
         /// rounds with. Never under a minute: nobody is told "0 mins".
         /// </summary>

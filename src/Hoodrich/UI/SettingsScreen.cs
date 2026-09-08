@@ -605,8 +605,8 @@ namespace Hoodrich.UI
                 }
             });
 
-            Head("Knowai");
-            Tick("Show the place", "Knowai", "Preview",
+            Head("LUber");
+            Tick("Show the place", "LUber", "Preview",
                  () => c.RidePreview,
                  v => { c.RidePreview = v; RideScreen.Preview = v; },
                  "Looks at where you're going while you're choosing it, live. Off keeps the street");
