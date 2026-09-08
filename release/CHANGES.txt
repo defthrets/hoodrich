@@ -3,13 +3,22 @@
 
 THE BOOT OF YOUR CAR IS A STASH NOW.
 
-Stand at the back of any car you bought off Hao and press E (D-pad right on
+Stand at the back of any car you bought off Hao and hold E (D-pad left on
 a pad). The lid pops, he turns and goes in head first, and the boot's
-inventory comes up while he is in there: what is on you down one column,
-what is in the boot down the other, right to put in, left to take out, hold
-sprint to move the lot. Three pages -- product, guns, and food if Bare
-Minimum is installed -- on Q and Tab (the bumpers on a pad). Walk away and
-the lid shuts behind him.
+inventory comes up while he is in there. Walk away and the lid shuts
+behind him.
+
+THE BOOT IS TWO GRIDS, the same screen as Bare Minimum's fridge: what is
+on you on the left, what is in the boot on the right, every thing as its
+own picture on a tile with how much of it on a chip -- the product first,
+then the guns, then the food if Bare Minimum is installed, all in the one
+grid, because a boot is one place. The arrows pick, and the cursor crosses
+the gutter at the edge; SPACE (X on a pad) moves the thing under it, in
+from the left and out from the right, hold SHIFT (A) for the lot; Q and E
+(the bumpers) page a side that runs past twelve. A card under the grids
+names the thing, says how cut it is or what is bolted on it, and shows
+the room this side has for that kind of thing. It used to be three pages
+of a list with an arrow each way.
 
 FROM THE SEAT TOO. Stopped, in the driver's seat, a held key brings up the
 same screen -- lid shut, nobody bending. The seat says nothing until you
@@ -39,9 +48,8 @@ words, the same line Bare Minimum draws for a bed, since the two share a
 key in a stopped car. The boot's prompt is the same line. Both wait six
 seconds before they say anything, say it for four, and go. Hao's lot got the same treatment -- the
 car's class on a chip after its name, the way out where it is on every
-other panel -- and the boot card moved to the bottom of the screen, slimmer,
-with the room left on each page beside the tabs where it was sat on the
-last row before.
+other panel -- and the boot's panel stands on the bottom of the screen,
+where the car is not.
 
 THE TAKEOVER CARS DO NOT STOP. The ones working the middle go to full lock
 with the throttle planted and stay there, swapping sides every thirty
