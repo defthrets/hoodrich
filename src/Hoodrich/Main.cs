@@ -579,6 +579,10 @@ namespace Hoodrich
 
         /// <summary>The boot of every car he owns. See Locations.Boot.</summary>
         private Locations.Boot _boot;
+
+        /// <summary>Who is on the floor and what was on them. See Economy.Bodies.</summary>
+        private readonly Economy.Bodies _bodies = new Economy.Bodies();
+        private Locations.Search _search;
         private HaoTalk _haoTalk;
         private CarScreen _carScreen;
         private PlateScreen _plateScreen;
@@ -1927,7 +1931,8 @@ namespace Hoodrich
                                    || _gunScreen.IsOpen || _carScreen.IsOpen || _plateScreen.IsOpen
                                    || _modShop.IsOpen
                                    || _graffiti.IsOpen || _ridePick.IsOpen || _wardrobeScreen.IsOpen
-                                   || (_boot != null && _boot.IsOpen),
+                                   || (_boot != null && _boot.IsOpen)
+                                   || (_search != null && _search.IsOpen),
                 };
 
                 _social.Toasts = _toasts;
@@ -2275,6 +2280,30 @@ namespace Hoodrich
                 _boot = new Locations.Boot(_state, _ownedCars, _drugs, _weapons, _locker)
                 {
                     Save = () => { try { _ownedCars.SaveNow?.Invoke(); } catch { /* the record still changed */ } }
+                };
+
+                // GOING THROUGH POCKETS. The weapons so it knows what a gun is called, the
+                // drugs so it knows what a bag is, the pockets both of those go into, and
+                // the sets so the card can say whose he was.
+                _bodies.Guns = _weapons;
+                _bodies.Catalogue = _drugs;
+                _bodies.State = _state;
+                _bodies.Sets = _gangs;
+                _bodies.Pay = notes => { if (notes > 0) UI.Cash.Give(notes); };
+
+                _search = new Locations.Search(_bodies)
+                {
+                    Busy = () => _phone.IsOpen || (_boot != null && _boot.IsOpen),
+
+                    // NOW AND THEN, NOT EVERY POCKET. The same throttle the deliveries
+                    // use, and for the same reason.
+                    Took = item =>
+                    {
+                        if (item == null || _social == null) return;
+                        if (item.Kind != Economy.LootKind.Gun) return;
+
+                        _social.PostAsYouSometimes("YouWentThroughHim", item.Name, 900000, 30);
+                    }
                 };
                 _bigjTalk.Rack = () => _gunScreen.Open();
 
@@ -3076,6 +3105,21 @@ namespace Hoodrich
                     }
                 }
 
+                // A body's pockets own the frame the same way, and so does the moment he
+                // is knelt over it with nothing up yet.
+                if (_search != null && _search.IsOpen)
+                {
+                    if (!available) _search.RestoreWorld();
+                    else
+                    {
+                        _search.Update(Game.Player.Character);
+                        _search.Draw();
+                        SlowTick();
+                        _failures = 0;
+                        return;
+                    }
+                }
+
                 if (_wardrobeScreen.IsOpen)
                 {
                     if (!available) _wardrobeScreen.Close();
@@ -3357,6 +3401,7 @@ namespace Hoodrich
                     _kitchen.Update();
                     _wardrobe.Update();
                     _boot?.Update();
+                    _search?.Update(Game.Player.Character);
                     _scenes.Update();
 
                     // The gun art sweep and its probe. Both stop dead once they are finished,
@@ -4658,6 +4703,7 @@ namespace Hoodrich
             try { _hao?.RestoreWorld(); } catch { /* teardown */ }
             try { _ownedCars?.RestoreWorld(); } catch { /* teardown */ }
             try { _boot?.RestoreWorld(); } catch { /* teardown */ }
+            try { _search?.RestoreWorld(); } catch { /* teardown */ }
             try { _socialScreen?.RestoreWorld(); } catch { /* teardown */ }
             try { _block?.RestoreWorld(); } catch { /* teardown */ }
             try { _couch?.RestoreWorld(); } catch { /* teardown */ }
