@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -179,6 +180,10 @@ namespace Hoodrich.Core
         /// </summary>
         private static int _next;
 
+        /// <summary>Every name that has been asked for and not found, so each is said once. See Say.</summary>
+        private static readonly HashSet<string> Missing =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         /// <summary>Where the recordings live: scripts\Hoodrich\voice.</summary>
         public static string Folder => Paths.Voice;
 
@@ -223,11 +228,22 @@ namespace Hoodrich.Core
                 {
                     // Named, so the log says what to call the file rather than making somebody
                     // work it out. This is the line to grep for when a recording does nothing.
-                    // The to-record list writes itself. Play through with logging on and the
-                    // log holds every line that wanted audio and did not have it, already
-                    // named -- which beats trying to work the list out by reading the source,
-                    // because it only ever lists lines that actually reached the screen.
-                    Log.Debug("Voice: nothing for " + key + " -- " + Snip(line));
+                    // The to-record list writes itself: play through and the log holds every
+                    // line that wanted audio and did not have it, already named -- which beats
+                    // working the list out by reading the source, because it only ever lists
+                    // lines that actually reached a screen.
+                    //
+                    // AT INFO, AND ONCE EACH. It was at Debug, and nobody runs at Debug -- so
+                    // the one failure this thing has was also the one it never mentioned.
+                    // Tao's shop greeting came up silent and left nothing behind on a default
+                    // log to say why, or that the file it wanted was called tao_cheng_shop.
+                    // Once per name per session, so a pack with a hundred gaps in it costs a
+                    // hundred lines rather than one a second for as long as the game is on.
+                    if (Missing.Add(key))
+                    {
+                        Log.Info("Voice: nothing for " + key + " -- " + Snip(line));
+                    }
+
                     return false;
                 }
 

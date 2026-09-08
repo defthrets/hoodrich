@@ -51,6 +51,14 @@ car's class on a chip after its name, the way out where it is on every
 other panel -- and the boot's panel stands on the bottom of the screen,
 where the car is not.
 
+A LINE WITH NO RECORDING SAYS SO ON THE LOG. The dealer's opening line has
+your money and the room at the house stapled to the end of it, so no hash
+could name a recording of it -- it asks for one called after the man and the
+screen instead, tao_cheng_shop, and there is no such file in the pack. That
+is a silence with nothing behind it: the miss was written at Debug and
+nobody runs at Debug. It is written at Info now, once per name, so the log
+you already have is the list of what is left to record.
+
 THE INVENTORY APP COUNTS WHAT YOU CAN EAT. It asked the stash how many grams
 were in your pockets and said "empty" for anything else, so a man carrying
 four things and no product read as carrying nothing -- on the one tile whose
