@@ -932,14 +932,8 @@ namespace Hoodrich.UI
             RectFrom(left + rX, top, w - rX * 2f, r, c);
             RectFrom(left + rX, top + h - r, w - rX * 2f, r, c);
 
-            if (sprite)
-            {
-                Corner(left + rX, top + r, r, c);
-                Corner(left + w - rX, top + r, r, c);
-                Corner(left + rX, top + h - r, r, c);
-                Corner(left + w - rX, top + h - r, r, c);
-                return;
-            }
+            // Sprite corners if asked for and the files are in; the bands otherwise.
+            if (sprite && Corners(left, top, w, h, r, c)) return;
 
             var band = Bands(r, steps);
 
@@ -1032,27 +1026,33 @@ namespace Hoodrich.UI
         }
 
         /// <summary>
-        /// One corner, as a whole circle sat under the flats either side of it.
+        /// The four corners of a rounded shape, as four quadrant sprites.
         ///
-        /// A whole circle rather than a quarter of one because three quarters of it land on
-        /// fill that is already there, and a quarter sprite would have to be rotated four ways
-        /// and lined up on the pixel at each of them -- which is four chances to leave a
-        /// hairline down the join where a full circle leaves none.
+        /// EACH IS ONE QUARTER OF A DISC and nothing else -- the quarter that fills the
+        /// corner square the flats leave empty, with the arc bulging outward. That is the
+        /// whole trick against the bullseye the whole-disc corner had: three quarters of
+        /// that disc landed on flats already painted, and two coats of a translucent colour
+        /// is a darker ring. A quadrant overlaps nothing, so the alpha goes down once.
         ///
-        /// File centres the art on the point it is given and forces it square on screen, so
-        /// a sprite 2r tall at the corner's centre IS a circle of radius r, matching the arc
-        /// the flat rects are cut back to.
+        /// Four sprites from the sprite budget, against about a hundred rectangles a panel
+        /// at 1440p from the one budget every script on the machine shares -- which is
+        /// what a phone that flickered whenever a prompt or a card was up was paying.
         ///
-        /// It returns false when the PNG is not on disk, and then the old stacked corner goes
-        /// down instead. About six bands, which is stepped but round enough to read, and a
-        /// missing file should cost the smoothness rather than the corner.
+        /// Sprites composite above rectangles and text whatever the order, so a corner
+        /// sits over anything later drawn in its own square; panels keep their padding
+        /// clear of the corners, so that is a square nothing lives in.
+        ///
+        /// False when a file is missing (tools/make_corner.py writes them), and the caller
+        /// draws its bands instead.
         /// </summary>
-        private static void Corner(float cx, float cy, float r, Color c)
+        private static bool Corners(float left, float top, float w, float h, float r, Color c)
         {
-            if (File("disc.png", cx, cy, r * 2f, 0f, c)) return;
+            var rX = ToX(r);
 
-            var px = r * 2f * ScreenHeight;
-            Disc(cx, cy, r, c, Math.Max(2, (int)Math.Round(px / 6f)));
+            return File("corner_tl.png", left + rX * 0.5f, top + r * 0.5f, rX, r, 0f, c)
+                   && File("corner_tr.png", left + w - rX * 0.5f, top + r * 0.5f, rX, r, 0f, c)
+                   && File("corner_bl.png", left + rX * 0.5f, top + h - r * 0.5f, rX, r, 0f, c)
+                   && File("corner_br.png", left + w - rX * 0.5f, top + h - r * 0.5f, rX, r, 0f, c);
         }
 
         /// <summary>
@@ -1100,12 +1100,17 @@ namespace Hoodrich.UI
                 // measured busiest frame of five hundred -- the budget this was avoiding is
                 // nowhere near, and it was the phone's HUNDRED-AND-THIRTY-a-shape corners that
                 // it was ever really about.
-                var band = Bands(r, PanelSteps);
+                // FOUR SPRITES, NOT A HUNDRED RECTANGLES. See Corners. The bands are the
+                // fallback for an install missing the four files.
+                if (!Corners(left, top, w, h, r, body))
+                {
+                    var band = Bands(r, PanelSteps);
 
-                Quarter(left + rX, top + r, r, body, band, false, false);
-                Quarter(left + w - rX, top + r, r, body, band, true, false);
-                Quarter(left + rX, top + h - r, r, body, band, false, true);
-                Quarter(left + w - rX, top + h - r, r, body, band, true, true);
+                    Quarter(left + rX, top + r, r, body, band, false, false);
+                    Quarter(left + w - rX, top + r, r, body, band, true, false);
+                    Quarter(left + rX, top + h - r, r, body, band, false, true);
+                    Quarter(left + w - rX, top + h - r, r, body, band, true, true);
+                }
             }
 
             if (accent.A <= 0) return;

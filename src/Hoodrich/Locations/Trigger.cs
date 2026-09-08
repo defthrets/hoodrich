@@ -993,7 +993,7 @@ namespace Hoodrich.Locations
 
             Hud.RoundRect(left - PromptPad, PromptY - 0.007f,
                           width + PromptPad * 2f, 0.027f, 0.0135f,
-                          Dim(Backdrop, fade), steps: 10);
+                          Dim(Backdrop, fade), sprite: true, steps: 10);
 
             var x = Hud.Hint("dog.png", who, left, PromptY, PromptScale, Dim(Palette.Text, fade));
 
