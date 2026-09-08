@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -208,16 +208,13 @@ namespace Hoodrich.Locations
 
         // ---- the prompt ---------------------------------------------------------------------
 
-        /// <summary>The same bottom bar the dog uses: the car's name, then what the key does.</summary>
+        /// <summary>The line at the bottom: the key on a cap, then what it does. See UiKit.Prompt for when.</summary>
         private void Prompt(int now)
         {
-            var fade = UiKit.PromptFade(ref _promptSince, now);
+            var show = UiKit.PromptFade(ref _promptSince, now);
+            if (show <= 0f) return;
 
-            var who = (_nearRecord == null || string.IsNullOrEmpty(_nearRecord.Name) ? "YOUR CAR" : _nearRecord.Name)
-                .ToUpperInvariant();
-            var cap = Hud.OnPad ? "D-PAD RIGHT" : "E";
-
-            UiKit.Prompt("car.png", who, cap + "   POP THE BOOT", fade);
+            UiKit.Prompt(Hud.OnPad ? "D-PAD RIGHT" : "E", "Pop the boot", show);
         }
 
         // ---- open ---------------------------------------------------------------------------

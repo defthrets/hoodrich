@@ -151,8 +151,7 @@ namespace Hoodrich.Locations
                 if (now - _promptLast > 250) _promptSince = now;
                 _promptLast = now;
 
-                UI.UiKit.Prompt("garage.png", "HAO'S MUFFLER SHOP",
-                                (UI.Draw.OnPad ? "D-PAD RIGHT" : "E") + "   PULL IN",
+                UI.UiKit.Prompt(UI.Draw.OnPad ? "D-PAD RIGHT" : "E", "Pull in to Hao's muffler shop",
                                 UI.UiKit.PromptFade(ref _promptSince, now));
 
                 if (!Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 0, (int)Control.Context)) return;

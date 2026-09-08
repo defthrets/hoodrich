@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using GTA;
+using GTA.Native;
 using Hoodrich.Economy;
 using Hud = Hoodrich.UI.Draw;
 
@@ -333,57 +334,121 @@ namespace Hoodrich.UI
         // A prompt in the world
         // ======================================================================
 
-        /// <summary>Where the bar sits, how it is spaced, and how long it takes to come up.</summary>
-        private const float PromptY = 0.905f;
-        private const float PromptScale = 0.27f;
-        private const float PromptPad = 0.014f;
-        private const float PromptIcon = 0.011f;
-        public const int PromptFadeMs = 160;
+        /// <summary>
+        /// It waits before it says anything, says it for a while, and goes. Somebody who
+        /// knows the key never sees it; somebody stood there wondering does.
+        /// </summary>
+        public const int PromptAfterMs = 6000;
+        public const int PromptForMs = 4000;
+        public const int PromptFadeMs = 300;
 
-        /// <summary>The bar's own ground. Darker and thinner than a panel -- it is a caption.</summary>
-        private static readonly Color PromptBack = Color.FromArgb(185, 8, 9, 11);
+        /// <summary>Where its FOOT sits: above Bare Minimum's own line, which owns the very bottom edge.</summary>
+        private const float PromptFoot = 0.910f;
+
+        /// <summary>How far it climbs on the way in and sinks on the way out.</summary>
+        private const float PromptClimb = 0.012f;
+
+        private const float PromptPad = 0.009f;
+        private const float PromptScale = 0.27f;
+        private const float CapPadX = 0.006f;
+        private const float CapScale = 0.24f;
+        private const float CapGap = 0.008f;
+
+        /// <summary>Everything is drawn through this. It is an offer, not a result; it is allowed to be quiet.</summary>
+        private const float PromptQuiet = 0.70f;
 
         /// <summary>
-        /// One line at the bottom of the screen: a picture, what you are stood at, then the
-        /// key and what it does. For standing next to something -- a car, a bay -- in place
-        /// of the game's own yellow box, which was the one piece of stock chrome left on a
-        /// mod that draws everything else itself. The dog's bar, made shared.
+        /// One line at the bottom of the screen: the key on a small amber cap, then what it
+        /// does in plain words -- "Pop the boot", "Pull in to Hao's muffler shop". For
+        /// standing next to something, in place of the game's own yellow box.
         ///
-        /// Fade is nought to one. Costs one rounded rectangle.
+        /// THE SAME LINE BARE MINIMUM DRAWS for a bed or a car seat, on purpose: the two
+        /// mods share a key in a stopped car, so their prompts end up on the screen together,
+        /// and two different-looking bars for one button read as a mistake. This one sits
+        /// directly above theirs.
+        ///
+        /// Show is nought to one. Costs one panel and one small rounded chip.
         /// </summary>
-        public static void Prompt(string icon, string who, string what, float fade)
+        public static void Prompt(string cap, string text, float show)
         {
-            if (fade <= 0f) return;
-            if (fade > 1f) fade = 1f;
+            if (show <= 0.01f || string.IsNullOrEmpty(text)) return;
+            if (show > 1f) show = 1f;
 
-            var iconW = string.IsNullOrEmpty(icon) ? 0f : Hud.ToX(PromptIcon) + 0.004f;
+            var textW = Hud.MeasureText(text, PromptScale, Hud.FontBody);
+            var textH = TextHeight(PromptScale, Hud.FontBody);
 
-            var width = iconW + Hud.MeasureText(who, PromptScale, Hud.FontLabel) + 0.016f
-                      + Hud.MeasureText(what, PromptScale, Hud.FontLabel);
+            // The cap is as wide as the letters on it plus a margin either side, so E and
+            // D-PAD RIGHT both sit in one that fits them.
+            var hasCap = !string.IsNullOrEmpty(cap);
+            var capText = hasCap ? Hud.MeasureText(cap, CapScale, Hud.FontLabel) : 0f;
+            var capW = hasCap ? capText + Hud.ToX(CapPadX) * 2f : 0f;
+            var capLead = hasCap ? capW + Hud.ToX(CapGap) : 0f;
 
-            var left = 0.5f - width * 0.5f;
+            var padX = Hud.ToX(PromptPad);
+            var w = padX + capLead + textW + padX;
+            var h = PromptPad * 0.85f + textH + PromptPad * 0.85f;
 
-            Hud.RoundRect(left - PromptPad, PromptY - 0.007f, width + PromptPad * 2f, 0.027f, 0.0135f,
-                          Palette.Alpha(PromptBack, (int)(PromptBack.A * fade)), steps: 10);
+            var x = 0.5f - w * 0.5f;
 
-            var x = Hud.Hint(icon, who, left, PromptY, PromptScale,
-                             Palette.Alpha(Palette.Text, (int)(Palette.Text.A * fade)));
+            // Up on the way in and back down on the way out, so it belongs to the bottom
+            // edge rather than appearing in the middle of nothing.
+            var top = PromptFoot - h + PromptClimb * (1f - show);
+            var ink = show * PromptQuiet;
 
-            Hud.Text(what, x, PromptY, PromptScale,
-                     Palette.Alpha(Palette.TextDim, (int)(Palette.TextDim.A * fade)), Hud.FontLabel, centre: false);
+            Theme.Panel(x, top, w, h, ink);
+
+            if (hasCap)
+            {
+                var capH = TextHeight(CapScale, Hud.FontLabel) + 0.004f;
+                var capY = top + PromptPad * 0.85f + (textH - capH) * 0.5f - 0.001f;
+
+                Hud.RoundRect(x + padX, capY, capW, capH, 0.0022f,
+                              Palette.Alpha(Palette.Warn, (int)(58f * ink)), steps: 8);
+
+                Hud.Text(cap, x + padX + (capW - capText) * 0.5f, capY + 0.002f, CapScale,
+                         Palette.Alpha(Palette.Warn, (int)(255f * ink)), Hud.FontLabel, centre: false);
+            }
+
+            Hud.Text(text, x + padX + capLead, top + PromptPad * 0.85f, PromptScale,
+                     Palette.Alpha(Palette.Text, (int)(232f * ink)), Hud.FontBody, centre: false);
+        }
+
+        /// <summary>How tall a line of this comes out, from the game; a guess if it will not say.</summary>
+        private static float TextHeight(float scale, int font)
+        {
+            try { return Function.Call<float>(Hash.GET_RENDERED_CHARACTER_HEIGHT, scale, font); }
+            catch { return scale * 0.1f; }
         }
 
         /// <summary>
-        /// How far up the prompt is, nought to one, from when it first showed. Pass the
-        /// caller's own stamp; it is set on the first call and the caller clears it to
-        /// nought when the prompt goes away, so the next one fades in again.
+        /// How far up the prompt is, nought to one, along its timeline: nothing for the first
+        /// six seconds, a fade in, four seconds up, a fade out, then nothing again until the
+        /// caller clears the stamp by going away and coming back.
+        ///
+        /// The stamp is the caller's own, set on the first call and cleared to nought by the
+        /// caller when the thing is no longer in front of him.
         /// </summary>
         public static float PromptFade(ref int since, int now)
         {
             if (since == 0) since = now;
 
-            var age = now - since;
-            return age >= PromptFadeMs ? 1f : age / (float)PromptFadeMs;
+            var age = now - since - PromptAfterMs;
+            if (age < 0) return 0f;
+
+            if (age < PromptFadeMs)
+            {
+                var t = age / (float)PromptFadeMs;
+                return 1f - (1f - t) * (1f - t);
+            }
+
+            age -= PromptFadeMs;
+            if (age < PromptForMs) return 1f;
+
+            age -= PromptForMs;
+            if (age >= PromptFadeMs) return 0f;
+
+            var u = 1f - age / (float)PromptFadeMs;
+            return u * u;
         }
 
         /// <summary>

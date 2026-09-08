@@ -242,9 +242,9 @@ namespace Hoodrich.UI
             try
             {
                 var n = Function.Call<int>(Hash.GET_AMMO_IN_PED_WEAPON, me.Handle, hash);
-                return n > 0 ? n + " RDS" : "ON YOU";
+                return n > 0 ? n + " RDS" : "HELD";
             }
-            catch { return "ON YOU"; }
+            catch { return "HELD"; }
         }
 
         private string Named(string weaponId)
@@ -280,7 +280,11 @@ namespace Hoodrich.UI
             if (!_curtain.Taking) return;
             if (Game.GameTime - _openedAt < OpenGraceMs) return;
 
-            if (Pressed(Control.PhoneCancel))
+            // THE MENU CONTROLS AS WELL AS THE PHONE ONES. The phone set is what every
+            // screen in the house reads and it is right on foot; sat in a car the game has
+            // its own ideas about the arrow keys and the d-pad, and the FRONTEND set is what
+            // its own menus read there. Either answers.
+            if (Pressed(Control.PhoneCancel) || Pressed(Control.FrontendCancel))
             {
                 Hud.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
                 Close();
@@ -289,21 +293,21 @@ namespace Hoodrich.UI
 
             // Q and Tab on a keyboard, the bumpers on a pad -- the two keys either side of
             // the ones that move things.
-            if (Pressed(Control.Cover)) { Flip(1); return; }
-            if (Pressed(Control.SelectWeapon)) { Flip(-1); return; }
+            if (Pressed(Control.Cover) || Pressed(Control.FrontendRb)) { Flip(1); return; }
+            if (Pressed(Control.SelectWeapon) || Pressed(Control.FrontendLb)) { Flip(-1); return; }
 
             if (_rows.Count == 0) return;
 
-            if (Pressed(Control.PhoneUp)) Move(-1);
-            else if (Pressed(Control.PhoneDown)) Move(1);
+            if (Pressed(Control.PhoneUp) || Pressed(Control.FrontendUp)) Move(-1);
+            else if (Pressed(Control.PhoneDown) || Pressed(Control.FrontendDown)) Move(1);
 
             if (Game.GameTime < _nextRepeat) return;
 
             // Through the DISABLED path, the same as the house: a held sprint moves the lot.
             var all = Held(Control.Sprint) || Held(Control.Jump);
 
-            if (Held(Control.PhoneRight)) Transfer(true, all);
-            else if (Held(Control.PhoneLeft)) Transfer(false, all);
+            if (Held(Control.PhoneRight) || Held(Control.FrontendRight)) Transfer(true, all);
+            else if (Held(Control.PhoneLeft) || Held(Control.FrontendLeft)) Transfer(false, all);
         }
 
         private void Flip(int by)
@@ -354,11 +358,13 @@ namespace Hoodrich.UI
             }
             catch (Exception ex)
             {
-                Log.Debug("Boot: could not move " + row.Id + ": " + ex.Message);
+                Log.Info("Boot: could not move " + row.Id + ": " + ex.Message);
             }
 
             if (!moved)
             {
+                Log.Info("Boot: would not move " + row.Id + (intoBoot ? " in" : " out") + " on the " +
+                         _page.ToString().ToLowerInvariant() + " page (" + Why(row, intoBoot) + ").");
                 Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
                 _nextRepeat = Game.GameTime + RepeatMs * 3;
                 return;
@@ -373,6 +379,23 @@ namespace Hoodrich.UI
 
             _changed?.Invoke();
             Rebuild();
+        }
+
+        /// <summary>The reason a move did not happen, for the log. A best guess from what the row says.</summary>
+        private string Why(Row row, bool inward)
+        {
+            if (_trunk == null) return "no trunk";
+            if (inward && row.You <= 0.005f) return "none on him";
+            if (!inward && row.Boot <= 0.005f) return "none in the boot";
+            if (_page == Page.Guns && inward && _trunk.Guns.Count >= Trunk.BootGuns) return "boot full of guns";
+            if (_page == Page.Food && inward && !Pantry.CanTake) return "Bare Minimum has no Take";
+            if (_page == Page.Food && inward && _trunk.FoodCount >= Trunk.BootFood) return "boot full of food";
+            if (_page == Page.Product)
+            {
+                return inward ? _trunk.Stash.FreeSpace.ToString("0") + "g room in the boot"
+                              : _pockets.FreeSpace.ToString("0") + "g room on him";
+            }
+            return "refused";
         }
 
         /// <summary>
@@ -584,8 +607,13 @@ namespace Hoodrich.UI
 
             var rowsH = shown * RowH;
 
-            Hud.RectFrom(youX, y, colW, CapsH + rowsH, Color.FromArgb((int)(12f * arrive), 255, 255, 255));
-            Hud.RectFrom(bootX, y, colW, CapsH + rowsH, Color.FromArgb((int)(12f * arrive), 255, 255, 255));
+            // The two grounds, only when there is something to stand on them. Under an
+            // empty page they were two grey boxes with a sentence running through them.
+            if (_rows.Count > 0)
+            {
+                Hud.RectFrom(youX, y, colW, CapsH + rowsH, Color.FromArgb((int)(12f * arrive), 255, 255, 255));
+                Hud.RectFrom(bootX, y, colW, CapsH + rowsH, Color.FromArgb((int)(12f * arrive), 255, 255, 255));
+            }
 
             Hud.Text(names[(int)_page], x, y + 0.002f, 0.22f, caps, Hud.FontLabel, centre: false);
             Hud.TextRight("ON YOU", youX + colW - 0.004f, y + 0.002f, 0.22f, caps, Hud.FontLabel);
@@ -600,8 +628,9 @@ namespace Hoodrich.UI
                         : Pantry.CanTake ? "Nothing to eat on you and nothing in the boot."
                         : "Bare Minimum needs updating before food can go in.";
 
-                Hud.Text(why, x, y + 0.006f, 0.28f, Palette.Alpha(Palette.TextDim, (int)(255f * arrive)),
-                         Hud.FontBody, centre: false);
+                // In the caption's own face and size, so it reads as the page's note to
+                // itself rather than as a row that has nothing in it.
+                Hud.Text(why.ToUpperInvariant(), x, y + 0.009f, 0.24f, caps, Hud.FontLabel, centre: false);
             }
 
             var grown = Theme.Grown(_pickedAt);
@@ -736,31 +765,22 @@ namespace Hoodrich.UI
             return Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)control);
         }
 
+        /// <summary>
+        /// Everything off, the camera back on. The same lock the car screens use, because this
+        /// one can be up in a car: the house's targeted list left the d-pad and the arrow
+        /// keys doing their in-car jobs underneath the screen, the radio wheel for one.
+        /// Everything the screen reads, it reads through the disabled path.
+        /// </summary>
         private static void LockControls()
         {
             Core.Fists.Off();
 
-            Game.DisableControlThisFrame(Control.Jump);
-            Game.DisableControlThisFrame(Control.Sprint);
-            Game.DisableControlThisFrame(Control.Enter);
-            Game.DisableControlThisFrame(Control.Phone);
-            Game.DisableControlThisFrame(Control.SelectWeapon);
-            Game.DisableControlThisFrame(Control.Cover);
-            Game.DisableControlThisFrame(Control.MoveLeftRight);
-            Game.DisableControlThisFrame(Control.MoveUpDown);
-            Game.DisableControlThisFrame(Control.Attack);
-            Game.DisableControlThisFrame(Control.Aim);
-            Game.DisableControlThisFrame(Control.VehicleExit);
-            Game.DisableControlThisFrame(Control.VehicleAccelerate);
-            Game.DisableControlThisFrame(Control.VehicleBrake);
-            Game.DisableControlThisFrame(Control.VehicleHorn);
+            Function.Call(Hash.DISABLE_ALL_CONTROL_ACTIONS, 0);
 
-            Game.DisableControlThisFrame(Control.PhoneUp);
-            Game.DisableControlThisFrame(Control.PhoneDown);
-            Game.DisableControlThisFrame(Control.PhoneLeft);
-            Game.DisableControlThisFrame(Control.PhoneRight);
-            Game.DisableControlThisFrame(Control.PhoneSelect);
-            Game.DisableControlThisFrame(Control.PhoneCancel);
+            foreach (var control in new[] { Control.LookLeftRight, Control.LookUpDown })
+            {
+                Function.Call(Hash.ENABLE_CONTROL_ACTION, 0, (int)control, true);
+            }
         }
     }
 }
