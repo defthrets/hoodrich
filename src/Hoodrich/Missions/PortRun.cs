@@ -1542,7 +1542,10 @@ namespace Hoodrich.Missions
             var who = Game.Player.Character;
 
             if (who == null || !who.Exists() || !who.IsAlive || Game.Player.IsDead) return;
-            if (Game.IsLoading || Game.IsPaused) return;
+            // IsLoading is gone: Script Hook V no longer starts scripts before the loading
+            // screen has finished, so it could never be true. What this guarded was the
+            // hospital fade after a death, and the screen not being faded in is that.
+            if (Game.IsPaused || !Function.Call<bool>(Hash.IS_SCREEN_FADED_IN)) return;
             if (Function.Call<bool>(Hash.IS_PLAYER_BEING_ARRESTED, Game.Player.Handle, false)) return;
 
             if (_cardAt == 0) _cardAt = Game.GameTime;
@@ -2893,10 +2896,10 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped, true, true);
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped, true);
                     Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped,
-                                  Game.GenerateHash("AMBIENT_GANG_MEXICAN"));
+                                  Function.Call<int>(Hash.GET_HASH_KEY, "AMBIENT_GANG_MEXICAN"));
 
                     Function.Call(Hash.GIVE_WEAPON_TO_PED, ped,
-                                  Game.GenerateHash(VagosGun), 400, false, true);
+                                  Function.Call<int>(Hash.GET_HASH_KEY, VagosGun), 400, false, true);
 
                     Function.Call(Hash.SET_PED_ACCURACY, ped, 28);
                     Function.Call(Hash.SET_PED_ARMOUR, ped, 25);

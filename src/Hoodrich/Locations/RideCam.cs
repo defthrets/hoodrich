@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -57,7 +57,7 @@ namespace Hoodrich.Locations
             {
                 if (me == null || !me.Exists() || !me.IsAlive) return false;
                 if (me.IsInVehicle() || me.IsInAir || me.IsRagdoll || me.IsInCombat) return false;
-                if (Game.Player.WantedLevel > 0) return false;
+                if (Game.Player.Wanted.WantedLevel > 0) return false;
                 if (Function.Call<bool>(Hash.IS_CUTSCENE_ACTIVE)) return false;
                 if (!Function.Call<bool>(Hash.IS_SCREEN_FADED_IN)) return false;
 

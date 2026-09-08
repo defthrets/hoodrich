@@ -1,4 +1,35 @@
-﻿THE FREEZE ON THE WAY OUT OF A ROOM.
+﻿A COMPATIBILITY PASS: THE TICK STOPS DELETING THE WORLD, AND NOTHING DEPRECATED IS LEFT.
+
+Every native the mod calls -- five hundred and twenty-seven of them -- was
+checked against ScriptHookVDotNet's own table, and all of them are in it.
+The copy in the game folder is byte-identical to the one the mod is built
+against. That was the biggest single risk and it is clear.
+
+THE TICK'S OWN CATCH WAS THE WORST THING IN THE MOD. On any caught exception
+it ran the full world teardown: fifty-odd systems, every scene, car and ped
+the mod had placed, deleted, and then rebuilt on the next frame. One
+transient null in one subsystem and the yard blinked out of existence. It
+was also a long job inside a frame that had already thrown, which is the
+shape of thing ScriptHookVDotNet kills scripts for. A single failed tick
+does not stop the mod, so it no longer tears anything down; the teardown
+runs only when the mod actually stops, on parking and on unload.
+
+TWENTY-ONE CALLS TO DEPRECATED API ARE GONE. Game.GenerateHash, the old
+Player.WantedLevel, Game.Version and Game.IsLoading are all marked obsolete
+because Script Hook V is removing what they sit on, and a newer SHVDN can
+break them. Each is replaced with the version-proof call the mod already
+used everywhere else -- GET_HASH_KEY, Player.Wanted, Game.FileVersion, and
+a check on the screen fade for the one thing IsLoading was standing in for.
+Compiler warnings went from thirty-six to fifteen, and every one that is
+left is an unused field, which cannot fail.
+
+Also checked and found sound: number parsing and formatting is culture-
+invariant throughout, so a German or French Windows reads the same ini and
+save as an English one; and the only wait that could spin forever was the
+one fixed last build -- the other two use SHVDN's own bounded wait.
+
+
+THE FREEZE ON THE WAY OUT OF A ROOM.
 
 A player sent the log that named it, which is the only reason this was
 findable:

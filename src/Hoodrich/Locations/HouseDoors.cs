@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -111,7 +111,7 @@ namespace Hoodrich.Locations
         {
             try
             {
-                var model = Game.GenerateHash(front.Model);
+                var model = Function.Call<int>(Hash.GET_HASH_KEY, front.Model);
                 var at = front.At;
 
                 Function.Call(Hash.SET_STATE_OF_CLOSEST_DOOR_OF_TYPE, model,

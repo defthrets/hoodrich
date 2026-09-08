@@ -321,7 +321,7 @@ namespace Hoodrich.Gangs
 
                 foreach (var name in Donks)
                 {
-                    if (hash == Game.GenerateHash(name)) return true;
+                    if (hash == Function.Call<int>(Hash.GET_HASH_KEY, name)) return true;
                 }
             }
             catch

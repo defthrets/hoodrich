@@ -498,7 +498,7 @@ namespace Hoodrich.Core
                     Function.Call(Hash.SET_POLICE_IGNORE_PLAYER, player.Handle, false);
                 }
 
-                var wanted = player.WantedLevel;
+                var wanted = player.Wanted.WantedLevel;
 
                 if (wanted == 0)
                 {
@@ -552,7 +552,7 @@ namespace Hoodrich.Core
             try
             {
                 var player = Game.Player;
-                if (player == null || player.WantedLevel == 0) return null;
+                if (player == null || player.Wanted.WantedLevel == 0) return null;
 
                 var look = _on ? 1 : 0;
 

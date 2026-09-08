@@ -59,7 +59,7 @@ namespace Hoodrich.Core
         {
             get
             {
-                try { return Game.Version.ToString(); }
+                try { return Game.FileVersion.ToString(); }
                 catch { return "unreadable"; }
             }
         }

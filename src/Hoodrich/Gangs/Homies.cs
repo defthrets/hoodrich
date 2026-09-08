@@ -952,7 +952,7 @@ namespace Hoodrich.Gangs
                        player.IsInCombat ||
                        player.IsShooting ||
                        player.IsRagdoll ||
-                       Game.Player.WantedLevel > 0 ||
+                       Game.Player.Wanted.WantedLevel > 0 ||
                        player.Velocity.Length() > StillSpeed;
 
             foreach (var man in _men)
@@ -1210,11 +1210,11 @@ namespace Hoodrich.Gangs
 
                 Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
                 Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, h,
-                              Game.GenerateHash(gang.RelationshipGroup));
+                              Function.Call<int>(Hash.GET_HASH_KEY, gang.RelationshipGroup));
 
                 // One gun each, by position, so they stay tellable apart.
                 Function.Call(Hash.GIVE_WEAPON_TO_PED, h,
-                              Game.GenerateHash(Guns[index % Guns.Length]), 200, false, true);
+                              Function.Call<int>(Hash.GET_HASH_KEY, Guns[index % Guns.Length]), 200, false, true);
 
                 Function.Call(Hash.SET_PED_ACCURACY, h, 35);
 

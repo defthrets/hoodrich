@@ -3446,11 +3446,20 @@ namespace Hoodrich
                 _failures++;
                 Log.Error("Tick failed (" + _failures + "/" + MaxConsecutiveFailures + ").", ex);
 
-                // Never leave the world in a modified state because of our own bug.
-                TryRestore();
-
+                // NOT TryRestore, not for one bad frame. It is the whole world teardown --
+                // fifty-odd systems, every scene, car and ped the mod placed -- and it was
+                // running on every caught exception, so one transient null in one subsystem
+                // deleted the yard and the next tick built it again. From the player's side
+                // that is the mod blinking out, and from SHVDN's side it is a long tick
+                // inside a frame that had already thrown.
+                //
+                // A single failed tick does not stop the mod; the next tick carries on and
+                // every system restores its own state on its ordinary path. The teardown is
+                // for when the mod actually stops -- parking, below, and Aborted.
                 if (_failures >= MaxConsecutiveFailures)
                 {
+                    TryRestore();
+
                     _parked = true;
                     Log.Error("Too many consecutive failures; " + Build.Name +
                               " is parked for this session.");
@@ -3711,7 +3720,7 @@ namespace Hoodrich
                     return;
                 }
 
-                if (Game.Player.WantedLevel > 1) return;
+                if (Game.Player.Wanted.WantedLevel > 1) return;
 
                 if (!_capped)
                 {
@@ -3719,7 +3728,13 @@ namespace Hoodrich
                     _capped = true;
                 }
 
-                if (Game.Player.WantedLevel < 1) Game.Player.WantedLevel = 1;
+                if (Game.Player.Wanted.WantedLevel < 1)
+            {
+                // The pair PostUp uses: set, then apply now, or the star waits for the
+                // game's own next wanted update to appear.
+                Game.Player.Wanted.SetWantedLevel(1, false);
+                Game.Player.Wanted.ApplyWantedLevelChangeNow(false);
+            }
             }
             catch (Exception ex)
             {

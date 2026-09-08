@@ -513,7 +513,7 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, h, 46, true);
                 Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, h, 17, false);
 
-                Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, h, Game.GenerateHash("PLAYER"));
+                Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, h, Function.Call<int>(Hash.GET_HASH_KEY, "PLAYER"));
             }
             catch
             {
@@ -2022,7 +2022,7 @@ namespace Hoodrich.Locations
                         Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, h, 17, false);
 
                         Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, h,
-                                      Game.GenerateHash("PLAYER"));
+                                      Function.Call<int>(Hash.GET_HASH_KEY, "PLAYER"));
                     }
                     else
                     {

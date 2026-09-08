@@ -5234,7 +5234,7 @@ namespace Hoodrich.Locations
             if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) return;
 
             var h = w.Man.Handle;
-            var flare = Game.GenerateHash("weapon_flare");
+            var flare = Function.Call<int>(Hash.GET_HASH_KEY, "weapon_flare");
 
             // OUT OF WHATEVER THEY WERE DOING FIRST. A throw handed to somebody stood in a
             // scenario -- cheering, filming, drinking -- is a throw the game quietly drops,
@@ -7556,7 +7556,7 @@ namespace Hoodrich.Locations
                     Function.Call(Hash.SET_PED_AS_COP, h, true);
 
                     Function.Call(Hash.GIVE_WEAPON_TO_PED, h,
-                                  Game.GenerateHash("WEAPON_PISTOL"), 60, false, true);
+                                  Function.Call<int>(Hash.GET_HASH_KEY, "WEAPON_PISTOL"), 60, false, true);
 
                     Function.Call(Hash.SET_PED_ACCURACY, h, 35);
                     Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, h, 0, false);
@@ -7605,7 +7605,7 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_PED_AS_COP, h, true);
 
                 Function.Call(Hash.GIVE_WEAPON_TO_PED, h,
-                              Game.GenerateHash("WEAPON_PISTOL"), 60, false, true);
+                              Function.Call<int>(Hash.GET_HASH_KEY, "WEAPON_PISTOL"), 60, false, true);
 
                 Function.Call(Hash.SET_PED_ACCURACY, h, 35);
                 Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, h, false);

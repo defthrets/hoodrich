@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -42,7 +42,9 @@ namespace Hoodrich.Locations
         /// <summary>A Bagger this close to the bike already made for him is a re-supply, not a new bike.</summary>
         private const float SameSpot = 60f;
 
-        private static readonly int Bagger = Game.GenerateHash("bagger");
+        // A property rather than a static initialiser: a native called while the type is
+        // being loaded runs before anything has checked the game is ready to be asked.
+        private static int Bagger => Function.Call<int>(Hash.GET_HASH_KEY, "bagger");
 
         private readonly Settings _cfg;
         private int _lastTick;
