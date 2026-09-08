@@ -69,7 +69,12 @@ namespace Hoodrich.UI
         /// enough to meet hundreds of people; it just is not firing every time somebody
         /// opens their phone.
         /// </summary>
-        private const int Keep = 12;
+        /// TWELVE CHURNED. The feed writes itself every few seconds, so at twelve the
+        /// authors kept falling out and coming back -- the log had the same faces rendered
+        /// four to six times each -- and every render is a post showing a letter in a square
+        /// until the photograph lands, which read as the feed flickering. Sixteen holds a
+        /// page and the next one; the talk's own retry covers the slot it used to be short.
+        private const int Keep = 16;
 
         /// <summary>How long one is given to render before it is written off.</summary>
         private const int PatienceMs = 4000;

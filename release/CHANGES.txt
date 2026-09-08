@@ -74,6 +74,10 @@ It was also most of the phone flicker: the cards and the discs behind every
 tick came to five hundred rectangles a screenful and the game drops the tail
 of the frame past about four hundred. A post is one hairline now.
 
+THE FEED'S FACES STOPPED FLICKERING. Cutting the face cache to twelve to make
+room for Hao had the feed re-photographing the same people every few
+seconds, each one a letter in a square until the picture landed. Sixteen.
+
 EVERY PANEL'S CORNERS ARE FOUR PICTURES. A rounded corner was a stack of thin
 rectangles, one a pixel row -- about a hundred a panel at 1440p, from the
 one per-frame budget every script on the machine shares. The phone with a
