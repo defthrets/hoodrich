@@ -1894,6 +1894,10 @@ namespace Hoodrich
                     Social = _social
                 };
 
+                // SO THE POLICE MOD CAN KEEP OFF IT. A takeover ends with blue lights; a patrol
+                // car in the first hour is that ending arriving in the middle. See Api.Block.
+                Api.Block.Wire(_takeover);
+
                 // THE AMBIENT PATROL LIVES IN PRECINCT 88 NOW.
                 //
                 // It was this mod's fourth source of police -- the one that was not caused by
@@ -4714,6 +4718,7 @@ namespace Hoodrich
             // the reference makes Ready false, which every caller already handles because it
             // is the same answer they get before this mod has started.
             try { Api.Drugs.Unwire(); } catch { /* teardown */ }
+            try { Api.Block.Unwire(); } catch { /* teardown */ }
 
             TryRestore();
 

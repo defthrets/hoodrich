@@ -1020,6 +1020,19 @@ namespace Hoodrich.Locations
 
         public TakeoverState State { get; private set; }
 
+        /// <summary>
+        /// Where tonight's one is, and how far out the ring goes.
+        ///
+        /// FOR THE MOD THAT POLICES THE PLACE, and for nothing else in here -- everything
+        /// inside this file already has Middle and Ring. A takeover ends with blue lights, and
+        /// they are supposed to be the LAST thing that happens at it: a patrol car that turns
+        /// up in the first hour is the end of the evening arriving in the middle of it. Five0
+        /// Patrol asks this so its own police can keep off the junction until the thing is
+        /// over. See Api.Block.
+        /// </summary>
+        internal Vector3 Where => Middle;
+        internal float Reach => Ring;
+
         private int _plannedFor = -1;
 
         /// <summary>
