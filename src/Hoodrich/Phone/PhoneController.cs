@@ -459,10 +459,45 @@ namespace Hoodrich.Phone
 
         private bool _probed;
 
+        /// <summary>
+        /// Which other script has a menu up right now, or null.
+        ///
+        /// NOT A CONTROL, WHICH IS THE WHOLE POINT. The reason a control-based gate cannot work
+        /// is written out on Probe: we disable INPUT_PHONE ourselves every frame, so asking the
+        /// game whether it is enabled is asking a question we already answered, and the answer
+        /// depends on which script ran first this frame. A variable has no frame order.
+        ///
+        /// Every SHVDN script lives in the one AppDomain, so its data slots are shared. The
+        /// convention is small: a script that opens a menu sets "MenuOpen" to its own name for as
+        /// long as the menu is up, and a script with a hotkey looks before it listens. Vehicle
+        /// Tweaks sets it; anything else that adopts the same name gets the same courtesy.
+        /// </summary>
+        private static string MenuOwner()
+        {
+            try { return AppDomain.CurrentDomain.GetData("MenuOpen") as string; }
+            catch { return null; }
+        }
+
+        private string _yielded;
+
         /// <summary>Rising edge of whatever opens the phone.</summary>
         private bool ReadOpenEdge()
         {
-            var down = Pressed(Control.Phone);
+            // SOMEBODY ELSE'S MENU IS UP, AND THEIR ARROW KEYS ARE NOT OUR PHONE BUTTON. Up on a
+            // settings panel is the same physical key as the phone, and this used to open on it.
+            // Read as "not down" rather than returned from early, so whatever edge memory sits
+            // below this sees an ordinary released frame instead of a stale one.
+            var owner = MenuOwner();
+
+            if (owner != null && _yielded != owner)
+            {
+                _yielded = owner;
+                Log.Info("Phone button left alone while " + owner + " has a menu open.");
+            }
+
+            if (owner == null) _yielded = null;
+
+            var down = owner == null && Pressed(Control.Phone);
 
             if (down) Probe();
 
