@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <SpoonerPlacements>
-	<Note>absorbs: homelesschurch, homlesschurch</Note>
+	<Note>absorbs: churchhomelesspeds, homelesschurch, homlesschurch</Note>
 	<AudioFile volume="400" />
 	<ClearDatabase>false</ClearDatabase>
 	<ClearWorld>0</ClearWorld>
@@ -13,9 +13,9 @@
 	<TimecycleModifier strength="1"></TimecycleModifier>
 	<StartTaskSequencesOnLoad>true</StartTaskSequencesOnLoad>
 	<ReferenceCoords>
-		<X>-17.5703773</X>
-		<Y>-1500.90186</Y>
-		<Z>29.2956696</Z>
+		<X>-15.8433628</X>
+		<Y>-1520.28467</Y>
+		<Z>32.6062012</Z>
 	</ReferenceCoords>
 	<Placement>
 		<ModelHash>0xa64c5b93</ModelHash>
@@ -1922,19 +1922,49 @@
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0x1ec93fd0</ModelHash>
+		<ModelHash>0x45753032</ModelHash>
 		<Type>1</Type>
 		<Dynamic>true</Dynamic>
 		<FrozenPos>false</FrozenPos>
-		<HashName>a_m_m_tramp_01</HashName>
-		<InitialHandle>900001</InitialHandle>
+		<HashName>Hick</HashName>
+		<InitialHandle>719437</InitialHandle>
 		<PedProperties>
 			<IsStill>true</IsStill>
-			<CanRagdoll>false</CanRagdoll>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
 			<Armour>0</Armour>
 			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>0,0</_0>
+				<_1>0,0</_1>
+				<_2>0,0</_2>
+				<_3>0,0</_3>
+				<_4>0,0</_4>
+				<_5>0,0</_5>
+				<_6>0,0</_6>
+				<_7>0,0</_7>
+				<_8>0,0</_8>
+				<_9>0,0</_9>
+				<_10>0,0</_10>
+				<_11>0,0</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
 			<ScenarioActive>true</ScenarioActive>
-			<Scenario>WORLD_HUMAN_STAND_FIRE</Scenario>
+			<Scenario>WORLD_HUMAN_HANG_OUT_STREET</Scenario>
+			<Animations />
 		</PedProperties>
 		<OpacityLevel>255</OpacityLevel>
 		<LodDistance>16960</LodDistance>
@@ -1951,12 +1981,377 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-8.4820</X>
-			<Y>-1521.6764</Y>
-			<Z>29.5157</Z>
+			<X>-10.8891811</X>
+			<Y>-1522.05493</Y>
+			<Z>29.9034748</Z>
 			<Pitch>0</Pitch>
 			<Roll>0</Roll>
-			<Yaw>150.00</Yaw>
+			<Yaw>-83.9981461</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x5442c66b</ModelHash>
+		<Type>1</Type>
+		<Dynamic>true</Dynamic>
+		<FrozenPos>false</FrozenPos>
+		<HashName>Altruist Cult Mid-Age Male</HashName>
+		<InitialHandle>408412</InitialHandle>
+		<PedProperties>
+			<IsStill>true</IsStill>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
+			<Armour>0</Armour>
+			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>0,1</_0>
+				<_1>0,0</_1>
+				<_2>0,0</_2>
+				<_3>1,2</_3>
+				<_4>0,0</_4>
+				<_5>0,0</_5>
+				<_6>0,0</_6>
+				<_7>0,0</_7>
+				<_8>0,1</_8>
+				<_9>1,2</_9>
+				<_10>0,0</_10>
+				<_11>0,0</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
+			<ScenarioActive>true</ScenarioActive>
+			<Scenario>WORLD_HUMAN_DRINKING</Scenario>
+			<Animations />
+		</PedProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>200</MaxHealth>
+		<Health>200</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-11.2128963</X>
+			<Y>-1519.67126</Y>
+			<Z>29.9011917</Z>
+			<Pitch>-3.20145546e-07</Pitch>
+			<Roll>-8.01195057e-08</Roll>
+			<Yaw>-103.308548</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x55446010</ModelHash>
+		<Type>1</Type>
+		<Dynamic>true</Dynamic>
+		<FrozenPos>false</FrozenPos>
+		<HashName>Altruist Cult Old Male</HashName>
+		<InitialHandle>11117</InitialHandle>
+		<PedProperties>
+			<IsStill>true</IsStill>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
+			<Armour>0</Armour>
+			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>0,1</_0>
+				<_1>0,0</_1>
+				<_2>4,0</_2>
+				<_3>0,2</_3>
+				<_4>1,0</_4>
+				<_5>0,0</_5>
+				<_6>0,0</_6>
+				<_7>0,0</_7>
+				<_8>2,0</_8>
+				<_9>0,0</_9>
+				<_10>0,0</_10>
+				<_11>0,0</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
+			<ScenarioActive>true</ScenarioActive>
+			<Scenario>WORLD_HUMAN_SMOKING</Scenario>
+			<Animations />
+		</PedProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>200</MaxHealth>
+		<Health>200</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-2.47501469</X>
+			<Y>-1527.06714</Y>
+			<Z>29.38904</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>-33.7851105</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x696be0a9</ModelHash>
+		<Type>1</Type>
+		<Dynamic>true</Dynamic>
+		<FrozenPos>false</FrozenPos>
+		<HashName>Meth Addict</HashName>
+		<InitialHandle>278906</InitialHandle>
+		<PedProperties>
+			<IsStill>true</IsStill>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
+			<Armour>0</Armour>
+			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>0,1</_0>
+				<_1>0,0</_1>
+				<_2>0,0</_2>
+				<_3>0,1</_3>
+				<_4>1,0</_4>
+				<_5>0,0</_5>
+				<_6>0,0</_6>
+				<_7>0,0</_7>
+				<_8>0,0</_8>
+				<_9>0,0</_9>
+				<_10>0,0</_10>
+				<_11>0,0</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
+			<ScenarioActive>false</ScenarioActive>
+			<Animations>
+				<Animation>
+					<Dict>switch@trevor@trev_smoking_meth</Dict>
+					<Name>trev_smoking_meth_loop</Name>
+					<Speed>4</Speed>
+					<SpeedMultiplier>-4</SpeedMultiplier>
+					<PlaybackRate>0</PlaybackRate>
+					<Duration>-1</Duration>
+					<Flag>1</Flag>
+					<LockPos>false</LockPos>
+				</Animation>
+			</Animations>
+		</PedProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>200</MaxHealth>
+		<Health>200</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-8.38159561</X>
+			<Y>-1524.48206</Y>
+			<Z>29.7816334</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>16.8411713</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x696be0a9</ModelHash>
+		<Type>1</Type>
+		<Dynamic>true</Dynamic>
+		<FrozenPos>false</FrozenPos>
+		<HashName>Meth Addict</HashName>
+		<InitialHandle>191773</InitialHandle>
+		<PedProperties>
+			<IsStill>true</IsStill>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
+			<Armour>0</Armour>
+			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>0,0</_0>
+				<_1>0,0</_1>
+				<_2>0,0</_2>
+				<_3>0,2</_3>
+				<_4>0,2</_4>
+				<_5>0,0</_5>
+				<_6>0,0</_6>
+				<_7>0,0</_7>
+				<_8>0,0</_8>
+				<_9>0,0</_9>
+				<_10>0,0</_10>
+				<_11>0,0</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
+			<ScenarioActive>false</ScenarioActive>
+			<Animations>
+				<Animation>
+					<Dict>switch@trevor@trev_smoking_meth</Dict>
+					<Name>trev_smoking_meth_loop</Name>
+					<Speed>4</Speed>
+					<SpeedMultiplier>-4</SpeedMultiplier>
+					<PlaybackRate>0</PlaybackRate>
+					<Duration>-1</Duration>
+					<Flag>1</Flag>
+					<LockPos>false</LockPos>
+				</Animation>
+			</Animations>
+		</PedProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>200</MaxHealth>
+		<Health>200</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-10.1393433</X>
+			<Y>-1503.48364</Y>
+			<Z>30.0512619</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>119.039238</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x1ec93fd0</ModelHash>
+		<Type>1</Type>
+		<Dynamic>true</Dynamic>
+		<FrozenPos>false</FrozenPos>
+		<HashName>Tramp Male</HashName>
+		<InitialHandle>167244</InitialHandle>
+		<PedProperties>
+			<IsStill>true</IsStill>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
+			<Armour>0</Armour>
+			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>0,0</_0>
+				<_1>0,0</_1>
+				<_2>0,0</_2>
+				<_3>1,1</_3>
+				<_4>1,1</_4>
+				<_5>0,0</_5>
+				<_6>0,0</_6>
+				<_7>0,0</_7>
+				<_8>0,0</_8>
+				<_9>0,0</_9>
+				<_10>0,0</_10>
+				<_11>0,0</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
+			<ScenarioActive>true</ScenarioActive>
+			<Scenario>WORLD_HUMAN_DRINKING</Scenario>
+			<Animations />
+		</PedProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>200</MaxHealth>
+		<Health>200</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-17.5663471</X>
+			<Y>-1513.68823</Y>
+			<Z>30.1923466</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>2.89691162</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>
@@ -1965,15 +2360,45 @@
 		<Type>1</Type>
 		<Dynamic>true</Dynamic>
 		<FrozenPos>false</FrozenPos>
-		<HashName>a_m_o_tramp_01</HashName>
-		<InitialHandle>900002</InitialHandle>
+		<HashName>Tramp Old Male</HashName>
+		<InitialHandle>401168</InitialHandle>
 		<PedProperties>
 			<IsStill>true</IsStill>
-			<CanRagdoll>false</CanRagdoll>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
 			<Armour>0</Armour>
 			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>0,2</_0>
+				<_1>0,0</_1>
+				<_2>0,1</_2>
+				<_3>2,1</_3>
+				<_4>0,1</_4>
+				<_5>0,0</_5>
+				<_6>0,0</_6>
+				<_7>0,0</_7>
+				<_8>0,0</_8>
+				<_9>0,0</_9>
+				<_10>0,0</_10>
+				<_11>0,0</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
 			<ScenarioActive>true</ScenarioActive>
-			<Scenario>WORLD_HUMAN_DRINKING</Scenario>
+			<Scenario>WORLD_HUMAN_HANG_OUT_STREET</Scenario>
+			<Animations />
 		</PedProperties>
 		<OpacityLevel>255</OpacityLevel>
 		<LodDistance>16960</LodDistance>
@@ -1990,168 +2415,12 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-5.7915</X>
-			<Y>-1521.7995</Y>
-			<Z>29.5157</Z>
+			<X>-10.3607492</X>
+			<Y>-1523.00037</Y>
+			<Z>29.8825436</Z>
 			<Pitch>0</Pitch>
-			<Roll>0</Roll>
-			<Yaw>150.00</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0x8ca0c266</ModelHash>
-		<Type>1</Type>
-		<Dynamic>true</Dynamic>
-		<FrozenPos>false</FrozenPos>
-		<HashName>a_f_m_trampbeac_01</HashName>
-		<InitialHandle>900003</InitialHandle>
-		<PedProperties>
-			<IsStill>true</IsStill>
-			<CanRagdoll>false</CanRagdoll>
-			<Armour>0</Armour>
-			<CurrentWeapon>0xa2719263</CurrentWeapon>
-			<ScenarioActive>true</ScenarioActive>
-			<Scenario>WORLD_HUMAN_BUM_SLUMPED</Scenario>
-		</PedProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>200</MaxHealth>
-		<Health>200</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-14.7363</X>
-			<Y>-1508.7876</Y>
-			<Z>29.8416</Z>
-			<Pitch>0</Pitch>
-			<Roll>0</Roll>
-			<Yaw>-130.00</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0x53b57eb0</ModelHash>
-		<Type>1</Type>
-		<Dynamic>true</Dynamic>
-		<FrozenPos>false</FrozenPos>
-		<HashName>a_m_m_trampbeac_01</HashName>
-		<InitialHandle>900004</InitialHandle>
-		<PedProperties>
-			<IsStill>true</IsStill>
-			<CanRagdoll>false</CanRagdoll>
-			<Armour>0</Armour>
-			<CurrentWeapon>0xa2719263</CurrentWeapon>
-			<ScenarioActive>true</ScenarioActive>
-			<Scenario>WORLD_HUMAN_BUM_STANDING</Scenario>
-		</PedProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>200</MaxHealth>
-		<Health>200</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-9.8690</X>
-			<Y>-1515.5993</Y>
-			<Z>29.9532</Z>
-			<Pitch>0</Pitch>
-			<Roll>0</Roll>
-			<Yaw>155.00</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0xf322d338</ModelHash>
-		<Type>1</Type>
-		<Dynamic>true</Dynamic>
-		<FrozenPos>false</FrozenPos>
-		<HashName>a_f_m_soucent_02</HashName>
-		<InitialHandle>900005</InitialHandle>
-		<PedProperties>
-			<IsStill>true</IsStill>
-			<CanRagdoll>false</CanRagdoll>
-			<Armour>0</Armour>
-			<CurrentWeapon>0xa2719263</CurrentWeapon>
-			<ScenarioActive>true</ScenarioActive>
-			<Scenario>WORLD_HUMAN_CLIPBOARD</Scenario>
-		</PedProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>200</MaxHealth>
-		<Health>200</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-6.2888</X>
-			<Y>-1499.4706</Y>
-			<Z>30.0330</Z>
-			<Pitch>0</Pitch>
-			<Roll>0</Roll>
-			<Yaw>140.00</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0x4086bd77</ModelHash>
-		<Type>1</Type>
-		<Dynamic>true</Dynamic>
-		<FrozenPos>false</FrozenPos>
-		<HashName>a_m_o_soucent_02</HashName>
-		<InitialHandle>900006</InitialHandle>
-		<PedProperties>
-			<IsStill>true</IsStill>
-			<CanRagdoll>false</CanRagdoll>
-			<Armour>0</Armour>
-			<CurrentWeapon>0xa2719263</CurrentWeapon>
-			<ScenarioActive>true</ScenarioActive>
-			<Scenario>WORLD_HUMAN_AA_COFFEE</Scenario>
-		</PedProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>200</MaxHealth>
-		<Health>200</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-15.8013</X>
-			<Y>-1502.9219</Y>
-			<Z>29.8416</Z>
-			<Pitch>0</Pitch>
-			<Roll>0</Roll>
-			<Yaw>165.00</Yaw>
+			<Roll>-0</Roll>
+			<Yaw>-42.5455894</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>

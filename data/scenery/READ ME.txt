@@ -18,7 +18,7 @@ wins over one of the same name in Menyoo's folder.
 
 WHAT SHIPS WITH THE MOD
 -----------------------
-Six scenes are in this folder already, 174 placements between them:
+Six scenes are in this folder already, 175 placements between them:
 
   the-block.xml     Ten of the set stood around Chamberlain and Grove, most of
                     them holding a rifle, plus the fences at Lamar's.
@@ -42,8 +42,9 @@ Six scenes are in this folder already, 174 placements between them:
   church-camp.xml   The camp behind the church on Carson: tents, shelters and
                     mattresses, a stove, a couch, bikes, box piles and bin
                     bags, a soup kitchen out the back -- a food van, tables,
-                    trays and cups -- and six people: four who live there and
-                    two at the tables.
+                    trays and cups -- and seven people placed by hand: two
+                    meth heads on the pipe, two stood talking, two drinking,
+                    one smoking.
 
 They came out of the spooner and were copied in here, so they no longer need
 Menyoo installed. If you still have the originals in menyooStuff\Spooner under
