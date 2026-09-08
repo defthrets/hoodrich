@@ -68,7 +68,13 @@ namespace Hoodrich.Missions
         /// </summary>
         private const float HomeRange = 38f;
 
-        private static readonly string[] BikeModels = { "bmx", "cruiser", "scorcher", "tribike" };
+        /// <summary>
+        /// A BMX. This was a ladder of four with the BMX at the top, so on a good day it
+        /// was already a BMX and on a bad one it was a road bike -- and a road bike under
+        /// one of the set is the wrong picture on any day. The ladder code stays for the
+        /// model that will not load; the list is one long.
+        /// </summary>
+        private static readonly string[] BikeModels = { "bmx" };
 
         /// <summary>
         /// How close is close enough to paint.

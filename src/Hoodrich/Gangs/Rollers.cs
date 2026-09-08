@@ -335,14 +335,14 @@ namespace Hoodrich.Gangs
         private static readonly string[] SpareCars = { "buccaneer2", "voodoo", "manana", "primo2" };
 
         /// <summary>
-        /// What they ride round the back streets: Street Blazers, Sanchezes, push bikes.
+        /// What they ride round the back streets with an engine: Street Blazers, Sanchezes.
         ///
-        /// Cut back to those three families, which is what was asked for twice. The list had
-        /// grown a scooter, two cheap sports bikes, a chopper and a couple of customs -- and a
-        /// man on a Bagger is somebody riding through the neighbourhood rather than somebody
-        /// from it. These three are what is actually parked in these yards.
+        /// Cut back to those, which is what was asked for twice. The list had grown a
+        /// scooter, two cheap sports bikes, a chopper and a couple of customs -- and a man
+        /// on a Bagger is somebody riding through the neighbourhood rather than somebody
+        /// from it. These are what is actually parked in these yards.
         /// </summary>
-        private static readonly string[] Bikes =
+        private static readonly string[] Engines =
         {
             // The Manchez first and twice, because it is what was asked for and because a
             // crew that turns up on three different bikes is three men who happen to be
@@ -353,16 +353,29 @@ namespace Hoodrich.Gangs
             "blazer4", "blazer",
 
             // Dirt bikes, which is the same answer at a different price.
-            "sanchez", "sanchez2",
-
-            // And what you pedal. The Inductor and the Stryder sit here rather than with the
-            // engines: both are bicycle-shaped, both were asked for by name, and on a footpath
-            // they read as push bikes with a motor rather than as motorbikes.
-            "inductor", "inductor2", "stryder",
-            "bmx", "cruiser", "scorcher", "fixter", "tribike"
+            "sanchez", "sanchez2"
         };
 
-        private static readonly string[] SpareBikes = { "bmx", "scorcher" };
+        /// <summary>
+        /// And what you pedal, which is a BMX and nothing else.
+        ///
+        /// This ran to eight bicycle-shaped things -- road bikes, a fixie, a mountain bike,
+        /// the two electric ones -- and a man from the set on a Fixter is a man riding
+        /// through the neighbourhood rather than somebody from it. In this part of town the
+        /// bicycle is a BMX: it is what the game itself puts under the kids on Grove Street,
+        /// and it is what was asked for. One entry, because the picker draws by count and
+        /// there is nothing else to weigh it against.
+        /// </summary>
+        private static readonly string[] Pedals = { "bmx" };
+
+        /// <summary>
+        /// How often a rider is on a pedal bike rather than an engine. The share the old
+        /// mixed list gave them by count -- eight bicycles among fourteen -- kept as a
+        /// number now the two are separate lists, so the street looks the same as it did.
+        /// </summary>
+        private const int PedalChance = 57;
+
+        private static readonly string[] SpareBikes = { "bmx" };
 
         /// <summary>Dark green, out of the game's own paint table.</summary>
         private const int DarkGreen = 49;
@@ -1455,8 +1468,10 @@ namespace Hoodrich.Gangs
         /// </summary>
         private Vehicle Make(bool bike, Vector3 at, Vehicle matching)
         {
-            // A third of the cars are donks. Bikes are never one, for reasons.
-            var wanted = bike ? Bikes
+            // A third of the cars are donks. Bikes are never one, for reasons. A bike is
+            // an engine or a BMX, decided here rather than by how many of each the list
+            // happened to hold.
+            var wanted = bike ? (_rng.Next(100) < PedalChance ? Pedals : Engines)
                        : (_rng.Next(100) < DonkChance ? Donks : Cars);
             var spares = bike ? SpareBikes : SpareCars;
 
