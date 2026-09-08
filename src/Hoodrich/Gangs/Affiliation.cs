@@ -471,6 +471,47 @@ namespace Hoodrich.Gangs
         /// <summary>What one post about somebody costs you with them.</summary>
         public const float TauntCost = 12f;
 
+        /// <summary>
+        /// Saying sorry in public, and it counts for something.
+        ///
+        /// THE MIRROR OF Taunted, WITH THE SAME CEILING AS Repair. Time already walks a
+        /// standing back up to what that set thinks of a stranger and no further -- see
+        /// SeedFor -- and an apology does the same walk in one step. It cannot buy you
+        /// friends you have not earned; it can end a beef you started with your mouth,
+        /// which is exactly what it should do.
+        ///
+        /// It also resets the hostility clock, so the slow repair starts again from now
+        /// rather than from the last thing you did to them.
+        /// </summary>
+        public bool Peace(string gangId, float by = PeaceGain)
+        {
+            var s = StandingFor(gangId);
+            if (s == null) return false;
+
+            var ceiling = SeedFor(gangId);
+            if (s.Rep >= ceiling) return false;
+
+            var before = s.Rep;
+            s.Rep = Math.Min(ceiling, s.Rep + by);
+            s.HostileAt = Game.GameTime;
+
+            var gang = _gangs == null ? null : _gangs.Get(gangId);
+            var name = gang == null ? gangId : gang.Name;
+
+            Log.Info("Made peace with " + gangId + ": " + before.ToString("0") + " -> " +
+                     s.Rep.ToString("0") + ".");
+
+            if (before <= BeefAt && s.Rep > BeefAt)
+            {
+                Notify.Ticker("~g~" + name + " took it.~s~  That's the beef off, for now.");
+            }
+
+            return true;
+        }
+
+        /// <summary>What one public apology is worth. Less than a diss costs, deliberately.</summary>
+        public const float PeaceGain = 9f;
+
         public GangStanding CurrentStanding => Current == null ? null : StandingFor(Current.Id);
 
         /// <summary>Registry lookup, exposed so callers do not need their own GangRegistry reference.</summary>

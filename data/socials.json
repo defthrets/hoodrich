@@ -7225,6 +7225,70 @@
       "found more on him than i expected",
       "some men carry their whole life in a jacket"
     ],
+    "YouPriceDrop": [
+      "everything's cheap today on {here}. tell whoever needs telling",
+      "prices are wrong on {here} and i'm not fixing them till dark",
+      "one day only. {here}. you know the code word",
+      "cheaper than it should be. {here}. don't make me say it twice",
+      "clearing out on {here}. first come",
+      "{subject} going for less than it's worth. {here}",
+      "everybody eats today. {here}",
+      "moving it cheap because i'd rather have the cash than the bag",
+      "half price on {here} for the next hour or so. bring exact",
+      "i'm undercutting everybody and i'll hear about it later. {here}"
+    ],
+    "YouCallHomies": [
+      "who's outside? {here}. need a couple of you",
+      "anybody free? come to {here}",
+      "if you're near {here} pull up. nothing serious yet",
+      "need two of you on {here}. now would be good",
+      "somebody come stand with me on {here}",
+      "who's about. {here}. don't make me ring round",
+      "on {here} on my own and i'd rather not be"
+    ],
+    "YouFlex": [
+      "counted it twice. still didn't believe it",
+      "this is one day. one",
+      "everybody who said i'd be nothing, this is for you",
+      "worked for every one of these",
+      "money don't sleep and neither do i",
+      "posting this then deleting it. probably",
+      "some of y'all have never seen this much at once and it shows",
+      "mama's rent, my rent, and there's still some left",
+      "this is what {here} pays if you're outside",
+      "no caption. look at it"
+    ],
+    "YouTruce": [
+      "{subject} -- that's enough. i said what i said and i'm taking it back",
+      "calling it off with {subject}. nobody's winning",
+      "i've got no problem with {subject}. i had one. it's done",
+      "to {subject}: my mouth ran. that's on me",
+      "we've both buried people over less. {subject}, i'm done with it",
+      "everybody wants me to keep it going with {subject}. i'm not",
+      "{subject} can have the last word. i'd rather have a quiet week",
+      "grown men can stop. {subject}, we're stopped"
+    ],
+    "YouRIP": [
+      "one year today. still don't feel real",
+      "long live my dawg. every day",
+      "poured one out {timeofday}. same wall, same time",
+      "he'd have hated all this posting. doing it anyway",
+      "some of y'all only say his name when it's convenient",
+      "miss you every single day and twice on the block",
+      "wall on {here} says it better than i can",
+      "for everybody we lost off this block. that's a long list",
+      "he was seventeen. i'm not letting anybody forget that",
+      "rest easy. we're still out here doing it wrong without you"
+    ],
+    "YouBought": [
+      "twenty thousand new friends overnight. all of them real, obviously",
+      "the numbers went up. don't ask how",
+      "growth is growth",
+      "some of y'all bought yours too, you're just quieter about it",
+      "invested in myself today. that's what they call it",
+      "new followers, same block, same me",
+      "you can buy numbers. can't buy a corner"
+    ],
     "YouOrderedIn": [
       "ordered {subject} to the block. man came on a moped like it was nothing",
       "{subject} to my feet in {here}. didn't move once",

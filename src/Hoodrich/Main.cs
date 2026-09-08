@@ -2665,6 +2665,127 @@ namespace Hoodrich
                             _social.Gain(4 + _rng.Next(8));
                             return true;
                         }
+
+                        // CHEAP TODAY. The strongest thing you can do to a corner from a
+                        // phone: five minutes of everybody walking to you instead of past
+                        // you. It costs on both sides -- a queue is a thing police notice,
+                        // and undercutting the block is not what your own people want to
+                        // read. Ten minutes between, and only from a corner you are
+                        // actually stood on.
+                        case "YouPriceDrop":
+                        {
+                            if (_postUp == null || !_postUp.IsPosted) return false;
+
+                            var code = _postUp.CodeWord ?? "";
+                            if (_social.PostAsYouSometimes("YouPriceDrop", code, 600000, 100) == null) return false;
+
+                            _postUp.Advertise(300000);
+                            _postUp.AddCornerHeat(1.2f);
+                            _crew.AddRep(-3f);
+                            _social.Gain(15 + _rng.Next(20));
+
+                            UI.Notify.Ticker("~g~word's out.~s~  Five minutes of everybody knowing where you are.");
+                            return true;
+                        }
+
+                        // WHO'S OUTSIDE. The same call the phone already makes, made in
+                        // public instead -- so it does exactly what ringing round does and
+                        // a few more people see it. His refusal is theirs, word for word.
+                        case "YouCallHomies":
+                        {
+                            if (_homies == null) return false;
+
+                            var no = _homies.Call();
+
+                            if (!string.IsNullOrEmpty(no)) { UI.Notify.Failure(no); return false; }
+
+                            _social.PostAsYouSometimes("YouCallHomies", "", 300000, 100);
+                            _social.Gain(4 + _rng.Next(8));
+                            return true;
+                        }
+
+                        // THE TAKINGS. A lot of followers, and the two things that follow
+                        // money being shown in public: the city notices you, and so does
+                        // whoever you are worst with. Somebody is on their way after this
+                        // one -- that is the point of it, not a punishment for using it.
+                        case "YouFlex":
+                        {
+                            if (Game.Player.Money < 5000)
+                            {
+                                UI.Notify.Failure("nothing worth photographing.");
+                                return false;
+                            }
+
+                            if (_social.PostAsYouSometimes("YouFlex", "", 900000, 100) == null) return false;
+
+                            _social.Gain(60 + _rng.Next(90));
+                            _state.AddNotoriety(2.5f);
+
+                            var seen = TrackTarget();
+                            if (seen != null) _payback.Owed(seen.Id);
+
+                            UI.Notify.Ticker("~y~everybody saw that.~s~  Including the ones counting it.");
+                            return true;
+                        }
+
+                        // CALLING IT OFF. The only thing on this phone that walks a
+                        // standing back UP, and it is capped at what that set thinks of a
+                        // stranger -- see Affiliation.Peace. It is not free: your own
+                        // people watched you apologise in public. Twenty minutes between.
+                        case "YouTruce":
+                        {
+                            var them = TrackTarget();
+                            if (them == null) return false;
+
+                            if (!_crew.Peace(them.Id))
+                            {
+                                UI.Notify.Failure("nothing to take back with " + them.Name + ".");
+                                return false;
+                            }
+
+                            if (_social.PostAsYouSometimes("YouTruce", them.Name, 1200000, 100) == null) return true;
+
+                            _crew.AddRep(-4f);
+                            _social.Gain(5 + _rng.Next(12));
+                            return true;
+                        }
+
+                        // FOR SOMEBODY. Nobody argues with grief. Your own people remember
+                        // that you said it, and it is the one post that costs nothing and
+                        // annoys nobody. Fifteen minutes between, because it means less
+                        // every time it is used.
+                        case "YouRIP":
+                        {
+                            if (!_crew.IsAffiliated) return false;
+
+                            if (_social.PostAsYouSometimes("YouRIP", _crew.Current.Name, 900000, 100) == null) return false;
+
+                            _crew.AddRep(3f, "for the memorial");
+                            _social.Gain(25 + _rng.Next(45));
+                            return true;
+                        }
+
+                        // BOUGHT AND PAID FOR. Real money for numbers that are not real,
+                        // and the block is not stupid -- the reach is worth having and
+                        // somebody always notices. Half an hour between.
+                        case "YouBought":
+                        {
+                            const int cost = 2500;
+
+                            if (Game.Player.Money < cost)
+                            {
+                                UI.Notify.Failure("that's $" + cost + " you haven't got.");
+                                return false;
+                            }
+
+                            if (_social.PostAsYouSometimes("YouBought", "", 1800000, 100) == null) return false;
+
+                            UI.Cash.Take(cost);
+                            _social.Gain(700 + _rng.Next(900));
+
+                            UI.Notify.Ticker("~y~-$" + cost + "~s~  and a lot of people who don't exist.");
+                            return true;
+                        }
                     }
 
                     var topic = _socialScreen.Topic == null ? null : _socialScreen.Topic();

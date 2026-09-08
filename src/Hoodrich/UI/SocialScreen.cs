@@ -149,6 +149,30 @@ namespace Hoodrich.UI
             new Sayable { Label = "Big up the set", Set = "YouBigUp",
                           Head = "FOR THE SET",
                           Line = "Costs nothing. The block likes to hear it, and so do yours." },
+
+            new Sayable { Label = "Put a price on it", Set = "YouPriceDrop",
+                          Head = "CHEAP TODAY",
+                          Line = "Undercut the block and they'll queue for it. Yours won't thank you, and neither will the corner." },
+
+            new Sayable { Label = "Call the homies out", Set = "YouCallHomies",
+                          Head = "WHO'S OUTSIDE",
+                          Line = "Asks in public instead of ringing round. Same result, more eyes." },
+
+            new Sayable { Label = "Post the takings", Set = "YouFlex",
+                          Head = "THE TAKINGS",
+                          Line = "Everybody sees a man with money. Everybody includes the ones counting it." },
+
+            new Sayable { Label = "Say sorry to somebody", Set = "YouTruce",
+                          Head = "CALLING IT OFF",
+                          Line = "Names the set you're worst with and takes it back. Costs you standing with your own." },
+
+            new Sayable { Label = "Post a memorial", Set = "YouRIP",
+                          Head = "FOR SOMEBODY",
+                          Line = "Nobody argues with grief. Yours remember it and the block goes quiet for a minute." },
+
+            new Sayable { Label = "Buy some followers", Set = "YouBought",
+                          Head = "BOUGHT AND PAID FOR",
+                          Line = "Two and a half grand for numbers that aren't real. Somebody always notices." },
         };
 
         /// <summary>Posts one of the free sets. True if anything actually went out.</summary>
