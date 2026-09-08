@@ -1265,7 +1265,11 @@ namespace Hoodrich.Gangs
         {
             if (crew.Leash == -1) return;
 
-            try { Function.Call(Hash.DELETE_ROPE, new OutputArgument(crew.Leash)); }
+            try
+            {
+                var rope = new Rope(crew.Leash);
+                if (rope.Exists()) rope.Delete();
+            }
             catch { /* it goes with the session */ }
 
             crew.Leash = -1;
@@ -1291,14 +1295,18 @@ namespace Hoodrich.Gangs
                 // it does the log is the only evidence there will be.
                 try
                 {
-                    var id = new OutputArgument(crew.Leash);
-                    Function.Call(Hash.DELETE_ROPE, id);
+                    // THROUGH THE ROPE OBJECT, NOT A HAND-ROLLED POINTER. DELETE_ROPE takes
+                    // the id by address, and an OutputArgument built round an int is a cast
+                    // this ScriptHookVDotNet refuses -- every lead this class ever took down
+                    // failed here, quietly, and the log said "could not take lead down:
+                    // Unable to cast". Rope.Delete does the pointer properly.
+                    var rope = new Rope(crew.Leash);
 
-                    var still = new OutputArgument(crew.Leash);
+                    if (rope.Exists()) rope.Delete();
 
-                    if (Function.Call<bool>(Hash.DOES_ROPE_EXIST, still))
+                    if (rope.Exists())
                     {
-                        Function.Call(Hash.DELETE_ROPE, still);
+                        rope.Delete();
 
                         Log.Info("Walkers: lead " + crew.Leash + " would not delete first time.");
                     }

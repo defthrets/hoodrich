@@ -391,7 +391,9 @@ namespace Hoodrich.UI
             {
                 next = Math.Max(0, Math.Min(Purities.Length - 1, next + step));
 
-                if (Purities[next] <= top + 0.001f) break;
+                // BY THE BAND, NOT THE FLOAT. A cupboard of product at 0.999 after a few
+                // merges is 100% on every screen and was refused the 100% rung here.
+                if (Stash.Percent(Purities[next]) <= Stash.Percent(top)) break;
 
                 // Walked into the dead end at the top of the list and there is nowhere further
                 // to go in that direction.
@@ -747,7 +749,7 @@ namespace Hoodrich.UI
                 var rungX = x + i * (rungW + gap);
                 var on = i == _purity;
 
-                var tooStrong = Purities[i] > from + 0.001f;
+                var tooStrong = Stash.Percent(Purities[i]) > Stash.Percent(from);
                 var under = Purities[i] < Stash.Unsellable;
 
                 var ink = tooStrong ? Palette.Alpha(Palette.TextDisabled, 110)

@@ -152,7 +152,9 @@ namespace Hoodrich.Economy
             // What is actually on the counter, which is not always full strength any more.
             var from = _stash.BulkPurityOf(product.Id);
 
-            if (targetPurity > from + 0.001f)
+            // By the band the screens show, not the raw float: 0.999 is 100% everywhere
+            // else and pressing it untouched at 100% is not putting anything back.
+            if (Stash.Percent(targetPurity) > Stash.Percent(from))
             {
                 return "That's already cut to " + Stash.Percent(from) + "%. You can't put it back.";
             }

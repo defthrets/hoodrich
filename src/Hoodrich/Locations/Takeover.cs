@@ -928,9 +928,17 @@ namespace Hoodrich.Locations
             /// <summary>When he stopped on the way home, or nought if he is still moving.</summary>
             public int Stuck;
 
-            /// <summary>When he first lifted off for somebody, or nought. See Working.</summary>
-            public int Held;
+            /// <summary>When the lock swaps to the other side. See Working.</summary>
+            public int SwapAt;
 
+            /// <summary>When he was first seen not moving with the lock on, or nought.</summary>
+            public int Stalled;
+
+            /// <summary>Held on the spot with the rears going, because something is in the way.</summary>
+            public bool Burning;
+
+            /// <summary>Driving back to the middle after sliding wide.</summary>
+            public bool Returning;
         }
 
         private readonly Settings _cfg;
@@ -1136,6 +1144,7 @@ namespace Hoodrich.Locations
             if (State == TakeoverState.Running)
             {
                 Bounce();
+                Boost();
 
                 // Per frame with the hydraulics and for the same reason: a wheelie is held by
                 // pushing on the bike every frame it lasts, and the same push at tick intervals
@@ -3811,6 +3820,10 @@ namespace Hoodrich.Locations
                     // round him, and THEN he stands on it from nothing. So the first thing
                     // after arriving is a brake, and the lock does not start until it is done.
                     r.NextAction = now + SettleMs;
+                    r.SwapAt = now + SettleMs + SwapMs;
+                    r.Stalled = 0;
+                    r.Burning = false;
+                    r.Returning = false;
 
                     try
                     {
@@ -4584,57 +4597,6 @@ namespace Hoodrich.Locations
             }
         }
 
-        /// <summary>
-        /// Whether anybody is stood in the bit of road he is about to swing through.
-        ///
-        /// Looked for AHEAD OF THE NOSE rather than all round the car, because a donut is
-        /// going somewhere: the dangerous ground is the arc in front, and a man behind the
-        /// back bumper is a man the car is driving away from. A plain radius would have him
-        /// lifting off for people he has already passed, all the way round, every time.
-        ///
-        /// Cars as well as people. A spectator who has crept forward off his kerb is the same
-        /// obstacle a person is, and hitting one is what starts the pile-ups.
-        /// </summary>
-        private bool Crowded(Runner r)
-        {
-            try
-            {
-                var nose = r.Car.Position + r.Car.ForwardVector * LookAhead;
-
-                foreach (var w in _crowd)
-                {
-                    if (w == null || w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
-                    if (w.Man.Position.DistanceTo(nose) < ClearPed) return true;
-                }
-
-                foreach (var p in _parked)
-                {
-                    if (p == null || p.Car == null || !p.Car.Exists()) continue;
-                    if (p.Car.Handle == r.Car.Handle) continue;
-                    if (p.Car.Position.DistanceTo(nose) < ClearCar) return true;
-                }
-
-                return false;
-            }
-            catch
-            {
-                // If it cannot be answered, he drives. A missed check is one burst of lock; an
-                // exception thrown here would stop the car working at all.
-                return false;
-            }
-        }
-
-        /// <summary>How far ahead of the nose he looks, and how much room he wants there.</summary>
-        private const float LookAhead = 3.5f;
-        private const float ClearPed = 2.2f;
-        private const float ClearCar = 4.2f;
-
-        /// <summary>How long he waits before looking again, having lifted off.</summary>
-        private const int EaseMs = 500;
-
-        /// <summary>And the longest he will hold off for, whatever is in front of him.</summary>
-        private const int PatientMs = 1500;
-
         /// <summary>Their go is over. Grip back, smoke off, and out the way they came.</summary>
         private void Leave(Runner r)
         {
@@ -4731,37 +4693,32 @@ namespace Hoodrich.Locations
                 if (r.Car == null || !r.Car.Exists()) continue;
                 if (r.Driver == null || !r.Driver.Exists() || !r.Driver.IsAlive) continue;
 
-                // THE LEASH, and it is a real drive rather than a shove. A donut wanders --
-                // that is what a donut does -- so anybody who has drifted out of the area gets
-                // an ordinary route back into it and picks up again when it arrives.
-                // THE ONE ON THE LINE HAS ITS OWN LEASH, WHICH IS THE LINE. See Line below:
-                // it covers most of the junction, so measuring it against a circle round the
-                // mark would haul it back to the middle every time it reached the far end of
-                // the thing it is meant to be driving.
-
+                // THE LEASH, and it is a real drive rather than a shove. Five metres off his
+                // ring and he gets an ordinary route back to the middle; the lock goes straight
+                // back on the moment he is inside it again, not on the next clock.
                 var gap = r.Car.Position.DistanceTo(Circle);
 
                 if (gap > r.Radius + Wander)
                 {
+                    if (!r.Returning)
+                    {
+                        r.Returning = true;
+                        r.Burning = false;
+                        r.NextAction = 0;
+                    }
+
                     if (now < r.NextAction) continue;
 
                     r.NextAction = now + 3000;
 
                     try
                     {
-                        // BACK TO THE MIDDLE, AND STILL SIDEWAYS.
-                        //
-                        // Aimed at the centre of the circle now rather than at the nearest
-                        // point on his own ring. A car that has slid wide hauling itself back
-                        // towards the middle is what losing it and catching it looks like; one
-                        // that rejoins the ring at the nearest point has tidily driven back to
-                        // where it should be, which is not the same picture at all.
-                        //
-                        // AND THE TYRES STAY ON. This is a correction inside his go, not the
-                        // end of it -- grip and drift tyres come off in Leave and nowhere else.
-                        // Re-asserted rather than assumed, because a car that grips up halfway
-                        // through has visibly stopped drifting, and putting the smoke back
-                        // afterwards would not hide that it had gone.
+                        // BACK TO THE MIDDLE, AND STILL SIDEWAYS. Aimed at the centre rather
+                        // than at the nearest point on his ring: a car that slid wide hauling
+                        // itself back towards the middle is what losing it and catching it
+                        // looks like. The tyres stay on -- this is a correction inside his
+                        // go, not the end of it.
+                        Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
                         Slick(r.Car, true);
                         Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
 
@@ -4777,73 +4734,128 @@ namespace Hoodrich.Locations
                     continue;
                 }
 
+                if (r.Returning)
+                {
+                    r.Returning = false;
+                    r.NextAction = 0;
+                    r.Stalled = 0;
+                }
+
+                // EVERY THIRTY SECONDS, THE OTHER WAY.
+                if (r.SwapAt == 0) r.SwapAt = now + SwapMs;
+
+                if (now >= r.SwapAt)
+                {
+                    r.Way = r.Way > 0 ? -1 : 1;
+                    r.SwapAt = now + SwapMs;
+                    r.NextAction = 0;
+                    r.Stalled = 0;
+                }
+
+                // SOMETHING IN THE WAY. A temp action is a driver input, not a route -- there
+                // is no avoidance in it at all -- so the tell is the car itself: full lock
+                // and the throttle planted against a bumper or a kerb is a car that is not
+                // moving. He holds a burnout on the spot, tries the lock again every couple
+                // of seconds, and carries on the moment it takes.
+                //
+                // LIFTING OFF FOR PEOPLE IS GONE. It looked up the nose for anybody in the
+                // arc and coasted if it found somebody, and on a ring of fifty people that
+                // was a car doing a second of lock and then sitting there, all night. The
+                // crowd steps aside for cars now; that is their job, not his.
+                var moving = r.Car.Speed > StallSpeed;
+
+                if (moving) r.Stalled = 0;
+                else if (r.Stalled == 0) r.Stalled = now;
+
+                if (r.Burning)
+                {
+                    if (now < r.NextAction) continue;
+
+                    // The lock again, with a moment to get rolling before it is called stuck.
+                    r.Burning = false;
+                    r.Stalled = now;
+                    Lock(r, now);
+                    continue;
+                }
+
+                if (!moving && now - r.Stalled > StallMs)
+                {
+                    r.Burning = true;
+                    r.NextAction = now + RetryMs;
+
+                    try
+                    {
+                        Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+                        Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, true);
+                    }
+                    catch
+                    {
+                        // He tries the lock again shortly either way.
+                    }
+
+                    continue;
+                }
+
                 if (now < r.NextAction) continue;
 
-                // HE LOOKS BEFORE HE PUTS THE LOCK ON.
-                //
-                // A temp action is a driver input, not a route -- there is no avoidance in it
-                // at all, so a car mid-donut drives through whatever is in the way and keeps
-                // driving. That is why the crowd was being cleaned out: not because the cars
-                // aim at anybody, but because nothing in the action ever asks.
-                //
-                // So the asking happens here, between bursts. Somebody stood in the arc he is
-                // about to swing through means the burst is simply not issued this time round:
-                // he coasts for half a second, the arc moves on or the person does, and he
-                // picks it up again. That is a lift off the throttle, which is what a driver
-                // does, and it costs a fraction of one donut.
-                //
-                // Our own crowd list rather than a world query, because they are who is stood
-                // there and the list is already in hand.
-                // AND HE ONLY WAITS SO LONG, which is the half that was missing and the
-                // reason nothing was happening.
-                //
-                // A car in the circle looks five and a half metres up its own nose and lifts
-                // off if anybody is within three and a half of that. On a ring of fifty-odd
-                // people standing nineteen metres out, a car drifting at twelve is looking
-                // straight at them for a good part of every lap -- so it lifted off, did not
-                // move, and looked again at a scene that had not changed because it had not
-                // moved. It sat there for the whole night waiting for a crowd that was waiting
-                // for it.
-                //
-                // Two ways out. It looks a shorter way ahead and wants less room, because the
-                // crowd steps aside for cars now and did not when this was written -- a man in
-                // the way moves himself. And it will not hold off for more than a second and a
-                // half no matter what: past that he goes, the crowd scatters the way a crowd
-                // does, and something happens. A donut that never starts is worse than one
-                // somebody has to step back from.
-                if (Crowded(r))
-                {
-                    if (r.Held == 0) r.Held = now;
-
-                    if (now - r.Held < PatientMs)
-                    {
-                        r.NextAction = now + EaseMs;
-                        continue;
-                    }
-                }
-
-                r.Held = 0;
-
-                try
-                {
-                    // EVERYBODY SPINS, including anybody ever sent to the middle. Nothing on
-                    // this junction stands still with its back wheels going any more: a
-                    // stationary burnout among cars going round reads as a car that is stuck,
-                    // which is exactly what it was taken for.
-                    Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
-
-                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle,
-                                  r.Car.Handle, Spin(r.Way), BurstMs);
-
-                    r.NextAction = now + BurstMs - 400;
-                }
-                catch
-                {
-                    r.NextAction = now + BurstMs;
-                }
+                Lock(r, now);
             }
         }
 
+        /// <summary>
+        /// Full lock and the throttle, his way, asked for long enough that the next one is
+        /// issued before this one runs out. Re-issuing an action a car is already performing
+        /// simply continues it, so the overlap costs nothing and the gap it prevents was a
+        /// car stopping dead every few seconds.
+        /// </summary>
+        private void Lock(Runner r, int now)
+        {
+            try
+            {
+                Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
+                Slick(r.Car, true);
+                Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
+                Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, r.Car.Handle, Spin(r.Way), LockMs);
+
+                r.NextAction = now + LockMs - TopUpLead;
+            }
+            catch
+            {
+                r.NextAction = now + 1000;
+            }
+        }
+
+        /// <summary>How long the lock is asked for at a time, how often it swaps sides, and what counts as stuck.</summary>
+        private const int LockMs = 6000;
+        private const int SwapMs = 30000;
+        private const float StallSpeed = 0.9f;
+        private const int StallMs = 1200;
+        private const int RetryMs = 2500;
+
+        /// <summary>Three times the engine, for as long as he is working. See Boost.</summary>
+        private const float TorqueBoost = 3f;
+
+        /// <summary>
+        /// The torque, per frame. The cheat-power native is a multiplier the game reads on
+        /// the frame it is set, so it is set every frame -- once a tick would be a car with
+        /// a boost for one frame in forty.
+        /// </summary>
+        private void Boost()
+        {
+            foreach (var r in _running)
+            {
+                if (!r.Circling || r.Car == null) continue;
+
+                try
+                {
+                    if (r.Car.Exists()) Function.Call(Hash.SET_VEHICLE_CHEAT_POWER_INCREASE, r.Car.Handle, TorqueBoost);
+                }
+                catch
+                {
+                    // Next frame.
+                }
+            }
+        }
 
         /// <summary>
         /// The longest a waypoint is chased before it is re-issued.
@@ -4958,7 +4970,7 @@ namespace Hoodrich.Locations
         /// <summary>How fast they come in, and how long they sit before they start.</summary>
         private const float ComeInSpeed = 11f;
         private const int SettleMs = 1500;
-        private const float Wander = 7f;
+        private const float Wander = 5f;
 
         /// <summary>
         /// The crowd, out loud.
