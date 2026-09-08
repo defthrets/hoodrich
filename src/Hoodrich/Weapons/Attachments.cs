@@ -151,6 +151,14 @@ namespace Hoodrich.Weapons
 
             foreach (var name in Candidates(weapon))
             {
+                // NOT THE DEFAULT CLIP. The game answers "yes, he has that" for _CLIP_01 on
+                // every gun he holds, because it is what the gun ships with. Writing it down
+                // meant the locker put it back after a death -- into the same slot the
+                // extended magazine had just gone into -- and the gun came back stock with
+                // whatever else was on it. That is the "it gave me a suppressor instead of
+                // the mag" report, exactly.
+                if (name.EndsWith("_CLIP_01", StringComparison.OrdinalIgnoreCase)) continue;
+
                 try
                 {
                     var part = Function.Call<uint>(Hash.GET_HASH_KEY, name);

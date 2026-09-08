@@ -176,9 +176,13 @@ namespace Hoodrich.UI
             else if (Pressed(Control.PhoneDown)) { if (_onParts) PartMove(1); else Move(1); }
             else if (Pressed(Control.PhoneLeft)) { if (_onParts) Across(); else Lot(-1); }
             else if (Pressed(Control.PhoneRight)) { if (!_onParts) Lot(1); }
+            // RELOAD BEFORE JUMP. On a pad both are X, and with Jump tested first the press
+            // racked the shelf and never reached the parts the hint on the bar was promising.
+            // Keyboard is unaffected: R is Reload and Space is Jump, and each still does what
+            // it did.
+            else if (Pressed(Control.Reload)) Across();
             else if (Pressed(Control.FrontendRb) || Pressed(Control.Jump)) Shelf(1);
             else if (Pressed(Control.FrontendLb) || Pressed(Control.Cover)) Shelf(-1);
-            else if (Pressed(Control.Reload)) Across();
             else if (Pressed(Control.PhoneSelect) || Pressed(Control.Context)) { if (_onParts) BuyPart(); else Buy(); }
         }
 
@@ -468,6 +472,33 @@ namespace Hoodrich.UI
             return GunArt.Draw(icon, cx, cy, w, h, ink);
         }
 
+        /// <summary>
+        /// The name a part's picture goes by in the packs.
+        ///
+        /// DERIVED, THEN CHECKED BY THE PACK. The game names attachment art after the
+        /// component with the prefix swapped -- COMPONENT_AT_PI_SUPP is w_at_pi_supp -- and a
+        /// magazine after the gun it fits with _mag2 on the end. Both are spellings the packs
+        /// are asked about and may say no to; a miss draws nothing and is written down once,
+        /// so a wrong guess costs a blank, never a wrong picture.
+        /// </summary>
+        private static string PartIcon(string gunIcon, string component)
+        {
+            if (string.IsNullOrEmpty(component)) return "";
+
+            var c = component.ToLowerInvariant();
+
+            if (c.StartsWith("component_at_", StringComparison.Ordinal)) return "w_" + c.Substring("component_".Length);
+
+            var clip = c.IndexOf("_clip_", StringComparison.Ordinal);
+            if (clip >= 0 && !string.IsNullOrEmpty(gunIcon))
+            {
+                var n = c.Substring(clip + "_clip_".Length).TrimStart('0');
+                return gunIcon + "_mag" + (n.Length == 0 ? "1" : n);
+            }
+
+            return "";
+        }
+
         // ---- drawing --------------------------------------------------------------
 
         public void Draw()
@@ -731,7 +762,15 @@ namespace Hoodrich.UI
                 // A tick for what is on it, drawn as a rail so it reads from across the panel.
                 if (fitted) Hud.RectFrom(x - Hud.ToX(0.006f), y - 0.004f, Hud.ToX(0.0026f), PartRow, Palette.Cash);
 
-                Hud.Text(part.Name, x + Hud.ToX(0.004f), y, 0.28f, ink, Hud.FontBody, centre: false);
+                // THE PART'S OWN PICTURE, out of the same packs the guns come from. The slot is
+                // reserved whether or not the art lands, so a row does not jump sideways the
+                // frame its texture streams in; a pack that has not got it draws nothing and
+                // the name stands on its own, the same as the guns.
+                var slot = Hud.ToX(PartRow * 1.7f);
+                Art(PartIcon(IconOf(piece), part.Component), x + slot * 0.5f, y + PartRow * 0.5f - 0.003f,
+                    slot * 0.92f, PartRow * 0.92f, ink);
+
+                Hud.Text(part.Name, x + slot + Hud.ToX(0.004f), y, 0.28f, ink, Hud.FontBody, centre: false);
 
                 var paid = _paid.Contains(piece.Weapon + "|" + part.Component);
                 var tag = fitted ? "FITTED" : paid ? "PAID" : "$" + part.Price.ToString("N0");

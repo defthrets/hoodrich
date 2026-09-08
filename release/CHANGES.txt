@@ -1,4 +1,28 @@
-﻿THE COMPILER HAS NOTHING LEFT TO SAY.
+﻿STRETCH: THE MAGAZINE STAYS ON, X OPENS THE PARTS, AND THE PARTS HAVE PICTURES.
+
+THE SUPPRESSOR INSTEAD OF THE MAG. The locker writes down what is on each
+of your guns every twenty seconds so it can put it all back after a death,
+and the game answers "yes, he has that" for the stock clip on every gun,
+because it is what the gun ships with. So the stock clip was written down,
+and on the way back it went on AFTER the extended magazine, into the same
+slot, and knocked it off. Whatever else was bolted on came back; the mag
+did not. The stock clip is never recorded now, the saved parts go on
+first, and the big magazine only fills a slot nobody chose anything for.
+
+X ON THE PAD. Jump and Reload are both X on a controller, and Jump was
+tested first, so X racked the shelf and never reached the parts the hint
+bar was promising. Reload is asked first now. Keyboard is unchanged.
+
+AND THE PARTS HAVE PICTURES, out of the same packs the guns come from --
+a suppressor, a grip, a scope, a light, a magazine, each on its own row.
+A pack that has not got one draws nothing, the same as the guns.
+
+The four pistols still without a picture -- SNS, Vintage, Double Action,
+AP -- are in none of the four art packs this install loads. That is a pack
+name to find, not a bug to fix.
+
+
+THE COMPILER HAS NOTHING LEFT TO SAY.
 
 Thirty-six warnings at the start of the day, none now. What went was all
 dead: the room-staffing subsystem in InteriorDoor -- Post, Hand, Hire,

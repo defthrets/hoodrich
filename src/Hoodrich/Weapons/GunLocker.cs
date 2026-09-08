@@ -190,13 +190,26 @@ namespace Hoodrich.Weapons
                     // with the same handful a new one does.
                     Function.Call(Hash.GIVE_WEAPON_TO_PED, me.Handle, hash, 0, false, false);
 
-                    var def = _guns == null ? null : _guns.Get(hash);
-                    if (def != null) ExtendedClips.GiveTo(me, def.Id);
+                    // WHAT HE HAD BOLTED TO IT FIRST, THEN THE MAGAZINE -- and the magazine
+                    // only if he had not chosen one himself. Components share slots: a clip
+                    // fitted after the saved list replaces whichever clip the list carried, so
+                    // the order decides which wins, and the one he picked at the counter
+                    // should. The old order put the big magazine on first and then let the
+                    // saved list knock it straight back off.
+                    var saved = PartsFor(name);
+                    parts += Attachments.GiveTo(me, name, saved);
 
-                    // And everything he had bolted to it. The clip above is the one part the
-                    // shop sells; this is the scope, grip, suppressor and light he fitted
-                    // himself, which came back missing every time until now.
-                    parts += Attachments.GiveTo(me, name, PartsFor(name));
+                    var chose = false;
+                    if (saved != null)
+                    {
+                        foreach (var p in saved)
+                        {
+                            if (p != null && p.IndexOf("_CLIP_", StringComparison.OrdinalIgnoreCase) >= 0) chose = true;
+                        }
+                    }
+
+                    var def = _guns == null ? null : _guns.Get(hash);
+                    if (!chose && def != null) ExtendedClips.GiveTo(me, def.Id);
 
                     back++;
                 }
