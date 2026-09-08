@@ -369,7 +369,7 @@ namespace Hoodrich.UI
         ///
         /// Show is nought to one. Costs one panel and one small rounded chip.
         /// </summary>
-        public static void Prompt(string cap, string text, float show)
+        public static void Prompt(string cap, string text, float show, float fill = -1f)
         {
             if (show <= 0.01f || string.IsNullOrEmpty(text)) return;
             if (show > 1f) show = 1f;
@@ -386,7 +386,8 @@ namespace Hoodrich.UI
 
             var padX = Hud.ToX(PromptPad);
             var w = padX + capLead + textW + padX;
-            var h = PromptPad * 0.85f + textH + PromptPad * 0.85f;
+            var track = fill >= 0f;
+            var h = PromptPad * 0.85f + textH + (track ? 0.004f + PromptTrackH : 0f) + PromptPad * 0.85f;
 
             var x = 0.5f - w * 0.5f;
 
@@ -411,7 +412,22 @@ namespace Hoodrich.UI
 
             Hud.Text(text, x + padX + capLead, top + PromptPad * 0.85f, PromptScale,
                      Palette.Alpha(Palette.Text, (int)(232f * ink)), Hud.FontBody, centre: false);
+
+            // THE HOLD, filling under the words: a thin track and what has been held so far.
+            // Two rectangles, and only while something is being held down.
+            if (!track) return;
+
+            var barY = top + h - PromptPad * 0.85f - PromptTrackH;
+            var barW = w - padX * 2f;
+
+            Hud.RectFrom(x + padX, barY, barW, PromptTrackH, Color.FromArgb((int)(120f * ink), 30, 26, 22));
+
+            var got = barW * (fill > 1f ? 1f : fill);
+            if (got > 0.0005f) Hud.RectFrom(x + padX, barY, got, PromptTrackH, Palette.Alpha(Palette.Warn, (int)(235f * ink)));
         }
+
+        /// <summary>The fill under a held prompt. Thin: it is a hint, not a loading bar.</summary>
+        private const float PromptTrackH = 0.0032f;
 
         /// <summary>How tall a line of this comes out, from the game; a guess if it will not say.</summary>
         private static float TextHeight(float scale, int font)

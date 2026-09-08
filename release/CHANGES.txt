@@ -74,6 +74,19 @@ It was also most of the phone flicker: the cards and the discs behind every
 tick came to five hundred rectangles a screenful and the game drops the tail
 of the frame past about four hundred. A post is one hairline now.
 
+THE PHONE IS ONE PICTURE. The handset -- rim, body, glass corners, speaker,
+home bar, camera -- was about two hundred rectangles a frame, out of a
+per-frame budget of a few hundred that every script on the machine shares;
+when another HUD spent its share first the phone's last rectangles were
+dropped, which was the flicker. It is one sprite now, from a budget nobody
+else is near, with a hole where the screen is.
+
+THE BOOT IS A HOLD. Half a second on E (D-pad left on a pad) at the back of
+the car, with the bar filling under the words, and the lid goes; a tap does
+nothing, so the game's own E is still the game's. From the driver's seat it
+is a different key -- hold Alt, or D-pad down -- because E and D-pad right
+in a stopped car are the horn and Bare Minimum's sleep.
+
 HAO HAS A FACE. His dialogue came up with no picture: the game keeps a fixed
 number of headshot slots, the feed's faces and the phone's own had all of
 them, and the talk asked once on the frame it opened and took no for an

@@ -783,96 +783,49 @@ namespace Hoodrich.Phone
 
         private void Body(float left, float top, float w, float h, int fade, float glass)
         {
-            // THE RIM, WITH A LIGHT ON IT. Two rounded rectangles a hair apart: the lighter one
-            // shows only along the top edge, where the darker one -- set a fraction lower --
-            // does not cover it. A bevel for the price of one extra shape. Chrome catches
-            // light from above, and a rim that is one flat grey all the way round is a sticker.
+            // THE HANDSET IS ONE PICTURE. It was three rounded rectangles for the rim and the
+            // body, a fourth for the glass, two more for the speaker slit and the home bar,
+            // three discs for the camera -- and a rounded rectangle is a stack of thin ones,
+            // eight a corner. About two hundred rectangles before a single app tile went
+            // down, out of a per-frame budget of a few hundred that every script on the
+            // machine shares; when another HUD spent its share first, the phone's LAST
+            // rectangles were silently dropped -- the battery, the signal, the plate under
+            // an app -- which is what the phone "glitching with everything on" was.
             //
-            // RECTS at the corners, not the sprite: a runtime-texture sprite comes out ON TOP
-            // of any rectangle drawn after it, whatever order they were issued in, and the
-            // handset is the bottom layer of everything on this screen. Twenty steps is a
-            // three-pixel stagger on a two-pixel band, which is to say invisible.
-            const float catchLight = 0.0009f;
+            // A sprite comes out of a different budget nobody else is anywhere near, and
+            // this is one sprite: tools/make_phone.py renders the frame at the body's own
+            // proportions, every mark exactly where the rectangles used to put it. It is
+            // HOLLOW where the screen is, because the game composites script sprites above
+            // script rectangles and text whatever order they are submitted in -- so the
+            // frame lands on top of everything on the phone, and everything on the phone
+            // has to show through a hole in it. The glass is one flat rectangle underneath,
+            // and the frame's inner corners round it off.
+            var m = Hud.ToX(FrameMargin);
 
-            // RECTS AT THE CORNERS, as the note above says, and cheaply, because the corners
-            // are tight now. Sprite corners were tried for one build: a runtime-texture disc
-            // is a whole circle drawn on top of every rectangle, so the flats that should hide
-            // three quarters of it sat underneath and each corner wore a bullseye.
-            Hud.RoundRect(left, top, w, h, BodyRound,
-                          Fade(Color.FromArgb(255, 134, 140, 142), fade), sprite: false, steps: 8);
-
-            Hud.RoundRect(left, top + catchLight, w, h - catchLight, BodyRound,
-                          Fade(Color.FromArgb(255, 72, 76, 78), fade), sprite: false, steps: 8);
-
-            var edge = 0.0022f;
-            var edgeX = Hud.ToX(edge);
-
-            Hud.RoundRect(left + edgeX, top + edge, w - edgeX * 2f, h - edge * 2f,
-                          BodyRound - edge, Fade(Color.FromArgb(252, 8, 9, 10), fade), sprite: false, steps: 8);
-
-            // THE KEYS ON THE SIDES. Power on the right, two volume keys on the left, the way
-            // every handset anybody has held is laid out. They stand a couple of pixels proud
-            // of the rim, in the rim's own grey, and they are the cheapest thing on this screen
-            // that says "object" rather than "window".
-            var keyOut = Hud.ToX(0.0024f);
-            var keyInk = Fade(Color.FromArgb(255, 98, 104, 106), fade);
-
-            Hud.RectFrom(left + w, top + h * 0.20f, keyOut, 0.046f, keyInk);
-            Hud.RectFrom(left - keyOut, top + h * 0.17f, keyOut, 0.026f, keyInk);
-            Hud.RectFrom(left - keyOut, top + h * 0.17f + 0.032f, keyOut, 0.026f, keyInk);
-
-            // THE SPEAKER AND THE CAMERA, in the top bezel. A dark slit and a darker dot with
-            // a point of light in it: the two marks that make a black rectangle read as the
-            // front of a phone rather than the back of one.
-            var mid = left + w * 0.5f;
-            var slitW = Hud.ToX(0.052f);
-            const float slitH = 0.0030f;
-            var slitY = top + Bezel * 0.5f - slitH * 0.5f;
-
-            Hud.RoundRect(mid - slitW * 0.5f, slitY, slitW, slitH, slitH * 0.5f,
-                          Fade(Color.FromArgb(255, 30, 33, 35), fade), sprite: false, steps: 4);
-
-            // The camera is a punch-hole in the glass now -- see StatusBar -- so the bezel
-            // keeps only the speaker.
-
-            // THE HOME BAR, in the bottom bezel.
-            var barW = Hud.ToX(0.040f);
-
-            Hud.RoundRect(mid - barW * 0.5f, top + h - Bezel * 0.5f - 0.0012f, barW, 0.0024f, 0.0012f,
-                          Fade(Color.FromArgb(255, 88, 94, 96), fade), sprite: false, steps: 4);
+            Hud.File("phone_frame.png", left + w * 0.5f, top + h * 0.5f,
+                     w + m * 2f, h + FrameMargin * 2f, 0f, Fade(Color.White, fade));
 
             // AND THE GLASS, WAKING. Black until the body has landed, then up to the screen's
             // own near-black over a few frames, which is what a phone does when it is taken
-            // out. Fine bands on the screen: this is the one shape everything sits on.
+            // out. One rectangle: this is the shape everything sits on.
             var bezX = Hud.ToX(Bezel);
             var dark = Color.FromArgb(252, 2, 2, 3);
             var lit = Color.FromArgb(252, 13, 15, 17);
 
-            // NOT STEPS ZERO. Zero is one rectangle per screen ROW, and the glass is three
-            // quarters of the screen tall -- eight hundred rectangles at 1080p and sixteen
-            // hundred at 4K, for one flat near-black shape. The game keeps a fixed buffer of
-            // script rectangles per frame and throws away everything past it, and the things
-            // past it were the LAST rectangles of the phone: the battery, the signal, the
-            // rule under the status bar, the Fleeca band, the plate under every app. Text and
-            // sprites come out of different buffers, which is why the clock and the icons
-            // drew and nothing around them did -- and why it read as "missing icons" rather
-            // than as a broken phone. The log had the number the whole time: a thousand and
-            // thirty-nine in a frame, against a busiest-ever of five hundred.
-            //
-            // Twenty steps is about eighty rectangles and a corner stagger nobody can see on a
-            // near-black shape.
-            Hud.RoundRect(left + bezX, top + Bezel, w - bezX * 2f, h - Bezel * 2f,
-                          ScreenRound, Fade(Lerp(dark, lit, glass), fade), sprite: false, steps: 8);
+            Hud.RectFrom(left + bezX, top + Bezel, w - bezX * 2f, h - Bezel * 2f,
+                         Fade(Lerp(dark, lit, glass), fade));
 
             // A catch of light along the top of the glass, so it is glass rather than paint.
             if (glass > 0f)
             {
                 var inX = Hud.ToX(ScreenRound);
-
                 Hud.RectFrom(left + bezX + inX, top + Bezel, w - bezX * 2f - inX * 2f, 0.0014f,
                              Fade(Color.FromArgb((int)(22 * glass), 255, 255, 255), fade));
             }
         }
+
+        /// <summary>The room the frame picture has round the body, for the side keys. tools/make_phone.py uses the same figure.</summary>
+        private const float FrameMargin = 0.0028f;
 
         /// <summary>
         /// Who is ringing, and the two things you can do about it.
@@ -997,10 +950,9 @@ namespace Hoodrich.Phone
             var camX = left + w * 0.5f;
             var camY = mid;
 
-            Hud.Disc(camX, camY, CamRadius, Fade(Color.FromArgb(255, 72, 76, 78), fade), 2);
-            Hud.Disc(camX, camY, CamRadius - CamRing, Fade(Color.FromArgb(255, 6, 7, 9), fade), 2);
-            Hud.Disc(camX - Hud.ToX(CamRadius * 0.28f), camY - CamRadius * 0.28f, CamRadius * 0.22f,
-                     Fade(Color.FromArgb(200, 120, 150, 170), fade), 1);
+            // The camera punch-hole is on the frame picture now -- see Body -- which is
+            // three discs of rectangles fewer a frame. camX and camY still say where it is,
+            // for the marks that keep clear of it.
 
             var right = left + w - Hud.ToX(StatusPadRight);
 

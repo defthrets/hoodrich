@@ -95,6 +95,12 @@ namespace Hoodrich.Locations
         private bool _nearSat;
         private int _promptSince;
 
+        /// <summary>When the key went down, or nought. A tap does nothing; the boot is a hold.</summary>
+        private int _holdSince;
+
+        /// <summary>How long the key is held before the lid goes. Long enough that a stray press is not a boot.</summary>
+        private const int HoldMs = 550;
+
         public Boot(PlayerState state, OwnedCars owned, Drugs drugs, WeaponRegistry guns, GunLocker locker)
         {
             _state = state;
@@ -144,22 +150,55 @@ namespace Hoodrich.Locations
             if (_near == null || !_near.Exists())
             {
                 _promptSince = 0;
+                _holdSince = 0;
                 return;
             }
 
-            // In the seat the same key is the horn. It is not the horn while the prompt is up.
-            if (_nearSat) Game.DisableControlThisFrame(Control.VehicleHorn);
-
-            Prompt(now);
+            // FROM THE SEAT THE KEY IS A DIFFERENT ONE. E and D-pad right are the horn and
+            // Bare Minimum's sleep in a stopped car, so the boot answers to the character
+            // wheel there -- Alt, or D-pad down held -- and that control is taken off the
+            // game for the frame, or the switch wheel would open on top of the boot.
+            if (_nearSat) Game.DisableControlThisFrame(Control.CharacterWheel);
 
             // SOMEBODY ELSE'S MENU IS UP, and D-pad right is their nudge, not our boot. Same
             // courtesy the phone gives, from the same shared flag. See Menus.
-            if (Menus.Owner() != null) return;
+            var theirs = Menus.Owner() != null;
 
-            if (!Function.Call<bool>(Hash.IS_DISABLED_CONTROL_JUST_PRESSED, 0, (int)Control.Context) &&
-                !Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 0, (int)Control.Context)) return;
+            // A HOLD, NOT A TAP. Half a second on the key, with the bar filling under the
+            // words, and then the lid; a tap is the game's own context action and stays it.
+            var down = !theirs && Down(_nearSat);
 
+            if (!down) _holdSince = 0;
+            else if (_holdSince == 0) _holdSince = now;
+
+            var held = down ? (now - _holdSince) / (float)HoldMs : -1f;
+
+            Prompt(now, held);
+
+            if (held < 1f) return;
+
+            _holdSince = 0;
             Open(me, _near, _nearRecord, _nearSat);
+        }
+
+        /// <summary>
+        /// Whether the boot's key is down right now. On foot it is E, or D-pad left on a
+        /// pad; from the seat it is the character wheel's, Alt or D-pad down. Both the
+        /// enabled and the disabled path are read, because other things disable these.
+        /// </summary>
+        private static bool Down(bool sat)
+        {
+            if (sat) return Pressing(Control.CharacterWheel);
+
+            if (Hud.OnPad) return Pressing(Control.ScriptPadLeft) || Pressing(Control.ContextSecondary);
+
+            return Pressing(Control.Context);
+        }
+
+        private static bool Pressing(Control control)
+        {
+            return Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)control) ||
+                   Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)control);
         }
 
         private void Scan(Ped me)
@@ -248,8 +287,20 @@ namespace Hoodrich.Locations
         /// drive. The first time in a session it says so, fainter than the one on foot; after
         /// that the key is his to remember, and the boot says it every time on foot anyway.
         /// </summary>
-        private void Prompt(int now)
+        private void Prompt(int now, float held)
         {
+            var cap = _nearSat ? (Hud.OnPad ? "HOLD D-PAD DOWN" : "HOLD ALT")
+                              : (Hud.OnPad ? "HOLD D-PAD LEFT" : "HOLD E");
+            var what = _nearSat ? "Check the boot" : "Pop the boot";
+
+            // HOLDING IT IS THE PROMPT. Whatever the timeline says, a key going down brings
+            // the bar straight up with the fill under it, so the hold is visibly a hold.
+            if (held >= 0f)
+            {
+                UiKit.Prompt(cap, what, 1f, held);
+                return;
+            }
+
             if (_nearSat)
             {
                 if (_seatTold) return;
@@ -264,14 +315,14 @@ namespace Hoodrich.Locations
 
                 if (quiet <= 0f) return;
 
-                UiKit.Prompt(Hud.OnPad ? "D-PAD RIGHT" : "E", "Check the boot", quiet * SeatQuiet);
+                UiKit.Prompt(cap, what, quiet * SeatQuiet);
                 return;
             }
 
             var show = UiKit.PromptFade(ref _promptSince, now);
             if (show <= 0f) return;
 
-            UiKit.Prompt(Hud.OnPad ? "D-PAD RIGHT" : "E", "Pop the boot", show);
+            UiKit.Prompt(cap, what, show);
         }
 
         // ---- open ---------------------------------------------------------------------------
