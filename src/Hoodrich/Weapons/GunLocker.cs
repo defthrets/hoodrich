@@ -114,6 +114,19 @@ namespace Hoodrich.Weapons
         }
 
         /// <summary>
+        /// He put one in the boot of his car. Off the list, or the locker hands him another
+        /// after the next death and the boot is a gun factory.
+        /// </summary>
+        public void Stowed(string weapon)
+        {
+            if (_state == null || string.IsNullOrEmpty(weapon)) return;
+            if (!_state.GunsBought.Remove(weapon)) return;
+
+            _state.Touch();
+            Log.Info("Locker: " + weapon + " is in a boot (" + _state.GunsBought.Count + " held).");
+        }
+
+        /// <summary>
         /// Somebody took the lot -- police, or a hospital bill.
         ///
         /// The whole list goes, not the ones he happens to be missing, because this is the

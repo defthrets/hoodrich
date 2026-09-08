@@ -448,6 +448,36 @@ namespace Hoodrich.Locations
             _settling.Clear();
         }
 
+        /// <summary>
+        /// Whose car this is, by the plate, or null for one that is not yours.
+        ///
+        /// The other direction from Find: a vehicle in hand, and the question is whether
+        /// there is a record for it. A car at the yard is not answered for -- it is not here
+        /// to be stood behind, and a copy that turned up wearing its plate should not open
+        /// its boot.
+        /// </summary>
+        public OwnedCar Which(Vehicle car)
+        {
+            if (_state == null || car == null || !car.Exists()) return null;
+
+            string plate;
+            try { plate = (Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle) ?? "").Trim(); }
+            catch { return null; }
+
+            if (plate.Length == 0) return null;
+
+            foreach (var owned in _state.Owned)
+            {
+                if (owned == null || owned.DueAt != 0) continue;
+                if (!string.Equals(plate, (owned.Plate ?? "").Trim(), StringComparison.OrdinalIgnoreCase)) continue;
+                if (owned.Model != 0 && owned.Model != car.Model.Hash) continue;
+
+                return owned;
+            }
+
+            return null;
+        }
+
         /// <summary>The one with our plate on it, if it is anywhere nearby.</summary>
         private static Vehicle Find(OwnedCar owned, Vector3 here)
         {

@@ -573,6 +573,9 @@ namespace Hoodrich
         private ArmourerTalk _bigjTalk;
         private GunScreen _gunScreen;
         private Weapons.GunLocker _locker;
+
+        /// <summary>The boot of every car he owns. See Locations.Boot.</summary>
+        private Locations.Boot _boot;
         private HaoTalk _haoTalk;
         private CarScreen _carScreen;
         private PlateScreen _plateScreen;
@@ -1886,7 +1889,8 @@ namespace Hoodrich
                                    || _info.IsOpen || _talk.IsOpen || _cook.IsOpen
                                    || _gunScreen.IsOpen || _carScreen.IsOpen || _plateScreen.IsOpen
                                    || _modShop.IsOpen
-                                   || _graffiti.IsOpen || _ridePick.IsOpen || _wardrobeScreen.IsOpen,
+                                   || _graffiti.IsOpen || _ridePick.IsOpen || _wardrobeScreen.IsOpen
+                                   || (_boot != null && _boot.IsOpen),
                 };
 
                 _social.Toasts = _toasts;
@@ -2229,6 +2233,12 @@ namespace Hoodrich
                 _gunScreen.Locker = _locker;
                 _postUp.Locker = _locker;
                 _jobs.Locker = _locker;
+
+                // After the locker, which it tells about guns going in and coming out.
+                _boot = new Locations.Boot(_state, _ownedCars, _drugs, _weapons, _locker)
+                {
+                    Save = () => { try { _ownedCars.SaveNow?.Invoke(); } catch { /* the record still changed */ } }
+                };
                 _bigjTalk.Rack = () => _gunScreen.Open();
 
                 // Wired at last. GunScreen has declared this since the rack became a screen,
@@ -2957,6 +2967,21 @@ namespace Hoodrich
                     }
                 }
 
+                // The boot open owns the frame the way the house does, and so does the second
+                // he spends going in and coming out of it.
+                if (_boot != null && _boot.IsOpen)
+                {
+                    if (!available) _boot.Close();
+                    else
+                    {
+                        _boot.Update();
+                        _boot.Draw();
+                        SlowTick();
+                        _failures = 0;
+                        return;
+                    }
+                }
+
                 if (_wardrobeScreen.IsOpen)
                 {
                     if (!available) _wardrobeScreen.Close();
@@ -3237,6 +3262,7 @@ namespace Hoodrich
                     _sleep.Update();
                     _kitchen.Update();
                     _wardrobe.Update();
+                    _boot?.Update();
                     _scenes.Update();
 
                     // The gun art sweep and its probe. Both stop dead once they are finished,
@@ -4494,6 +4520,7 @@ namespace Hoodrich
             try { _bigj?.RestoreWorld(); } catch { /* teardown */ }
             try { _hao?.RestoreWorld(); } catch { /* teardown */ }
             try { _ownedCars?.RestoreWorld(); } catch { /* teardown */ }
+            try { _boot?.RestoreWorld(); } catch { /* teardown */ }
             try { _socialScreen?.RestoreWorld(); } catch { /* teardown */ }
             try { _block?.RestoreWorld(); } catch { /* teardown */ }
             try { _couch?.RestoreWorld(); } catch { /* teardown */ }

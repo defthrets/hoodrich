@@ -1,4 +1,35 @@
-﻿0.7.0 -- 8 September 2026
+﻿0.7.1 -- unreleased
+
+
+THE BOOT OF YOUR CAR IS A STASH NOW.
+
+Stand at the back of any car you bought off Hao and press E (D-pad right on
+a pad). The lid pops, he turns and goes in head first, and the boot's
+inventory comes up while he is in there: what is on you down one column,
+what is in the boot down the other, right to put in, left to take out, hold
+sprint to move the lot. Three pages -- product, guns, and food if Bare
+Minimum is installed -- on Q and Tab (the bumpers on a pad). Walk away and
+the lid shuts behind him.
+
+FROM THE SEAT TOO. Stopped, in the driver's seat, the same key opens the boot
+behind you and the same screen, without the bending, because you cannot
+bend into a boot from the front seat.
+
+WHAT GOES IN COMES OUT THE SAME. Product keeps its purity and its bags. A gun
+goes in with its rounds, its magazine and whatever was bolted on it and
+comes back with all three, and the locker is told, so it does not hand you
+another after the next death. Food goes back and forth through Bare
+Minimum's own API -- putting it IN needs Bare Minimum 0.1.5 or later; an
+older build still lets you take it out.
+
+ONE BOOT PER CAR. It holds 800g of product, six guns and two dozen bits of
+food, it is kept in the save under the car, and it is the same boot after
+the car has been stood back up, towed, resprayed or driven through a wall.
+The record survives selling the car back, too, so buying it again is
+buying it back with the boot as you left it.
+
+
+0.7.0 -- 8 September 2026
 
 
 STRETCH: THE MAGAZINE STAYS ON, X OPENS THE PARTS, AND THE PARTS HAVE PICTURES.

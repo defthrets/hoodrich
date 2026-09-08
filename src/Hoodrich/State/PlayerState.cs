@@ -515,6 +515,40 @@ namespace Hoodrich.State
         /// </summary>
         public readonly List<OwnedCar> Owned = new List<OwnedCar>();
 
+        /// <summary>
+        /// What is in the boot of each car, by the car's id. See State.Trunk.
+        ///
+        /// Kept beside Owned rather than on the OwnedCar, because a record is struck off when
+        /// the car is sold and stood back up when it is bought again, and product in a boot
+        /// should not be able to vanish or reappear on the strength of a paperwork change.
+        /// </summary>
+        public readonly Dictionary<string, Trunk> Trunks =
+            new Dictionary<string, Trunk>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>The boot of one car, made empty the first time it is asked for.</summary>
+        public Trunk TrunkOf(string carId)
+        {
+            var key = carId ?? "";
+            Trunk t;
+            if (!Trunks.TryGetValue(key, out t))
+            {
+                t = new Trunk();
+                Trunks[key] = t;
+            }
+            return t;
+        }
+
+        private Json TrunksJson()
+        {
+            var obj = Json.Object();
+            foreach (var kv in Trunks)
+            {
+                if (kv.Value == null || kv.Value.IsEmpty) continue;
+                obj.Set(kv.Key, kv.Value.ToJson());
+            }
+            return obj;
+        }
+
         public bool HasMet(string gangId)
         {
             if (string.IsNullOrEmpty(gangId)) return false;
@@ -716,6 +750,7 @@ namespace Hoodrich.State
 
             _offered.Clear();
             Stash.Clear();
+            Trunks.Clear();
 
             Touch();
             Log.Info("Mod state reset: everything forgotten but the money and the guns.");
@@ -1139,7 +1174,8 @@ namespace Hoodrich.State
                 .Set("triggerIsYours", TriggerIsYours)
                 .Set("ownedCars", OwnedJson())
                 .Set("missionsOffered", OfferedJson())
-                .Set("stash", Stash.ToJson());
+                .Set("stash", Stash.ToJson())
+                .Set("trunks", TrunksJson());
         }
 
         public void LoadFrom(Json doc)
@@ -1320,6 +1356,14 @@ namespace Hoodrich.State
 
                 // "inventory" is the 0.1.0 key; migrate it so old saves keep their product.
                 Stash.LoadFrom(doc.Has("stash") ? doc["stash"] : doc["inventory"]);
+
+                Trunks.Clear();
+                var trunks = doc["trunks"];
+                foreach (var key in trunks.Keys)
+                {
+                    var t = Trunk.From(trunks[key]);
+                    if (!t.IsEmpty) Trunks[key] = t;
+                }
 
                 Log.Info("State loaded: rank " + Rank + " (" + RankName + "), " +
                          Respect.ToString("F0") + " respect, " +
