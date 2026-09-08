@@ -1553,6 +1553,146 @@
       "gender": "female",
       "pic": "",
       "voice": ""
+    },
+    {
+      "handle": "hale_lspd",
+      "name": "Ofc. Hale",
+      "gang": "",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "bars": false,
+      "voice": "cop_hale_lspd"
+    },
+    {
+      "handle": "ramirez_lspd",
+      "name": "Ofc. Ramirez",
+      "gang": "",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "bars": false,
+      "voice": "cop_ramirez_lspd"
+    },
+    {
+      "handle": "coleman_lspd",
+      "name": "Ofc. Coleman",
+      "gang": "",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "bars": false,
+      "voice": "cop_coleman_lspd"
+    },
+    {
+      "handle": "whitaker_lspd",
+      "name": "Ofc. Whitaker",
+      "gang": "",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "bars": false,
+      "voice": "cop_whitaker_lspd"
+    },
+    {
+      "handle": "delgado_lspd",
+      "name": "Ofc. Delgado",
+      "gang": "",
+      "verified": false,
+      "gender": "female",
+      "pic": "",
+      "bars": false,
+      "voice": "cop_delgado_lspd"
+    },
+    {
+      "handle": "brooks_lspd",
+      "name": "Sgt. Brooks",
+      "gang": "",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "bars": false,
+      "voice": "cop_brooks_lspd"
+    },
+    {
+      "handle": "vargas_sheriff",
+      "name": "Dep. Vargas",
+      "gang": "",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "bars": false,
+      "voice": "cop_vargas_sheriff"
+    },
+    {
+      "handle": "okafor_lspd",
+      "name": "Ofc. Okafor",
+      "gang": "",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "bars": false,
+      "voice": "cop_okafor_lspd"
+    },
+    {
+      "handle": "pike_lspd",
+      "name": "Ofc. Pike",
+      "gang": "",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "bars": false,
+      "voice": "cop_pike_lspd"
+    },
+    {
+      "handle": "bright_lspd",
+      "name": "Ofc. Bright",
+      "gang": "",
+      "verified": false,
+      "gender": "female",
+      "pic": "",
+      "bars": false,
+      "voice": "cop_bright_lspd"
+    },
+    {
+      "handle": "castillo_lspd",
+      "name": "Ofc. Castillo",
+      "gang": "",
+      "verified": false,
+      "gender": "female",
+      "pic": "",
+      "bars": false,
+      "voice": "cop_castillo_lspd"
+    },
+    {
+      "handle": "marsh_ranger",
+      "name": "Rgr. Marsh",
+      "gang": "",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "bars": false,
+      "voice": "cop_marsh_ranger"
+    },
+    {
+      "handle": "rollins_lspd",
+      "name": "Ofc. Rollins",
+      "gang": "",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "bars": false,
+      "voice": "cop_rollins_lspd"
+    },
+    {
+      "handle": "dunn_lspd",
+      "name": "Ofc. Dunn",
+      "gang": "",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "bars": false,
+      "voice": "cop_dunn_lspd"
     }
   ],
   "slots": {
@@ -9435,6 +9575,288 @@
         "Half these young ones never held one before they bought one",
         "I keep my business in one place and my mouth in another"
       ]
+    },
+    "cop_hale_lspd": {
+          "Ambient": [
+                "Eleven hours today. Ate in the car. Again",
+                "Whoever designed this shift pattern has never worked one",
+                "Court in the morning, watch at night. Sleep is a rumour",
+                "Second coffee before six. It is not helping",
+                "Twenty two years and my back tells me every one of them",
+                "Wife asked how my day was. I said fine. That is the whole conversation",
+                "Kid's game today and I missed it. Third one",
+                "Everybody's got an opinion on this job and nine out of ten have never done a night shift",
+                "New guy asked me why we do it this way. I did not have a good answer",
+                "Ran into somebody I arrested ten years ago. He shook my hand. Strange day",
+                "Best part of this job is the four minutes at sunrise when nothing is happening",
+                "Paperwork on one arrest took longer than the arrest",
+                "The radio has been going since I clocked on and it is not slowing",
+                "Nobody calls us when it is going well",
+                "Half this job is standing somewhere so people feel better",
+                "Took a report from a man who just wanted somebody to talk to. Stayed twenty minutes"
+          ],
+          "Shots": [
+                "Units are on it. Stay inside and let them work",
+                "If you called it in, thank you. That is how this works",
+                "Three calls from the same block and three different descriptions. Normal"
+          ],
+          "Busted": [
+                "One in custody. That is all anybody is getting from me",
+                "He had every chance to walk away tonight"
+          ],
+          "CopKilled": [
+                "Not saying anything tonight. Not one word",
+                "Somebody I trained is not going home. That is the post"
+          ]
+    },
+    "cop_ramirez_lspd": {
+          "Ambient": [
+                "Grew up eight blocks from my beat. People forget that",
+                "Somebody's grandmother fed me on a call today. I could not say no",
+                "The kids on this beat know my name and half of them are alright",
+                "Same corner, same call, third time this month",
+                "You learn a neighbourhood by how quiet it goes when you turn in",
+                "I speak the language and it changes every conversation I have out here",
+                "My mother asks when I am transferring somewhere nicer. Never",
+                "Half the people I stop I have known since school. That is the hard part",
+                "Taco truck on the boulevard knows my order and never charges me right",
+                "Twelve hours and the only thing I fixed was a car seat for a woman on a hard day",
+                "This division runs on overtime and stubbornness",
+                "Told a kid to go home tonight and he went. That is a win"
+          ],
+          "Shots": [
+                "Please stop calling to ask what happened and start calling to say what you saw",
+                "We got there in four minutes. It was already over"
+          ],
+          "StoreRobbed": [
+                "That shopkeeper has been robbed three times and he still opens up",
+                "Somebody knows who did that and somebody will not say"
+          ],
+          "Brawl": [
+                "Nobody pressed charges, everybody went home, best outcome available"
+          ]
+    },
+    "cop_coleman_lspd": {
+          "Ambient": [
+                "People see the uniform first. Been that way twenty years",
+                "I get it from both sides and I go to work anyway",
+                "My uncle told me not to take this job. He calls me every Sunday",
+                "Talked a man down today with nothing but time",
+                "Nobody trains you for the conversations. Just the paperwork",
+                "The neighbourhood I patrol is the neighbourhood I am from and both of those are true",
+                "There are men on my beat who will not look at me. I understand why",
+                "Barber asked if I was still doing that. Still doing that",
+                "You cannot police a place you do not know. Half this division has never walked it",
+                "Church on Sunday, watch on Monday. Same neighbourhood, different reception",
+                "The job changed me and I am not always sure it was upward"
+          ],
+          "Shots": [
+                "Every one of those calls is somebody's whole life ending or nearly"
+          ],
+          "CopKilled": [
+                "Two funerals this year and it is not September"
+          ],
+          "RivalKilled": [
+                "Another young man on a sidewalk. Nobody wins that one"
+          ]
+    },
+    "cop_whitaker_lspd": {
+          "Ambient": [
+                "Six years in and I still cannot sleep before a day shift",
+                "The academy did not mention how much of this is driving",
+                "Ate at a place downtown that had a picture of my sergeant on the wall",
+                "Somebody flipped me off at a red light and I waved. New strategy",
+                "Every night somebody explains my job to me through a car window",
+                "The car smells like coffee and the last four people who sat in it",
+                "Sixteen calls tonight and not one arrest. Good night, honestly",
+                "New radio system is worse than the old radio system",
+                "Whoever keeps parking in the division lot, we know"
+          ],
+          "Busted": [
+                "Took somebody in tonight who will be out before I finish the paperwork",
+                "Same name, third time this year"
+          ],
+          "Shots": [
+                "Shell casings in a street where kids play. That is the job"
+          ]
+    },
+    "cop_delgado_lspd": {
+          "Ambient": [
+                "Being the only woman on a watch means twice the paperwork and half the credit",
+                "A woman on a bad call will talk to me and not to any of them. That is worth something",
+                "Somebody's daughter told me she wants to do this job. I did not know what to say",
+                "Nine hours in a vest in this heat",
+                "My hair has not recovered from this job and neither have I",
+                "Talked a domestic down without touching anybody today. That is my whole week made",
+                "Half of this job is being the calmest person in a room",
+                "Bought coffee for a woman waiting outside the station at 2am. Nobody should wait alone",
+                "The kids in the projects wave at me. The adults do not. Both are honest"
+          ],
+          "Busted": [
+                "She had a chance to walk away and she chose otherwise"
+          ],
+          "HouseRaided": [
+                "There were children in that house. There are always children in that house"
+          ],
+          "Shots": [
+                "Every call like that, somebody's mother is on the other end of it"
+          ]
+    },
+    "cop_brooks_lspd": {
+          "Ambient": [
+                "Watch briefing at five, and half of them already look done",
+                "I have eleven officers, nine cars and one that starts",
+                "Signed off on three reports that will go nowhere. That is Tuesday",
+                "Command wants numbers. The street wants presence. Pick one",
+                "Twenty six years. I remember when this division had a foot beat",
+                "Told a rookie the truth today and watched him decide whether to stay",
+                "Nobody makes sergeant for being right. You make it for being there",
+                "Every policy change lands on the shift, never on the people who write them",
+                "Overtime approved. Morale not included"
+          ],
+          "CopKilled": [
+                "I will not be answering questions today",
+                "One of mine. That is all I am saying"
+          ],
+          "Busted": [
+                "Good work by the watch tonight. Nobody hurt. That is the standard"
+          ]
+    },
+    "cop_vargas_sheriff": {
+          "Ambient": [
+                "County calls are forty minutes apart and forty miles apart",
+                "You do not get backup out here. You get an ETA",
+                "Drove the whole shift and saw two cars and a coyote",
+                "The city complains about traffic. I would love traffic",
+                "Somebody's cattle on the highway again. That is a two hour job",
+                "Dust in everything. The car, the vest, the coffee",
+                "Nearest hospital is thirty minutes and everybody out here knows it",
+                "People wave out here. Every single car. Takes getting used to",
+                "Bar fight in Sandy Shores is a social event with paperwork"
+          ],
+          "Shots": [
+                "Out here a gunshot might be a coyote and might not. You go and find out"
+          ],
+          "CarBurned": [
+                "Car fire on a dirt road is either insurance or evidence. Usually both"
+          ]
+    },
+    "cop_okafor_lspd": {
+          "Ambient": [
+                "Second generation. My father wore this badge and hated half of it too",
+                "Everybody has advice about my job and none of them have been on a call",
+                "Studied criminal justice and learned more in my first week",
+                "The report system was written in 1998 and it shows",
+                "Ran a plate today that came back to a man who died in 2011",
+                "Somebody thanked me tonight and I did not know how to take it",
+                "Twelve hour shift, forty minutes of actual policing",
+                "Sat with a man on the worst night of his life for two hours. No report for that"
+          ],
+          "Busted": [
+                "Nobody enjoys that part. Anyone who says otherwise should not be doing this"
+          ],
+          "DriveBy": [
+                "Nine casings and a broken window and everybody saw nothing"
+          ]
+    },
+    "cop_pike_lspd": {
+          "Ambient": [
+                "Radio has not stopped since eight",
+                "Three cars for this whole division tonight",
+                "Everybody wants more police and nobody wants police",
+                "Chased somebody two blocks in a vest in August. Never again",
+                "My car has 190,000 miles on it and the heater works in July only",
+                "Traffic stop turned into a forty minute conversation about a man's mother",
+                "Wrote a ticket I did not want to write because the quota is not a quota",
+                "Ate dinner standing up in a parking lot at 11pm"
+          ],
+          "Shots": [
+                "If it sounds like fireworks in this city it usually is not"
+          ],
+          "Takeover": [
+                "Two hundred people in a live intersection. Somebody is going to get killed",
+                "We shut one end and they leave out the other. Every time"
+          ]
+    },
+    "cop_bright_lspd": {
+          "Ambient": [
+                "Night watch again. My body clock gave up in spring",
+                "Sunrise at the end of a shift is the only quiet this city offers",
+                "Somebody left a note on my car saying thank you. Kept it",
+                "Four calls to the same address this month and nothing I can do about any of them",
+                "The dispatchers do not get enough credit and they hold this whole thing together",
+                "You can tell the season out here by what the calls are about",
+                "Got a birthday card from a family I helped last year. That is the job"
+          ],
+          "Busted": [
+                "One less person driving at four times the limit tonight"
+          ],
+          "StoreRobbed": [
+                "That is somebody's whole livelihood over a few hundred dollars"
+          ]
+    },
+    "cop_castillo_lspd": {
+          "Ambient": [
+                "Bilingual on this beat means you take every call anybody else cannot",
+                "Translated for a family tonight who had nobody else to do it",
+                "Nobody tells you how much of this job is explaining the system to people it failed",
+                "My sister thinks I am a traitor. My mother is proud. Sunday dinners are interesting",
+                "Sixteen hours between shifts and I spent nine of them awake",
+                "The community meeting had eleven people and four of them were us"
+          ],
+          "Shots": [
+                "Please call it in. Even if you think somebody else already did"
+          ],
+          "HouseRaided": [
+                "Warrants are the worst days. Every single time"
+          ]
+    },
+    "cop_marsh_ranger": {
+          "Ambient": [
+                "Somebody drove a rental car up a hiking trail today. All the way up",
+                "Third lost hiker this week and none of them had water",
+                "People come out here with no signal, no map and a lot of confidence",
+                "Found a camp fire in a burn ban. In a burn ban",
+                "The wildlife is not the problem out here. It is never the wildlife",
+                "Nine hours in the hills and the best part was the drive back",
+                "Somebody tried to feed a coyote. On purpose"
+          ],
+          "CarBurned": [
+                "Vehicle fire in dry brush is how a county goes up"
+          ]
+    },
+    "cop_rollins_lspd": {
+          "Ambient": [
+                "Been on this beat long enough to know the cars by sound",
+                "Same faces, same corners, different year",
+                "You learn more from the people who talk to you than the ones you stop",
+                "Half the men I deal with out here I would have grown up with",
+                "This division has changed twice since I started and not for the better",
+                "Somebody offered me a plate at a cookout tonight. Took it. Fight me",
+                "Twenty minutes of a shift where nobody needed anything. Rare"
+          ],
+          "RivalKilled": [
+                "Same corner as the last one. Nothing about this is random"
+          ],
+          "WarLive": [
+                "Every unit in the division is committed. Stay indoors"
+          ]
+    },
+    "cop_dunn_lspd": {
+          "Ambient": [
+                "Rookie year. Nobody warned me about the smell of the car",
+                "Made my first arrest on my own tonight. Hands were shaking after",
+                "My training officer says I ask too many questions. I am going to keep asking",
+                "Everybody at the academy wanted homicide. I want to make it a year",
+                "Somebody shouted at me today for existing and I have thought about it since",
+                "Bought my own torch because the issued one is a joke"
+          ],
+          "Busted": [
+                "First one of the night and it went by the book"
+          ],
+          "Shots": [
+                "Still not used to that sound. Told I never will be"
+          ]
     }
   },
   "hashtags": {
