@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -433,13 +433,13 @@ namespace Hoodrich.UI
                 // nothing under it but the ground.
                 if (!Hud.File("disc.png", bx, by, th * 0.92f, 0f, Alpha(Palette.Verified, solid)))
                 {
-                    Hud.Disc(bx, by, 0.0055f, Alpha(Palette.Verified, solid));
+                    Hud.Dot(bx, by, 0.0055f, Alpha(Palette.Verified, solid));
                 }
 
                 if (!Hud.File("tick.png", bx, by, th * 0.72f, 0f,
                               Alpha(Color.FromArgb(255, 18, 20, 22), solid)))
                 {
-                    Hud.Disc(bx, by, 0.0022f, Alpha(Color.FromArgb(255, 18, 20, 22), solid));
+                    Hud.Dot(bx, by, 0.0022f, Alpha(Color.FromArgb(255, 18, 20, 22), solid));
                 }
             }
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -361,7 +361,17 @@ namespace Hoodrich.UI
         public static int RectsThisFrame { get; private set; }
 
         /// <summary>Where the game starts dropping rectangles. See BeginFrame.</summary>
-        private const int RectCeiling = 800;
+        /// <summary>
+        /// Where this install starts dropping them.
+        ///
+        /// EIGHT HUNDRED WAS NOT A CEILING, IT WAS A NUMBER NOTHING EVER REACHED. The game
+        /// fills its 2D buffer at somewhere around three hundred and fifty on this machine and
+        /// silently drops whatever is handed over after that -- for every script running, not
+        /// only this one. A warning set at eight hundred meant the log said "new peak, 509" in
+        /// the same calm voice it says "new peak, 5", while the phone was quietly taking the
+        /// background off somebody else's panel. The number is the real one now.
+        /// </summary>
+        private const int RectCeiling = 350;
 
         public static int PeakRects { get; private set; }
 
@@ -841,6 +851,33 @@ namespace Hoodrich.UI
         /// sees. A row per pixel costs 268 rectangles for the wheel hub at 1080p, which is
         /// affordable now the wedges are sprites rather than five hundred rectangles.
         /// </summary>
+        /// <summary>
+        /// A SMALL disc: one sprite, not a stack of rectangles.
+        ///
+        /// Disc builds a circle out of one rectangle per screen pixel row, which is the only
+        /// way to get a curve out of DRAW_RECT and is fine for the one or two a panel draws.
+        /// It is not fine for the little ones, and the little ones are the ones drawn in loops:
+        /// a pip six thousandths across is eighteen rectangles, a row of eight of them is a
+        /// hundred and fifty, and a screen of those rows is most of the machine's whole
+        /// per-frame list -- which is then not there for whoever draws next. A phone screen was
+        /// measured at five hundred and nine rectangles in one frame this way.
+        ///
+        /// disc.png costs ONE call, comes out of the sprite budget rather than the rectangle
+        /// one, and is anti-aliased, so it is rounder than the stack it replaces at any size.
+        /// The stack is still the fallback for an install whose icons did not come with it.
+        ///
+        /// USE IT FOR ANYTHING SMALL OR REPEATED. Disc itself is still right for the wheel's
+        /// hub and anything else big enough that the sprite would show its own edges.
+        /// </summary>
+        public static void Dot(float cx, float cy, float radius, Color c)
+        {
+            if (radius <= 0f || c.A <= 0) return;
+
+            if (File("disc.png", cx, cy, ToX(radius * 2f), radius * 2f, 0f, c)) return;
+
+            Disc(cx, cy, radius, c);
+        }
+
         /// <param name="rowPx">Row height in device pixels. 0 picks one from the size.</param>
         public static void Disc(float cx, float cy, float radius, Color c, int rowPx = 0)
         {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -721,7 +721,7 @@ namespace Hoodrich.UI
             // indented column, so something has to occupy the slot.
             if (row.HasArt)
             {
-                Hud.Disc(x + Hud.ToX(IconH) * 0.5f, cy, 0.0042f, Palette.Alpha(row.Colour, 150));
+                Hud.Dot(x + Hud.ToX(IconH) * 0.5f, cy, 0.0042f, Palette.Alpha(row.Colour, 150));
                 return true;
             }
 
@@ -779,11 +779,13 @@ namespace Hoodrich.UI
                 {
                     if (i == row.PipAt)
                     {
-                        Hud.Disc(px, cy, 0.0062f, Palette.Brand);
-                        Hud.Disc(px, cy, 0.0036f, Color.FromArgb(255, 12, 13, 15));
+                        // THE PIPS ARE THE LOOP THAT COST THE MOST. Sprites, one call
+                        // each, out of a budget the rectangles do not share. See Draw.Dot.
+                        Hud.Dot(px, cy, 0.0062f, Palette.Brand);
+                        Hud.Dot(px, cy, 0.0036f, Color.FromArgb(255, 12, 13, 15));
                     }
-                    else if (i < row.PipsOn) Hud.Disc(px, cy, 0.0046f, row.Colour);
-                    else Hud.Disc(px, cy, 0.0030f, PipOff);
+                    else if (i < row.PipsOn) Hud.Dot(px, cy, 0.0046f, row.Colour);
+                    else Hud.Dot(px, cy, 0.0030f, PipOff);
                 }
             }
 

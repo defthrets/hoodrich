@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -2882,8 +2882,9 @@ namespace Hoodrich.Dealing
             // The fill slides under these icons and changes colour as it goes, so there is no
             // single ink that works on all of it -- the answer is to give the icon a ground of
             // its own instead of a better colour.
-            Hud.Disc(x - edge, cy, BarEndDisc, BarEndShade);
-            Hud.Disc(x + edge, cy, BarEndDisc, BarEndShade);
+            // The rounded ends of the heat bar, on screen the whole time you are dealing.
+            Hud.Dot(x - edge, cy, BarEndDisc, BarEndShade);
+            Hud.Dot(x + edge, cy, BarEndDisc, BarEndShade);
 
             if (!BarIcon(SkullFile, SkullArt, ref _skullArt, ref _skullDone, "skull",
                          x - edge, cy, BarInk))

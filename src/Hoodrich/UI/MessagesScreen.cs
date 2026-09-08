@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -928,7 +928,7 @@ namespace Hoodrich.UI
 
             if (!Face(row.Portrait, cx, cy, AvatarSize, row.Icon))
             {
-                Hud.Disc(cx, cy, AvatarSize * 0.5f, Tint(row.Name));
+                Hud.Dot(cx, cy, AvatarSize * 0.5f, Tint(row.Name));
 
                 Hud.Text(Initial(row.Name), cx, cy - 0.0135f, 0.44f,
                          Color.FromArgb(235, 250, 250, 248), Hud.FontChaletLondon);
@@ -971,7 +971,7 @@ namespace Hoodrich.UI
 
                 // Gold on the dark; on the plate the badge goes dark and the number gold, so
                 // it reads on both grounds.
-                Hud.Disc(bx, by, 0.0078f, Theme.Ink(Palette.Brand, lit));
+                Hud.Dot(bx, by, 0.0078f, Theme.Ink(Palette.Brand, lit));
 
                 Hud.Text(row.Unread.ToString(), bx, by - 0.0090f, 0.26f,
                          Theme.Lerp(Color.FromArgb(255, 14, 15, 17), Palette.Text, lit), Hud.FontChaletLondon);
@@ -1016,7 +1016,7 @@ namespace Hoodrich.UI
 
             if (!Face(face, cx, cy, 0.032f, icon))
             {
-                Hud.Disc(cx, cy, 0.016f, Tint(_who));
+                Hud.Dot(cx, cy, 0.016f, Tint(_who));
 
                 Hud.Text(Initial(_who), cx, cy - 0.0115f, 0.38f,
                          Color.FromArgb(235, 250, 250, 248), Hud.FontChaletLondon);
