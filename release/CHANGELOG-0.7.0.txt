@@ -1,0 +1,44 @@
+0.7.0 -- 8 September 2026
+
+
+THE GROW ROOM AND THE PILL PRESS ARE GONE. Both doors, both markers, both
+blips. They were freezing the game for people going in and out, and four
+rounds of work never proved the rooms were even there. The freeze itself is
+fixed at the root as well -- a wait that could spin forever if the game
+paused mid-fade -- so any door you add through the ini can't hang either.
+
+THE MOD STOPS DELETING THE WORLD WHEN ONE THING GOES WRONG. A single caught
+error used to tear down every scene, car and person the mod had placed and
+rebuild them the next frame -- the "everything blinked out" moment. Now it
+just carries on. Every deprecated ScriptHookVDotNet call is replaced too,
+so it runs on newer SHVDN builds, and every native it uses was checked
+against SHVDN's own table.
+
+STRETCH'S COUNTER. Extended mags actually stay on now -- the locker was
+quietly putting the stock clip back over them after a death, which is why
+guns came back with a suppressor and no mag. X on a pad opens the parts, as
+the bar said it would. And the parts have their own pictures.
+
+YOUR PEOPLE AND THE POLICE. The Families never start a fight with an
+officer, but they finish one the officer starts.
+
+THE BLOCK FEELS LIVED IN. Guards put the gun down for a smoke or a drink
+now and then, never in step with each other. Everyone at Lamar's uses the
+furniture. The meet on the court is a crowd rather than a ring -- they
+drift, and one of them films it. Dog walkers: the lead runs hand to head,
+pays out with the distance, and snaps at twenty metres; the dog keeps pace
+instead of being dragged.
+
+TRIGGER. He runs when you run. His prompt is the mod's own line along the
+bottom instead of the game's help box. Green blip. TriggerBreed in the ini,
+with proper petting for eleven breeds.
+
+XANAX. One bar can put you on the floor -- rarely, about once a minute
+moving -- and the drunk walk comes and goes instead of sticking for the
+whole high.
+
+SMALLER. The graffiti app is called Overspray and wears its wordmark; you
+don't need the standalone alongside. The police radio recording is gone.
+The Asbo has its speakers. Two riflemen on the roof at Lamar's. WalkerDogs
+and a higher WalkerCrews cap in the ini. Compiler warnings from thirty-six
+to none.

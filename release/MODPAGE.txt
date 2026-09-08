@@ -1,4 +1,4 @@
-📍 POSTED UP
+﻿📍 POSTED UP
 
 A drug-dealing and gang mod for GTA V. You pick the corner, not the customer.
 
@@ -72,6 +72,25 @@ GTA Online.
   https://github.com/scripthookvdotnet/scripthookvdotnet/releases
 - .NET Framework 4.8 — Windows 10 and 11 already have it.
 
+🤝 COMPATIBILITY
+
+- NEEDS: Script Hook V, ScriptHookVDotNet 3 (v2 alone is not enough), .NET
+  Framework 4.8. Legacy and Enhanced, same DLL. Single player only.
+- FINE ALONGSIDE: graphics, map and texture mods (NaturalVision, Forests of
+  San Andreas, RWEU, Remastered packs) -- this mod replaces no game file,
+  so there is nothing to fight over. Trainers (Menyoo, Rampage). Bare
+  Minimum.
+- POLICE MODS (RDE, Five0 Patrol): both run. This mod's own patrols and
+  searches still happen alongside theirs.
+- PHONE MODS: anything that also takes the phone key shares it -- rebind in
+  Hoodrich.ini.
+- OVERSPRAY: does the same graffiti as the phone app here, so you do not
+  need both.
+- "IT DOESN'T LOAD AND THERE'S NO LOG": the mod writes its own log on
+  startup, so no log means the DLL never ran -- almost always
+  ScriptHookVDotNet 3 missing. Check the GTA folder for
+  ScriptHookVDotNet3.dll first, then ScriptHookVDotNet.log.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🛠️ INSTALL
@@ -109,6 +128,35 @@ back, right on the d-pad talks to people. Every key is rebindable in Hoodrich.in
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📜 CHANGELOG
+
+
+🧹 0.7.0 — 8 September 2026
+
+- THE GROW ROOM AND PILL PRESS ARE GONE, markers and blips too. They were
+  freezing the game going in and out, and the rooms could never be proven
+  to exist. The freeze itself is fixed at the root, so ini-added doors
+  cannot hang either.
+- ONE ERROR NO LONGER WIPES THE WORLD. A single caught fault used to delete
+  and rebuild everything the mod placed. Every deprecated SHVDN call is
+  replaced, so it runs on newer ScriptHookVDotNet builds.
+- STRETCH'S COUNTER: extended mags actually stay on (the locker was
+  restoring the stock clip over them), X on a pad opens the parts, and the
+  parts have pictures.
+- THE FAMILIES NEVER START ON THE POLICE, but they finish a fight the
+  police start.
+- GUARDS TAKE SMOKE AND DRINK BREAKS, out of step with each other. Everyone
+  at Lamar's uses the furniture. The meet is a crowd, not a ring -- they
+  drift, one films it.
+- DOG WALKERS: the lead runs hand to head, pays out with distance and snaps
+  at 20m; the dog keeps pace. WalkerDogs setting, WalkerCrews up to 8.
+- TRIGGER runs when you run, has his own prompt line instead of the game's
+  help box, a green blip, and a TriggerBreed setting with proper petting
+  for eleven breeds.
+- XANAX: one bar can put you on the floor, rarely, and the drunk walk comes
+  and goes.
+- Smaller: the graffiti app is called Overspray; the police radio recording
+  is gone; the Asbo has its speakers; two riflemen on the roof at Lamar's;
+  zero compiler warnings.
 
 
 🚗 0.6.2 — 7 September 2026

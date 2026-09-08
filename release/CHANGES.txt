@@ -1,4 +1,7 @@
-﻿STRETCH: THE MAGAZINE STAYS ON, X OPENS THE PARTS, AND THE PARTS HAVE PICTURES.
+﻿0.7.0 -- 8 September 2026
+
+
+STRETCH: THE MAGAZINE STAYS ON, X OPENS THE PARTS, AND THE PARTS HAVE PICTURES.
 
 THE SUPPRESSOR INSTEAD OF THE MAG. The locker writes down what is on each
 of your guns every twenty seconds so it can put it all back after a death,

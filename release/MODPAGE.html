@@ -1,4 +1,4 @@
-📍 <b>POSTED UP</b>
+﻿📍 <b>POSTED UP</b>
 
 <b>A drug-dealing and gang mod for GTA V. You pick the corner, not the customer.</b>
 
@@ -58,6 +58,17 @@ Everything is editable if you want it to be: 11 JSON files and 103 settings in a
 <li>.NET Framework 4.8 — Windows 10 and 11 already have it.</li>
 </ul>
 
+🤝 <b>COMPATIBILITY</b>
+
+<ul>
+<li><b>Needs:</b> Script Hook V, ScriptHookVDotNet <b>3</b> (v2 alone is not enough), .NET Framework 4.8. Legacy and Enhanced, same DLL. Single player only;</li>
+<li><b>Fine alongside:</b> graphics, map and texture mods (NaturalVision, Forests of San Andreas, RWEU, Remastered packs) — this mod replaces no game file, so there is nothing to fight over. Trainers (Menyoo, Rampage). Bare Minimum;</li>
+<li><b>Police mods</b> (RDE, Five0 Patrol): both run. This mod's own patrols and searches still happen alongside theirs;</li>
+<li><b>Phone mods:</b> anything that also takes the phone key shares it — rebind in Hoodrich.ini;</li>
+<li><b>Overspray:</b> does the same graffiti as the phone app here, so you do not need both;</li>
+<li><b>"It doesn't load and there's no log":</b> the mod writes its own log on startup, so no log means the DLL never ran — almost always ScriptHookVDotNet 3 missing. Check the GTA folder for ScriptHookVDotNet3.dll first, then ScriptHookVDotNet.log.</li>
+</ul>
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🛠️ <b>INSTALL</b>
@@ -85,6 +96,21 @@ You should end up with <b>scripts\Hoodrich.dll</b>, <b>scripts\Hoodrich.ini</b> 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📜 <b>CHANGELOG</b>
+
+
+🧹 <b>0.7.0</b> — 8 September 2026
+
+<ul>
+<li><b>The grow room and pill press are gone</b>, markers and blips too. They were freezing the game going in and out, and the rooms could never be proven to exist. The freeze itself is fixed at the root, so ini-added doors cannot hang either;</li>
+<li><b>One error no longer wipes the world.</b> A single caught fault used to delete and rebuild everything the mod placed. Every deprecated SHVDN call is replaced, so it runs on newer ScriptHookVDotNet builds;</li>
+<li><b>Stretch's counter:</b> extended mags actually stay on (the locker was restoring the stock clip over them), X on a pad opens the parts, and the parts have pictures;</li>
+<li><b>The Families never start on the police</b>, but they finish a fight the police start;</li>
+<li><b>Guards take smoke and drink breaks</b>, out of step with each other. Everyone at Lamar's uses the furniture. The meet is a crowd, not a ring — they drift, one films it;</li>
+<li><b>Dog walkers:</b> the lead runs hand to head, pays out with distance and snaps at 20m; the dog keeps pace. <b>WalkerDogs</b> setting, <b>WalkerCrews</b> up to 8;</li>
+<li><b>Trigger</b> runs when you run, has his own prompt line instead of the game's help box, a green blip, and a <b>TriggerBreed</b> setting with proper petting for eleven breeds;</li>
+<li><b>Xanax:</b> one bar can put you on the floor, rarely, and the drunk walk comes and goes;</li>
+<li>Smaller: the graffiti app is called <b>Overspray</b>; the police radio recording is gone; the Asbo has its speakers; two riflemen on the roof at Lamar's; zero compiler warnings.</li>
+</ul>
 
 
 🚗 <b>0.6.2</b> — 7 September 2026
