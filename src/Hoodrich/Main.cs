@@ -4451,7 +4451,13 @@ namespace Hoodrich
             if (Game.IsPaused) return "game paused";
             if (!Function.Call<bool>(Hash.IS_PLAYER_CONTROL_ON, Game.Player.Handle)) return "control is off";
             if (Function.Call<bool>(Hash.IS_PAUSE_MENU_ACTIVE)) return "pause menu";
-            if (Function.Call<bool>(Hash.IS_CUTSCENE_ACTIVE)) return "cutscene";
+            // PLAYING, NOT ACTIVE. A cutscene is "active" from the moment a script requests
+            // it, and the story scripts request the next mission's opening scene whenever
+            // you are near where it starts -- so anybody early in the game walking round
+            // Denise's block had the mod standing down for a cutscene nobody could see,
+            // the phone dead in their hand, and the log saying "cutscene". It plays for a
+            // few seconds; it is active for as long as you stand on that street.
+            if (Function.Call<bool>(Hash.IS_CUTSCENE_PLAYING)) return "a cutscene is playing";
             if (!Function.Call<bool>(Hash.IS_SCREEN_FADED_IN)) return "screen not faded in";
 
             // THE STICKY ONE. Any script in the game can SET_MISSION_FLAG and any script can

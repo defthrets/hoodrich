@@ -74,6 +74,14 @@ It was also most of the phone flicker: the cards and the discs behind every
 tick came to five hundred rectangles a screenful and the game drops the tail
 of the frame past about four hundred. A post is one hairline now.
 
+THE PHONE STOPPED WORKING NEAR DENISE'S. Two reports, same cause: the mod stood
+down for a "cutscene" that nobody could see. The game marks a cutscene active
+from the moment a story script requests it, and the story scripts request the
+next mission's opening scene whenever you are near where it starts -- so early
+in the game, anywhere round Denise's block, the mod thought a cutscene was on
+and everything went quiet until you walked a few streets away. It asks whether
+one is PLAYING now, which is a few seconds, not a street.
+
 THE CAMP BEHIND THE CHURCH. A homeless camp at the church on Carson ships as
 a sixth scene: tents, shelters and mattresses, a stove, a couch, bikes, box
 piles and bin bags, a soup kitchen out the back -- a food van, tables,
