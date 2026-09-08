@@ -56,6 +56,12 @@ namespace Hoodrich.UI
 
             /// <summary>The row that chooses how he moves rather than what he wears.</summary>
             public Kind Style;
+
+            /// <summary>The heading over the list while this row is chosen.</summary>
+            public string Group = "";
+
+            /// <summary>Where the camera goes for this row. Body unless the row says otherwise.</summary>
+            public Frame Look = Frame.Body;
         }
 
         /// <summary>Which peg the four rows at the top are pointed at.</summary>
@@ -76,42 +82,47 @@ namespace Hoodrich.UI
         /// collide is choosing an undershirt while masked, and the answer to that is to take
         /// the mask off.
         /// </summary>
+        /// <summary>
+        /// Where the camera goes for a row.
+        ///
+        /// THE PICTURE FOLLOWS THE CHOICE. One fixed shot of his head and shoulders was fine
+        /// for a hat and useless for shoes -- the feet were off the bottom of the screen and
+        /// you changed them blind. Each row says which part of him it is about, and the camera
+        /// glides there: close on the head for a face or a hat, low at the ground for shoes,
+        /// the whole of him for anything that is really about the outfit.
+        /// </summary>
+        private enum Frame { Body, Head, Torso, Hands, Legs, Feet }
+
         private static readonly Slot[] Slots =
         {
-            // THE PEGS FIRST, because choosing which outfit is a bigger decision than which
-            // shoes and the eye starts at the top. Four rows rather than one per peg: the peg
-            // is a value you scroll through like any other row on this rail, and the three
-            // under it act on whichever one is showing.
-            new Slot { Name = "Outfit", Peg = true },
-            new Slot { Name = "Wear it", Act = Deed.Wear },
-            new Slot { Name = "Hang this up", Act = Deed.Hang },
-            new Slot { Name = "Clear it", Act = Deed.Strip },
+            new Slot { Name = "Outfit", Group = "OUTFITS", Peg = true },
+            new Slot { Name = "Wear it", Group = "OUTFITS", Act = Deed.Wear },
+            new Slot { Name = "Hang this up", Group = "OUTFITS", Act = Deed.Hang },
+            new Slot { Name = "Clear it", Group = "OUTFITS", Act = Deed.Strip },
 
-            new Slot { Name = "Body", Body = true },
+            new Slot { Name = "Body", Group = "HIM", Body = true },
+            new Slot { Name = "Walk", Group = "HIM", Style = Kind.Walk },
+            new Slot { Name = "Shooting", Group = "HIM", Style = Kind.Shoot },
 
-            // HOW HE CARRIES HIMSELF, next to the body rather than among the clothes. It is
-            // the same kind of choice -- what he is, not what he has on.
-            new Slot { Name = "Walk", Style = Kind.Walk },
-            new Slot { Name = "Shooting", Style = Kind.Shoot },
+            new Slot { Name = "Face", Group = "HEAD", Index = 0, Look = Frame.Head },
+            new Slot { Name = "Hair", Group = "HEAD", Index = 2, Look = Frame.Head },
+            new Slot { Name = "Mask", Group = "HEAD", Index = 1, Look = Frame.Head },
+            new Slot { Name = "Hat", Group = "HEAD", Prop = true, Index = 0, Look = Frame.Head },
+            new Slot { Name = "Glasses", Group = "HEAD", Prop = true, Index = 1, Look = Frame.Head },
+            new Slot { Name = "Ears", Group = "HEAD", Prop = true, Index = 2, Look = Frame.Head },
 
-            new Slot { Name = "Face", Index = 0 },
-            new Slot { Name = "Mask", Index = 1 },
-            new Slot { Name = "Hair", Index = 2 },
-            new Slot { Name = "Arms", Index = 3 },
-            new Slot { Name = "Legs", Index = 4 },
-            new Slot { Name = "Bag", Index = 5 },
-            new Slot { Name = "Shoes", Index = 6 },
-            new Slot { Name = "Chain", Index = 7 },
-            new Slot { Name = "Undershirt", Index = 8 },
-            new Slot { Name = "Vest", Index = 9 },
-            new Slot { Name = "Badge", Index = 10 },
-            new Slot { Name = "Top", Index = 11 },
+            new Slot { Name = "Top", Group = "CLOTHES", Index = 11, Look = Frame.Torso },
+            new Slot { Name = "Undershirt", Group = "CLOTHES", Index = 8, Look = Frame.Torso },
+            new Slot { Name = "Vest", Group = "CLOTHES", Index = 9, Look = Frame.Torso },
+            new Slot { Name = "Arms", Group = "CLOTHES", Index = 3, Look = Frame.Torso },
+            new Slot { Name = "Legs", Group = "CLOTHES", Index = 4, Look = Frame.Legs },
+            new Slot { Name = "Shoes", Group = "CLOTHES", Index = 6, Look = Frame.Feet },
 
-            new Slot { Name = "Hat", Prop = true, Index = 0 },
-            new Slot { Name = "Glasses", Prop = true, Index = 1 },
-            new Slot { Name = "Ears", Prop = true, Index = 2 },
-            new Slot { Name = "Watch", Prop = true, Index = 6 },
-            new Slot { Name = "Bracelet", Prop = true, Index = 7 }
+            new Slot { Name = "Chain", Group = "EXTRAS", Index = 7, Look = Frame.Torso },
+            new Slot { Name = "Badge", Group = "EXTRAS", Index = 10, Look = Frame.Torso },
+            new Slot { Name = "Bag", Group = "EXTRAS", Index = 5, Look = Frame.Torso },
+            new Slot { Name = "Watch", Group = "EXTRAS", Prop = true, Index = 6, Look = Frame.Hands },
+            new Slot { Name = "Bracelet", Group = "EXTRAS", Prop = true, Index = 7, Look = Frame.Hands }
         };
 
         /// <summary>
@@ -141,11 +152,55 @@ namespace Hoodrich.UI
 
         private const float PanelWidthH = 0.44f;
         private const float RowHeight = 0.034f;
+
+        /// <summary>
+        /// How many rows are on screen at once. Twenty-four at this height was the whole
+        /// height of the screen, which is why the closet felt like a spreadsheet. Twelve fit
+        /// under the title with room for the hint, and the window scrolls.
+        /// </summary>
+        private const int Shown = 12;
+        private int _top;
         private const float PadH = 0.024f;
         private const int OpenGraceMs = 220;
-        private const float CamOut = 2.3f;
-        private const float CamUp = 0.55f;
-        private const float CamFov = 42f;
+        /// <summary>
+        /// The six shots, as distance out, height above his feet, the bone to look at, how far
+        /// above or below that bone, and the lens.
+        ///
+        /// Feet is the one that matters: low enough that the camera is at his shins and the
+        /// shoes are the picture. Everything else frames the part the row is about.
+        /// </summary>
+        private static readonly float[,] Shots =
+        {
+            //  out     up      bone      offZ    fov
+            { 3.30f,  0.30f,  Pelvis,    0.20f, 40f },   // Body
+            { 1.30f,  0.62f,  Head,      0.00f, 34f },   // Head
+            { 2.10f,  0.45f,  Spine3,    0.00f, 38f },   // Torso
+            { 1.80f,  0.05f,  Pelvis,    0.05f, 36f },   // Hands
+            { 2.60f, -0.10f,  Pelvis,   -0.35f, 38f },   // Legs
+            { 2.20f, -0.55f,  LeftFoot,  0.10f, 34f }    // Feet
+        };
+
+        /// <summary>
+        /// How far he sits to the left of centre. The panel takes the right of the screen, so
+        /// a man framed dead centre is a man half behind a list of his own clothes.
+        /// </summary>
+        private const float Side = 0.34f;
+
+        /// <summary>How fast the camera gets where it is going: per second, as a share of what is left.</summary>
+        private const float Glide = 7.5f;
+
+        /// <summary>How far the stick can lift or drop a shot, and how fast.</summary>
+        private const float NudgeMost = 0.70f;
+        private const float NudgeRate = 1.6f;
+
+        private const int Pelvis = 11816;
+        private const int Spine3 = 24818;
+        private const int LeftFoot = 14201;
+
+        private Vector3 _eye, _look;
+        private float _fov = 40f;
+        private float _nudge;
+        private bool _snap;
         private const int Head = 31086;
 
         public bool IsOpen => _curtain.Showing;
@@ -209,16 +264,14 @@ namespace Hoodrich.UI
                 var me = Game.Player.Character;
                 if (me == null || !me.Exists()) return;
 
-                var rad = me.Heading * (float)Math.PI / 180f;
-                var forward = new Vector3(-(float)Math.Sin(rad), (float)Math.Cos(rad), 0f);
-                var eye = me.Position + forward * CamOut + new Vector3(0f, 0f, CamUp);
-
                 _cam = Function.Call<int>(Hash.CREATE_CAM, "DEFAULT_SCRIPTED_CAMERA", true);
                 if (_cam == 0) return;
 
-                Function.Call(Hash.SET_CAM_FOV, _cam, CamFov);
-                Function.Call(Hash.SET_CAM_COORD, _cam, eye.X, eye.Y, eye.Z);
-                Function.Call(Hash.POINT_CAM_AT_PED_BONE, _cam, me.Handle, Head, 0f, 0f, -0.35f, true);
+                // Straight to the first shot; every one after it is a glide.
+                _snap = true;
+                _nudge = 0f;
+                Steer(me);
+
                 Function.Call(Hash.SET_CAM_ACTIVE, _cam, true);
                 Function.Call(Hash.RENDER_SCRIPT_CAMS, true, true, 400, true, false);
             }
@@ -226,6 +279,80 @@ namespace Hoodrich.UI
             {
                 Log.Debug("The wardrobe camera would not start: " + ex.Message);
                 _cam = 0;
+            }
+        }
+
+        /// <summary>
+        /// One frame of the camera: where this row wants it, and some of the way there.
+        ///
+        /// POINTED AT A COORDINATE, NOT A BONE. Pointing at a bone snaps the instant the bone
+        /// changes, and the whole point of the glide is that the picture flows from his head
+        /// to his feet rather than cutting. The bone is read into a world point, and that is
+        /// what is eased.
+        /// </summary>
+        private void Steer(Ped me)
+        {
+            if (_cam == 0 || me == null || !me.Exists()) return;
+
+            try
+            {
+                var shot = (int)Slots[_row].Look;
+
+                var rad = me.Heading * (float)Math.PI / 180f;
+                var forward = new Vector3(-(float)Math.Sin(rad), (float)Math.Cos(rad), 0f);
+
+                // Sideways, so he stands in the clear half of the screen. Eye and aim move by
+                // the same amount, which shifts him in the frame rather than turning the camera.
+                var aside = new Vector3(forward.Y, -forward.X, 0f) * Side;
+
+                var eye = me.Position + forward * Shots[shot, 0]
+                          + new Vector3(0f, 0f, Shots[shot, 1] + _nudge) + aside;
+
+                var look = Function.Call<Vector3>(Hash.GET_PED_BONE_COORDS, me.Handle, (int)Shots[shot, 2],
+                                                  0f, 0f, Shots[shot, 3])
+                           + new Vector3(0f, 0f, _nudge * 0.6f) + aside;
+
+                var fov = Shots[shot, 4];
+
+                if (_snap)
+                {
+                    _eye = eye; _look = look; _fov = fov;
+                    _snap = false;
+                }
+                else
+                {
+                    var k = Math.Min(1f, Glide * Game.LastFrameTime);
+                    _eye += (eye - _eye) * k;
+                    _look += (look - _look) * k;
+                    _fov += (fov - _fov) * k;
+                }
+
+                Function.Call(Hash.SET_CAM_COORD, _cam, _eye.X, _eye.Y, _eye.Z);
+                Function.Call(Hash.POINT_CAM_AT_COORD, _cam, _look.X, _look.Y, _look.Z);
+                Function.Call(Hash.SET_CAM_FOV, _cam, _fov);
+            }
+            catch
+            {
+                // It stays where it was, which is somewhere on him.
+            }
+        }
+
+        /// <summary>
+        /// The stick or the mouse lifts and drops the shot, so any row can be seen from higher
+        /// or lower than its own frame. Cleared when the row changes, because the next row
+        /// brings its own.
+        /// </summary>
+        private void Nudge()
+        {
+            try
+            {
+                var v = Function.Call<float>(Hash.GET_DISABLED_CONTROL_NORMAL, 0, (int)Control.LookUpDown);
+                if (Math.Abs(v) < 0.08f) return;
+
+                _nudge = Math.Max(-NudgeMost, Math.Min(NudgeMost, _nudge - v * NudgeRate * Game.LastFrameTime));
+            }
+            catch
+            {
             }
         }
 
@@ -254,6 +381,15 @@ namespace Hoodrich.UI
             if (!IsOpen) return;
 
             LockControls();
+
+            try
+            {
+                Nudge();
+                Steer(Game.Player.Character);
+            }
+            catch
+            {
+            }
 
             try { Function.Call(Hash.HIDE_HUD_AND_RADAR_THIS_FRAME); }
             catch { }
@@ -402,6 +538,12 @@ namespace Hoodrich.UI
             _lastRow = _row;
             _row = (_row + step + Slots.Length) % Slots.Length;
             _pickedAt = Game.GameTime;
+            _nudge = 0f;
+
+            // The window follows the row a row at a time, so it scrolls rather than pages.
+            if (_row < _top) _top = _row;
+            if (_row >= _top + Shown) _top = _row - Shown + 1;
+            if (_row == 0) _top = 0;
             Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
@@ -615,7 +757,7 @@ namespace Hoodrich.UI
             foreach (var control in new[]
                      {
                          Control.PhoneUp, Control.PhoneDown, Control.PhoneLeft, Control.PhoneRight,
-                         Control.PhoneSelect, Control.PhoneCancel
+                         Control.PhoneSelect, Control.PhoneCancel, Control.LookUpDown
                      })
             {
                 Function.Call(Hash.ENABLE_CONTROL_ACTION, 0, (int)control, true);
@@ -636,7 +778,7 @@ namespace Hoodrich.UI
 
             // Off to the right, so he stays in the middle of the picture.
             var left = 0.96f - width;
-            var height = 0.140f + Slots.Length * RowHeight;
+            var height = 0.140f + Shown * RowHeight;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
 
             Theme.Panel(left, top, width, height);
@@ -648,7 +790,9 @@ namespace Hoodrich.UI
             Hud.Text("WARDROBE", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
 
             y += 0.052f;
-            Hud.Text("WHAT HE HAS ON", x, y, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
+            // The section he is in, rather than one caption for all of them.
+            Hud.Text(Slots[_row].Group, x, y, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
+            Hud.TextRight((_row + 1) + " / " + Slots.Length, right, y, 0.24f, Palette.TextDim, Hud.FontLabel);
             y += 0.026f;
             Theme.Rule(x, y, right - x);
             y += 0.010f;
@@ -656,7 +800,7 @@ namespace Hoodrich.UI
             var grown = Theme.Grown(_pickedAt);
             var barWide = (right - x) + pad * 0.7f;
 
-            for (var i = 0; i < Slots.Length; i++)
+            for (var i = _top; i < Math.Min(Slots.Length, _top + Shown); i++)
             {
                 var s = Slots[i];
                 var here = i == _row;
@@ -712,9 +856,22 @@ namespace Hoodrich.UI
                         var c = Colours(me, s, d);
                         var t = Texture(me, s);
 
-                        value = d < 0
-                            ? "NONE  /  " + n
-                            : (d + 1) + "  /  " + n + (c > 1 ? "     COLOUR " + (t + 1) + " / " + c : "");
+                        // WORDS, NOT A FRACTION. "4 / 12" is a sum to do; "4 of 12, colour 2
+                        // of 3" is a sentence. And a slot with one thing in it says so, because
+                        // an arrow on a row that cannot change is the closet lying.
+                        if (n <= 1 && !s.Prop)
+                        {
+                            value = "JUST THE ONE";
+                        }
+                        else if (d < 0)
+                        {
+                            value = "NOTHING ON" + (n > 0 ? "  ·  " + n + " TO PICK" : "");
+                        }
+                        else
+                        {
+                            value = (d + 1) + " OF " + n
+                                    + (c > 1 ? "  ·  COLOUR " + (t + 1) + " OF " + c : "");
+                        }
                     }
                 }
                 catch
@@ -726,6 +883,12 @@ namespace Hoodrich.UI
                 // scrolled, and putting arrows on it says otherwise.
                 var scrolls = s.Style != Kind.None || (!s.Peg ? s.Act == Deed.None : true);
 
+                // No arrows on a row with nothing to scroll.
+                if (scrolls && !s.Prop && !s.Body && s.Style == Kind.None && !s.Peg && s.Act == Deed.None)
+                {
+                    try { if (Count(me, s) <= 1) scrolls = false; } catch { }
+                }
+
                 Hud.TextRight((here && scrolls ? "<  " : "") + value + (here && scrolls ? "  >" : ""), right, y + 0.008f, 0.24f,
                               here ? ink : Palette.TextDim, Hud.FontLabel);
 
@@ -733,8 +896,8 @@ namespace Hoodrich.UI
             }
 
             Hud.Text(Hud.OnPad
-                         ? "D-PAD  SLOT / CHANGE      A  CHOOSE      B  DONE"
-                         : "UP/DOWN  SLOT      LEFT/RIGHT  CHANGE      ENTER  CHOOSE      BACKSPACE  DONE",
+                         ? "D-PAD  SLOT / CHANGE      A  COLOUR      R-STICK  LOOK      B  DONE"
+                         : "UP/DOWN  SLOT      LEFT/RIGHT  CHANGE      ENTER  COLOUR      MOUSE  LOOK      BACKSPACE  DONE",
                      x, top + height - 0.030f, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
         }
     }
