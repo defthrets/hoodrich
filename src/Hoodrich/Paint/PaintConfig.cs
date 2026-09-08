@@ -339,7 +339,7 @@
         public int StreakIdleMs = 55;
 
         /// <summary>Which way round the stretch goes, if strokes come out square to the path.</summary>
-        public bool StrokeSideways;
+        public bool StrokeSideways = false;
 
         /// <summary>
         /// Whether paint starts to run when you hold it on one spot.
@@ -354,7 +354,7 @@
         /// so it visibly travelled. Never on anything within twelve degrees of level, because
         /// paint does not run down a pavement.
         /// </summary>
-        public bool Drips;
+        public bool Drips = false;
 
         /// <summary>How long the spray has to stay on one spot before it starts to run.</summary>
         public int DripAfterMs = 1000;
@@ -378,7 +378,7 @@
         /// axis down the wall, which is the way round that should be right. If drips come out
         /// horizontal, this is the switch.
         /// </summary>
-        public bool DripSideways;
+        public bool DripSideways = false;
 
         /// <summary>How long a run gets before it stops, and how many one spot will produce.</summary>
         public float DripLength = 0.22f;

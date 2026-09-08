@@ -420,25 +420,7 @@ namespace Hoodrich.Locations
             get { return _cfg == null ? 8f : _cfg.TakeoverSpinRadius; }
         }
 
-        /// <summary>How long the one on the mark gets before somebody else has a go.</summary>
-        private const int BurnMinMs = 26000;
-        private const int BurnMaxMs = 36000;
 
-        /// <summary>
-        /// Close enough to the mark to stop and start smoking.
-        ///
-        /// SEVEN AND A HALF, RAISED FROM FOUR AND A HALF, and this was why nothing ever burned
-        /// out. The drive-in was issued with a stopping range of five metres, so the car parked
-        /// itself five metres from the mark and the arrival test wanted four and a half -- it
-        /// never passed, so the car never started, never got its tyres, and never timed out
-        /// either, because the clock only starts when the work does. One car sat by the mark
-        /// doing nothing for the whole takeover and the count said the mark was occupied, so no
-        /// replacement was ever sent.
-        ///
-        /// The stopping range is down to two as well. Both numbers, or the same trap reopens
-        /// the first time a kerb stops somebody a metre early.
-        /// </summary>
-        private const float OnTheMark = 7.5f;
 
         /// <summary>
         /// How long anybody gets to arrive before the circle stops waiting for them.
@@ -949,15 +931,6 @@ namespace Hoodrich.Locations
             /// <summary>When he first lifted off for somebody, or nought. See Working.</summary>
             public int Held;
 
-            /// <summary>
-            /// This one is on the mark rather than going round it.
-            ///
-            /// The two are the same object because they have the same life -- drive in, do the
-            /// thing, drive out -- and the only difference is what "the thing" is. Splitting
-            /// them into two classes would duplicate the arrival, the timeout and every line
-            /// of the cleanup to change one method.
-            /// </summary>
-            public bool Middle;
         }
 
         private readonly Settings _cfg;
@@ -3801,7 +3774,7 @@ namespace Hoodrich.Locations
                 // On the way in. Close enough to its circle and it takes over by hand.
                 if (!r.Circling)
                 {
-                    var wants = r.Middle ? OnTheMark : r.Radius + 6f;
+                    var wants = r.Radius + 6f;
                     var gap = r.Car.Position.DistanceTo(Circle);
 
                     if (gap > wants)
@@ -3824,9 +3797,7 @@ namespace Hoodrich.Locations
 
                     r.Circling = true;
 
-                    r.Until = now + (r.Middle
-                        ? _rng.Next(BurnMinMs, BurnMaxMs)
-                        : _rng.Next(24000, 52000));
+                    r.Until = now + _rng.Next(24000, 52000);
 
                     // AND THEY PULL UP FIRST.
                     //
@@ -3899,7 +3870,6 @@ namespace Hoodrich.Locations
             // NOBODY SKIDS UNTIL THE STREET IS PARKED. See Ringed.
             if (!Ringed()) return;
 
-            var mark = 0;
             var round = 0;
 
             foreach (var r in _running)
@@ -3910,8 +3880,7 @@ namespace Hoodrich.Locations
                 // the pit is how the pit ends up empty with four cars sat watching it.
                 if (r.Stage >= 0) continue;
 
-                if (r.Middle) mark++;
-                else round++;
+                round++;
             }
 
             // KEEP THE MARKERS OCCUPIED. Somebody should always be sat ready, so the next turn
@@ -4137,8 +4106,6 @@ namespace Hoodrich.Locations
         /// <summary>How many should be out there, and when that was last decided.</summary>
         private int _want = 3;
 
-        /// <summary>When the empty-pit line may next be written. See the pit tick.</summary>
-        private int _nextEmpty;
 
         private const int EmptyEveryMs = 15000;
         private bool _wantMark;
@@ -4542,62 +4509,6 @@ namespace Hoodrich.Locations
             // gets to its place and performs there, all night, and the middle is what the
             // crowd looks at them across. The line it used to be sent to drive is gone.
             return false;
-
-            Runner up = null;
-
-            foreach (var r in _running)
-            {
-                if (r.Leaving || r.Called || r.Stage < 0 || !r.AtStage) continue;
-                if (r.Car == null || !r.Car.Exists()) continue;
-                if (r.Driver == null || !r.Driver.Exists() || !r.Driver.IsAlive) continue;
-
-                if (up == null || r.Waited < up.Waited) up = r;
-            }
-
-            if (up == null) return false;
-
-            up.Middle = middle;
-
-            // Where he is aiming, and it is not the middle unless he is the burnout. The one
-            // going round is sent to the point on his own circle nearest the marker he is
-            // leaving, so he arrives on the ring already going the right way instead of
-            // crossing it. Same reasoning as when they drove in off the street.
-            var aim = Circle;
-
-            if (!middle)
-            {
-                var inFrom = up.Car.Position - Circle;
-                var len = inFrom.Length();
-
-                if (len > 0.5f)
-                {
-                    inFrom = inFrom * (1f / len);
-                    aim = Circle + inFrom * up.Radius;
-                }
-            }
-
-            try
-            {
-                Function.Call(Hash.CLEAR_PED_TASKS, up.Driver.Handle);
-
-                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, up.Driver.Handle, up.Car.Handle,
-                              aim.X, aim.Y, aim.Z, ComeInSpeed, 0, up.Car.Model.Hash,
-                              RushStyle, 2f, true);
-
-                Function.Call(Hash.SET_PED_KEEP_TASK, up.Driver.Handle, true);
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Takeover could not send one in from a marker: " + ex.Message);
-                return false;
-            }
-
-            // HIS MARKER IS NOT RELEASED. He is coming back to it.
-            up.Called = true;
-            up.AtStage = false;
-            up.Sent = now;
-
-            return true;
         }
 
 

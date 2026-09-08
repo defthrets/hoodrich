@@ -208,14 +208,6 @@ namespace Hoodrich.Locations
         /// <summary>Whether the boot is standing open -- a van being unloaded, or worked on.</summary>
         public bool BootOpen;
 
-        /// <summary>
-        /// Other doors to stand open, by index, or null for none.
-        ///
-        /// 0 and 1 are the front, 2 and 3 the back, 4 the bonnet, 5 the boot. BootOpen is
-        /// still its own flag because it is the one nearly every car that wants this wants;
-        /// this is for the rest.
-        /// </summary>
-        public int[] Doors;
 
         /// <summary>What it says on the plate, or null to leave it whatever it came with.</summary>
         public string Plate;
@@ -540,14 +532,6 @@ namespace Hoodrich.Locations
                 // there.
                 if (BootOpen) Function.Call(Hash.SET_VEHICLE_DOOR_OPEN, _car.Handle, 5, false, true);
 
-                if (Doors != null)
-                {
-                    foreach (var d in Doors)
-                    {
-                        Function.Call(Hash.SET_VEHICLE_DOOR_OPEN, _car.Handle, d, false, true);
-                    }
-                }
-
                 if (!string.IsNullOrEmpty(Plate))
                 {
                     Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, _car.Handle, Plate);
@@ -790,9 +774,6 @@ namespace Hoodrich.Locations
             {
                 if (BootOpen) Hold(5);
 
-                if (Doors == null) return;
-
-                foreach (var d in Doors) Hold(d);
             }
             catch
             {

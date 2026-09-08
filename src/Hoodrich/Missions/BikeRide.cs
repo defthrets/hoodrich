@@ -426,7 +426,6 @@ namespace Hoodrich.Missions
             _robOffered = false;
             _robAccepted = false;
             _gotCash = false;
-            _heldAt = 0;
             _lamarSlipSince = 0;
             _lamarWasAt = 0f;
             _lamarGoneSince = 0;
@@ -1668,7 +1667,6 @@ namespace Hoodrich.Missions
         private bool _robOffered;
         private bool _robAccepted;
         private bool _gotCash;
-        private int _heldAt;
 
         private void TickHome(Ped player)
         {
@@ -3228,7 +3226,6 @@ namespace Hoodrich.Missions
             _robOffered = false;
             _robAccepted = false;
             _gotCash = false;
-            _heldAt = 0;
             _lamarSlipSince = 0;
             _lamarWasAt = 0f;
             _lamarGoneSince = 0;

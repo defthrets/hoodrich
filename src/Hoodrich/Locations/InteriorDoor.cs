@@ -10,21 +10,6 @@ using Control = GTA.Control;
 namespace Hoodrich.Locations
 {
     /// <summary>
-    /// Somebody at work in a room: who, what they are doing, and exactly where.
-    ///
-    /// The coordinates come from a player stood on the spot, the animation from the game's
-    /// own list, and the model from the game's own list of business staff -- the same
-    /// people the online game puts in these rooms.
-    /// </summary>
-    internal sealed class Post
-    {
-        public string Model = "";
-        public string Dict = "";
-        public string Clip = "";
-        public float X, Y, Z, Heading;
-    }
-
-    /// <summary>
     /// One door and the room behind it, read out of the ini.
     ///
     /// Section is carried so the "that room is not there" message can name the exact block of
@@ -79,32 +64,6 @@ namespace Hoodrich.Locations
         /// </summary>
         public readonly List<Vector3> Elsewhere = new List<Vector3>();
 
-        /// <summary>
-        /// Who is in there, by model.
-        ///
-        /// The game does not staff these rooms. Online they are full of people because the
-        /// online script puts them there, and a room with a full crop and nobody in it reads
-        /// as a place that has been abandoned mid-harvest.
-        ///
-        /// NO JOBS ATTACHED. They had one animation each and it looked like three people
-        /// frozen mid-task, which is what a work animation on a loop is -- the same gesture
-        /// for as long as you watch. What is in there is people, and people move about.
-        /// </summary>
-        public readonly List<string> Crew = new List<string>();
-
-        /// <summary>
-        /// The people at work, each at their own station with their own job, on top of the
-        /// crew above who wander. Crew is company; posts are the business running.
-        /// </summary>
-        public readonly List<Post> Posts = new List<Post>();
-
-        /// <summary>
-        /// What the crew do, so they work rather than wander: one animation dictionary and a
-        /// clip each, taken in turn. Empty means they wander and talk, which in a room this
-        /// full of equipment is three people walking into things.
-        /// </summary>
-        public string CrewDict = "";
-        public readonly List<string> CrewClips = new List<string>();
     }
 
     /// <summary>
@@ -202,51 +161,6 @@ namespace Hoodrich.Locations
         private Blip _blip;
         private bool _inside;
 
-        /// <summary>One of the crew, and when they will next change their mind.</summary>
-        private sealed class Hand
-        {
-            public Ped Who;
-
-            /// <summary>At a station with a job, rather than wandering. Kept at it. See Work.</summary>
-            public bool Posted;
-            public string Dict;
-            public string Clip;
-
-            /// <summary>Their own spot and the way they face at it, for the ones with a job.</summary>
-            public Vector3 Post;
-            public float Facing;
-
-            /// <summary>What they are up to: wandering near the post, on the way back to it, or at it working.</summary>
-            public int Stage;
-            public int Check;
-            public int Until;
-            public bool Walking;
-        }
-
-        /// <summary>The people in there while he is. Made on the way in, gone on the way out.</summary>
-        private readonly List<Hand> _staff = new List<Hand>();
-
-        /// <summary>How far they will wander from where they started.</summary>
-        private const float Leash = 7f;
-
-        /// <summary>
-        /// The working day: a couple of seconds' wander on arriving, then spells at the job
-        /// broken by short wanders near it, so a room full of people is never a room of
-        /// statues and never a room of people walking into the tanks.
-        /// </summary>
-        private const float PostLeash = 2.5f;
-        private const int FirstRoamMs = 2000;
-        private const int RoamMinMs = 4000;
-        private const int RoamMaxMs = 9000;
-        private const int WorkMinMs = 25000;
-        private const int WorkMaxMs = 50000;
-        private const int ReturnMs = 7000;
-
-        /// <summary>How long a spell of walking lasts, and how long a spell of standing.</summary>
-        private const int WalkMinMs = 9000;
-        private const int WalkMaxMs = 20000;
-        private const int StandMinMs = 8000;
-        private const int StandMaxMs = 18000;
 
         /// <summary>
         /// Standing about: hanging out, on a phone, and two of them talking.
@@ -265,7 +179,6 @@ namespace Hoodrich.Locations
             new[] { "amb@world_human_stand_mobile@male@standing@call@idle_a", "idle_a" }
         };
 
-        private static readonly Random Dice = new Random();
         private bool _busy;
 
         /// <summary>
@@ -331,14 +244,6 @@ namespace Hoodrich.Locations
 
         public bool IsInside => _inside;
 
-        /// <summary>
-        /// Whether this door is yours yet.
-        ///
-        /// Set by Main. The grow room and the pill press are the set's places, not public
-        /// ones, and a fresh save that opens with both of them marked tells somebody who has
-        /// not met anybody yet that they own two buildings.
-        /// </summary>
-        public Func<bool> Known;
 
         public void Update()
         {
@@ -349,20 +254,10 @@ namespace Hoodrich.Locations
 
             NoticeHesInThere(player);
 
-            if (Known != null && !Known())
-            {
-                try { if (_blip != null && _blip.Exists()) _blip.Delete(); }
-                catch { /* it is gone */ }
-
-                _blip = null;
-                return;
-            }
-
             EnsureBlip();
 
             if (_inside)
             {
-                Mill(Game.GameTime);
 
                 if (WanderedOut(player)) return;
 
@@ -655,7 +550,6 @@ namespace Hoodrich.Locations
                     player.Heading = BackFacing;
                     Function.Call(Hash.FREEZE_ENTITY_POSITION, player.Handle, false);
 
-                    Sack();
 
                     // Bounced out because the room was not there: the map goes back too,
                     // or a failed attempt leaves the whole city on the online variant for
@@ -711,7 +605,6 @@ namespace Hoodrich.Locations
                     player.Heading = BackFacing;
                     Function.Call(Hash.FREEZE_ENTITY_POSITION, player.Handle, false);
 
-                    Sack();
 
                     // Bounced out because the room was not there: the map goes back too,
                     // or a failed attempt leaves the whole city on the online variant for
@@ -740,7 +633,6 @@ namespace Hoodrich.Locations
                 Fade(true);
 
                 // He is in and the room is real: staff it.
-                Hire(to);
 
                 Notify.Ticker("~g~" + Capital(_spec.Name) + ".~s~");
             }
@@ -977,7 +869,6 @@ namespace Hoodrich.Locations
 
                 // He is outside again: the crew knock off and the city goes back to the
                 // map the story happens in.
-                Sack();
                 Mp(false);
 
                 Log.Info("Out of the " + _spec.Name + " to " + Back +
@@ -1004,366 +895,6 @@ namespace Hoodrich.Locations
                 _busy = false;
             }
         }
-
-        /// <summary>
-        /// Put somebody to work, around wherever he came in.
-        ///
-        /// AROUND THE ARRIVAL MARK RATHER THAN AT AUTHORED SPOTS. Nobody has walked these
-        /// rooms with a notebook, and a coordinate typed for the inside of a room nobody has
-        /// stood in is the mistake this whole feature has already made twice. The mark is
-        /// known-good floor -- he is standing on it -- so the crew go in a small arc off it
-        /// and the worst case is somebody working a little close to a shelf.
-        /// </summary>
-        private void Hire(Vector3 at)
-        {
-            if (_spec.Crew.Count == 0) return;
-
-            // Far enough not to be stood in his face, near enough to be the same room.
-            var spread = new[]
-            {
-                new Vector3(2.6f, 1.4f, 0f),
-                new Vector3(-2.2f, 2.6f, 0f),
-                new Vector3(0.6f, -2.8f, 0f)
-            };
-
-            for (var i = 0; i < _spec.Crew.Count; i++)
-            {
-                var who = _spec.Crew[i];
-                if (string.IsNullOrEmpty(who)) continue;
-
-                try
-                {
-                    var model = new Model(who);
-                    if (!model.IsValid || !model.IsInCdImage) continue;
-
-                    model.Request(2000);
-                    if (!model.IsLoaded) continue;
-
-                    var spot = at + spread[i % spread.Length];
-
-                    var worker = World.CreatePed(model, spot);
-                    model.MarkAsNoLongerNeeded();
-
-                    if (worker == null || !worker.Exists()) continue;
-
-                    worker.IsPersistent = true;
-                    worker.BlockPermanentEvents = true;
-
-                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, worker.Handle, true);
-                    Function.Call(Hash.SET_PED_CAN_RAGDOLL_FROM_PLAYER_IMPACT, worker.Handle, false);
-                    Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, worker.Handle, false);
-
-                    // There is one Families female model in the game and two of the three are
-                    // her, so the game's own clothing shuffle does the work a second model
-                    // would have done. Without it the room has twins in it.
-                    Function.Call(Hash.SET_PED_RANDOM_COMPONENT_VARIATION, worker.Handle, 0);
-
-                    // Facing the middle, so three people are working AT something rather than
-                    // stood in a row facing a wall.
-                    worker.Heading = Toward(spot, at);
-
-                    var hand = new Hand { Who = worker };
-                    _staff.Add(hand);
-
-                    // AT WORK, NOT ABOUT. They wandered, and a room this full of equipment is
-                    // a room to walk into things in: three people bumping round the tanks
-                    // looked worse than three people at a job. Each takes a job from the
-                    // door's list and keeps it, the way the staff at the stations do.
-                    if (!string.IsNullOrEmpty(_spec.CrewDict) && _spec.CrewClips.Count > 0)
-                    {
-                        hand.Posted = true;
-                        hand.Dict = _spec.CrewDict;
-                        hand.Clip = _spec.CrewClips[i % _spec.CrewClips.Count];
-                        hand.Post = spot;
-                        hand.Facing = worker.Heading;
-
-                        Function.Call(Hash.REQUEST_ANIM_DICT, hand.Dict);
-
-                        for (var n = 0; n < 40 && !Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, hand.Dict); n++)
-                        {
-                            Script.Yield();
-                        }
-
-                        Roam(hand, FirstRoamMs);
-                    }
-                    else if (Dice.Next(2) == 0) Walk(hand, at);
-                    else Stand(hand);
-                }
-                catch (Exception ex)
-                {
-                    Log.Debug("Could not put somebody to work in the " + _spec.Name + ": " + ex.Message);
-                }
-            }
-
-            // ---- and the ones at work ----
-            //
-            // Each on the spot that was measured for them, facing the way the reading said,
-            // doing the job the animation says. They do not mill: a cook stands at the
-            // cooker for as long as you are in the room, which is what a cook does.
-            foreach (var post in _spec.Posts)
-            {
-                if (post == null || string.IsNullOrEmpty(post.Model)) continue;
-
-                try
-                {
-                    var model = new Model(post.Model);
-                    if (!model.IsValid || !model.IsInCdImage) continue;
-
-                    model.Request(2000);
-                    if (!model.IsLoaded) continue;
-
-                    var spot = new Vector3(post.X, post.Y, post.Z);
-                    var worker = World.CreatePed(model, spot);
-                    model.MarkAsNoLongerNeeded();
-
-                    if (worker == null || !worker.Exists()) continue;
-
-                    worker.IsPersistent = true;
-                    worker.BlockPermanentEvents = true;
-                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, worker.Handle, true);
-                    Function.Call(Hash.SET_PED_CAN_RAGDOLL_FROM_PLAYER_IMPACT, worker.Handle, false);
-                    Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, worker.Handle, false);
-                    Function.Call(Hash.SET_PED_RANDOM_COMPONENT_VARIATION, worker.Handle, 0);
-                    Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, worker.Handle,
-                                  spot.X, spot.Y, spot.Z, false, false, false);
-                    worker.Heading = post.Heading;
-
-                    var hand = new Hand
-                    {
-                        Who = worker, Posted = true, Dict = post.Dict, Clip = post.Clip,
-                        Post = spot, Facing = post.Heading
-                    };
-                    _staff.Add(hand);
-
-                    Function.Call(Hash.REQUEST_ANIM_DICT, post.Dict);
-
-                    for (var n = 0; n < 40 && !Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, post.Dict); n++)
-                    {
-                        Script.Yield();
-                    }
-
-                    Roam(hand, FirstRoamMs);
-                }
-                catch (Exception ex)
-                {
-                    Log.Debug("Could not post somebody in the " + _spec.Name + ": " + ex.Message);
-                }
-            }
-
-            if (_staff.Count > 0) Log.Info(_staff.Count + " working in the " + _spec.Name + ".");
-        }
-
-        /// <summary>Off round the room, on a leash so nobody wanders into the map.</summary>
-        private static void Walk(Hand hand, Vector3 around)
-        {
-            try
-            {
-                Function.Call(Hash.CLEAR_PED_TASKS, hand.Who.Handle);
-                Function.Call(Hash.TASK_WANDER_IN_AREA, hand.Who.Handle,
-                              around.X, around.Y, around.Z, Leash, 3f, 8f);
-                Function.Call(Hash.SET_PED_KEEP_TASK, hand.Who.Handle, true);
-            }
-            catch
-            {
-                // He stays where he is, which is the other half of what this does anyway.
-            }
-
-            hand.Walking = true;
-            hand.Until = Game.GameTime + Dice.Next(WalkMinMs, WalkMaxMs);
-        }
-
-        /// <summary>A spell of wandering near the post, a couple of metres, no further.</summary>
-        private static void Roam(Hand hand, int ms)
-        {
-            try
-            {
-                Function.Call(Hash.CLEAR_PED_TASKS, hand.Who.Handle);
-                Function.Call(Hash.TASK_WANDER_IN_AREA, hand.Who.Handle,
-                              hand.Post.X, hand.Post.Y, hand.Post.Z, PostLeash, 1f, 1f);
-                Function.Call(Hash.SET_PED_KEEP_TASK, hand.Who.Handle, true);
-            }
-            catch
-            {
-                // Standing near it is near enough.
-            }
-
-            hand.Stage = 0;
-            hand.Until = Game.GameTime + ms;
-        }
-
-        /// <summary>
-        /// The working day, one step at a time: wandering ends with a walk back to the post,
-        /// the walk back ends with the job, and the job -- kept up every few seconds in case
-        /// something knocked it off -- ends with another wander. Each on their own clock.
-        /// </summary>
-        private void Shift(Hand hand, int now)
-        {
-            var ped = hand.Who;
-
-            if (hand.Stage == 2)
-            {
-                if (now < hand.Until)
-                {
-                    if (now >= hand.Check)
-                    {
-                        hand.Check = now + 3000;
-                        Work(hand);
-                    }
-
-                    return;
-                }
-
-                Roam(hand, Dice.Next(RoamMinMs, RoamMaxMs));
-                return;
-            }
-
-            if (hand.Stage == 1)
-            {
-                var back = ped.Position.DistanceTo(hand.Post) < 0.5f;
-
-                if (!back && now < hand.Until) return;
-
-                // Stood on the spot, facing the work. If the walk did not get them all the
-                // way there, the last step is taken for them: a worker a stride from the
-                // cooker is a worker cooking the air.
-                try
-                {
-                    if (!back)
-                    {
-                        Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, ped.Handle,
-                                      hand.Post.X, hand.Post.Y, hand.Post.Z, false, false, false);
-                    }
-
-                    Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
-                    ped.Heading = hand.Facing;
-                }
-                catch
-                {
-                    // Wherever they are, then.
-                }
-
-                hand.Stage = 2;
-                hand.Until = now + Dice.Next(WorkMinMs, WorkMaxMs);
-                hand.Check = 0;
-                Work(hand);
-                return;
-            }
-
-            // Wandering, and the wander is over: back to the post.
-            if (now < hand.Until) return;
-
-            try
-            {
-                Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
-                Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, ped.Handle,
-                              hand.Post.X, hand.Post.Y, hand.Post.Z, 1.0f, ReturnMs, hand.Facing, 0.25f);
-            }
-            catch
-            {
-                // The next stage puts them there.
-            }
-
-            hand.Stage = 1;
-            hand.Until = now + ReturnMs;
-        }
-
-        /// <summary>At their station, doing their job, unless they already are.</summary>
-        private static void Work(Hand hand)
-        {
-            if (string.IsNullOrEmpty(hand.Dict) || string.IsNullOrEmpty(hand.Clip)) return;
-
-            try
-            {
-                if (Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, hand.Who.Handle, hand.Dict, hand.Clip, 3))
-                {
-                    return;
-                }
-
-                Function.Call(Hash.REQUEST_ANIM_DICT, hand.Dict);
-
-                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, hand.Dict)) return;
-
-                Function.Call(Hash.TASK_PLAY_ANIM, hand.Who.Handle, hand.Dict, hand.Clip,
-                              8f, -8f, -1, 1, 0f, false, false, false);
-            }
-            catch
-            {
-                // Stood at the station is still stood at the station.
-            }
-        }
-
-        /// <summary>Stopped, doing something with their hands.</summary>
-        private static void Stand(Hand hand)
-        {
-            var pick = Standing[Dice.Next(Standing.Length)];
-
-            try
-            {
-                Function.Call(Hash.CLEAR_PED_TASKS, hand.Who.Handle);
-                Function.Call(Hash.REQUEST_ANIM_DICT, pick[0]);
-
-                if (Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, pick[0]))
-                {
-                    Function.Call(Hash.TASK_PLAY_ANIM, hand.Who.Handle, pick[0], pick[1],
-                                  8f, -8f, -1, 1, 0f, false, false, false);
-                }
-            }
-            catch
-            {
-                // Standing there is still standing there.
-            }
-
-            hand.Walking = false;
-            hand.Until = Game.GameTime + Dice.Next(StandMinMs, StandMaxMs);
-        }
-
-        /// <summary>
-        /// Each of them changes their mind now and then, on their own clock.
-        ///
-        /// Separate timers on purpose. One timer for all three is three people who stop and
-        /// start together, which is choreography -- and choreography is the thing that says
-        /// these are not people.
-        /// </summary>
-        private void Mill(int now)
-        {
-            for (var i = _staff.Count - 1; i >= 0; i--)
-            {
-                var hand = _staff[i];
-
-                if (hand.Who == null || !hand.Who.Exists()) { _staff.RemoveAt(i); continue; }
-
-                // Somebody with a job has a day: see Shift.
-                if (hand.Posted)
-                {
-                    Shift(hand, now);
-                    continue;
-                }
-
-                if (now < hand.Until) continue;
-
-                if (hand.Walking) Stand(hand);
-                else Walk(hand, hand.Who.Position);
-            }
-        }
-
-        /// <summary>Everybody out. Called on every way out of the room, including the failures.</summary>
-        private void Sack()
-        {
-            foreach (var hand in _staff)
-            {
-                try
-                {
-                    if (hand.Who != null && hand.Who.Exists()) hand.Who.Delete();
-                }
-                catch
-                {
-                    // Already gone.
-                }
-            }
-
-            _staff.Clear();
-        }
-
         /// <summary>The heading from one point to another, in degrees.</summary>
         private static float Toward(Vector3 from, Vector3 to)
         {

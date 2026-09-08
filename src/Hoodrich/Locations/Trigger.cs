@@ -188,9 +188,7 @@ namespace Hoodrich.Locations
 
         private int _petUntil;
         private int _petAgainAt;
-        private bool _down;
 
-        private bool _inGroup;
 
         public Trigger(Vector3 where, float radius, PlayerState state)
         {
@@ -312,7 +310,6 @@ namespace Hoodrich.Locations
                     Function.Call(Hash.SET_PED_AS_GROUP_MEMBER, _dog.Handle, group);
                     Function.Call(Hash.SET_PED_NEVER_LEAVES_GROUP, _dog.Handle, true);
 
-                    _inGroup = true;
                 }
             }
             catch
@@ -387,7 +384,6 @@ namespace Hoodrich.Locations
                     Function.Call(Hash.SET_PED_INTO_VEHICLE, _dog.Handle, car.Handle, seat);
 
                     _lostSince = 0;
-                    _inGroup = false;
                     _sitting = false;
 
                     Log.Info("Trigger was left behind, so he is in the car.");
@@ -421,7 +417,6 @@ namespace Hoodrich.Locations
                 _dog.Heading = player.Heading;
 
                 _lostSince = 0;
-                _inGroup = false;
                 _wandering = false;
 
                 Log.Info("Trigger had fallen behind, so he caught up.");
@@ -474,7 +469,6 @@ namespace Hoodrich.Locations
                     Function.Call(Hash.SET_ENTITY_HEALTH, h, floor);
 
                     Arm(h);
-                    _inGroup = false;
 
                     Notify.Failure(Name + "'s hurt bad.");
                     Log.Info("Trigger went down and got back up.");
@@ -821,7 +815,6 @@ namespace Hoodrich.Locations
 
             // And the group is re-asserted on the next tick by Join(), which is what actually
             // brings him back -- clearing only makes room for it.
-            _inGroup = false;
         }
 
         /// <summary>
@@ -1107,7 +1100,6 @@ namespace Hoodrich.Locations
                     Function.Call(Hash.SET_PED_KEEP_TASK, h, true);
                 }
 
-                _inGroup = false;
                 _sitting = false;
                 _wandering = false;
 
@@ -1180,7 +1172,6 @@ namespace Hoodrich.Locations
                 }
 
                 _dog = null;
-                _inGroup = false;
                 _sitting = false;
                 _jumpingAt = 0;
                 _outAt = 0;
@@ -1662,7 +1653,6 @@ namespace Hoodrich.Locations
                 _dog = found;
                 _dog.IsPersistent = true;
 
-                _inGroup = false;
                 _sitting = false;
                 _jumpingAt = 0;
                 _outAt = 0;
@@ -2078,7 +2068,6 @@ namespace Hoodrich.Locations
             if (!down)
             {
                 _downSince = 0;
-                _down = false;
                 return false;
             }
 
@@ -2087,7 +2076,6 @@ namespace Hoodrich.Locations
             if (Game.GameTime - _downSince < HoldMs) return false;
 
             _downSince = 0;
-            _down = true;
 
             return true;
         }
@@ -2174,7 +2162,6 @@ namespace Hoodrich.Locations
             catch { /* he is the game's now either way */ }
 
             _dog = null;
-            _inGroup = false;
         }
 
         public void RestoreWorld()

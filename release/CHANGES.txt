@@ -1,4 +1,20 @@
-﻿A COMPATIBILITY PASS: THE TICK STOPS DELETING THE WORLD, AND NOTHING DEPRECATED IS LEFT.
+﻿THE COMPILER HAS NOTHING LEFT TO SAY.
+
+Thirty-six warnings at the start of the day, none now. What went was all
+dead: the room-staffing subsystem in InteriorDoor -- Post, Hand, Hire,
+Roam, Shift, Work, Stand, Mill, Sack and thirteen constants -- which
+nothing could reach once the two rooms were removed; Entourage.IndoorsOnly
+and the block that read it, for the same reason; ParkedCar.Doors, which
+nothing ever set; the fifty-six-line unreachable body of Takeover.Turn(),
+left behind when the middle-of-the-junction run was designed out, and the
+Runner.Middle flag that only it ever set; and three fields in Trigger and
+BikeRide that were written and never read.
+
+The three paint flags that warned were initialised on the Overspray side,
+where that engine lives, and synced across -- the same value, spelled out.
+
+
+A COMPATIBILITY PASS: THE TICK STOPS DELETING THE WORLD, AND NOTHING DEPRECATED IS LEFT.
 
 Every native the mod calls -- five hundred and twenty-seven of them -- was
 checked against ScriptHookVDotNet's own table, and all of them are in it.
