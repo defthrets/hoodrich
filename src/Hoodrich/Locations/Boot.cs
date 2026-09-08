@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -14,13 +14,16 @@ namespace Hoodrich.Locations
     /// <summary>
     /// The boot of a car you own.
     ///
-    /// TWO WAYS IN. Stood at the back of one of yours, the key pops the lid, he turns to the
+    /// ONE WAY IN. Stood at the back of one of yours, the key pops the lid, he turns to the
     /// car and goes in head first -- the game's own bin-rummage, which is a man bent double
     /// over something at waist height and is exactly the shape of somebody going through a
-    /// boot -- and the inventory comes up while he is in there. Sat in the driver's seat with
-    /// the car stopped, the same key brings up the same screen and nothing else: the lid
-    /// stays shut and nobody bends, because you cannot get into a boot from the front seat
-    /// and a lid that lifts itself behind you is a worse feature for pretending you could.
+    /// boot -- and the inventory comes up while he is in there.
+    ///
+    /// NOT FROM THE SEAT. There was a second way in for a while: stopped in the driver's seat,
+    /// the same key brought the screen up with the lid shut and nobody bending. It went
+    /// because it is not a thing a person can do -- you cannot reach a boot from the front
+    /// seat -- and because it put a prompt on the screen every time you stopped one of your
+    /// own cars at a light, with the horn disabled under it. Get out and walk round.
     ///
     /// WHAT COUNTS AS YOURS is what OwnedCars says: the plate. Not "a car you are near" and
     /// not "the car you drove here" -- a car off Hao's lot with your record on it. So there is
@@ -39,9 +42,6 @@ namespace Hoodrich.Locations
 
         /// <summary>How far he can drift from the boot before the lid shuts on its own.</summary>
         private const float LeaveM = 3.2f;
-
-        /// <summary>Stopped, for the purpose of doing this from the driver's seat.</summary>
-        private const float StoppedMps = 0.5f;
 
         /// <summary>The scan for a car behind him is not a per-frame job.</summary>
         private const int ScanMs = 200;
@@ -73,7 +73,6 @@ namespace Hoodrich.Locations
 
         private Phase _phase;
         private int _phaseAt;
-        private bool _sat;
         private bool _changed;
 
         /// <summary>Whether this class lifted the lid, so it only ever shuts what it opened.</summary>
@@ -85,7 +84,6 @@ namespace Hoodrich.Locations
         private int _nextScan;
         private Vehicle _near;
         private OwnedCar _nearRecord;
-        private bool _nearSat;
         private int _promptSince;
 
         public Boot(PlayerState state, OwnedCars owned, Drugs drugs, WeaponRegistry guns, GunLocker locker)
@@ -140,41 +138,23 @@ namespace Hoodrich.Locations
                 return;
             }
 
-            // In the seat the same key is the horn. It is not the horn while the prompt is up.
-            if (_nearSat) Game.DisableControlThisFrame(Control.VehicleHorn);
-
             Prompt(now);
 
             if (!Function.Call<bool>(Hash.IS_DISABLED_CONTROL_JUST_PRESSED, 0, (int)Control.Context) &&
                 !Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 0, (int)Control.Context)) return;
 
-            Open(me, _near, _nearRecord, _nearSat);
+            Open(me, _near, _nearRecord);
         }
 
         private void Scan(Ped me)
         {
             _near = null;
             _nearRecord = null;
-            _nearSat = false;
 
             if (_state == null || _owned == null || _state.Owned.Count == 0) return;
 
-            if (me.IsInVehicle())
-            {
-                var car = me.CurrentVehicle;
-                if (car == null || !car.Exists() || car.Speed > StoppedMps) return;
-                if (me.SeatIndex != VehicleSeat.Driver) return;
-
-                var record = _owned.Which(car);
-                if (record == null || !HasLid(car)) return;
-
-                _near = car;
-                _nearRecord = record;
-                _nearSat = true;
-                return;
-            }
-
-            if (me.IsRagdoll || me.IsInAir) return;
+            // Not from inside a car. A boot is reached from behind it, on foot.
+            if (me.IsInVehicle() || me.IsRagdoll || me.IsInAir) return;
 
             Vehicle best = null;
             OwnedCar bestRecord = null;
@@ -237,31 +217,20 @@ namespace Hoodrich.Locations
                 .ToUpperInvariant();
             var cap = Hud.OnPad ? "D-PAD RIGHT" : "E";
 
-            UiKit.Prompt("car.png", who, cap + "   " + (_nearSat ? "CHECK THE BOOT" : "POP THE BOOT"), fade);
+            UiKit.Prompt("car.png", who, cap + "   POP THE BOOT", fade);
         }
 
         // ---- open ---------------------------------------------------------------------------
 
-        private void Open(Ped me, Vehicle car, OwnedCar record, bool sat)
+        private void Open(Ped me, Vehicle car, OwnedCar record)
         {
             _car = car;
             _record = record;
-            _sat = sat;
             _changed = false;
             _promptSince = 0;
             _near = null;
 
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
-
-            if (sat)
-            {
-                // Nothing to bend over from the seat, and no lid: it stays shut behind him.
-                // Straight to the screen.
-                _phase = Phase.In;
-                _phaseAt = Game.GameTime;
-                Show();
-                return;
-            }
 
             try
             {
@@ -330,26 +299,19 @@ namespace Hoodrich.Locations
                         return;
                     }
 
-                    // Drifted off, or drove off. The lid shuts behind him.
-                    if (_sat)
+                    // Drifted off, got in, or got knocked down. The lid shuts behind him.
+                    if (me.IsInVehicle() || me.IsRagdoll || me.Position.DistanceTo(LidPoint(_car)) > LeaveM)
                     {
-                        if (!me.IsInVehicle(_car) || _car.Speed > StoppedMps * 3f) { _screen.Close(); Leave(me); return; }
+                        _screen.Close();
+                        Leave(me);
+                        return;
                     }
-                    else
-                    {
-                        if (me.IsInVehicle() || me.IsRagdoll || me.Position.DistanceTo(LidPoint(_car)) > LeaveM)
-                        {
-                            _screen.Close();
-                            Leave(me);
-                            return;
-                        }
 
-                        // The rummage is a loop, but a knock or a shove ends it. Put it back.
-                        if (now - _phaseAt > 800 &&
-                            !Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, me.Handle, IdleDict, IdleClip, 3))
-                        {
-                            Play(me, IdleDict, IdleClip, -1, 1);
-                        }
+                    // The rummage is a loop, but a knock or a shove ends it. Put it back.
+                    if (now - _phaseAt > 800 &&
+                        !Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, me.Handle, IdleDict, IdleClip, 3))
+                    {
+                        Play(me, IdleDict, IdleClip, -1, 1);
                     }
 
                     _screen.Update();
@@ -364,12 +326,6 @@ namespace Hoodrich.Locations
 
         private void Leave(Ped me)
         {
-            if (_sat)
-            {
-                Close();
-                return;
-            }
-
             _phase = Phase.ComingOut;
             _phaseAt = Game.GameTime;
 
@@ -391,7 +347,7 @@ namespace Hoodrich.Locations
             {
                 try
                 {
-                    if (me != null && me.Exists() && !_sat) Function.Call(Hash.STOP_ANIM_TASK, me.Handle, IdleDict, IdleClip, -4f);
+                    if (me != null && me.Exists()) Function.Call(Hash.STOP_ANIM_TASK, me.Handle, IdleDict, IdleClip, -4f);
                 }
                 catch { /* nothing to stop */ }
             }
@@ -418,7 +374,6 @@ namespace Hoodrich.Locations
             _phase = Phase.Idle;
             _car = null;
             _record = null;
-            _sat = false;
             _promptSince = 0;
             _nextScan = Game.GameTime + 600;
         }
