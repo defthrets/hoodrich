@@ -80,12 +80,6 @@ namespace Hoodrich.Locations
         /// <summary>Whether this class lifted the lid, so it only ever shuts what it opened.</summary>
         private bool _lidUp;
 
-        /// <summary>Whether the seat has had its one quiet word this session. See Prompt.</summary>
-        private bool _seatTold;
-
-        /// <summary>How loud the seat's word is, against the one on foot.</summary>
-        private const float SeatQuiet = 0.6f;
-
         private Vehicle _car;
         private OwnedCar _record;
 
@@ -282,10 +276,12 @@ namespace Hoodrich.Locations
         /// The line at the bottom: the key on a cap, then what it does. See UiKit.Prompt for
         /// when.
         ///
-        /// FROM THE SEAT, ONCE, AND QUIETLY. Every red light is six seconds sat still in a
-        /// car he owns, and a bar coming up at every one of them is the mod talking over the
-        /// drive. The first time in a session it says so, fainter than the one on foot; after
-        /// that the key is his to remember, and the boot says it every time on foot anyway.
+        /// FROM THE SEAT, ONLY WHILE THE KEY IS HELD. Every red light is six seconds sat
+        /// still in a car he owns, and a bar coming up at every one of them is the mod
+        /// talking over the drive -- it used to say so once a session, faintly, and even
+        /// that was a thing appearing because he had got in. Now the seat says nothing
+        /// until the key goes down, and then the bar is up with the fill under it, so the
+        /// hold is visibly a hold. On foot it says so every time, as before.
         /// </summary>
         private void Prompt(int now, float held)
         {
@@ -301,23 +297,8 @@ namespace Hoodrich.Locations
                 return;
             }
 
-            if (_nearSat)
-            {
-                if (_seatTold) return;
-
-                var quiet = UiKit.PromptFade(ref _promptSince, now);
-
-                if (now - _promptSince > UiKit.PromptAfterMs + UiKit.PromptForMs + UiKit.PromptFadeMs * 2)
-                {
-                    _seatTold = true;
-                    return;
-                }
-
-                if (quiet <= 0f) return;
-
-                UiKit.Prompt(cap, what, quiet * SeatQuiet);
-                return;
-            }
+            // Sat, and not holding it: nothing.
+            if (_nearSat) return;
 
             var show = UiKit.PromptFade(ref _promptSince, now);
             if (show <= 0f) return;
