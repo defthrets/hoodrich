@@ -274,12 +274,38 @@ namespace Hoodrich.UI
 
             try
             {
-                var handle = _object;
-                Function.Call(Hash.DELETE_OBJECT, new OutputArgument(handle));
+                // THROUGH THE ENTITY, NOT THE NATIVE. DELETE_OBJECT wants a POINTER to the
+                // handle and zeroes it -- handing it a fresh OutputArgument built from a copy
+                // deletes nothing and reports nothing, which is a rifle left hanging in the air
+                // outside the shop with no line in the log. Entity.Delete does the pair of
+                // calls the game actually wants: claim it as ours, then delete it.
+                var thing = Entity.FromHandle(_object);
+
+                if (thing != null && thing.Exists())
+                {
+                    thing.IsPersistent = false;
+                    thing.Delete();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not take the gun out of the window: " + ex.Message);
+            }
+
+            // AND IF IT SOMEHOW SURVIVED THAT, it is at least not ours any more and the game
+            // is free to clear it the moment nobody is looking.
+            try
+            {
+                var left = Entity.FromHandle(_object);
+
+                if (left != null && left.Exists())
+                {
+                    Function.Call(Hash.SET_ENTITY_AS_NO_LONGER_NEEDED, new OutputArgument(_object));
+                }
             }
             catch
             {
-                // The game clears it when nobody is looking.
+                // Nothing further to try.
             }
 
             _object = 0;

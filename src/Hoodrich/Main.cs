@@ -4862,6 +4862,7 @@ namespace Hoodrich
             try { Locations.RideCam.Sweep(); } catch { /* teardown */ }
             try { UI.TalkCam.Stop(); } catch { /* teardown */ }
             try { _garage.RestoreWorld(); } catch { /* teardown */ }
+            try { _gunScreen?.RestoreWorld(); } catch { /* teardown */ }
             try { _scenes?.RestoreWorld(); } catch { /* teardown */ }
             try { _street?.Release(); } catch { /* teardown */ }
 

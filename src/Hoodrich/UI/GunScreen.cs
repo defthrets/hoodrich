@@ -149,6 +149,20 @@ namespace Hoodrich.UI
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
+        /// <summary>
+        /// Called when the mod stands down with the counter still up.
+        ///
+        /// Close returns early on a screen that is already shut, and Draw is only called while
+        /// it is open -- so on a reload, an Abort or a crash-out neither of the two paths that
+        /// clear the gun ever runs, and a rifle is left hanging in the air in the shop. This is
+        /// the one that does not care what state anything is in.
+        /// </summary>
+        public void RestoreWorld()
+        {
+            _model.Clear();
+            _window = false;
+        }
+
         public void Close()
         {
             if (!IsOpen) return;
