@@ -1,6 +1,39 @@
 ﻿0.7.1 -- unreleased
 
 
+THE SPECTATORS PARK QUICKLY NOW, AND NOTHING IS EVER PUT ANYWHERE.
+
+The last one used to arrive a minute and a half after the first, and it spent
+most of that stopped in a lane with the others queued behind it. Four things
+were doing it.
+
+IT WAITED NINETY SECONDS BEFORE DECIDING A CAR WAS NOT GOING TO MAKE IT. That
+number was set when this path ended in the car being SET on its kerb, and a
+minute and a half of trying was the price of not teleporting one that was
+merely slow. It has not ended that way for a while -- it ends in a different
+kerb or in driving off -- so the wait was buying nothing. A car that has not
+covered two hundred metres in half a minute is not going to. Twenty-eight
+seconds.
+
+IT WOULD ONLY GO ELSEWHERE IF SOMEBODY WAS PROVABLY PARKED ON ITS KERB. But a
+kerb can be unreachable without being occupied -- a skip in the way, a fence, a
+lorry across the entrance, a bit of road the game will not route to. None of
+those look like "taken", so the car stood in the road until the timer fired.
+Nine seconds stopped is now enough on its own, whatever is doing it.
+
+IT DROVE THERE AT THIRTY-TWO MILES AN HOUR, from up to two hundred and thirty
+metres away. That is twelve now. The crawl among the parked cars is untouched
+at walking pace, which is why it is safe to do -- nothing crashes on an
+approach, and these drivers already steer around vehicles, people and objects
+at full ability.
+
+AND IT GETS SIX GOES at finding a free kerb before it gives up and leaves,
+rather than four.
+
+The teleport is gone from the file rather than merely unused. There is no
+longer any code in a takeover that can move a car it did not drive.
+
+
 NOBODY AT A TAKEOVER LEANS ON THIN AIR ANY MORE.
 
 A quarter of the ring was propped against a wall that is not there, and that is

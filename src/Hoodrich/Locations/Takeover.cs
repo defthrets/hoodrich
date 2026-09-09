@@ -3152,7 +3152,14 @@ namespace Hoodrich.Locations
 
                 if (p.Car == null || !p.Car.Exists()) continue;
 
-                // HE GETS FORTY SECONDS TO DRIVE THERE AND THEN HE IS PUT THERE.
+                // HE GETS HALF A MINUTE TO DRIVE THERE AND THEN HE IS JUDGED.
+                //
+                // NOT PUT THERE. This used to end in the car being set on its kerb, and the
+                // paragraph below is the argument for why that was worth doing. It is kept
+                // because it is still the argument for why every spot matters -- but the
+                // ending changed: a car that cannot reach its kerb is given a different one,
+                // and if there is not one it drives off. Nothing in this file moves a car it
+                // is not allowed to move.
                 //
                 // Every spot filled is the whole point of the walked list -- a gap in the wall
                 // is a hole you can see the far pavement through, and one car that cannot find
@@ -3194,7 +3201,19 @@ namespace Hoodrich.Locations
                 //
                 // Asked once he has actually stopped and stayed stopped, so a car merely
                 // waiting at a junction on the way in is not sent somewhere else.
-                if (p.Stuck != 0 && now - p.Stuck > BlockedMs && Taken(p.Slot))
+                // STOPPED IS ENOUGH. It used to need somebody else's car provably ON his
+                // kerb before he would go elsewhere -- but a kerb can be unreachable without
+                // being occupied. A skip in the way, a fence, a bit of road the nodes will not
+                // route to, a lorry across the entrance: Taken says no to every one of those
+                // and he stood in the road until the give-up timer fired.
+                //
+                // So: four seconds stopped AND his kerb visibly taken, or nine seconds stopped
+                // for any reason at all. The second one costs nothing -- a car that has been
+                // still for nine seconds on its way in is not making progress, whatever the
+                // reason, and there is always another kerb.
+                if (p.Stuck != 0
+                    && (now - p.Stuck > StuckHardMs
+                        || (now - p.Stuck > BlockedMs && Taken(p.Slot))))
                 {
                     if (Respot(p, now)) continue;
                 }
@@ -3407,7 +3426,14 @@ namespace Hoodrich.Locations
 
         private const float ParkFromRange = 16f;
         private const float ParkedWithin = 3.5f;
-        private const int ParkTaskMs = 22000;
+        /// <summary>
+        /// How long the game's parking manoeuvre is given before Landed judges what it managed.
+        ///
+        /// Fourteen, down from twenty-two. The task either lines the car up in the first few
+        /// seconds or it is shuffling somewhere it cannot fit, and the answer to the second one
+        /// is another kerb rather than another eight seconds of shuffling.
+        /// </summary>
+        private const int ParkTaskMs = 14000;
         private const int ParkMode = 1;
         private const float ParkRadius = 20f;
 
@@ -3604,7 +3630,7 @@ namespace Hoodrich.Locations
         /// re-spot can be asked for the moment a kerb is lost rather than ninety seconds later
         /// there is time in the night to use them.
         /// </summary>
-        private const int MoveOnTimes = 4;
+        private const int MoveOnTimes = 6;
 
         /// <summary>
         /// Ask a stopped spectator for its route again.
@@ -3685,8 +3711,20 @@ namespace Hoodrich.Locations
             }
         }
 
-        /// <summary>The speed out on the road, and the speed in among the parked cars.</summary>
-        private const float ComeToKerb = 9f;
+        /// <summary>
+        /// The speed out on the road, and the speed in among the parked cars.
+        ///
+        /// TWELVE ON THE ROAD, UP FROM NINE. Nine metres a second is thirty-two an hour, and
+        /// these spawn between a hundred and twenty-five and two hundred and thirty metres out
+        /// -- so the last one to arrive was doing so a full twenty seconds after it needed to,
+        /// at a crawl, on an open road, for no reason.
+        ///
+        /// THE CRAWL IS UNTOUCHED, which is why this is safe. Everything within eight metres of
+        /// a kerb still comes down to walking pace, and the drivers already steer around
+        /// vehicles, peds and objects and are set to full ability. What was slow was the
+        /// approach, and nothing crashes on an approach.
+        /// </summary>
+        private const float ComeToKerb = 12f;
         private const float KerbCrawl = 3.5f;
 
         /// <summary>Where he starts easing off, and where he is fully down to walking pace.</summary>
@@ -3696,8 +3734,18 @@ namespace Hoodrich.Locations
         /// <summary>How far a parked car may be shoved off its kerb before the kerb moves.</summary>
         private const float StrayedFar = 6f;
 
-        /// <summary>How long a spectator drives at its kerb before it settles for near enough.</summary>
-        private const int ParkGiveUpMs = 90000;
+        /// <summary>
+        /// How long a spectator drives at one kerb before it is judged.
+        ///
+        /// TWENTY-EIGHT SECONDS, DOWN FROM NINETY. Ninety was set while this path ENDED in the
+        /// car being put on its spot, and a minute and a half of trying was the price of not
+        /// teleporting one that was merely slow. It does not end that way any more -- it ends
+        /// in a different kerb or in going home -- so the wait buys nothing except a car sat in
+        /// a lane with the rest of the arrivals queued behind it.
+        ///
+        /// A car that has not covered two hundred metres in half a minute is not going to.
+        /// </summary>
+        private const int ParkGiveUpMs = 28000;
 
 
         /// <summary>
@@ -5071,6 +5119,9 @@ namespace Hoodrich.Locations
 
         /// <summary>How long a car going home may sit still before it asks for the route again.</summary>
         private const int BlockedMs = 4000;
+
+        /// <summary>And how long stopped is enough on its own, whatever is doing it. See Parking.</summary>
+        private const int StuckHardMs = 9000;
 
 
 
@@ -8021,31 +8072,22 @@ namespace Hoodrich.Locations
         /// got round, which is what the re-task in Parking watches for.
         /// </summary>
         /// <summary>
-        /// The car put exactly on its walked place, pointing exactly the way it was walked.
+        /// NOTHING PUTS A CAR ANYWHERE ANY MORE, and Snap is why this note is here rather
+        /// than a method.
         ///
-        /// THE PLACES ARE THE RULE. A driver stops short of a kerb, or a metre into the
-        /// road, or across a corner, and a ring of thirty cars stopping "near enough" is a
-        /// street with cars in it. The eighteen places were walked one screenshot at a time
-        /// and the instruction was nowhere else -- so a car that has got to within a few
-        /// metres of its place is set on it, still, the way a car parked there sits. The
-        /// snap is a shuffle of a metre or two on a car that has already stopped, which is
-        /// a smaller wrong thing than a car in the road all night.
+        /// It set a car exactly on its walked place and heading, and the argument for it was
+        /// good: the eighteen spots were walked one screenshot at a time, a car that has got
+        /// within a few metres of one is a shuffle away from being properly parked, and a
+        /// shuffle is a smaller wrong thing than a car left in the road all night.
+        ///
+        /// The argument was answering the wrong question. A car in the road is not a car that
+        /// needs moving, it is a car that needs a DIFFERENT KERB -- and once Respot existed
+        /// there was nothing left for this to do except make cars appear in places, in front
+        /// of sixty people, which is the one thing that reads as broken however tidy the
+        /// result. It has not been called by anything for some time. Now it is not here.
+        ///
+        /// Every ending is driven: he reaches his kerb, he is given another, or he leaves.
         /// </summary>
-        private static void Snap(Vehicle car, Vector3 at, float face)
-        {
-            if (car == null || !car.Exists()) return;
-
-            try
-            {
-                Function.Call(Hash.SET_VEHICLE_FORWARD_SPEED, car.Handle, 0f);
-                Function.Call(Hash.SET_ENTITY_COORDS, car.Handle, at.X, at.Y, at.Z, false, false, false, true);
-                Function.Call(Hash.SET_ENTITY_HEADING, car.Handle, face);
-                Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, car.Handle);
-            }
-            catch
-            {
-            }
-        }
 
         private Vector3 Toward(Vector3 from, Vector3 spot)
         {
