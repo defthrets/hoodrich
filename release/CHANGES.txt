@@ -1,6 +1,35 @@
 ﻿0.7.1 -- unreleased
 
 
+THE GUN COUNTER SHOWS YOU THE ACTUAL GUN, TURNING, WITH THE PARTS ON IT.
+
+Eleven of the weapons on that counter had no picture, and it was never going to
+be fixed by looking harder. The game ships four weapon-art packs -- and having
+swept seventy candidate names on a real install and written down which ones
+answered, the AP Pistol, the SNS, the Vintage, the Double Action, the Compact
+Rifle, the Double Barrel, the Switchblade, the Machete, the Pipe Bomb and the
+Flare are in none of them. Rockstar never made those photographs.
+
+Every one of those weapons has a MODEL, though, because you can hold it. So the
+picture box is a window cut into the panel now, and the real gun floats in the
+room behind it, slowly turning -- which cannot be missing, and which is also the
+thing that was asked for.
+
+AND IT WEARS WHAT YOU ARE LOOKING AT. Not just the parts you have bought: the
+one under the cursor goes on as you scroll to it and comes off as you scroll
+away. The question a parts list is actually asking is "what does it look like
+with that on", and now the answer is in front of you before you pay.
+
+Why a window rather than a picture in the panel: everything this mod draws is
+two dimensional, and two dimensional is drawn after the world -- so a panel is
+always in front of anything standing in the room, whatever order the calls go
+in. There is no way to put a model behind a screen. The screen has to not paint
+over it.
+
+The photograph is still used where the game has one. It is lit, and it is not
+spinning.
+
+
 THE SPECTATORS PARK QUICKLY NOW, AND NOTHING IS EVER PUT ANYWHERE.
 
 The last one used to arrive a minute and a half after the first, and it spent

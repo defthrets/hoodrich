@@ -56,6 +56,18 @@ namespace Hoodrich.UI
         /// The panel: rounded black, no stripe, no frame, an ember wash under its top.
         /// Arrive is the screen's own entrance, nought to one; pass one for a screen without.
         /// </summary>
+        /// <summary>The same panel with a window left unpainted in it. See Draw.PanelAround.</summary>
+        public static void PanelAround(float left, float top, float w, float h,
+                                       float hx, float hy, float hw, float hh, float arrive = 1f)
+        {
+            Hud.PanelAround(left, top, w, h,
+                            Color.FromArgb((int)(238f * arrive), Body.R, Body.G, Body.B),
+                            Color.FromArgb(0, 0, 0, 0),
+                            hx, hy, hw, hh);
+
+            Wash(left, top, w, WashDepth, (int)(15f * arrive));
+        }
+
         public static void Panel(float left, float top, float w, float h, float arrive = 1f)
         {
             // An accent with no alpha is Hud.Panel's way of being told there is no stripe.

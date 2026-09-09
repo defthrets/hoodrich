@@ -87,6 +87,22 @@ namespace Hoodrich.UI
 
         /// <summary>Which column the cursor is in: the stock, or the parts shelf for the chosen gun.</summary>
         private bool _onParts;
+
+        /// <summary>
+        /// The real gun, turning in the window. See UI.GunModel for why this exists at all.
+        /// </summary>
+        private readonly GunModel _model = new GunModel();
+
+        /// <summary>
+        /// Where the window was last drawn, in screen fractions, and whether there is one.
+        ///
+        /// Written by the drawing pass and read by the NEXT one, because the panel has to be
+        /// painted around the hole before anything knows where the hole is -- the layout is
+        /// computed inside the draw. One frame behind on a box that only moves when the panel
+        /// opens, which nobody can see.
+        /// </summary>
+        private float _winX, _winY, _winW, _winH;
+        private bool _window;
         private int _part;
         private int _lastPart = -1;
         private int _partTop;
@@ -136,6 +152,12 @@ namespace Hoodrich.UI
         public void Close()
         {
             if (!IsOpen) return;
+
+            // THE GUN GOES WITH THE SCREEN. It is a real object in the room: left behind, it
+            // would be a rifle hanging in mid-air outside the shop for the rest of the night.
+            _model.Clear();
+            _window = false;
+
             InputGuard.Swallow();
             _curtain.Close();
             Hud.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
@@ -460,6 +482,57 @@ namespace Hoodrich.UI
         }
 
         /// <summary>
+        /// The gun in the window: which one, wearing what, and where it is stood.
+        ///
+        /// EVERYTHING HE HAS ON IT, PLUS THE ONE UNDER THE CURSOR. A preview of the gun as it
+        /// is would be a photograph with extra steps; the point of it is answering "what does
+        /// this look like with that on", so the part being looked at is fitted whether it has
+        /// been bought or not. Scroll off it and it comes back off.
+        /// </summary>
+        private void Posing()
+        {
+            var piece = Chosen;
+
+            if (piece == null || !_window)
+            {
+                _model.Clear();
+                return;
+            }
+
+            var parts = new List<uint>();
+
+            try
+            {
+                var player = Game.Player.Character;
+
+                if (player != null && player.Exists())
+                {
+                    for (var i = 0; i < _parts.Count; i++)
+                    {
+                        var part = _parts[i];
+                        if (part == null) continue;
+
+                        var on = Parts.Fitted(player, piece.Hash, part);
+
+                        // The one being looked at goes on either way, and only while the parts
+                        // list is the thing being read.
+                        if (_onParts && i == _part) on = true;
+
+                        if (on) parts.Add(part.Hash);
+                    }
+                }
+            }
+            catch
+            {
+                // A bare gun is still a gun.
+            }
+
+            _model.Show(piece.Hash, parts);
+
+            if (_model.Live) _model.Place(_winX + _winW * 0.5f, _winY + _winH * 0.5f);
+        }
+
+        /// <summary>
         /// The gun's photograph, if the game has one on this install.
         ///
         /// All of the finding moved to UI.GunArt, which sweeps for the art packs once and then
@@ -512,9 +585,18 @@ namespace Hoodrich.UI
 
         private void DrawIt()
         {
-            if (!IsOpen) return;
+            if (!IsOpen)
+            {
+                // Shut. Nothing of ours is left hanging in the room. See GunModel.
+                _model.Clear();
+                _window = false;
+                return;
+            }
 
             Shelve();
+
+            // AFTER the guard, so a closed counter is not quietly spawning weapons behind it.
+            Posing();
 
             var rows = Math.Max(Current.Stock.Length, 8);
             var height = 0.215f + rows * RowHeight;
@@ -528,7 +610,19 @@ namespace Hoodrich.UI
             arrive = 1f - (1f - arrive) * (1f - arrive);
             top += EnterRise * (1f - arrive);
 
-            Theme.Panel(left, top, panelWidth, height, arrive);
+            // PAINTED AROUND THE PICTURE BOX when there is a model to show through it. Two
+            // dimensional drawing happens after the world, so a panel is always in front of
+            // anything in the room -- the only way to show a real object is to not paint over
+            // it. See Theme.PanelAround, and GunModel for why it is worth the hole.
+            if (_window)
+            {
+                Theme.PanelAround(left, top, panelWidth, height,
+                                  _winX, _winY, _winW, _winH, arrive);
+            }
+            else
+            {
+                Theme.Panel(left, top, panelWidth, height, arrive);
+            }
 
             var x = left + pad;
             var right = left + panelWidth - pad;
@@ -677,14 +771,39 @@ namespace Hoodrich.UI
         private void ChosenColumn(float x, float right, float y, float floor, float arrive)
         {
             var piece = Chosen;
-            if (piece == null) return;
+            if (piece == null)
+            {
+                _window = false;
+                return;
+            }
 
             var owned = Owns(piece);
             var wide = right - x;
 
-            // A soft plate behind the picture, so a white icon has something to sit on.
-            Hud.RectFrom(x, y, wide, BigH + 0.024f, Palette.Alpha(Palette.PanelRowAlt, 18));
+            // WHERE THE WINDOW IS. Measured here because this is where the layout happens,
+            // and read by the panel on the NEXT frame -- see the note on _winX.
+            _winX = x;
+            _winY = y;
+            _winW = wide;
+            _winH = BigH + 0.024f;
+            _window = true;
+
+            var live = _model.Live;
+
+            // NO PLATE BEHIND A REAL GUN. The plate is there so a flat white icon has
+            // something to sit on; behind a model it is the thing hiding the model.
+            if (!live)
+            {
+                Hud.RectFrom(x, y, wide, BigH + 0.024f, Palette.Alpha(Palette.PanelRowAlt, 18));
+            }
+
             Theme.Rim(x, y, wide, BigH + 0.024f, 0.0014f, Palette.Alpha(Theme.RimInk, 40));
+
+            // The photograph is the fallback now rather than the picture. It is still the
+            // better thing to look at where the game has one -- it is lit, and it is not
+            // spinning -- but eleven of these guns have no photograph and every one of them
+            // has a model.
+            if (live) return;
 
             var drawn = Art(IconOf(piece), x + wide * 0.5f, y + 0.012f + BigH * 0.5f, Hud.ToX(BigW), BigH, Palette.Text);
             if (!drawn)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -1106,6 +1106,65 @@ namespace Hoodrich.UI
         /// rounding just removed -- which is the same fault that grew square ears on the phone
         /// tiles and is worth only fixing once.
         /// </summary>
+        /// <summary>
+        /// The same panel with a rectangular HOLE left unpainted in the middle of it.
+        ///
+        /// WHY A HOLE IS THE ONLY WAY. Everything this mod draws is 2D, and 2D is drawn after
+        /// the world -- so a rectangle is always in front of anything in the room, whatever
+        /// order the calls go in. A screen that wants to show a real object cannot put one
+        /// behind itself; it has to not paint over it.
+        ///
+        /// Only the middle band is split. A panel's rounded corners are all on the outside
+        /// edge, so a window anywhere sensible sits entirely inside the flat part, and the
+        /// four rectangles around it come to the same painted area minus the window.
+        ///
+        /// The hole is in the BODY only. The stripe, the wash and the corners are the frame
+        /// and are drawn exactly as they always are.
+        /// </summary>
+        public static void PanelAround(float left, float top, float w, float h,
+                                       Color body, Color accent,
+                                       float hx, float hy, float hw, float hh)
+        {
+            if (body.A <= 0) return;
+
+            var r = Math.Max(0f, Math.Min(PanelRound, h * 0.5f));
+            var rX = ToX(r);
+
+            var bandTop = top + r;
+            var bandBottom = top + h - r;
+
+            // A window outside the flat band, or one that swallows it, is not a window -- it
+            // is a mistake, and the panel is drawn whole rather than in pieces around nothing.
+            if (rX * 2f > w || hy < bandTop || hy + hh > bandBottom || hx < left || hx + hw > left + w)
+            {
+                Panel(left, top, w, h, body, accent);
+                return;
+            }
+
+            RectFrom(left, bandTop, w, hy - bandTop, body);
+            RectFrom(left, hy + hh, w, bandBottom - (hy + hh), body);
+            RectFrom(left, hy, hx - left, hh, body);
+            RectFrom(hx + hw, hy, left + w - (hx + hw), hh, body);
+
+            RectFrom(left + rX, top, w - rX * 2f, r, body);
+            RectFrom(left + rX, top + h - r, w - rX * 2f, r, body);
+
+            if (!Corners(left, top, w, h, r, body))
+            {
+                var band = Bands(r, PanelSteps);
+
+                Quarter(left + rX, top + r, r, body, band, false, false);
+                Quarter(left + w - rX, top + r, r, body, band, true, false);
+                Quarter(left + rX, top + h - r, r, body, band, false, true);
+                Quarter(left + w - rX, top + h - r, r, body, band, true, true);
+            }
+
+            if (accent.A <= 0) return;
+
+            var inset = ToX(PanelRound);
+            RectFrom(left + inset, top, w - inset * 2f, PanelStripe, accent);
+        }
+
         public static void Panel(float left, float top, float w, float h, Color body, Color accent)
         {
             // The caller's alpha, as asked for.
