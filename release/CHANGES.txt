@@ -1,6 +1,40 @@
 ﻿0.7.1 -- unreleased
 
 
+THE ONLINE BODIES ARE BACK ON THE WARDROBE RAIL, AND WITH THEM THE ONLINE
+CLOTHES.
+
+First, the thing that cannot be done, because it is worth being straight about
+it: there is no putting a multiplayer jacket on Franklin. A drawable number is
+an INDEX into one model's wardrobe -- it is a row number, not a garment -- so
+asking his model for the four-hundredth jacket does not give you a jacket that
+fits badly. It gives you nothing at all, because there is no four-hundredth
+row. Clipping is not the failure here. Invisibility is. Being one of those
+bodies is the only way to reach those clothes from a script.
+
+So the rail offers them again. Stand at the closet at Denise's, take the top
+row, and he can be himself, the online man or the online woman -- and the whole
+Online wardrobe is on the rail behind that, along with every Online mask at the
+shop on Vespucci.
+
+THEY WERE PULLED ONCE, and for a good reason: somebody used the row and could
+not get back. A row that can strand you is not worth the clothes behind it.
+What has changed is that it cannot strand anybody now -- the way home is on
+this rail AND on the settings screen, which is in the phone, which is in your
+pocket wherever you happen to be standing. Being lost needed both to be
+missing, and only one of them ever was.
+
+Everything the mod keeps is filed per body, so his clothes, his outfits and his
+masks are all still there when he comes back -- and coming back to a body comes
+back to what you last wore on it, rather than starting from the mannequin every
+visit.
+
+Know what you are pressing: this is not a costume, it is a different man. His
+face, his voice, and whatever the story scripts make of him. On a freemode body
+the masks live on component 1 rather than the 8 Franklin uses, so Settings >
+Mask > Slot wants moving once.
+
+
 THERE IS A MASK SHOP ON VESPUCCI BEACH.
 
 Online has a mask counter on the boardwalk and the building is in single player

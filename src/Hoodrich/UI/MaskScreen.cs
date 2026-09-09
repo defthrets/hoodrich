@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Native;
 using Hoodrich.Core;
@@ -22,9 +22,13 @@ namespace Hoodrich.UI
     /// WHICH IS ALSO WHY THE SHELF CHANGES SIZE. A drawable index means something different on
     /// every body: Franklin's mask slot holds a handful, and the online freemode bodies hold
     /// the whole Online mask catalogue. Walk in as Franklin and the shelf is short. Walk in
-    /// wearing one of the online bodies -- which the wardrobe at Denise's already records
-    /// outfits for -- and every mask Online has is on it. The shop does not have to know which
-    /// body you are in; it just counts.
+    /// wearing one of the online bodies -- which the wardrobe at Denise's can put you in -- and
+    /// every mask Online has is on it. The shop does not have to know which body you are in; it
+    /// just counts.
+    ///
+    /// ONE THING TO SET BY HAND ON A FREEMODE BODY. Mask > Slot is 8 because that is where
+    /// Rockstar hid Franklin's balaclava; on a freemode body the masks are on component 1, and
+    /// the shop counts whichever slot it is pointed at. Settings > Mask moves it.
     ///
     /// WHAT IS BOUGHT IS KEPT, per body. A mask you have paid for is yours and costs nothing
     /// the next time; one you have not is charged for once and then never again. The record

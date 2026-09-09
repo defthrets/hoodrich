@@ -126,23 +126,35 @@ namespace Hoodrich.UI
         };
 
         /// <summary>
-        /// The bodies the rail can put him in. One of them, and it is his own.
+        /// The bodies the rail can put him in.
         ///
-        /// THE ONLINE BODIES WERE HERE AND THEY CAME STRAIGHT BACK OUT. Being one of them is
-        /// the only way to reach the online clothes -- a drawable number is an index into ONE
-        /// model's wardrobe, so there is no putting a multiplayer jacket on Franklin -- but
-        /// swapping the player's model in the middle of a story game is not a wardrobe choice,
-        /// it is a different save. Somebody used it and could not get back, which is the whole
-        /// argument: a row that can strand you is not worth the clothes behind it.
+        /// THE ONLINE BODIES ARE BACK, AND HERE IS THE WHOLE ARGUMENT ON BOTH SIDES.
         ///
-        /// What is left is the way home. The row does nothing while he is himself and puts him
-        /// back when he is not, so anybody stranded by the version that offered more has the
-        /// button in front of them at the closet where they got stranded. There is a second one
-        /// on the settings screen for anybody who is not standing at it.
+        /// There is no putting a multiplayer jacket on Franklin. A drawable number is an INDEX
+        /// into one model's wardrobe -- it is not a garment, it is a row number -- so asking
+        /// his model for the four-hundredth jacket does not give you a jacket that fits badly,
+        /// it gives you nothing at all, because there is no four-hundredth row. Clipping is not
+        /// the failure mode. Invisibility is. Being one of these bodies is the only way to
+        /// reach those clothes from a script.
+        ///
+        /// They were pulled once because somebody used the row and could not get back, and a
+        /// row that can strand you is not worth the clothes behind it. That was true. What has
+        /// changed is that it can no longer strand anybody: the way home is on this rail AND on
+        /// the settings screen, which is in the phone, which is in your pocket wherever you are
+        /// standing. Being lost required both of those to be missing and only one of them ever
+        /// was.
+        ///
+        /// KNOW WHAT YOU ARE PRESSING. This is not a costume, it is a different man -- his
+        /// face, his voice, and whatever the story scripts make of him. Everything the mod
+        /// keeps is filed per body, so his wardrobe, his outfits and his masks are all still
+        /// there when he comes back.
         /// </summary>
-        private static readonly PedHash[] Bodies = { PedHash.Franklin };
+        private static readonly PedHash[] Bodies =
+        {
+            PedHash.Franklin, PedHash.FreemodeMale01, PedHash.FreemodeFemale01
+        };
 
-        private static readonly string[] BodyNames = { "Franklin" };
+        private static readonly string[] BodyNames = { "Franklin", "Online man", "Online woman" };
 
         private int _row;
         private int _lastRow = -1;
@@ -621,14 +633,15 @@ namespace Hoodrich.UI
 
                 var now = BodyNow(me);
 
-                // Already himself: there is nowhere for this row to go.
-                if (now == 0)
+                // A BODY THIS RAIL HAS NEVER HEARD OF GOES HOME. He is in something another
+                // mod put him in; the one useful thing this row can do is hand him back.
+                var next = now < 0 ? 0 : (now + by + Bodies.Length) % Bodies.Length;
+
+                if (next == now)
                 {
                     Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
                     return;
                 }
-
-                const int next = 0;
 
                 var model = new Model(Bodies[next]);
 
@@ -661,6 +674,13 @@ namespace Hoodrich.UI
                     // where somebody wants to start choosing from.
                     Function.Call(Hash.SET_PED_DEFAULT_COMPONENT_VARIATION, him.Handle);
                     him.Heading = FaceHeading;
+
+                    // AND WHATEVER HE WORE LAST TIME HE WAS THIS BODY. Every outfit this mod
+                    // records carries the model it was worn on, so coming back to a body comes
+                    // back to the clothes -- otherwise every visit starts from the mannequin
+                    // and an hour of choosing is worth one session.
+                    try { Locations.Wardrobe.Apply(State); }
+                    catch (Exception ex) { Log.Debug("Could not dress the new body: " + ex.Message); }
                 }
 
                 Look();
