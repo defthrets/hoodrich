@@ -898,14 +898,8 @@ namespace Hoodrich
 
                 // The headstone goes the moment his pockets are empty. See UI.Graves.Looted.
                 _graves.Looted = who => _bodies != null && _bodies.Done(who);
+                _graves.HoldMinutes = () => _cfg == null ? 10 : _cfg.KeepBodiesMinutes;
 
-                // WHERE A GUN IS LAID WHILE YOU LOOK AT IT. See UI.GunModel; the camera works
-                // itself out from these two.
-                _gunScreen.Bench = () => _cfg == null
-                    ? new GTA.Math.Vector3(-128.147f, -1461.071f, 33.701f)
-                    : new GTA.Math.Vector3(_cfg.BenchX, _cfg.BenchY, _cfg.BenchZ);
-
-                _gunScreen.Facing = () => _cfg == null ? 115f : _cfg.BenchHeading;
 
                 // The pegs live in the save, so the rail needs it. Without this every peg row
                 // is a beep -- which is exactly what the screen does when it has no state, on
@@ -2323,6 +2317,19 @@ namespace Hoodrich
                 // walk up to a man and he says something -- but what he shows you once you have
                 // asked is a laid-out stock list rather than five pages of dialogue choices.
                 _gunScreen = new GunScreen(_state) { Guns = _weapons };
+
+                // WHERE A GUN IS LAID WHILE YOU LOOK AT IT. See UI.GunModel; the camera works
+                // itself out from these two.
+                //
+                // HERE, NOT UP WITH THE OTHER WIRING. It was set fifteen hundred lines earlier,
+                // beside the mask shop's -- and _gunScreen is not built until this line, so it
+                // was being set on null and the whole mod failed to start. The rule is dull and
+                // absolute: nothing is wired until the thing it is wired to exists.
+                _gunScreen.Bench = () => _cfg == null
+                    ? new GTA.Math.Vector3(-128.147f, -1461.071f, 33.701f)
+                    : new GTA.Math.Vector3(_cfg.BenchX, _cfg.BenchY, _cfg.BenchZ);
+
+                _gunScreen.Facing = () => _cfg == null ? 115f : _cfg.BenchHeading;
 
                 // AFTER _gunScreen EXISTS, which is the whole point of it being here.
                 //

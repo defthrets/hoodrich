@@ -357,6 +357,12 @@ namespace Hoodrich.Core
         public bool KillMarks = true;
         public int KillMarkSeconds = 50;
 
+        /// <summary>
+        /// How long a body you made is held against the game's own clean-up, so it is still
+        /// there when you come back for what is on it. Nought turns it off. See UI.Graves.
+        /// </summary>
+        public int KeepBodiesMinutes = 10;
+
         public int MaskPrice = 350;
 
         public int MaskSlot = 8;
@@ -776,6 +782,7 @@ namespace Hoodrich.Core
 
             s.KillMarks = ini.GetBool("Map", "KillMarks", s.KillMarks);
             s.KillMarkSeconds = (int)Clamp(ini.GetInt("Map", "KillMarkSeconds", s.KillMarkSeconds), 0f, 600f);
+            s.KeepBodiesMinutes = (int)Clamp(ini.GetInt("Map", "KeepBodiesMinutes", s.KeepBodiesMinutes), 0f, 60f);
 
             s.MaskPrice = (int)Clamp(ini.GetInt("Mask", "Price", s.MaskPrice), 0f, 100000f);
             s.MaskSlot = (int)Clamp(ini.GetInt("Mask", "Slot", s.MaskSlot), 0f, 11f);
