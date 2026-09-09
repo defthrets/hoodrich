@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -287,6 +287,9 @@ namespace Hoodrich.UI
                     if (string.IsNullOrEmpty(row.Portrait)) row.Portrait = known.Portrait;
                 }
 
+                // Nobody in the book, or in it with no picture: whatever the messages brought.
+                if (string.IsNullOrEmpty(row.Icon)) row.Icon = IconIn(who);
+
                 // Lamar is not a plug and never will be, so he is on nobody's contact list --
                 // but the game has a photograph of him and this is a conversation with him.
                 // The same lookup his texts use answers for anybody in that position.
@@ -354,6 +357,25 @@ namespace Hoodrich.UI
         /// filed under the grey outline -- and taking the newest portrait at face value would
         /// then keep showing it for a man whose photograph arrived a second later.
         /// </summary>
+        /// <summary>
+        /// The picture the thread's own messages brought with them.
+        ///
+        /// The contact book is asked first and answers for everybody who is IN it. Nobody who
+        /// texts you once, under a name you will never see again, is -- so a message may carry
+        /// its own, and the newest one that did wins for the whole thread.
+        /// </summary>
+        private static string IconIn(string who)
+        {
+            var all = Inbox.From(who);
+
+            for (var i = all.Count - 1; i >= 0; i--)
+            {
+                if (!string.IsNullOrEmpty(all[i].Icon)) return all[i].Icon;
+            }
+
+            return "";
+        }
+
         private static string FaceIn(string who)
         {
             var all = Inbox.From(who);

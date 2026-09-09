@@ -52,6 +52,15 @@ namespace Hoodrich.Social
             /// <summary>The CHAR_ dictionary, already resolved to one this build actually has.</summary>
             public string Portrait = "";
 
+            /// <summary>
+            /// And a PNG of ours to draw instead, where there is one.
+            ///
+            /// For a sender the game has no photograph of and never will. A delivery driver is
+            /// a different man every order, so there is no contact to hang a picture on -- the
+            /// picture comes with the message.
+            /// </summary>
+            public string Icon = "";
+
             public string Sender = "";
             public string Subject = "";
             public string Body = "";
@@ -111,7 +120,8 @@ namespace Hoodrich.Social
         }
 
         /// <summary>Files a message. Called from Notify.Text and from nowhere else.</summary>
-        public static void Keep(string portrait, string sender, string subject, string body)
+        public static void Keep(string portrait, string sender, string subject, string body,
+                                string icon = null)
         {
             if (string.IsNullOrEmpty(body)) return;
 
@@ -133,6 +143,7 @@ namespace Hoodrich.Social
             Kept.Add(new Message
             {
                 Portrait = portrait ?? "",
+                Icon = icon ?? "",
                 Sender = sender,
                 Subject = subject ?? "",
                 Body = body,
@@ -355,6 +366,7 @@ namespace Hoodrich.Social
                     .Set("who", m.Sender)
                     .Set("where", m.Subject)
                     .Set("face", m.Portrait)
+                    .Set("icon", m.Icon)
                     .Set("body", m.Body)
                     .Set("at", (double)m.At)
                     .Set("read", m.Read)
@@ -382,6 +394,7 @@ namespace Hoodrich.Social
                         Sender = item["who"].AsString(""),
                         Subject = item["where"].AsString(""),
                         Portrait = item["face"].AsString(""),
+                        Icon = item["icon"].AsString(""),
                         Body = body,
                         At = item["at"].AsLong(0),
 

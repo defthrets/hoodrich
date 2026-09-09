@@ -106,8 +106,16 @@ namespace Hoodrich.UI
         /// from a man you know should have his face on it, and the sender's name is already
         /// sitting right there in the argument list, so nothing else needs to be remembered.
         /// </summary>
+        /// <summary>
+        /// icon: a PNG in data\icons to stand in for the portrait where the phone draws it.
+        ///
+        /// THE GAME'S FEED CANNOT TAKE ONE. Its notification takes a texture dictionary and
+        /// nothing else, so a brand of ours can only appear on the half of this that we draw
+        /// ourselves -- which is the messages app. That is where a thread is read anyway; the
+        /// feed card is the thing that flashes past.
+        /// </summary>
         public static void Text(string portrait, string sender, string subject, string body,
-                                bool urgent = false)
+                                bool urgent = false, string icon = null)
         {
             if (string.IsNullOrEmpty(body)) return;
             if (Repeat((sender ?? "") + "|" + body)) return;
@@ -120,7 +128,18 @@ namespace Hoodrich.UI
             }
 
             // And whatever we settled on has to actually be in this build.
-            portrait = Faces.Ready(portrait);
+            //
+            // A PEDHEADSHOT IS NOT A STREAMED DICTIONARY, and this is where that mattered.
+            // Faces.Ready asks HAS_STREAMED_TEXTURE_DICT_LOADED, which is exactly the right
+            // question about a CHAR_ dictionary and is permanently the wrong one about a
+            // headshot -- those are made by REGISTER_PEDHEADSHOT and answered for by
+            // IS_PEDHEADSHOT_READY instead. So every portrait the headshot factory rendered
+            // was tested with the wrong native, failed, and was replaced by CHAR_DEFAULT.
+            //
+            // Which on this install draws as the LS Customs badge. That is why a text from a
+            // LUber driver arrived signed by a car customiser -- his photograph existed the
+            // whole time and was being thrown away one line before it was used.
+            portrait = Headshots.Holds(portrait) ? portrait : Faces.Ready(portrait);
 
             // FILED BEFORE IT IS SHOWN, and this is the only place it happens.
             //
@@ -133,7 +152,7 @@ namespace Hoodrich.UI
             // Before the try, not inside it. If the feed post throws, you were still sent the
             // message, and the one place you can now go to read it is the one place that must
             // not have missed it.
-            Social.Inbox.Keep(portrait, sender, subject, body);
+            Social.Inbox.Keep(portrait, sender, subject, body, icon);
 
             try
             {
@@ -177,7 +196,9 @@ namespace Hoodrich.UI
             if (string.IsNullOrEmpty(body)) return;
             if (Repeat((from ?? "") + "|" + body)) return;
 
-            portrait = Faces.Ready(portrait);
+            // The same as Text. See the note there about which native answers for which
+            // kind of picture.
+            portrait = Headshots.Holds(portrait) ? portrait : Faces.Ready(portrait);
 
             try
             {

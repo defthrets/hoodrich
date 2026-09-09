@@ -1,6 +1,33 @@
 ﻿0.7.1 -- unreleased
 
 
+EVERY PHOTOGRAPH THIS MOD RENDERS WAS BEING THROWN AWAY ON TEXTS.
+
+A text message asked whether its picture had loaded using the native that
+answers for the game's own CHAR_ portraits -- which is the right question about
+those and permanently the wrong one about a face rendered by the headshot
+system, because those are made and answered for by a completely different pair
+of natives. So the answer was always no, and every rendered face was quietly
+replaced with the default silhouette, which on this install draws as the LS
+Customs badge. That is why a text from a LUber delivery driver arrived signed
+by a car customiser: his photograph existed the whole time and was discarded
+one line before it was used.
+
+Both kinds of picture are now asked the question that applies to them.
+
+AND LUBER HAS A DISPLAY PICTURE OF ITS OWN. A square tile with the brand
+knocked out of it, for the places a photograph cannot go. A delivery driver is
+a different man every order, so there is no contact in your phone to hang a
+picture on -- the message carries one instead, and any message from anybody can
+now do the same. The game's own notification cannot use it, because that takes
+a texture dictionary and nothing else; the messages app can, and that is where
+a conversation is actually read.
+
+His first text also waits for his face to be ready before it goes, up to six
+seconds. A notification card is drawn once and never redrawn, so a picture that
+turns up a moment late never turns up at all.
+
+
 THE FEED NAMES PLACES NOW.
 
 Two hundred and twenty-one new posts, and every one of them is somebody being

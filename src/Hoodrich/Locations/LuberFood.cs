@@ -398,7 +398,19 @@ namespace Hoodrich.Locations
                 var now = Game.GameTime;
 
                 // He has read the order and got back to you. See SayGapMs.
-                if (_saysAt != 0 && now >= _saysAt)
+                //
+                // AND NOT UNTIL HIS PHOTOGRAPH EXISTS, up to a point. The factory renders one
+                // of these in its own time and the game's feed can only be handed a picture
+                // that is ready THIS frame -- so a line sent too early goes out under the
+                // default silhouette for ever, since the card is drawn once and never redrawn.
+                // Waiting a few seconds costs nothing. Waiting for ever would cost the
+                // message, so it goes either way in the end.
+                // Asked of the GAME rather than of the table: Face answers with a name the
+                // moment one has been rendered, and a name is not a picture -- the factory can
+                // have let it go again. Ready is the question the feed actually cares about.
+                var got = !string.IsNullOrEmpty(Face) && UI.Headshots.Ready(_faceKey);
+
+                if (_saysAt != 0 && now >= _saysAt && (got || now - _saysAt > FaceWaitMs))
                 {
                     _saysAt = 0;
                     Says(SaidComing);
@@ -901,6 +913,22 @@ namespace Hoodrich.Locations
         private const int SayGapMs = 2200;
 
         /// <summary>
+        /// The brand, for where his own face cannot go.
+        ///
+        /// A DIFFERENT MAN EVERY ORDER MEANS NO CONTACT TO HANG A PICTURE ON. The messages app
+        /// asks the contact book for a thread's picture and there is nothing in it called Ravi
+        /// Patel -- so the message carries one. It is the firm's, because that is the only
+        /// thing about him that is the same twice.
+        ///
+        /// Only the phone can use it. The game's own feed takes a texture dictionary and
+        /// nothing else; his headshot is what goes there, and it works now. See Notify.Text.
+        /// </summary>
+        private const string Badge = "luber_dp.png";
+
+        /// <summary>How long the first line waits for his photograph before going without it.</summary>
+        private const int FaceWaitMs = 6000;
+
+        /// <summary>
         /// One of his lines, as a text from him.
         ///
         /// A TEXT AND NOT A CARD, which is the whole change. The card said LUBER at the top
@@ -923,7 +951,7 @@ namespace Hoodrich.Locations
             var body = line.Replace("{0}", string.IsNullOrEmpty(What) ? "food" : What)
                            .Replace("{1}", _paid.ToString());
 
-            Notify.Text(Face, _driver, "LUber", body);
+            Notify.Text(Face, _driver, "LUber", body, false, Badge);
         }
 
         /// <summary>

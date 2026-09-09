@@ -254,6 +254,31 @@ namespace Hoodrich.UI
             return ready;
         }
 
+        /// <summary>
+        /// Whether a TEXTURE NAME is one of ours and is good this frame.
+        ///
+        /// Ready is asked by key -- the account, the person -- because everything that draws
+        /// one of these knows whose face it wants. This is asked by the TXD instead, for the
+        /// one caller that has been handed a name and no longer knows where it came from:
+        /// Notify, which takes a portrait off whoever is sending the message and has to decide
+        /// whether it is a CHAR_ dictionary or one of these before it can check it at all.
+        ///
+        /// A linear walk of a table that holds sixteen. It is called once per message.
+        /// </summary>
+        public static bool Holds(string txd)
+        {
+            if (string.IsNullOrEmpty(txd)) return false;
+
+            foreach (var pair in Made)
+            {
+                if (!string.Equals(pair.Value.Txd, txd, StringComparison.OrdinalIgnoreCase)) continue;
+
+                return Ready(pair.Key);
+            }
+
+            return false;
+        }
+
         /// <summary>Asks for one. Does nothing if it exists, is queued, or recently failed.</summary>
         public static void Want(string key, string gang, string gender)
         {
