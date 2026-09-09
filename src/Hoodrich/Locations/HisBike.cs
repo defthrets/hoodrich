@@ -171,6 +171,8 @@ namespace Hoodrich.Locations
                 Log.Debug("His bike: could not finish dressing it: " + ex.Message);
             }
 
+            Mark(made);
+
             // The game's, not ours.
             made.IsPersistent = false;
             made.MarkAsNoLongerNeeded();
@@ -178,6 +180,39 @@ namespace Hoodrich.Locations
             _last = made;
 
             Log.Info("His bike: the Bagger is a " + Wanted + " now" + (rider != null ? ", with him on it." : "."));
+        }
+
+        /// <summary>
+        /// His bike, on the map, greyed.
+        ///
+        /// THE GAME'S OWN MARK GOES WITH THE BAGGER. Its script tracks a handle, and the
+        /// handle is deleted here -- so the bike outside his house quietly stopped being on
+        /// the map the first time it was swapped. This is the same picture the game uses for
+        /// a personal bike, in grey rather than the blue a car bought off Hao wears, because
+        /// this one was given to him and that one was paid for.
+        ///
+        /// Attached to the bike, so the game takes the blip away with it whenever it decides
+        /// the bike is finished -- which it will, since the bike is handed straight back.
+        /// </summary>
+        private static void Mark(Vehicle bike)
+        {
+            try
+            {
+                var blip = bike.AddBlip();
+                if (blip == null || !blip.Exists()) return;
+
+                blip.Sprite = BlipSprite.PersonalVehicleBike;
+                blip.Color = BlipColor.GreyDark;
+                blip.Scale = 0.8f;
+                blip.Name = "Your bike";
+
+                Function.Call(Hash.SET_BLIP_ALPHA, blip.Handle, 170);
+                Function.Call(Hash.SET_BLIP_AS_SHORT_RANGE, blip.Handle, false);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not blip his bike: " + ex.Message);
+            }
         }
 
         /// <summary>Takes the game's bike off the map.</summary>

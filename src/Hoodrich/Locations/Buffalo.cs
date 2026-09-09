@@ -56,6 +56,21 @@ namespace Hoodrich.Locations
         /// <summary>Dark smoke. 1 is pure black and hides the inside completely; 2 is the one people fit.</summary>
         private const int DarkSmoke = 2;
 
+        /// <summary>
+        /// The blip, greyed.
+        ///
+        /// THE GAME'S OWN ONE GOES WITH THE OLD CAR. Franklin's story vehicles are marked
+        /// by a script that tracks a particular handle, and deleting that car takes the mark
+        /// with it -- so his car quietly stopped being on the map the first time it was
+        /// swapped, which is not a trade anybody agreed to.
+        ///
+        /// Put back as the same picture the game uses and deliberately NOT in its colour.
+        /// A car you bought off Hao is blue and is a thing you own; this is the one the
+        /// story gave him, and grey is the honest difference between the two.
+        /// </summary>
+        private const BlipColor Greyed = BlipColor.GreyDark;
+        private const int GreyedAlpha = 170;
+
         /// <summary>How often the street is looked at, and how far.</summary>
         private const int LookEveryMs = 900;
         private const float Reach = 12f;
@@ -112,6 +127,30 @@ namespace Hoodrich.Locations
             }
 
             return null;
+        }
+
+        /// <summary>His car, back on the map, in grey. See the note on Greyed.</summary>
+        private static void Mark(Vehicle car)
+        {
+            try
+            {
+                var blip = car.AddBlip();
+                if (blip == null || !blip.Exists()) return;
+
+                blip.Sprite = BlipSprite.PersonalVehicleCar;
+                blip.Color = Greyed;
+                blip.Scale = 0.85f;
+                blip.Name = "Buffalo STX";
+
+                Function.Call(Hash.SET_BLIP_ALPHA, blip.Handle, GreyedAlpha);
+
+                // On the map wherever it is parked, the same as the one it replaces.
+                Function.Call(Hash.SET_BLIP_AS_SHORT_RANGE, blip.Handle, false);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not blip his car: " + ex.Message);
+            }
         }
 
         private static bool Mine(Vehicle car)
@@ -242,6 +281,8 @@ namespace Hoodrich.Locations
                 // holds on to forever is a car the game can never clean up or replace.
                 made.IsPersistent = true;
                 made.MarkAsNoLongerNeeded();
+
+                Mark(made);
 
                 if (driving) Function.Call(Hash.SET_PED_INTO_VEHICLE, player.Handle, made.Handle, -1);
             }

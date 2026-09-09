@@ -85,6 +85,14 @@ black cars wearing the same fleet plate, which made them one man with two
 phone numbers -- a plate is now a fact about a dealer the same way his paint
 already was, and it sits in his own entry in the data.
 
+AND BOTH OF HIS ARE BACK ON THE MAP, IN GREY. The game marks his car and his
+bike with a script that tracks a particular vehicle, so replacing either one
+took its mark off the map with it -- quietly, and not as part of any trade
+anybody agreed to. Both get the blip back: the same pictures the game uses
+for a personal car and a personal bike, deliberately not in the game's
+colour. A car bought off Hao is blue and is a thing you own. These two were
+given to him, and grey is the honest difference.
+
 HIS BUFFALO IS THE STX NOW. The white Buffalo S on his drive is a story car
 with a story plate and nothing in this mod put it there, so it cannot simply
 be spawned as something else. It is swapped instead, for the same Bravado
