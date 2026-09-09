@@ -70,15 +70,19 @@ the street at large.
 Two models in those lists did not exist on this build at all, so every
 account that hashed onto one had no face and never would. They are gone.
 
-LUBER HAS A LOGO. One mark, everywhere it appears: a rounded box with LU
-knocked out of it and the rest of the name sitting outside the box on the same
-baseline, so it reads LUber and the joke is in the two letters that are boxed.
-It is the tile on the phone's home screen and the sign across the top of the
-ride picker, the same file both times. The tile was wearing car.png, which is
-also the owned-car blip, the tow and the boot, so the one app on that phone
-with a brand of its own was in the house picture -- and the badge that replaced
-it said "LU" and nothing else, which explains nothing to somebody who has not
-opened the app yet.
+LUBER HAS A LOGO. A leaning slab with the whole name knocked out of it, and a
+car, a moped and a cup in a row over the top. One file, in both places it
+appears: the tile on the phone's home screen and the sign across the top of the
+ride picker. The tile was wearing car.png, which is also the owned-car blip,
+the tow and the boot, so the one app on that phone with a brand of its own was
+in the house picture.
+
+Two goes at it before that one. A square badge of the letters LU, which said
+nothing to anybody who had not already opened the app; then a box round the LU
+with "ber" beside it, which is the old You|Tube lockup with the halves swapped
+and looked exactly like it. The slab takes the whole word, so there is no boxed
+half -- and the three pictures say what the company actually does, which no
+arrangement of five letters was ever going to.
 
 The phone can lay out art that is not square now. Every file in data\icons is,
 so a tile drew art in a square box and the rows that put an icon in a gutter

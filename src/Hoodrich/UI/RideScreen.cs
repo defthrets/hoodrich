@@ -214,7 +214,10 @@ namespace Hoodrich.UI
             // THE WORDMARK RATHER THAN THE WORD, and the mod's car picture goes with it --
             // this is the app introducing itself, and an app has a logo. The typed name is
             // still behind it for an install without the file.
-            var markH = 0.026f;
+            // TALLER THAN THE OLD ONE FOR THE SAME SIZE OF NAME. The mark is not just a
+            // wordmark any more -- a third of its height is the row of pictures above the
+            // slab -- so drawing it at the old height would shrink the words to nothing.
+            var markH = 0.040f;
             var markW = Hud.ToX(markH * LuberAspect);
 
             if (!Hud.File("luber.png", SideX + markW * 0.5f, bandTop + TopBand * 0.5f,
@@ -343,7 +346,7 @@ namespace Hoodrich.UI
         }
 
         /// <summary>The shape of the wordmark file. See tools/make_luber.py.</summary>
-        private const float LuberAspect = 2.2780f;
+        private const float LuberAspect = 1.5896f;
 
         private static Color Dim(Color c, float k)
         {
