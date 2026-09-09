@@ -31,6 +31,9 @@ namespace Hoodrich.Wheel
         /// <summary>The shape of the LUber lockup. Printed by tools/make_luber.py.</summary>
         private const float LuberMark = 1.5896f;
 
+        /// <summary>The shape of a spray cap. The same number GraffitiScreen draws them at.</summary>
+        private const float CapMark = 0.6406f;
+
         private readonly PlayerState _state;
         private readonly Drugs _drugs;
         private readonly Pricing _pricing;
@@ -1174,18 +1177,18 @@ namespace Hoodrich.Wheel
                 enabled: ShowGraffiti != null,
                 disabledReason: "Not wired up");
 
-            // A CAP, not a can, and drawn for THIS size rather than shrunk to it.
+            // THE PICKER'S OWN CAP, which it could not have before.
             //
-            // Every tile here is 64x64 and the draw call forces the square. The cap icons the
-            // picker uses are two thirds as wide as they are tall, so handing one of those
-            // straight to the wheel gives a squat, stretched cap -- the same trap the can tile
-            // was made to dodge, and its stroke is drawn for a thirty-pixel chip and vanishes
-            // at sixteen anyway.
+            // There used to be a second drawing of the same object for this tile alone --
+            // squarer, heavier, its own file -- and the only reason it existed was that a tile
+            // forced its art into a square. A cap is two thirds as wide as it is tall, so the
+            // real one came out squat and stretched, and rather than fix the tile somebody
+            // drew a cap shaped like a tile.
             //
-            // So capapp.png is a separate shape of the same object: squarer, much heavier in
-            // the line, bigger hole. It holds down to sixteen pixels, which is the only test a
-            // tile has to pass.
-            page.WithIcon(Icons.FromFile("capapp.png"));
+            // Tiles take a shape now (see WheelPage.WithIcon), so the app wears the same cap
+            // the picker shows you, and there is one drawing of it instead of two that had to
+            // be kept looking like each other.
+            page.WithIcon(Icons.FromFile("cap_stock.png"), CapMark);
 
             // THE MASK. One tile, nothing behind it: on if it is off, off if it is on. The
             // label stays and the value carries the state, same as the can beside it.

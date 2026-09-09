@@ -543,30 +543,45 @@ def wifi():
 
 def balaclava():
     """
-    A balaclava: a hood with a face opening and two eyes looking out of it.
+    A balaclava, from the front.
 
-    THE EYES ARE THE WHOLE READ. The first one was a hood with an empty letterbox slot and
-    it looked like an egg with a hole in it -- because a slot with nothing in it is a slot.
-    Every balaclava glyph anybody recognises is the same three things: a rounded head, a
-    dark opening across the middle of it, and two white eyes inside the opening. Take the
-    eyes away and it is a mailbox.
+    THE HEAD SHAPE IS THE READ, and it was the part that was missing. What was here was a
+    rounded rectangle with a collar under it and a domino face punched in -- and a circle with
+    two eyes in it is a bowling ball, a sock puppet or a smiley, in that order. Nothing about
+    the outline said head.
 
-    The opening is punched to transparent so it reads dark on any tint; the eyes are drawn
-    back in white on top of it.
+    So the outline is a head now: a dome that comes IN at the crown, cheeks that are the widest
+    part of it, a jaw that narrows, and a neck that flares out onto shoulders. That silhouette
+    is recognisable with every hole filled in, which is the test an icon has to pass.
+
+    THREE HOLES, because that is what a balaclava has. The eyes are white inside a punched
+    opening rather than punched themselves -- an opening with nothing in it is a letterbox --
+    and the mouth is a small hole on its own, which is the detail that stops it reading as a
+    motorcycle helmet at the sizes where the eyes are all you can see.
     """
     img, d = canvas()
 
-    # The hood: dome on top, sides drawn in a little toward the neck, then a collar.
-    d.rounded_rectangle([104, 40, 408, 396], radius=150, fill=W)
-    d.polygon([(104, 250), (408, 250), (392, 420), (120, 420)], fill=W)
-    d.rounded_rectangle([84, 396, 428, 472], radius=44, fill=W)
+    # The head: crown, cheeks, jaw.
+    poly(d, cbez((108, 268), (104, 44), (404, 44), (400, 268), 48)
+            + [(388, 372), (124, 372)])
 
-    # The face opening, wide and rounded, sitting just above the middle of the head.
-    d.rounded_rectangle([152, 168, 360, 286], radius=52, fill=CLEAR)
+    # And the neck, out onto the shoulders -- turned away from the light, so the HEAD is the
+    # bright shape. A collar in full white merges with the jaw above it and the whole thing
+    # comes out as one blob at twenty pixels, which is the size that matters.
+    #
+    # A wedge of MID down one side of the face was tried instead and it was worse: it is a
+    # straight edge cutting across a curved one, which reads as a drawing mistake rather than
+    # as a shadow.
+    rrect(d, 100, 350, 412, 474, 76, MID)
 
-    # And the two eyes in it, which is what makes it a balaclava and not a letterbox.
-    d.ellipse([176, 200, 236, 252], fill=W)
-    d.ellipse([276, 200, 336, 252], fill=W)
+    # The face opening, and the eyes in it.
+    rrect(d, 148, 178, 364, 272, 46, CLEAR)
+
+    ellipse(d, 200, 226, 32, 27)
+    ellipse(d, 312, 226, 32, 27)
+
+    # The mouth, on its own.
+    rrect(d, 212, 306, 300, 340, 17, CLEAR)
 
     save(img, "balaclava.png")
 

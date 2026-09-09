@@ -1,7 +1,25 @@
 ﻿0.7.1 -- unreleased
 
 
-TWO ICONS THAT WERE NOT READING.
+THE OVERSPRAY TILE WEARS THE PICKER'S OWN CAP.
+
+There were two drawings of the same object, and the only reason the second one
+existed was that a phone tile forced its art into a square -- a cap is two
+thirds as wide as it is tall, so the real one came out squat and stretched, and
+rather than fix the tile somebody drew a cap shaped like a tile. Tiles take a
+shape now, so the app shows you the same cap the picker does and there is one
+drawing of it instead of two that had to be kept looking like each other.
+
+THE BALACLAVA IS A HEAD NOW. It was a rounded rectangle with a collar under it
+and a domino face punched into it -- and a circle with two eyes in it is a
+bowling ball, a sock puppet or a smiley, in that order. Nothing about the
+outline said head. The outline is a head: a dome that comes in at the crown,
+cheeks as the widest part, a jaw that narrows, and shoulders under it, drawn
+dimmer so the head is the bright shape rather than the whole thing being one
+blob. Three holes rather than two, because that is what a balaclava has, and
+the mouth is what stops it reading as a crash helmet.
+
+TWO MORE ICONS THAT WERE NOT READING.
 
 THE INVENTORY BAG WAS A BARBELL. Two grey discs either side of a horizontal
 line is a bar with a weight on each end, whatever the outline round it happens

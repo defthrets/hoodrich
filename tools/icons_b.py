@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 #
 # Group B: the product, and the tools it takes. See iconkit for the rules.
 
@@ -501,18 +501,6 @@ def ammo():
     save(img, "ammo.png")
 
 
-def capapp():
-    img, d = canvas()
-
-    rrect(d, 170, 150, 342, 460, 28)
-    ellipse(d, 256, 150, 86, 30, MID)
-    disc(d, 256, 150, 26, CLEAR)
-    rrect(d, 236, 62, 276, 152, 8)
-    rect(d, 170, 300, 342, 312, LOW)
-
-    save(img, "capapp.png")
-
-
 def _spray_cap(name, hole):
     img, d = canvas(328, 512)
 
@@ -540,4 +528,4 @@ def cap_thin():
 ALL = [baggie, pills, xanax, heroin, coke, crack, meth, weed, leaf, blunt, bong, edibles, shrooms,
        acid, lean, dabs, hash_, vape, poppy, fentanyl, ketamine, speed, crystal,
        cut_100, cut_75, cut_50, cut_33, cut_25,
-       guns, ammo, capapp, cap_fat, cap_stock, cap_thin]
+       guns, ammo, cap_fat, cap_stock, cap_thin]
