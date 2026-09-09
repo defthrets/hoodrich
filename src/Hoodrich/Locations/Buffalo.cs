@@ -56,20 +56,16 @@ namespace Hoodrich.Locations
         /// <summary>Dark smoke. 1 is pure black and hides the inside completely; 2 is the one people fit.</summary>
         private const int DarkSmoke = 2;
 
-        /// <summary>
-        /// The blip, greyed.
-        ///
-        /// THE GAME'S OWN ONE GOES WITH THE OLD CAR. Franklin's story vehicles are marked
-        /// by a script that tracks a particular handle, and deleting that car takes the mark
-        /// with it -- so his car quietly stopped being on the map the first time it was
-        /// swapped, which is not a trade anybody agreed to.
-        ///
-        /// Put back as the same picture the game uses and deliberately NOT in its colour.
-        /// A car you bought off Hao is blue and is a thing you own; this is the one the
-        /// story gave him, and grey is the honest difference between the two.
-        /// </summary>
-        private const BlipColor Greyed = BlipColor.GreyDark;
-        private const int GreyedAlpha = 170;
+        // THE GAME'S OWN MARK GOES WITH THE OLD CAR. Franklin's story vehicles are marked by
+        // a script that tracks a particular handle, and deleting that car takes the mark with
+        // it -- so his car quietly stopped being on the map the first time it was swapped,
+        // which is not a trade anybody agreed to. Parked puts it back.
+        //
+        // GREY WAS THE ONE COLOUR IT COULD NOT BE. The distinction the old mark drew is a fair
+        // one -- a car he was given should not wear the blue of a car he bought off Hao -- but
+        // dark grey at two thirds alpha against a grey map is not a subtle mark, it is an
+        // absent one. Green is Franklin's own colour in this game, which says "his" more
+        // exactly than grey said "not bought".
 
         /// <summary>How often the street is looked at, and how far.</summary>
         private const int LookEveryMs = 900;
@@ -163,20 +159,32 @@ namespace Hoodrich.Locations
             }
         }
 
-        /// <summary>Anything of his within sight that has lost its mark gets it back.</summary>
+        /// <summary>
+        /// Anything of his within sight that has lost its mark gets it back -- and where there
+        /// is nothing of his in sight at all, the spot it was last on keeps the mark instead.
+        ///
+        /// THE SECOND HALF IS WHY IT WAS NOT ON THE MAP. A blip on a car exists only while the
+        /// car does, and a car three streets away has been streamed out -- so the mark
+        /// appeared when you were close enough to see the car anyway and vanished the moment
+        /// you were not. See Parked, which owns both halves.
+        /// </summary>
         private void Keep(Ped player)
         {
             try
             {
+                Vehicle found = null;
+
                 foreach (var car in World.GetNearbyVehicles(player, MarkRange))
                 {
                     if (car == null || !car.Exists()) continue;
                     if (!Franklins(car)) continue;
 
-                    if (Function.Call<int>(Hash.GET_BLIP_FROM_ENTITY, car.Handle) != 0) continue;
-
-                    Mark(car);
+                    found = car;
+                    break;
                 }
+
+                if (found != null) _map.Here(found);
+                else _map.Gone();
             }
             catch (Exception ex)
             {
@@ -184,31 +192,17 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>Where it is, and where it was. See Parked.</summary>
+        private readonly Parked _map =
+            new Parked(BlipSprite.PersonalVehicleCar, "Buffalo STX");
+
         /// <summary>How far out a car of his is noticed for marking. Wider than the swap.</summary>
         private const float MarkRange = 150f;
 
-        /// <summary>His car, back on the map, in grey. See the note on Greyed.</summary>
-        private static void Mark(Vehicle car)
+        /// <summary>His car, back on the map. Parked does the drawing for both cases.</summary>
+        private void Mark(Vehicle car)
         {
-            try
-            {
-                var blip = car.AddBlip();
-                if (blip == null || !blip.Exists()) return;
-
-                blip.Sprite = BlipSprite.PersonalVehicleCar;
-                blip.Color = Greyed;
-                blip.Scale = 0.85f;
-                blip.Name = "Buffalo STX";
-
-                Function.Call(Hash.SET_BLIP_ALPHA, blip.Handle, GreyedAlpha);
-
-                // On the map wherever it is parked, the same as the one it replaces.
-                Function.Call(Hash.SET_BLIP_AS_SHORT_RANGE, blip.Handle, false);
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Could not blip his car: " + ex.Message);
-            }
+            _map.Here(car);
         }
 
         private static bool Mine(Vehicle car)

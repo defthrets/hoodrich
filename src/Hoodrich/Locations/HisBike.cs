@@ -211,6 +211,8 @@ namespace Hoodrich.Locations
             {
                 var model = new Model(want);
 
+                Vehicle found = null;
+
                 foreach (var bike in World.GetNearbyVehicles(player.Position, LookRange))
                 {
                     if (bike == null || !bike.Exists()) continue;
@@ -219,16 +221,22 @@ namespace Hoodrich.Locations
                     var plate = (Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, bike.Handle) ?? "").Trim();
                     if (!plate.Equals(Says, StringComparison.OrdinalIgnoreCase)) continue;
 
-                    if (Function.Call<int>(Hash.GET_BLIP_FROM_ENTITY, bike.Handle) != 0) continue;
-
-                    Mark(bike);
+                    found = bike;
+                    break;
                 }
+
+                if (found != null) Mark(found);
+                else _map.Gone();
             }
             catch (Exception ex)
             {
                 Log.Debug("Could not put his bike back on the map: " + ex.Message);
             }
         }
+
+        /// <summary>Where it is, and where it was. Same hole as the car's, same answer.</summary>
+        private readonly Parked _map =
+            new Parked(BlipSprite.PersonalVehicleBike, "Your bike", 0.8f);
 
         /// <summary>
         /// His bike, on the map, greyed.
@@ -242,25 +250,9 @@ namespace Hoodrich.Locations
         /// Attached to the bike, so the game takes the blip away with it whenever it decides
         /// the bike is finished -- which it will, since the bike is handed straight back.
         /// </summary>
-        private static void Mark(Vehicle bike)
+        private void Mark(Vehicle bike)
         {
-            try
-            {
-                var blip = bike.AddBlip();
-                if (blip == null || !blip.Exists()) return;
-
-                blip.Sprite = BlipSprite.PersonalVehicleBike;
-                blip.Color = BlipColor.GreyDark;
-                blip.Scale = 0.8f;
-                blip.Name = "Your bike";
-
-                Function.Call(Hash.SET_BLIP_ALPHA, blip.Handle, 170);
-                Function.Call(Hash.SET_BLIP_AS_SHORT_RANGE, blip.Handle, false);
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Could not blip his bike: " + ex.Message);
-            }
+            _map.Here(bike);
         }
 
         /// <summary>Takes the game's bike off the map.</summary>

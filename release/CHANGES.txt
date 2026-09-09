@@ -1,6 +1,29 @@
 ﻿0.7.1 -- unreleased
 
 
+HIS CAR IS ON THE MAP FROM ANYWHERE ON IT NOW, AND YOU CAN SEE IT.
+
+Two things were wrong and they compounded.
+
+A BLIP ON A CAR ONLY EXISTS WHILE THE CAR DOES, and a car three streets away has
+been streamed out. So the mark on his Buffalo appeared when you were close enough
+to see the car anyway and vanished the moment you were not, which is the exact
+opposite of what a map is for -- you do not open the map to find the thing in
+front of you.
+
+There are two marks now and never both. While it is loaded it wears one of its
+own that moves with it; the moment it streams out, a standing mark goes down on
+the spot it was last seen and holds the place until it is seen again.
+
+AND IT WAS DARK GREY AT TWO THIRDS ALPHA. The distinction that was drawing is a
+fair one -- a car he was given should not wear the blue of a car he bought off
+Hao -- but dark grey against a grey map is not a subtle mark, it is an absent
+one. Green: Franklin's own colour in this game, which says "his" more exactly
+than grey said "not bought", and at full alpha.
+
+His bike had the identical hole and gets the identical fix.
+
+
 SOMEBODY WALKING OVER TO BUY WEARS A BLIP.
 
 The corner picks a plausible customer off the street and sends him to you, and
