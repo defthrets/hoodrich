@@ -18,6 +18,9 @@ rather than read.
                          the map said there was a licensed firearms retailer on
                          Forum Drive. There is not. There is a man with a holdall
   Trigger                a dog
+  Gerald                 his own. It was the map's generic dealer mark, which is
+                         honest about the trade and useless for finding HIM,
+                         since the mod draws that one wherever there is product
   Your food on the way   the shape of what is actually bringing it
 
 Every number is written down in BLIPS.md against the file that uses it.

@@ -33,7 +33,7 @@ its feature and the groups are its table:
 | 774 | `radar_sub_periscope` | inside the heat bar -- `PostUp.cs` |
 | 835 | `radar_community_series` | inside the reputation bar |
 | 855 | `radar_ped_gang_leader` | gang leaders by default -- `GangLeaders.cs` |
-| 51 | `radar_crim_drugs` | Stretch, per-leader override in `leaders.json` |
+| 946 | `radar_four20` | Gerald, per-leader override in `leaders.json` |
 | 58 | `radar_crim_wanted` | Oxycodone, everywhere it is drawn -- `Icons.cs` |
 | -- | `BlipSprite.Weed` | drug markers |
 | 497 | `radar_production_crack` | the pill press garage -- `Settings.cs` |

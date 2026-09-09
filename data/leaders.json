@@ -50,7 +50,9 @@
         "a_m_m_soucent_01"
       ],
       "z": 34.029,
-      "sprite": 51
+
+      "_sprite": "946 radar_four20. It was 51 radar_crim_drugs, which is the mark the map puts on a dealer -- honest about the trade and useless for finding HIM, because the mod already draws that one wherever there is product. This one is his. See BLIPS.md.",
+      "sprite": 946
     }
   ],
   "later": [
