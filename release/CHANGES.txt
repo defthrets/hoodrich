@@ -51,6 +51,13 @@ car's class on a chip after its name, the way out where it is on every
 other panel -- and the boot's panel stands on the bottom of the screen,
 where the car is not.
 
+THE GUN COUNTER IS THE HOOD ARMOURY, AND IT HAS A SIGN. It said HOOD WEAPONRY
+in the script face -- the face the phone uses for a person's name -- so the
+shop was introducing itself in the same hand a contact does. It is a drawn
+mark now: heavy squared capitals, letter-spaced, sat on a rule, white so the
+screen tints it like every other piece of art in the mod. The words come back
+if the file is missing, so nothing is ever left with a gap where a header was.
+
 AND THREE CARS SAY WHOSE THEY ARE. His reads HOODRICH, Tao's reads TAO8888
 and Gerald's reads BIG G. The two suppliers used to turn up in identical
 black cars wearing the same fleet plate, which made them one man with two

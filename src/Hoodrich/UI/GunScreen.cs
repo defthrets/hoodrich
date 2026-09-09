@@ -534,7 +534,7 @@ namespace Hoodrich.UI
             var right = left + panelWidth - pad;
             var y = top + 0.013f;
 
-            Hud.Text("HOOD WEAPONRY", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
+            Sign(x, y);
             Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, y + 0.010f, 0.34f, Palette.Cash, Hud.FontChaletLondon);
 
             y += 0.044f;
@@ -551,6 +551,31 @@ namespace Hoodrich.UI
             Keys(x, right, top + height - 0.020f);
             _glide.Draw(arrive);
         }
+
+        /// <summary>
+        /// The shop's name, as its own sign rather than as typed words.
+        ///
+        /// IT WAS "HOOD WEAPONRY" SET IN THE SCRIPT FACE, which is the face the phone uses
+        /// for a person's name -- so the counter was introducing itself in the same hand a
+        /// contact does. A shop has a sign. This is one: heavy squared capitals, spaced,
+        /// sat on a rule, drawn from tools/make_armoury.py.
+        ///
+        /// The words come back if the file is not there, so an install missing the icon
+        /// gets a header rather than a gap.
+        /// </summary>
+        private void Sign(float x, float y)
+        {
+            var tall = SignHeight;
+            var wide = Hud.ToX(tall * ArmouryAspect);
+
+            if (Hud.File("armoury.png", x + wide * 0.5f, y + 0.013f, wide, tall, 0f, Palette.Text)) return;
+
+            Hud.Text("HOOD ARMOURY", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
+        }
+
+        /// <summary>How tall the sign is, and the shape of the file. See tools/make_armoury.py.</summary>
+        private const float SignHeight = 0.030f;
+        private const float ArmouryAspect = 5.9204f;
 
         private float Shelves(float x, float y, float panelWidth, float pad)
         {
