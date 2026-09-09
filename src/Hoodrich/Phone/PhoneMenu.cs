@@ -1402,11 +1402,13 @@ namespace Hoodrich.Phone
             var textX = x + Hud.ToX(0.012f);
 
             // The art on the left, at a size that leaves the words the row.
+            var artW = ArtWidth(item, ListArt);
+
             if (!string.IsNullOrEmpty(item.IconFile) &&
-                Hud.File(item.IconFile, textX + Hud.ToX(ListArt) * 0.5f, y + h * 0.5f - 0.0005f,
-                         ListArt, 0f, Fade(ink, fade)))
+                Hud.File(item.IconFile, textX + artW * 0.5f, y + h * 0.5f - 0.0005f,
+                         artW, ListArt, 0f, Fade(ink, fade)))
             {
-                textX += Hud.ToX(ListArt) + 0.010f;
+                textX += artW + 0.010f;
             }
 
             Hud.Text(item.Label, textX, y + 0.0085f, 0.34f, Fade(ink, fade),
@@ -1945,9 +1947,11 @@ namespace Hoodrich.Phone
                 // the bed, the rail down the edge, and the icon changing colour. The label
                 // stays white, for the same reason it does on the grid -- it is the thing you
                 // are reading.
-                Art(item, x + Hud.ToX(gutter) * 0.5f, top + RowH * 0.5f, gutter,
+                var gutterW = ArtWidth(item, gutter);
+
+                Art(item, x + gutterW * 0.5f, top + RowH * 0.5f, gutter,
                     Fade(on ? Green : ink, fade));
-                x += Hud.ToX(gutter) + Hud.ToX(0.008f);
+                x += gutterW + Hud.ToX(0.008f);
             }
 
             var right = left + w - padX;
@@ -2047,12 +2051,33 @@ namespace Hoodrich.Phone
         }
 
 
+        /// <summary>
+        /// How wide this item's art comes out, in X units, at a given height.
+        ///
+        /// SQUARE UNLESS IT IS A WORDMARK OF OURS. Every other file in data\icons is square and
+        /// was drawn as one, which is right for all of them and wrong for the one app on this
+        /// phone with a brand -- LUber is more than twice as wide as it is tall and in a square
+        /// box it was unreadable. So a file icon is drawn at the shape it was made at, and the
+        /// rows that put art in a gutter ASK how wide rather than assuming.
+        ///
+        /// Only files. A game texture's aspect is resolved from whichever candidate won and is
+        /// already applied where it is drawn; making the layout believe it too would move art
+        /// that has been in the right place all along.
+        /// </summary>
+        private static float ArtWidth(WheelItem item, float size)
+        {
+            if (string.IsNullOrEmpty(item.IconFile)) return Hud.ToX(size);
+
+            return Hud.ToX(size) * (item.IconAspect <= 0f ? 1f : item.IconAspect);
+        }
+
+
         private static void Art(WheelItem item, float cx, float cy, float size, Color c,
                                 float spin = 0f)
         {
             if (!string.IsNullOrEmpty(item.IconFile))
             {
-                if (Hud.File(item.IconFile, cx, cy, size, spin, c)) return;
+                if (Hud.File(item.IconFile, cx, cy, ArtWidth(item, size), size, spin, c)) return;
             }
 
             if (item.HasIcon)

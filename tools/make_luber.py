@@ -1,24 +1,23 @@
 # -*- coding: utf-8 -*-
 """
-The LUber brand: an app badge and a wordmark, both as white masks.
+The LUber logo: data/icons/luber.png, as a white mask.
 
-    data/icons/luber_app.png   the square badge, for the phone's home screen
-    data/icons/luber.png       the wordmark, for the band across the ride picker
+ONE LOCKUP, NOT A BADGE AND A WORDMARK. The box goes round the LU and the rest of the name
+sits outside it, which is the whole idea of the brand written down: the joke is in the two
+letters, so the two letters are the part in the box.
 
-WHY A BADGE AND NOT A PICTURE OF A CAR. The tile it replaces was car.png, which is the same
-picture the owned-car blip, the tow and half the mod use -- so the one app on that phone with
-a brand of its own was wearing the mod's generic car. A phone home screen is a grid of app
-icons, and an app icon is a shape with a monogram in it.
+REVERSED OUT WHERE IT IS BOXED, SOLID WHERE IT IS NOT. In a white-on-transparent mask that
+means the box is ink and the L and U are holes -- so the box takes the panel's colour at draw
+time and the panel's own background shows through the letters -- while "ber" beside it is
+plain ink like any other mark in the set. Nothing has to be painted the colour of whatever it
+is sitting on.
 
-REVERSED OUT, the same trick as the lot's sign: in a white-on-transparent mask the badge is
-the ink and the letters are holes, so the badge takes the panel's colour at draw time and the
-panel's own background shows through the L and the U. It cannot be the wrong colour on
-anything it is drawn over.
+BASELINE, NOT BOX. "ber" lines up with the LU inside the box rather than with the box itself,
+because the box has padding and the letters do not. Lining it up with the box would sit the
+whole word a few pixels low and look like a mistake nobody could name.
 
-LU AND NOTHING ELSE. The brand is the joke and the joke is in those two letters, so they are
-the whole badge -- and two heavy characters are the most that survives being drawn at thirty
-pixels on a phone tile. The wordmark spells the rest: LU heavy, ber lighter behind it, which
-is the reading the name wants.
+Bahnschrift Bold Condensed for the same reasons the other two signs give, with Impact and
+Arial Bold behind it so this always produces a file.
 
     python tools/make_luber.py
 """
@@ -30,19 +29,22 @@ from PIL import Image, ImageChops, ImageDraw, ImageFont
 HERE = os.path.dirname(os.path.abspath(__file__))
 ICONS = os.path.join(os.path.dirname(HERE), "data", "icons")
 
-BADGE = os.path.join(ICONS, "luber_app.png")
-MARK = os.path.join(ICONS, "luber.png")
+OUT = os.path.join(ICONS, "luber.png")
 
+BOXED = "LU"
+REST = "ber"
+
+SIZE = 200
 OVER = 4
 
-# ---- the badge --------------------------------------------------------------------------
+# The box: air round its letters and how round its corners are, as a share of the cap height.
+INSET_X = 0.22
+INSET_Y = 0.20
+CORNER = 0.20
 
-# Drawn at this size and shrunk. Square, because a phone tile is.
-BADGE_SIZE = 256
-
-# The corner radius and the air round the letters, as a share of the badge.
-CORNER = 0.22
-INSET = 0.17
+# Air between the box and the rest of the name, and round the whole lockup.
+GAP = 0.10
+PAD = 0.05
 
 
 def face(size, instance):
@@ -62,95 +64,81 @@ def face(size, instance):
             if want:
                 font.set_variation_by_name(want)
 
-            return font
+            return font, os.path.basename(path) + (" " + want if want else "")
         except Exception:
             continue
 
     raise SystemExit("no usable font on this machine")
 
 
-def badge():
-    n = BADGE_SIZE * OVER
+def main():
+    big = SIZE * OVER
 
-    img = Image.new("RGBA", (n, n), (255, 255, 255, 0))
-    d = ImageDraw.Draw(img)
+    font, named = face(big, "Bold Condensed")
 
-    d.rounded_rectangle([0, 0, n - 1, n - 1], radius=int(n * CORNER), fill=(255, 255, 255, 255))
-
-    # The letters, sized to the room inside rather than to a guess: measured, then scaled so
-    # they fill the inset box in both directions.
-    room = n * (1.0 - INSET * 2)
-
-    size = int(room)
-    font = face(size, "Bold")
-
-    box = font.getbbox("LU")
-    w, h = box[2] - box[0], box[3] - box[1]
-
-    size = int(size * min(room / float(w), room / float(h)))
-    font = face(size, "Bold")
-
-    box = font.getbbox("LU")
-    w, h = box[2] - box[0], box[3] - box[1]
-
-    holes = Image.new("L", (n, n), 0)
-    ImageDraw.Draw(holes).text(((n - w) / 2.0 - box[0], (n - h) / 2.0 - box[1]),
-                               "LU", font=font, fill=255)
-
-    img.putalpha(ImageChops.subtract(img.getchannel("A"), holes))
-
-    out = img.resize((BADGE_SIZE, BADGE_SIZE), Image.LANCZOS)
-    out.save(BADGE)
-
-    print("wrote %s (%dx%d)" % (BADGE, out.size[0], out.size[1]))
-
-
-# ---- the wordmark -----------------------------------------------------------------------
-
-MARK_SIZE = 200
-MARK_PAD = 0.06
-
-
-def wordmark():
-    big = MARK_SIZE * OVER
-
-    heavy = face(big, "Bold Condensed")
-    light = face(int(big * 0.98), "SemiLight Condensed")
-
-    lu = "LU"
-    ber = "ber"
-
-    luW = int(heavy.getlength(lu))
-    berW = int(light.getlength(ber))
-
-    box = heavy.getbbox("L")
+    # The cap height off a letter with no descender or overshoot.
+    box = font.getbbox("L")
     capTop, cap = box[1], box[3] - box[1]
 
-    pad = int(cap * MARK_PAD)
+    insetX = int(cap * INSET_X)
+    insetY = int(cap * INSET_Y)
+    corner = int(cap * CORNER)
+    gap = int(cap * GAP)
+    pad = int(cap * PAD)
 
-    width = luW + berW + pad * 2
-    height = cap + pad * 2
+    boxedW = int(font.getlength(BOXED))
+    restW = int(font.getlength(REST))
+
+    boxW = boxedW + insetX * 2
+    boxH = cap + insetY * 2
+
+    # "ber" has a descender on nothing and an ascender on the b, so the lockup is as tall as
+    # the box or as tall as that ascender, whichever wins.
+    restBox = font.getbbox(REST)
+    restTop, restBottom = restBox[1], restBox[3]
+
+    # Where the boxed letters sit, and therefore where the rest has to sit.
+    letterTop = pad + insetY
+
+    topMost = min(pad, letterTop + (restTop - capTop))
+    bottomMost = max(pad + boxH, letterTop + (restBottom - capTop))
+
+    width = boxW + gap + restW + pad * 2
+    height = int(bottomMost - topMost) + pad
+
+    # Everything is measured from the box's own top, so shift if the b climbs above it.
+    lift = pad - topMost
 
     img = Image.new("RGBA", (width, height), (255, 255, 255, 0))
     d = ImageDraw.Draw(img)
 
-    d.text((pad, pad - capTop), lu, font=heavy, fill=(255, 255, 255, 255))
+    # ---- the box ----
+    d.rounded_rectangle([pad, pad + lift, pad + boxW - 1, pad + lift + boxH - 1],
+                        radius=corner, fill=(255, 255, 255, 255))
 
-    # The lighter half sits on the same baseline, not the same top.
-    lightBox = light.getbbox("b")
+    # ---- the letters knocked out of it ----
+    holes = Image.new("L", (width, height), 0)
 
-    d.text((pad + luW, pad + cap - (lightBox[3] - lightBox[1]) - lightBox[1]),
-           ber, font=light, fill=(255, 255, 255, 255))
+    ImageDraw.Draw(holes).text((pad + insetX, letterTop + lift - capTop), BOXED,
+                               font=font, fill=255)
+
+    img.putalpha(ImageChops.subtract(img.getchannel("A"), holes))
+
+    # ---- and the rest of the name beside it, on the same baseline ----
+    d = ImageDraw.Draw(img)
+
+    d.text((pad + boxW + gap, letterTop + lift - capTop), REST, font=font,
+           fill=(255, 255, 255, 255))
 
     out = img.resize((width // OVER, height // OVER), Image.LANCZOS)
-    out.save(MARK)
+    out.save(OUT)
 
     w, h = out.size
 
-    print("wrote %s (%dx%d)" % (MARK, w, h))
-    print("aspect (w/h): %.4f  <- LuberAspect in RideScreen.cs" % (w / float(h)))
+    print("wrote %s (%dx%d)" % (OUT, w, h))
+    print("face: %s" % named)
+    print("aspect (w/h): %.4f  <- LuberAspect, and the tile's icon aspect" % (w / float(h)))
 
 
 if __name__ == "__main__":
-    badge()
-    wordmark()
+    main()

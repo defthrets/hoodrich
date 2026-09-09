@@ -28,6 +28,9 @@ namespace Hoodrich.Wheel
     /// </summary>
     internal sealed class WheelPages
     {
+        /// <summary>The shape of the LUber lockup. Printed by tools/make_luber.py.</summary>
+        private const float LuberMark = 2.2780f;
+
         private readonly PlayerState _state;
         private readonly Drugs _drugs;
         private readonly Pricing _pricing;
@@ -1205,10 +1208,15 @@ namespace Hoodrich.Wheel
                 detail: "Cars with nobody in them and food with somebody on it. Slides in anywhere",
                 value: RideSummary());
 
-            // ITS OWN BADGE, NOT THE MOD'S CAR. car.png is the owned-car blip, the tow, the
+            // ITS OWN MARK, NOT THE MOD'S CAR. car.png is the owned-car blip, the tow, the
             // boot and half of everything else -- so the one app on this phone with a brand
-            // was wearing the house picture. See tools/make_luber.py.
-            page.WithIcon(Icons.FromFile("luber_app.png"));
+            // was wearing the house picture.
+            //
+            // THE WHOLE NAME, NOT A SQUARE BADGE OF THE FIRST TWO LETTERS. There was a second
+            // file for that and it read as an unexplained "LU"; the lockup is the box round the
+            // LU with the rest of the name beside it, which says what the app is called at a
+            // glance and is the joke as well. See tools/make_luber.py.
+            page.WithIcon(Icons.FromFile("luber.png"), LuberMark);
 
             return page;
         }

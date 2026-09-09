@@ -343,7 +343,7 @@ namespace Hoodrich.UI
         }
 
         /// <summary>The shape of the wordmark file. See tools/make_luber.py.</summary>
-        private const float LuberAspect = 2.4465f;
+        private const float LuberAspect = 2.2780f;
 
         private static Color Dim(Color c, float k)
         {

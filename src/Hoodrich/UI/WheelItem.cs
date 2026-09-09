@@ -193,7 +193,15 @@ namespace Hoodrich.UI
             return this;
         }
 
-        public WheelPage WithIcon(Icon icon)
+        /// <summary>
+        /// The last-added item's art.
+        ///
+        /// ASPECT IS FOR OUR OWN FILES. Everything in data\icons is square except the brands,
+        /// and a brand squeezed into a square box is unreadable -- so a wide mark says how wide
+        /// it is here and the phone lays it out at that shape. Game textures ignore it: theirs
+        /// is resolved from the texture that actually won, further down.
+        /// </summary>
+        public WheelPage WithIcon(Icon icon, float aspect = 1f)
         {
             if (Items.Count == 0 || !icon.IsSet) return this;
 
@@ -218,7 +226,7 @@ namespace Hoodrich.UI
             if (icon.HasFile)
             {
                 item.IconFile = icon.File;
-                item.IconAspect = 1f;
+                item.IconAspect = aspect <= 0f ? 1f : aspect;
                 item.IconTries = WheelItem.IconAttempts;
                 return this;
             }

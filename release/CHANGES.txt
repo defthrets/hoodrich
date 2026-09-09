@@ -70,11 +70,21 @@ the street at large.
 Two models in those lists did not exist on this build at all, so every
 account that hashed onto one had no face and never would. They are gone.
 
-LUBER HAS A LOGO. A square badge with LU knocked out of it on the phone's home
-screen, and the wordmark across the top of the ride picker -- LU heavy, ber
-lighter behind it, which is the reading the name wants. The tile was wearing
-car.png, which is also the owned-car blip, the tow and the boot, so the one
-app on that phone with a brand of its own was in the house picture.
+LUBER HAS A LOGO. One mark, everywhere it appears: a rounded box with LU
+knocked out of it and the rest of the name sitting outside the box on the same
+baseline, so it reads LUber and the joke is in the two letters that are boxed.
+It is the tile on the phone's home screen and the sign across the top of the
+ride picker, the same file both times. The tile was wearing car.png, which is
+also the owned-car blip, the tow and the boot, so the one app on that phone
+with a brand of its own was in the house picture -- and the badge that replaced
+it said "LU" and nothing else, which explains nothing to somebody who has not
+opened the app yet.
+
+The phone can lay out art that is not square now. Every file in data\icons is,
+so a tile drew art in a square box and the rows that put an icon in a gutter
+stepped past a square -- right for all of them, wrong for a wordmark, which came
+out crushed to a third of its width. A file icon carries its own proportions and
+the layout asks how wide rather than assuming.
 
 THE LOT IS HAO'S AUTOS, AND IT HAS A SIGN TOO. Blocks with the letters knocked
 out of them, one block a letter -- which in a white mask inverts exactly right:
