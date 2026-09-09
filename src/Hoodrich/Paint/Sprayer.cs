@@ -300,8 +300,9 @@ namespace Hoodrich.Paint
         private void Put(Vector3 at, Vector3 into, Vector3 side, float size, int hit)
         {
             // Which texture this tool wants. Set here rather than once per session because the
-            // player can swap tools between one mark and the next.
-            _marks.Wanted = _cfg.SprayCanLook ? _cfg.CanDecal : 0;
+            // player can swap tools between one mark and the next -- and now also because it
+            // is not the same answer twice running. See Mixed.
+            _marks.Wanted = _cfg.SprayCanLook ? Mixed() : 0;
 
             var c = Shade();
 
@@ -312,6 +313,28 @@ namespace Hoodrich.Paint
 
             _marks.Put(at, into, side, size,
                        c.R / 255f * gain, c.G / 255f * gain, c.B / 255f * gain, hit);
+        }
+
+        /// <summary>
+        /// Which texture THIS mark gets: the can's, or the one mixed in with it.
+        ///
+        /// ROLLED PER MARK, not per stroke and not per session, because the whole value of it
+        /// is that two neighbouring dabs are not the same picture. Rolling per stroke would
+        /// give bands of one texture and bands of the other, which is a stripier version of
+        /// the problem it exists to solve.
+        ///
+        /// The mark keeps whatever it got -- Marks stamps the type it placed with onto the
+        /// mark and saves it -- so a wall reloads exactly as it was laid rather than being
+        /// re-rolled into a different mix next session.
+        /// </summary>
+        private int Mixed()
+        {
+            var mix = _cfg.MixDecal;
+            var every = _cfg.MixEvery;
+
+            if (mix <= 0 || every <= 0) return _cfg.CanDecal;
+
+            return _rng.Next(100) < every ? mix : _cfg.CanDecal;
         }
 
         /// <summary>

@@ -436,10 +436,49 @@
         ///     1040  splatters_water   faint. Barely marks a wall.
         ///     1010  splatters_blood   red, and it looks it.
         ///
+        /// AND THE IMPACT FAMILY, which is what a bullet leaves in a wall.
+        ///
+        ///     4020  weapImpact_concrete   what a machine pistol writes on stucco
+        ///     4010  weapImpact_metal      the same, on a panel
+        ///     4050  weapImpact_wood
+        ///
+        /// These are worth knowing about for a reason that has nothing to do with guns. The
+        /// splatter textures are SPLATTERS -- speckled, with holes in them -- and a wall covered
+        /// in them still reads as a wall with something thrown at it. An impact mark is a small
+        /// SOLID lump with a soft edge, which is very close to what a can actually leaves, and
+        /// a hundred of them overlapping is a filled shape rather than a cloud of dots.
+        ///
+        /// THEY ARE NEARLY BLACK, and that is the whole cost. The colour arguments multiply, so
+        /// a black texture stays black whatever you pass it -- an impact tag is a BLACK tag with
+        /// a hint of your colour in the soft edge, not a green one. Which for an outline, a
+        /// throw-up or anything that wants to read as solid is not a compromise; for a bright
+        /// fill it is fatal. CanColourGain is the dial that might drag it back up, and might do
+        /// nothing at all: see there.
+        ///
         /// Marks remember which one they were placed with, so changing this leaves everything
         /// already on a wall alone.
         /// </summary>
         public int CanDecal = 1030;
+
+        /// <summary>
+        /// A SECOND texture, laid instead of the first every so often, and how often in a
+        /// hundred marks.
+        ///
+        /// ONE TEXTURE REPEATED IS A PATTERN AND THE EYE FINDS IT. Every mark from a can is
+        /// the same picture at a different size and angle, and across a whole wall that
+        /// regularity is the thing that says "decal" -- the marks are varied but they are all
+        /// varied in the same way.
+        ///
+        /// A second texture in the mix breaks it for almost nothing: nine marks in ten are the
+        /// solid one and the tenth is a splatter, so the tag keeps the fill AND gets the
+        /// speckle and the stray flecks that a can throws at the edge of a stroke. It is the
+        /// same trick as the metallics -- variety between marks, not inside one.
+        ///
+        /// Zero for either turns it off, which is the default: the published look is one
+        /// texture and this does not change it under anybody.
+        /// </summary>
+        public int MixDecal = 0;
+        public int MixEvery = 0;
 
         /// <summary>
         /// How hard the can's colour is driven into its decal. 1 is a plain colour and is what

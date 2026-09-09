@@ -848,6 +848,13 @@ namespace Hoodrich
                 _social = SocialFeed.Load();
                 _socialScreen = new SocialScreen(_social);
 
+                // The four texture knobs, from this mod's ini rather than the standalone's.
+                // See Settings.PaintTexture.
+                _paint.CanDecal = _cfg.PaintTexture;
+                _paint.MixDecal = _cfg.PaintMixTexture;
+                _paint.MixEvery = _cfg.PaintMixEvery;
+                _paint.CanColourGain = _cfg.PaintColourGain;
+
                 _marks = new Paint.Marks(_paint);
                 _sprayer = new Paint.Sprayer(_paint, _marks);
                 _law = new Paint.Law(_paint);

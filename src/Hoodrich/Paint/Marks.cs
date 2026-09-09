@@ -95,8 +95,35 @@ namespace Hoodrich.Paint
         /// Kept anyway, because a dark splat still says somebody did something to that wall and
         /// beats a wall that did not change -- but it is logged loudly when it happens, since
         /// "my colours are all wrong" and "this install has no paint decal" are the same event.
+        ///
+        /// THE IMPACT TYPES SIT ABOVE THE BLOOD ONES, which is new and is the
+        /// only reordering here. If splatters_paint is missing, the next best thing is not a
+        /// red texture -- it is a NEUTRAL DARK one, because multiplying a neutral by your
+        /// colour at least moves it toward that colour, where multiplying red by green moves
+        /// it toward black. A concrete impact mark is a solid dab of dark grey and it is
+        /// exactly what a bullet leaves in a wall, which is to say it is already a mark
+        /// somebody made on purpose.
+        ///
+        /// 1030 is still first, so an install that has it is untouched by any of this.
         /// </summary>
-        private static readonly int[] Types = { 1030, 1110, 1010 };
+        private static readonly int[] Types = { 1030, 4020, 4010, 1110, 1010 };
+
+        /// <summary>What a type id is, for a log line that has to name one.</summary>
+        private static string Called(int type)
+        {
+            switch (type)
+            {
+                case 1010: return "splatters_blood";
+                case 1020: return "splatters_mud";
+                case 1030: return "splatters_paint";
+                case 1040: return "splatters_water";
+                case 1110: return "a blood decal";
+                case 4010: return "weapImpact_metal";
+                case 4020: return "weapImpact_concrete";
+                case 4050: return "weapImpact_wood";
+                default: return "type " + type;
+            }
+        }
 
         /// <summary>Never expires. The whole point is that it stays.</summary>
         private const float Forever = -1f;
@@ -443,12 +470,21 @@ namespace Hoodrich.Paint
                     {
                         Log.Info("Using splatters_paint (1030). Colours will be true.");
                     }
+                    else if (type >= 4000)
+                    {
+                        Log.Warn("splatters_paint (1030) would not place; fell back to " +
+                                 Called(type) + " (" + type + "), which is the mark a BULLET " +
+                                 "leaves. It is solid and it takes a tint, but it is authored " +
+                                 "nearly black -- so everything will come out dark. Turn " +
+                                 "CanColourGain up if you want the colour back.");
+                    }
                     else
                     {
-                        Log.Warn("splatters_paint (1030) would not place; fell back to " + type +
-                                 ", which is a BLOOD decal. Its colour arguments multiply over " +
-                                 "a red texture, so anything you pick will come out dark and " +
-                                 "wrong. This is not the picker misbehaving.");
+                        Log.Warn("splatters_paint (1030) would not place; fell back to " +
+                                 Called(type) + " (" + type + "), which is a BLOOD decal. Its " +
+                                 "colour arguments multiply over a red texture, so anything you " +
+                                 "pick will come out dark and wrong. This is not the picker " +
+                                 "misbehaving.");
                     }
                 }
 

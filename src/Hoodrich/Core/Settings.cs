@@ -165,6 +165,24 @@ namespace Hoodrich.Core
         /// decals on one wall and take the game with it.
         /// </summary>
         public float TagDotSpacing = 0.11f;
+        /// <summary>
+        /// WHAT A MARK IS MADE OF, and why these four are in this mod's ini at all.
+        ///
+        /// The paint engine is shared verbatim with the standalone, and the standalone has its
+        /// own ini with two dozen knobs in it -- but it STANDS DOWN when this mod is installed,
+        /// because both of them running means two cans in his hand and two decals for every
+        /// one you meant. So on any machine with both, the engine that is actually painting is
+        /// this one, and until now nothing in a config file could reach it.
+        ///
+        /// Only these four, not the two dozen. These are the ones that change what a tag LOOKS
+        /// LIKE rather than how it behaves, and they are the ones worth an evening on a wall.
+        /// Everything else stays where it is: in PaintConfig, one copy, tuned in code.
+        /// </summary>
+        public int PaintTexture = 1030;
+        public int PaintMixTexture;
+        public int PaintMixEvery;
+        public float PaintColourGain = 1f;
+
         public float TagDotSize = 0.50f;
         public float BagRoll = 0f;
         public float BagYaw = 0f;
@@ -650,6 +668,12 @@ namespace Hoodrich.Core
             s.TagDotSpacing = Clamp(ini.GetFloat("Tags", "DotSpacing", s.TagDotSpacing),
                                     0.05f, 0.40f);
             s.TagDotSize = Clamp(ini.GetFloat("Tags", "DotSize", s.TagDotSize), 0.10f, 1.50f);
+
+            // The paint engine's texture knobs. See PaintTexture.
+            s.PaintTexture = ini.GetInt("Paint", "CanDecal", s.PaintTexture);
+            s.PaintMixTexture = ini.GetInt("Paint", "MixDecal", s.PaintMixTexture);
+            s.PaintMixEvery = (int)Clamp(ini.GetInt("Paint", "MixEvery", s.PaintMixEvery), 0f, 100f);
+            s.PaintColourGain = Clamp(ini.GetFloat("Paint", "CanColourGain", s.PaintColourGain), 0.1f, 8f);
             s.BagRoll = ini.GetFloat("Dealing", "BagRoll", s.BagRoll);
             s.BagYaw = ini.GetFloat("Dealing", "BagYaw", s.BagYaw);
 
