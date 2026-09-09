@@ -51,6 +51,25 @@ car's class on a chip after its name, the way out where it is on every
 other panel -- and the boot's panel stands on the bottom of the screen,
 where the car is not.
 
+A SET'S POSTS COME FROM THAT SET'S FACES. A message about who runs Grove
+Street was turning up under a photograph of somebody's nan, and it was not a
+bug so much as arithmetic: the face pools were one per ETHNICITY with the
+gang models at the top and a dozen civilians underneath, so two thirds of
+every Families or Ballas post drew a South Central passer-by, three of whom
+are pensioners.
+
+Each set now draws only from the models the game built for it -- Families
+from the three Families models, Ballas from the three Ballas ones, the Vagos,
+Aztecas and Marabunta from their own, the Triads and the Kkangpae from
+theirs, the Armenians from theirs, the Lost from the club and the two Blaine
+County hillbillies. Nobody in a set can wear another set's face and no gang
+post can come from a civilian. Where the game ships no woman for a set, and
+it usually does not, the fallback is the nearest neighbourhood rather than
+the street at large.
+
+Two models in those lists did not exist on this build at all, so every
+account that hashed onto one had no face and never would. They are gone.
+
 THE GUN COUNTER IS THE HOOD ARMOURY, AND IT HAS A SIGN. It said HOOD WEAPONRY
 in the script face -- the face the phone uses for a person's name -- so the
 shop was introducing itself in the same hand a contact does. It is a drawn

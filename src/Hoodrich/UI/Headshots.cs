@@ -540,85 +540,115 @@ namespace Hoodrich.UI
         /// contact photo -- it is the nearest wrong thing, and the coloured letter it replaced
         /// was at least honest about knowing nothing.
         ///
-        /// So the pool is chosen by the set, and the sets in this game are drawn along lines
-        /// the models follow: the Families and the Ballas are South Central, the Vagos and the
-        /// Aztecas are Latino, the Triads and the Kkangpae are East Asian, the Armenians are
-        /// eastern European, the Lost are bikers. Those are the game's own model families and
-        /// picking from them is the difference between a face and a photograph of a stranger.
+        /// A SET GETS ITS OWN MEMBERS AND NOBODY ELSE, which it did not before. The pools
+        /// used to be one per ETHNICITY with the gang models at the top and a dozen civilians
+        /// underneath -- so two thirds of every Families or Ballas post came out wearing the
+        /// face of a South Central passer-by, and three of those are pensioners. A message
+        /// about who runs Grove Street, from a photograph of somebody's nan.
+        ///
+        /// Now each set draws from the models the game built for that set: Families from the
+        /// three Families models, Ballas from the three Ballas ones, the Vagos and the Aztecas
+        /// and the Marabunta from their own, the Triads and the Kkangpae from theirs, the
+        /// Armenians from theirs, the Lost from theirs. Nobody in a set can wear a face from
+        /// another set, and no gang post can come from a civilian.
+        ///
+        /// WHERE THE GAME HAS NO WOMAN FOR A SET, and it usually has not, the fallback is the
+        /// nearest thing by neighbourhood rather than the street at large -- Koreatown for the
+        /// two East Asian sets, East Los Santos for the Armenians. One model is one model:
+        /// every woman in the Families wears the same face, because there is one of her.
         ///
         /// Everybody with no set draws from the street, because that is what they are.
         /// </summary>
-        private static readonly string[] SouthCentralMen =
+        private static readonly string[] Families =
         {
-            "g_m_y_famca_01", "g_m_y_famdnf_01", "g_m_y_famfor_01",
-            "g_m_y_ballaeast_01", "g_m_y_ballaorig_01", "g_m_y_ballasout_01",
-            "a_m_y_soucent_01", "a_m_y_soucent_02", "a_m_y_soucent_03", "a_m_y_soucent_04",
-            "a_m_m_soucent_01", "a_m_m_soucent_02", "a_m_m_soucent_03", "a_m_m_soucent_04",
-            "a_m_o_soucent_01", "a_m_o_soucent_02", "a_m_o_soucent_03"
+            "g_m_y_famca_01", "g_m_y_famdnf_01", "g_m_y_famfor_01"
         };
 
-        private static readonly string[] SouthCentralWomen =
+        private static readonly string[] FamiliesWomen = { "g_f_y_families_01" };
+
+        private static readonly string[] Ballas =
         {
-            "g_f_y_families_01", "g_f_y_ballas_01",
-            "a_f_y_soucent_01", "a_f_y_soucent_02", "a_f_y_soucent_03",
-            "a_f_m_soucent_01", "a_f_m_soucent_02", "a_f_o_soucent_01"
+            "g_m_y_ballaeast_01", "g_m_y_ballaorig_01", "g_m_y_ballasout_01"
         };
 
-        private static readonly string[] LatinoMen =
+        private static readonly string[] BallasWomen = { "g_f_y_ballas_01" };
+
+        private static readonly string[] Vagos =
         {
             "g_m_y_mexgoon_01", "g_m_y_mexgoon_02", "g_m_y_mexgoon_03",
-            "g_m_y_azteca_01", "g_m_m_mexboss_01", "g_m_m_mexboss_02",
-            "a_m_y_mexthug_01", "a_m_y_latino_01", "a_m_m_mexlabor_01",
-            "a_m_o_soucent_02", "a_m_y_gencaspat_01"
+            "g_m_y_mexgang_01", "g_m_m_mexboss_01", "g_m_m_mexboss_02"
         };
 
-        private static readonly string[] LatinoWomen =
+        private static readonly string[] Aztecas =
         {
-            "a_f_y_latino_01", "a_f_m_ktown_02", "a_f_y_eastsa_01",
-            "a_f_m_eastsa_01", "a_f_y_soucent_02"
+            "g_m_y_azteca_01", "g_m_y_pologoon_01", "g_m_y_pologoon_02"
         };
 
-        private static readonly string[] AsianMen =
+        private static readonly string[] Marabunta =
         {
-            "g_m_m_chiboss_01", "g_m_m_chicold_01", "g_m_m_chigoon_01", "g_m_m_chigoon_02",
-            "g_m_y_korean_01", "g_m_y_korean_02", "g_m_y_korlieut_01",
-            "a_m_y_ktown_01", "a_m_y_ktown_02", "a_m_m_ktown_01", "a_m_o_ktown_01"
+            "g_m_y_salvaboss_01", "g_m_y_salvagoon_01", "g_m_y_salvagoon_02",
+            "g_m_y_salvagoon_03", "g_m_m_maragrande_01"
         };
 
-        private static readonly string[] AsianWomen =
+        /// <summary>One model between the three Latino sets, because the game shipped one.</summary>
+        private static readonly string[] LatinaWomen = { "g_f_y_vagos_01" };
+
+        private static readonly string[] Triads =
         {
-            "a_f_y_ktown_01", "a_f_m_ktown_01", "a_f_m_ktown_02", "a_f_y_eastsa_02"
+            "g_m_m_chiboss_01", "g_m_m_chicold_01", "g_m_m_chigoon_01", "g_m_m_chigoon_02"
         };
 
-        private static readonly string[] ArmenianMen =
+        private static readonly string[] Koreans =
         {
-            "g_m_m_armboss_01", "g_m_m_armgoon_01", "g_m_m_armlieut_01", "g_m_y_armgoon_02",
-            "a_m_m_eastsa_01", "a_m_m_eastsa_02", "a_m_y_business_01"
+            "g_m_m_korboss_01", "g_m_y_korean_01", "g_m_y_korean_02", "g_m_y_korlieut_01"
         };
 
-        private static readonly string[] BikerMen =
+        /// <summary>No gang women in either East Asian set, so Koreatown rather than the street.</summary>
+        private static readonly string[] AsianWomen = { "a_f_m_ktown_01", "a_f_m_ktown_02" };
+
+        private static readonly string[] Armenians =
+        {
+            "g_m_m_armboss_01", "g_m_m_armgoon_01", "g_m_m_armlieut_01", "g_m_y_armgoon_02"
+        };
+
+        /// <summary>None of theirs either. East Los Santos, which is the nearest the game has.</summary>
+        private static readonly string[] ArmenianWomen = { "a_f_m_eastsa_01", "a_f_y_eastsa_01" };
+
+        /// <summary>
+        /// The Lost, and the county they ride in.
+        ///
+        /// The two hillbillies are deliberate and are the only civilians left in a gang pool:
+        /// the Lost are not a street set with a colour, they are a club in Blaine County, and
+        /// a man in a trucker cap belongs in that photograph in a way a South Central civilian
+        /// never belonged in the Families'.
+        /// </summary>
+        private static readonly string[] Lost =
         {
             "g_m_y_lost_01", "g_m_y_lost_02", "g_m_y_lost_03",
-            "a_m_m_hillbilly_01", "a_m_m_hillbilly_02", "a_m_y_methhead_01",
-            "a_m_m_trampbeac_01", "a_m_y_motox_01"
+            "a_m_m_hillbilly_01", "a_m_m_hillbilly_02"
         };
 
-        private static readonly string[] BikerWomen =
-        {
-            "g_f_y_lost_01", "a_f_y_hipster_04", "a_f_m_fatwhite_01", "a_f_y_rurmeth_01"
-        };
+        private static readonly string[] LostWomen = { "g_f_y_lost_01", "a_f_y_rurmeth_01" };
 
+        /// <summary>
+        /// Everybody with no set: the street, and the whole street.
+        ///
+        /// The one place a passer-by belongs, because a neighbour with an opinion about the
+        /// price of chicken IS a passer-by. a_f_y_latino_01 came out of here on the way past:
+        /// there is no such model on this build, so every woman who hashed onto it had no
+        /// face at all and the log said so once a session.
+        /// </summary>
         private static readonly string[] AnyMen =
         {
             "a_m_y_hipster_01", "a_m_y_hipster_02", "a_m_y_business_01", "a_m_m_business_01",
-            "a_m_y_ktown_01", "a_m_y_latino_01", "a_m_m_eastsa_01", "a_m_y_stwhi_01",
-            "a_m_y_downtown_01", "a_m_m_hillbilly_01", "a_m_y_vinewood_01", "a_m_y_beach_01",
+            "a_m_y_ktown_01", "a_m_m_eastsa_01", "a_m_y_stwhi_01", "a_m_y_downtown_01",
+            "a_m_m_hillbilly_01", "a_m_y_vinewood_01", "a_m_y_beach_01",
             "a_m_y_soucent_01", "a_m_m_soucent_02"
         };
 
         private static readonly string[] AnyWomen =
         {
-            "a_f_y_hipster_02", "a_f_y_business_01", "a_f_m_business_02", "a_f_y_latino_01",
+            "a_f_y_hipster_02", "a_f_y_business_01", "a_f_m_business_02",
             "a_f_y_vinewood_01", "a_f_y_eastsa_01", "a_f_m_eastsa_01", "a_f_y_beach_01",
             "a_f_y_soucent_01", "a_f_m_soucent_02"
         };
@@ -628,26 +658,19 @@ namespace Hoodrich.UI
         {
             switch ((gang ?? "").ToLowerInvariant())
             {
-                case "families":
-                case "ballas":
-                    return she ? SouthCentralWomen : SouthCentralMen;
+                case "families": return she ? FamiliesWomen : Families;
+                case "ballas": return she ? BallasWomen : Ballas;
 
-                case "vagos":
-                case "aztecas":
-                case "marabunta":
-                    return she ? LatinoWomen : LatinoMen;
+                case "vagos": return she ? LatinaWomen : Vagos;
+                case "aztecas": return she ? LatinaWomen : Aztecas;
+                case "marabunta": return she ? LatinaWomen : Marabunta;
 
-                case "triads":
-                case "koreans":
-                    return she ? AsianWomen : AsianMen;
+                case "triads": return she ? AsianWomen : Triads;
+                case "koreans": return she ? AsianWomen : Koreans;
 
-                // No women's models in the Armenian family, so theirs fall through to the
-                // street rather than to somebody who plainly is not one of them.
-                case "armenians":
-                    return she ? AnyWomen : ArmenianMen;
+                case "armenians": return she ? ArmenianWomen : Armenians;
 
-                case "lost":
-                    return she ? BikerWomen : BikerMen;
+                case "lost": return she ? LostWomen : Lost;
 
                 default:
                     return she ? AnyWomen : AnyMen;
