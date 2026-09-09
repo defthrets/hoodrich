@@ -102,6 +102,16 @@ namespace Hoodrich.UI
         /// arrangement of a thing being shown to somebody across a counter.
         /// </summary>
         private const float InFront = -0.34f;
+
+        /// <summary>
+        /// And a couple of centimetres up off the marker's own height.
+        ///
+        /// The rifle it measures from is a prop lying flat; a weapon object turned on its side
+        /// hangs a little lower from its own origin than that one does, so matching the height
+        /// exactly puts the barrel a whisker into the lid. Small enough that nothing floats,
+        /// big enough that nothing sinks.
+        /// </summary>
+        private const float Lift = 0.025f;
         private const float MarkerNear = 4f;
 
         private readonly List<int> _made = new List<int>();
@@ -174,7 +184,7 @@ namespace Hoodrich.UI
                 // The way the camera looks from, which is the side "in front of it" means.
                 var toward = new Vector3((float)Math.Sin(rad), (float)-Math.Cos(rad), 0f);
 
-                return best + toward * InFront;
+                return best + toward * InFront + new Vector3(0f, 0f, Lift);
             }
             catch
             {
