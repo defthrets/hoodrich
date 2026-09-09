@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 #
 # The drawing kit every icon in the mod is made with.
 #
@@ -92,6 +92,25 @@ def arc(cx, cy, r, a0, a1, n=32):
     """Points along an arc from a0 to a1 degrees (clockwise on screen when a1 > a0)."""
     return [(cx + r * math.cos(math.radians(a0 + (a1 - a0) * i / n)),
              cy + r * math.sin(math.radians(a0 + (a1 - a0) * i / n))) for i in range(n + 1)]
+
+
+def heart_pts(cx, cy, k):
+    """
+    A heart as ONE polygon, so it can be drawn hollow without punching the panel.
+
+    In the kit rather than in one group's file because two of them want it now: the marks in
+    group A and the stamp on an ecstasy tablet in group B. One shape, one place.
+
+    k is the scale of the parametric curve, which spans 32 across and 29 down -- so a heart
+    that wants to be W wide takes k = W / 32.
+    """
+    pts = []
+    for i in range(120):
+        t = math.pi * 2 * i / 120.0
+        x = 16 * math.sin(t) ** 3
+        y = -(13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t))
+        pts.append((cx + x * k, cy + y * k))
+    return pts
 
 
 def star(cx, cy, r_out, r_in, n=5, start=-90.0):

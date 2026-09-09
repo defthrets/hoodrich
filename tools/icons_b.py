@@ -50,7 +50,7 @@ def _pill_shape(d, cx, cy, r, deep, fill):
     rect(d, cx - r, cy, cx + r, cy + deep, fill)
 
 
-def _pill(d, cx, cy, r, smile=True):
+def _pill(d, cx, cy, r, mark="smile"):
     """
     One pressed tablet, seen slightly from above.
 
@@ -71,12 +71,23 @@ def _pill(d, cx, cy, r, smile=True):
     # The chamfer where the face rolls into the wall.
     ring(d, cx, cy, r - r * 0.09, r * 0.05, LOW)
 
-    if not smile:
-        return
-
     # PUNCHED, NOT DRAWN. The stamp on a pressed pill is a recess, and a recess in this kit is
     # a hole -- CLEAR shows the panel through, the same thing the score lines on the bar do.
     # Drawn in a tone it would be a sticker on a disc.
+    if mark == "heart":
+        # The one press everybody knows besides the face, and the reason it is on the second
+        # tablet rather than a second smiley: two identical stamps read as one stamp printed
+        # twice, and the whole job of the second pill is to say there is more than one thing
+        # in the bag. A heart is a different silhouette at any size a face stops being one.
+        # Nudged down and across, not centred on the tablet. The big one's silhouette is cut
+        # out of this one, so the face left showing is not the middle of it -- a stamp centred
+        # on the disc lands half in the bite.
+        poly(d, heart_pts(cx + r * 0.13, cy + r * 0.02, r / 36.0), CLEAR)
+        return
+
+    if mark != "smile":
+        return
+
     eye = r * 0.14
     disc(d, cx - r * 0.33, cy - r * 0.27, eye, CLEAR)
     disc(d, cx + r * 0.33, cy - r * 0.27, eye, CLEAR)
@@ -87,7 +98,7 @@ def _pill(d, cx, cy, r, smile=True):
 
 def pills():
     """
-    Ecstasy: two pressed tablets with a smiley stamped into them.
+    Ecstasy: two pressed tablets, a smiley on one and a heart on the other.
 
     THE CAPSULES WERE THE WRONG DRUG. Two two-tone capsules is a picture of a prescription --
     it is what the painkiller this slot briefly held actually looks like -- and it did nothing
@@ -106,7 +117,7 @@ def pills():
     # The smaller one, behind and down to the right. Far enough across that most of its
     # outline is its own: two tablets that overlap by a third are two tablets, and two that
     # overlap by two thirds are one tablet with a bump on it.
-    _pill(d, 352, 356, 120)
+    _pill(d, 360, 364, 118, "heart")
 
     # A margin cut out of it, so the big one has a clean edge against it.
     _pill_shape(d, 186, 206, 146 + 14, 146 * 0.22, CLEAR)

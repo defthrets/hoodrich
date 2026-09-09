@@ -1,7 +1,7 @@
 ﻿0.7.1 -- unreleased
 
 
-ECSTASY HAS ITS OWN ICON: TWO PRESSED TABLETS WITH A SMILEY STAMPED INTO THEM.
+ECSTASY HAS ITS OWN ICON: TWO PRESSED TABLETS, A SMILEY AND A HEART.
 
 It was two capsules, which is a picture of a prescription -- it is what the
 painkiller this slot briefly held actually looks like -- and it was doing no work
@@ -12,6 +12,11 @@ The face is PUNCHED rather than drawn: the stamp on a pressed pill is a recess,
 and a recess in this icon set is a hole that shows the panel through. Drawing it
 in a tone instead would make the face a sticker. It is the same thing the score
 lines on the Xanax bar do.
+
+A smiley on one and a heart on the other, rather than the same stamp twice: two
+identical marks read as one mark printed twice, and the whole job of the second
+tablet is to say there is more than one thing in the bag. A heart is also still a
+heart at the size a face stops being a face.
 
 And each tablet has a SIDE WALL. A disc with a bevel on it is a coin -- it has no
 thickness, and thickness is the one feature that says pill. The wall is a second

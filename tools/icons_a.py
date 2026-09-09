@@ -84,14 +84,8 @@ def repost():
 
 
 def _heart_pts(cx, cy, k):
-    """A heart as one polygon, so it can be drawn hollow without punching the panel."""
-    pts = []
-    for i in range(120):
-        t = math.pi * 2 * i / 120.0
-        x = 16 * math.sin(t) ** 3
-        y = -(13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t))
-        pts.append((cx + x * k, cy + y * k))
-    return pts
+    """Moved into the kit -- see heart_pts there. Kept as the name this file already used."""
+    return heart_pts(cx, cy, k)
 
 
 def heart():
