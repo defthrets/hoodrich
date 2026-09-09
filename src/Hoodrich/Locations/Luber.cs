@@ -179,7 +179,7 @@ namespace Hoodrich.Locations
             new RideStop { Name = "Stretch's", Area = "Strawberry",
                            At = new Vector3(-129.187f, -1461.375f, 33.823f) },
 
-            new RideStop { Name = "Hao's lot", Area = "Little Seoul",
+            new RideStop { Name = "Hao's Autos", Area = "Little Seoul",
                            At = new Vector3(-40.439f, -1675.140f, 29.470f) },
 
             new RideStop { Name = "The docks", Area = "Elysian Island",

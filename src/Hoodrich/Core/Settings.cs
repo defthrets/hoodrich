@@ -48,7 +48,7 @@ namespace Hoodrich.Core
         /// So this is read BEFORE the enabled check, it turns the mod back on, and it writes
         /// that to the ini so it stays on.
         /// </summary>
-        public Keys RescueKey = Keys.F2;
+        public Keys RescueKey = Keys.Divide;
         public Keys PhoneModifier = Keys.None;
 
         /// <summary>

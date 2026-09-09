@@ -1005,7 +1005,7 @@ namespace Hoodrich.Locations
                 _blip.Color = BlipColor.Green;
                 _blip.Scale = 0.8f;
                 _blip.IsShortRange = true;
-                _blip.Name = "Hao";
+                _blip.Name = "Hao's Autos";
             }
             catch (Exception ex)
             {

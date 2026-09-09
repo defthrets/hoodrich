@@ -44,7 +44,8 @@ namespace Hoodrich.UI
         /// same line, so the first thing under the mark is the room.
         /// </summary>
         public static float Head(float left, float top, float w, float pad, string icon,
-                                 string title, string blurb, string right, float arrive)
+                                 string title, string blurb, string right, float arrive,
+                                 string sign = null, float signAspect = 1f)
         {
             var middle = left + w * 0.5f;
             var x = left + pad;
@@ -63,12 +64,36 @@ namespace Hoodrich.UI
                 tx = x + Hud.ToX(HeadIcon) + 0.006f;
             }
 
-            Hud.Text(title, tx, y, 0.31f, Palette.Alpha(Palette.Text, (int)(255f * arrive)),
-                     Hud.FontLabel, centre: false);
+            // A DRAWN SIGN WHERE THERE IS ONE, and the typed name where there is not.
+            //
+            // A room with a real sign over its door should show it rather than spell it,
+            // and every screen in the mod lays its head out through here -- so the choice
+            // belongs here too, not in one screen that does it differently from the rest.
+            // The blurb still starts after whichever of the two was drawn.
+            var titleW = Hud.MeasureText(title, 0.31f, Hud.FontLabel);
+
+            var drawn = false;
+
+            if (!string.IsNullOrEmpty(sign))
+            {
+                var tall = SignH;
+                var wide = Hud.ToX(tall * signAspect);
+
+                drawn = Hud.File(sign, tx + wide * 0.5f, y + 0.011f, wide, tall, 0f,
+                                 Palette.Alpha(Palette.Text, (int)(255f * arrive)));
+
+                if (drawn) titleW = wide;
+            }
+
+            if (!drawn)
+            {
+                Hud.Text(title, tx, y, 0.31f, Palette.Alpha(Palette.Text, (int)(255f * arrive)),
+                         Hud.FontLabel, centre: false);
+            }
 
             if (!string.IsNullOrEmpty(blurb))
             {
-                var after = tx + Hud.MeasureText(title, 0.31f, Hud.FontLabel) + 0.010f;
+                var after = tx + titleW + 0.010f;
 
                 Hud.Text(blurb, after, y + 0.0035f, 0.25f,
                          Palette.Alpha(Palette.TextDim, (int)(175f * arrive)),
@@ -87,6 +112,9 @@ namespace Hoodrich.UI
         }
 
         private const float HeadIcon = 0.017f;
+
+        /// <summary>How tall a drawn sign is on a head. A hair over the title's own cap height.</summary>
+        private const float SignH = 0.020f;
 
         // ======================================================================
         // The meter

@@ -2387,7 +2387,7 @@ namespace Hoodrich
                 _hao.Showroom = () => _carScreen.Open();
                 _hao.TalkBuilder = () =>
                 {
-                    _talk.Title = "Hao's";
+                    _talk.Title = "Hao's Autos";
                     return _haoTalk.Root();
                 };
 

@@ -70,6 +70,16 @@ the street at large.
 Two models in those lists did not exist on this build at all, so every
 account that hashed onto one had no face and never would. They are gone.
 
+THE LOT IS HAO'S AUTOS, AND IT HAS A SIGN TOO. Blocks with the letters knocked
+out of them, one block a letter -- which in a white mask inverts exactly right:
+the blocks take the panel's colour and the letters are holes the panel shows
+through, so nothing has to be painted the colour of whatever it is sitting on.
+His blip says Hao's Autos now, and so does the conversation and the LUber stop.
+
+Every screen's header can carry a drawn sign in place of a typed name now,
+rather than one screen doing it its own way -- the blurb still starts after
+whichever of the two went down.
+
 THE GUN COUNTER IS THE HOOD ARMOURY, AND IT HAS A SIGN. It said HOOD WEAPONRY
 in the script face -- the face the phone uses for a person's name -- so the
 shop was introducing itself in the same hand a contact does. It is a drawn

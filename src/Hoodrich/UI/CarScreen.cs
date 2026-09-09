@@ -197,6 +197,9 @@ namespace Hoodrich.UI
 
         // ---- drawing -----------------------------------------------------------
 
+        /// <summary>The lot's own sign, and the shape of the file. See tools/make_haos.py.</summary>
+        private const float HaosAspect = 6.6930f;
+
         public void Draw()
         {
             if (!IsOpen) return;
@@ -224,9 +227,10 @@ namespace Hoodrich.UI
             var caps = Palette.Alpha(Palette.TextDim, (int)(190f * arrive));
 
             // ---- his name over the door, and what is in your pocket ----
-            var y = UiKit.Head(left, top, width, pad, "car.png", "HAO'S LOT",
+            var y = UiKit.Head(left, top, width, pad, "car.png", "HAO'S AUTOS",
                              "the row you just walked past",
-                             "$" + Game.Player.Money.ToString("N0") + " ON YOU", arrive);
+                             "$" + Game.Player.Money.ToString("N0") + " ON YOU", arrive,
+                             "haos.png", HaosAspect);
             y += 0.004f;
 
             if (stock.Count == 0)
