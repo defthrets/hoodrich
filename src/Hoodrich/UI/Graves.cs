@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Native;
@@ -32,9 +32,28 @@ namespace Hoodrich.UI
         /// <summary>885 radar_yankton, which is a headstone. See BLIPS.md.</summary>
         private const int Sprite = 885;
 
-        /// <summary>Red. A body is a red thing, and the headstone shape keeps it out of the
-        /// way of anything else red on that map.</summary>
-        private const int Colour = 1;
+        /// <summary>
+        /// Grey, and half faded.
+        ///
+        /// IT WAS RED, on the reasoning that a body is a red thing. True, and beside the point:
+        /// red on that map means somebody is SHOOTING AT YOU, and a headstone wearing it says
+        /// there is a fight over there when the fight is what has already finished. A dozen of
+        /// them after a shootout turned a quiet street into a map full of red.
+        ///
+        /// A grave is not a threat and it is not an errand -- it is a note about somewhere you
+        /// have already been, and it should sit under everything that is neither. Grey says
+        /// that, and the alpha says it again, so a headstone reads as a mark left behind rather
+        /// than as something asking you to go and look.
+        /// </summary>
+        private const int Colour = 40;
+
+        /// <summary>
+        /// How solid, 0-255. Half, so it sits UNDER the live markers rather than among them.
+        ///
+        /// Not lower: this is what tells you where you left something worth going back for, and
+        /// a mark you have to hunt for on the map is a mark that may as well not be there.
+        /// </summary>
+        private const int Alpha = 130;
 
         private const float Scale = 0.75f;
 
@@ -182,6 +201,10 @@ namespace Hoodrich.UI
                 Function.Call(Hash.SET_BLIP_COLOUR, mark.Handle, Colour);
                 Function.Call(Hash.SET_BLIP_SCALE, mark.Handle, Scale);
                 Function.Call(Hash.SET_BLIP_AS_SHORT_RANGE, mark.Handle, true);
+
+                // AFTER THE COLOUR, ALWAYS. SET_BLIP_COLOUR resets a blip's alpha to full, so
+                // the fade has to be the last word or it is silently undone by the line above.
+                Function.Call(Hash.SET_BLIP_ALPHA, mark.Handle, Alpha);
 
                 mark.Name = "Body";
 

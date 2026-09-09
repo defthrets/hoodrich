@@ -19,7 +19,7 @@ what it is and `496` does not.
 | 811 | `radar_van_keys` | a car you own -- `OwnedCars.cs` |
 | 810 | `radar_vehicle_deluxo` | Hao and his lot -- `Hao.cs` |
 | 923 | `radar_dog` | Trigger -- `Trigger.cs` |
-| 885 | `radar_yankton` | a body you made, for fifty seconds -- `Graves.cs` |
+| 885 | `radar_yankton` | a body you made, for fifty seconds -- `Graves.cs`. Grey (40) at half alpha; red said "fight here" about a fight that had finished |
 | 161 | `radar_mp_noise` | a LUber on its way to you -- `Luber.cs` |
 | 464 | `radar_spray_can` | tag spots -- `TagRun.cs` |
 
