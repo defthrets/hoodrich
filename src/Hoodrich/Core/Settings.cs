@@ -321,6 +321,17 @@ namespace Hoodrich.Core
         /// shop is that you can afford to change your face before a job, not that it is another
         /// thing to grind for.
         /// </summary>
+        /// <summary>
+        /// Whether a body you made gets a headstone on the map, and for how long.
+        ///
+        /// Bodies are lootable, and a body you have walked away from is a body you will not
+        /// find again -- a ped on the ground is invisible from six feet in this game. The mark
+        /// expires because the point of it is "that just happened, over there", which stops
+        /// being useful about as fast as the body stops being interesting.
+        /// </summary>
+        public bool KillMarks = true;
+        public int KillMarkSeconds = 50;
+
         public int MaskPrice = 350;
 
         public int MaskSlot = 8;
@@ -732,6 +743,9 @@ namespace Hoodrich.Core
                 if (!string.IsNullOrEmpty(packed)) Economy.Fit.Set(prop, Economy.Fit.Unpack(packed), persist: false);
             }
             s.DrugAnimLength = Clamp(ini.GetFloat("Highs", "AnimLength", s.DrugAnimLength), 0.5f, 3f);
+
+            s.KillMarks = ini.GetBool("Map", "KillMarks", s.KillMarks);
+            s.KillMarkSeconds = (int)Clamp(ini.GetInt("Map", "KillMarkSeconds", s.KillMarkSeconds), 0f, 600f);
 
             s.MaskPrice = (int)Clamp(ini.GetInt("Mask", "Price", s.MaskPrice), 0f, 100000f);
             s.MaskSlot = (int)Clamp(ini.GetInt("Mask", "Slot", s.MaskSlot), 0f, 11f);

@@ -140,6 +140,8 @@ namespace Hoodrich
 
         private readonly MaskScreen _maskScreen;
         private readonly MaskShop _maskShop;
+
+        private readonly Graves _graves = new Graves();
         private bool _dressed;
         private bool _carrying;
         private int _dressedBody;
@@ -890,6 +892,9 @@ namespace Hoodrich
                 };
 
                 _maskShop.Mark();
+
+                _graves.On = () => _cfg != null && _cfg.KillMarks;
+                _graves.Seconds = () => _cfg == null ? 50 : _cfg.KillMarkSeconds;
 
                 // The pegs live in the save, so the rail needs it. Without this every peg row
                 // is a beep -- which is exactly what the screen does when it has no state, on
@@ -3580,6 +3585,7 @@ namespace Hoodrich
                     _kitchen.Update();
                     _wardrobe.Update();
                     _maskShop?.Update();
+                    _graves.Update(Game.Player.Character);
                     _boot?.Update();
                     _search?.Update(Game.Player.Character);
                     _buffalo.Update(Game.Player.Character);
