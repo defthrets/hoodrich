@@ -1,6 +1,35 @@
 ﻿0.7.1 -- unreleased
 
 
+NOTHING VANISHES AT A TAKEOVER ANY MORE.
+
+A stranger who drove into the middle of one used to be deleted, car and all,
+once the crowd had finished with him -- which fixed the problem and looked like
+a bug: a car and a man in it, in front of sixty people, gone between two
+frames. Now he gets out and legs it. The car stays exactly where it stopped for
+the rest of the night, doors open, and becomes the best bit of scenery the
+event has.
+
+AND FEWER OF THEM GET IN AT ALL. The cordon was turning cars round at forty
+metres and was not allowed to ask the same driver twice inside two and a half
+seconds -- which sounds reasonable until you notice a car doing thirty covers
+twenty metres in that time, and twenty metres was the entire distance from the
+cordon to the crowd. So it was asked once on the line, carried on through the
+U-turn it had just been given, and was standing in the middle before anything
+could ask it again. Traffic is now turned at sixty-five metres, and inside
+thirty-four it is asked every single tick.
+
+A CAR LEFT ON THE CIRCLE GETS PUSHED OFF IT BY HAND. Everything else a stranger
+leaves behind is welcome to sit there, but the circle is the event and a
+hatchback parked on the mark is thirty drift cars working round an obstacle all
+night. Three of the crowd get behind it and lean on it until it is out of the
+way. If it will not move -- on its roof, wedged, nobody near enough to ask --
+they give up after half a minute and it stays. Nothing in the file deletes a
+car now.
+
+Thirty-five new things for the feed to say about all of it.
+
+
 THE BOOT OF YOUR CAR IS A STASH NOW.
 
 Stand at the back of any car you bought off Hao and hold E (D-pad left on

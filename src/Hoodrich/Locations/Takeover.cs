@@ -444,7 +444,7 @@ namespace Hoodrich.Locations
         /// worst thing that can happen at one of these. So anybody driving near it is made
         /// patient for as long as they are near it, and given themselves back when they leave.
         /// </summary>
-        private const float CalmRange = 50f;
+        private const float CalmRange = 85f;
 
         /// <summary>
         /// And how close anybody who is not part of it may get.
@@ -453,20 +453,36 @@ namespace Hoodrich.Locations
         /// on top of them. Anything of ours is exempt: the drifters live inside it, the
         /// spectators park on the line, and the police are supposed to come straight through.
         /// </summary>
-        private const float BlockAt = 40f;
+        private const float BlockAt = 65f;
 
         /// <summary>
-        /// And how close a stranger gets before it simply stops existing.
+        /// And where being asked politely stops.
         ///
-        /// THE TURN-ROUND IS A REQUEST AND THIS IS NOT. Forty metres out a car is asked to go
+        /// TURNING A CAR ONCE EVERY TWO AND A HALF SECONDS IS NOT ENOUGH UP CLOSE, which is
+        /// why so many were getting through. A car doing thirty covers twenty metres between
+        /// two turns -- and twenty metres was the entire distance from the old cordon to the
+        /// ring. So it was asked once on the line, carried on through the U-turn it had been
+        /// given, and was inside the crowd before anything was allowed to ask it again.
+        ///
+        /// Inside this, the gap is ignored and the turn is re-issued every tick. Outside it,
+        /// the gap still applies, because a driver re-tasked forty times on his way past a
+        /// junction he was never going to enter drives like a man having a stroke.
+        /// </summary>
+        private const float HardTurnAt = 34f;
+
+        /// <summary>
+        /// And how close a stranger gets before he stops being asked and starts being dealt
+        /// with.
+        ///
+        /// THE TURN-ROUND IS A REQUEST AND THIS IS NOT. Out at the cordon a car is asked to go
         /// back the way it came, which works on a driver who is listening -- most are. The ones
         /// that are not, because they are mid-manoeuvre or wedged or being shoved by something
-        /// else, used to carry on into a junction with sixty people stood in it.
+        /// else, carry on into a junction with sixty people stood in it.
         ///
-        /// At the ring they are removed. Nineteen metres is where the crowd starts, so it is
-        /// the last moment it can happen without being a car vanishing in front of somebody --
-        /// and a car that has got that far through a closed junction was never going to be
-        /// talked out of it.
+        /// At the ring the asking stops. Nineteen metres is where the crowd starts, and a car
+        /// that has got that far through a closed junction was never going to be talked out of
+        /// it -- so the crowd has its go at him, and then he gets out and walks. NOT deleted,
+        /// which is what used to happen here and what the name still remembers: see Ditch.
         ///
         /// ONLY TRAFFIC. Something with a driver in it, that is not ours and is not yours. A
         /// parked car is left alone whoever it belongs to, because the one thing worse than a
@@ -800,6 +816,9 @@ namespace Hoodrich.Locations
             /// <summary>Until when they are getting out of a car's way, and until when they are on a driver.</summary>
             public int Dodge;
             public int Angry;
+
+            /// <summary>Until when he has his hands on a stranger's car, shoving it off the circle.</summary>
+            public int Push;
 
             /// <summary>The stranger's car they went for; until when they are on the car itself; the next hit; whether from the roof.</summary>
             public Vehicle Wrecking;
@@ -1231,6 +1250,7 @@ namespace Hoodrich.Locations
                         Walking();
                         Parking(now);
                         Sweep(now);
+                        Shove(now);
                         Keep(now);
                         Working(now);
                         Chatter(now);
@@ -1600,8 +1620,10 @@ namespace Hoodrich.Locations
             {
                 if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
 
-                // Somebody getting out of a car's way, on a driver, or in the middle, is left to it.
+                // Somebody getting out of a car's way, on a driver, in the middle, or with his
+                // hands on a car that has to be moved, is left to it.
                 if (w.Dodge > now || w.Angry > now || w.Rush != 0 || w.Wreck != 0) continue;
+                if (w.Push > now) continue;
 
                 // AND SO IS SOMEBODY BUYING SOMETHING OFF YOU. He walked out of the ring on
                 // purpose; dragging him back to his spot mid-deal is what stopped anybody at a
@@ -1805,7 +1827,7 @@ namespace Hoodrich.Locations
                     if ((driver == null || !driver.Exists() || !driver.IsAlive)
                         && !Ours(car) && !LawCar(car) && car.Position.DistanceTo(Middle) < EatAt)
                     {
-                        Eat(car, null);
+                        Stray(car);
                         continue;
                     }
 
@@ -1846,7 +1868,7 @@ namespace Hoodrich.Locations
                     // nobody saw -- the log had the two lines a second apart. See Eat.
                     if (in_ < EatAt)
                     {
-                        Eat(car, driver);
+                        Ditch(car, driver);
                         continue;
                     }
 
@@ -1854,7 +1876,9 @@ namespace Hoodrich.Locations
 
                     int turned;
 
-                    if (_turned.TryGetValue(car.Handle, out turned)
+                    // NEAR THE CROWD HE IS ASKED EVERY TICK. See HardTurnAt.
+                    if (in_ > HardTurnAt
+                        && _turned.TryGetValue(car.Handle, out turned)
                         && Game.GameTime - turned < TurnGapMs)
                     {
                         continue;
@@ -2105,12 +2129,26 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
-        /// A stranger's car inside the ring goes -- after the crowd has had its turn on it.
-        /// The first sight of it starts a clock; for the length of the crowd's temper and a
-        /// moment more it is left alone, and whatever is still in the circle after that --
-        /// the car and its driver, or the car on its own -- is removed.
+        /// A stranger who drove into it gets out and runs for it, and his car stays where it
+        /// stopped.
+        ///
+        /// NOTHING VANISHES ANY MORE, AND THAT IS THE POINT. This deleted the car and the man
+        /// in it together once the crowd's temper ran out. It solved the problem and it looked
+        /// like a bug: a car and a driver, in front of sixty people, gone between two frames.
+        /// The thing that actually happens at one of these is that he gets surrounded, decides
+        /// it is not worth it, leaves the car in the road and goes on foot -- and the car sits
+        /// there for the rest of the night, which is better scenery than anything this file
+        /// could have parked on purpose.
+        ///
+        /// THE CROWD STILL GETS ITS TURN FIRST, on the same clock as before. Crowding puts the
+        /// nearest few on him the moment he is inside the ring; this is what happens when they
+        /// are done with him, not instead of it.
+        ///
+        /// THE RUN IS NOT ISSUED HERE. TASK_LEAVE_VEHICLE is a task, and a second task given on
+        /// the same frame replaces it -- so telling him to get out and then to run means he
+        /// never gets out. Shove watches for him to be on his feet and sends him then.
         /// </summary>
-        private void Eat(Vehicle car, Ped driver)
+        private void Ditch(Vehicle car, Ped driver)
         {
             // NOT ONE THE CROWD HAS BEEN ON. A car they went for stays where it ended up,
             // however wrecked, for the rest of the night: it is part of what happened.
@@ -2127,19 +2165,365 @@ namespace Hoodrich.Locations
 
             if (now - since < LetInMs) return;
 
+            _letIn.Remove(car.Handle);
+
             try
             {
-                if (driver != null && driver.Exists()) driver.Delete();
-                car.Delete();
+                // Stopped before he opens the door. A man stepping out of a rolling car is a
+                // man under it.
+                Function.Call(Hash.SET_VEHICLE_HANDBRAKE, car.Handle, true);
+                Function.Call(Hash.SET_VEHICLE_FORWARD_SPEED, car.Handle, 0f);
 
-                Log.Info("Takeover: something drove into it. Removed, after the crowd had its say.");
+                if (driver != null && driver.Exists() && driver.IsAlive)
+                {
+                    // He can hear the world again. Being deaf to it is what had him driving
+                    // calmly into a crowd in the first place, and he is done doing that.
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, driver.Handle, false);
+                    Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, driver.Handle, 0, true);
+
+                    Function.Call(Hash.CLEAR_PED_TASKS, driver.Handle);
+                    Function.Call(Hash.TASK_LEAVE_VEHICLE, driver.Handle, car.Handle, 0);
+                    Function.Call(Hash.SET_PED_KEEP_TASK, driver.Handle, true);
+
+                    _leaving[driver.Handle] = driver;
+                }
+
+                Stray(car);
+
+                Log.Info("Takeover: somebody drove into it. He's out and away, and it stays.");
             }
             catch
             {
-                // Next tick.
+                // He keeps his seat and they keep at him. Next tick.
+            }
+        }
+
+        /// <summary>
+        /// A car nobody is coming back for.
+        ///
+        /// Put on the beaten list, which is the list of things that are part of what happened
+        /// tonight and are never touched again, and handed back to the game so the street can
+        /// clean it up once nobody is looking at it. The engine goes off because an abandoned
+        /// car idling in the middle of a crowd is the one detail that gives it away.
+        /// </summary>
+        private void Stray(Vehicle car)
+        {
+            if (car == null || !car.Exists()) return;
+            if (!_beaten.Add(car.Handle)) return;
+
+            _strays.Add(car);
+
+            try
+            {
+                Function.Call(Hash.SET_VEHICLE_ENGINE_ON, car.Handle, false, true, true);
+
+                car.IsPersistent = false;
+                car.MarkAsNoLongerNeeded();
+            }
+            catch
+            {
+                // It sits there running. Still better than gone.
+            }
+        }
+
+        // ==================================================================
+        // Getting it off the circle
+        // ==================================================================
+
+        /// <summary>
+        /// The drivers on their way out of a car, the car being pushed, and who has hold of it.
+        /// </summary>
+        private readonly Dictionary<int, Ped> _leaving = new Dictionary<int, Ped>();
+        private readonly List<int> _gone = new List<int>();
+
+        private readonly List<Vehicle> _strays = new List<Vehicle>();
+        private readonly List<Watcher> _shovers = new List<Watcher>();
+        private readonly HashSet<int> _shoved = new HashSet<int>();
+
+        private Vehicle _shoving;
+        private int _shoveUntil;
+        private int _nextPick;
+
+        /// <summary>Three men leaning on the back of a car, from the Paleto score.</summary>
+        private const string PushDict = "missheistpaletoscore1";
+        private const string PushClip = "push_car_loop_ped";
+
+        /// <summary>How near the circle it has to be to be worth moving, and how far out is clear.</summary>
+        private const float ShoveWithin = 13f;
+        private const float ShoveClear = 21f;
+
+        /// <summary>Who is near enough to be asked, where they stand, and how close counts as hands on.</summary>
+        private const float ShoveFrom = 18f;
+        private const float ShoveStand = 3.2f;
+        private const float ShoveHands = 4.6f;
+
+        private const int ShoveCrew = 3;
+        private const int PickEveryMs = 1500;
+        private const int ShoveGiveUpMs = 30000;
+
+        /// <summary>
+        /// How hard each man pushes, and how fast it is allowed to end up going.
+        ///
+        /// CAPPED BY SPEED RATHER THAN TUNED BY MASS. An impulse that rolls a Blista shoots a
+        /// Panto across the junction and does nothing at all to a Dubsta, and there is no one
+        /// number that is right for all three. So the push is small, it is applied every frame
+        /// while it is under walking pace, and it stops the moment it is over -- which comes
+        /// out at the same speed whatever they are pushing.
+        /// </summary>
+        private const float ShoveForce = 0.30f;
+        private const float ShoveSpeed = 2.1f;
+
+        /// <summary>
+        /// Whoever drove in has got out, so send him away; and a car left on the circle is
+        /// pushed off it by whoever is nearest.
+        ///
+        /// A CAR IN THE MIDDLE IS THE ONE THING THAT CANNOT JUST BE LEFT. Everything else a
+        /// stranger brings in becomes scenery and is welcome to it -- but the circle is the
+        /// event, and a Premier parked on the mark is thirty drift cars working round an
+        /// obstacle for the rest of the night.
+        ///
+        /// PUSHED, NOT REMOVED. Three of them get behind it and lean on it until it is out of
+        /// the way, which is a thing you can watch happen and is what a crowd would actually
+        /// do. If it will not move -- on its roof, wedged, nobody near enough to ask -- it is
+        /// given up on after half a minute and stays where it is. Nothing here deletes.
+        /// </summary>
+        private void Shove(int now)
+        {
+            // ---- anybody who has got out, sent on his way ----
+            if (_leaving.Count > 0)
+            {
+                _gone.Clear();
+
+                foreach (var pair in _leaving)
+                {
+                    var man = pair.Value;
+
+                    if (man == null || !man.Exists() || !man.IsAlive)
+                    {
+                        _gone.Add(pair.Key);
+                        continue;
+                    }
+
+                    if (man.IsInVehicle()) continue;
+
+                    _gone.Add(pair.Key);
+
+                    try
+                    {
+                        Function.Call(Hash.TASK_SMART_FLEE_COORD, man.Handle,
+                                      Middle.X, Middle.Y, Middle.Z, 220f, -1, false, false);
+                        Function.Call(Hash.SET_PED_KEEP_TASK, man.Handle, true);
+
+                        man.IsPersistent = false;
+                        man.MarkAsNoLongerNeeded();
+                    }
+                    catch
+                    {
+                        // He walks off in his own time.
+                    }
+                }
+
+                foreach (var h in _gone) _leaving.Remove(h);
             }
 
-            _letIn.Remove(car.Handle);
+            // ---- the one being pushed ----
+            if (_shoving != null)
+            {
+                var done = !_shoving.Exists()
+                           || now > _shoveUntil
+                           || _shoving.Position.DistanceTo(Circle) > ShoveClear;
+
+                if (done)
+                {
+                    Unpush();
+                }
+                else
+                {
+                    Pushing(now);
+                    return;
+                }
+            }
+
+            if (now < _nextPick) return;
+            _nextPick = now + PickEveryMs;
+
+            Pick(now);
+        }
+
+        /// <summary>Hands on it, and a nudge every frame while it is under walking pace.</summary>
+        private void Pushing(int now)
+        {
+            var out_ = _shoving.Position - Circle;
+            var len = out_.Length();
+
+            out_ = len < 0.5f ? _shoving.ForwardVector : out_ * (1f / len);
+
+            var on = 0;
+
+            foreach (var w in _shovers)
+            {
+                if (w == null || w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
+
+                w.Push = now + PickEveryMs * 3;
+
+                if (w.Man.Position.DistanceTo(_shoving.Position) > ShoveHands) continue;
+
+                on++;
+
+                try
+                {
+                    var going = Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, w.Man.Handle,
+                                                    PushDict, PushClip, 3);
+
+                    if (!going)
+                    {
+                        Function.Call(Hash.TASK_PLAY_ANIM, w.Man.Handle, PushDict, PushClip,
+                                      4f, -4f, -1, 1, 0f, false, false, false);
+                    }
+                }
+                catch
+                {
+                    // He stands there. The car still moves; the others are on it.
+                }
+            }
+
+            if (on == 0) return;
+
+            try
+            {
+                // The handbrake came on when it was abandoned, and a car with the handbrake on
+                // does not roll however many people are behind it.
+                Function.Call(Hash.SET_VEHICLE_HANDBRAKE, _shoving.Handle, false);
+
+                if (_shoving.Velocity.Length() >= ShoveSpeed) return;
+
+                Function.Call(Hash.APPLY_FORCE_TO_ENTITY, _shoving.Handle, 1,
+                              out_.X * ShoveForce, out_.Y * ShoveForce, 0f,
+                              0f, 0f, 0f,
+                              0, false, true, true, false, true);
+            }
+            catch
+            {
+                // Next frame.
+            }
+        }
+
+        /// <summary>The next car sitting on the circle, and three people to move it.</summary>
+        private void Pick(int now)
+        {
+            for (var i = _strays.Count - 1; i >= 0; i--)
+            {
+                var car = _strays[i];
+
+                if (car == null || !car.Exists())
+                {
+                    _strays.RemoveAt(i);
+                    continue;
+                }
+
+                if (_shoved.Contains(car.Handle)) continue;
+                if (car.Position.DistanceTo(Circle) > ShoveWithin) continue;
+
+                // On its roof there is nothing three men can do with it, and trying looks
+                // worse than leaving it.
+                if (Function.Call<bool>(Hash.IS_ENTITY_UPSIDEDOWN, car.Handle)) continue;
+
+                var out_ = car.Position - Circle;
+                var len = out_.Length();
+
+                out_ = len < 0.5f ? car.ForwardVector : out_ * (1f / len);
+
+                var side = new Vector3(-out_.Y, out_.X, 0f);
+
+                var picked = 0;
+
+                Function.Call(Hash.REQUEST_ANIM_DICT, PushDict);
+
+                foreach (var w in _crowd)
+                {
+                    if (picked >= ShoveCrew) break;
+
+                    if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
+                    if (w.Dodge != 0 || w.Angry != 0 || w.Wreck != 0 || w.Rush != 0) continue;
+                    if (w.Man.Position.DistanceTo(car.Position) > ShoveFrom) continue;
+
+                    // Behind it, on the circle's side, so they push it AWAY from the middle.
+                    var to = car.Position - out_ * ShoveStand + side * ((picked - 1) * 1.1f);
+
+                    var face = (float)((Math.Atan2(-out_.X, out_.Y) * 180.0 / Math.PI + 360.0) % 360.0);
+
+                    try
+                    {
+                        Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
+                        Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, w.Man.Handle,
+                                      to.X, to.Y, to.Z, 2.0f, 8000, face, 0.4f);
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+
+                    w.There = false;
+                    w.Away = 0;
+                    w.Push = now + ShoveGiveUpMs;
+
+                    _shovers.Add(w);
+                    picked++;
+                }
+
+                if (picked == 0)
+                {
+                    _shovers.Clear();
+                    return;
+                }
+
+                _shoving = car;
+                _shoveUntil = now + ShoveGiveUpMs;
+                _shoved.Add(car.Handle);
+
+                Log.Info("Takeover: a car was left on the circle. They're shifting it.");
+                return;
+            }
+        }
+
+        /// <summary>Hands off, back to the pavement, and the brake back on wherever it ended up.</summary>
+        private void Unpush()
+        {
+            foreach (var w in _shovers)
+            {
+                if (w == null) continue;
+
+                w.Push = 0;
+
+                if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
+
+                try
+                {
+                    Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
+                }
+                catch
+                {
+                    // Home tells him anyway.
+                }
+
+                Home(w);
+            }
+
+            _shovers.Clear();
+
+            if (_shoving != null && _shoving.Exists())
+            {
+                try
+                {
+                    Function.Call(Hash.SET_VEHICLE_HANDBRAKE, _shoving.Handle, true);
+                }
+                catch
+                {
+                    // It rolls a little further. It is off the circle either way.
+                }
+            }
+
+            _shoving = null;
         }
 
         // ==================================================================
@@ -8039,6 +8423,13 @@ namespace Hoodrich.Locations
             _nobodyAt = 0;
             _angryAt.Clear();
             _letIn.Clear();
+
+            Unpush();
+
+            _leaving.Clear();
+            _gone.Clear();
+            _strays.Clear();
+            _shoved.Clear();
             _beaten.Clear();
             _nextRush = 0;
             _tuned = 0;
