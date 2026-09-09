@@ -99,12 +99,14 @@ namespace Hoodrich.Locations
         /// vehicles, which is the whole business model, and it is why the same order twice
         /// should not look the same twice.
         ///
-        /// The Chavos is painted white and the white is not decoration: a plain white sedan
-        /// with nothing on it is the most anonymous car on the road and is exactly what this
-        /// job gets done in. The Asterope GZ and the Asbo are left completely stock -- one is
-        /// the dullest saloon on the road and the other is the smallest car in the game, and
-        /// somebody is delivering your dinner in it. The Pizza Boy already has the box on the
-        /// back, so it wants nothing doing to it at all.
+        /// EVERY CAR IS WHITE and the white is not decoration: a plain white saloon with
+        /// nothing on it is the most anonymous car on the road and is exactly what this job gets
+        /// done in. Three different shapes in the same colour still reads as people using their
+        /// own cars -- what it stops being is three unrelated cars that happen to turn up.
+        ///
+        /// THE SCOOTERS ARE NOT PAINTED. A Pizza Boy already carries its own livery and its own
+        /// box; painting that white takes the one vehicle in the list that looks like a delivery
+        /// and makes it look like a hire scooter.
         ///
         /// ONE ROLL, NOT A LIST WALKED IN ORDER. Walking it top-down would mean every delivery
         /// on an install that has the Chavos came in the Chavos. One is picked at random and
@@ -115,8 +117,8 @@ namespace Hoodrich.Locations
         private static readonly Wheels[] Rides =
         {
             new Wheels { Model = "chavosv6", White = true },
-            new Wheels { Model = "asterope2" },
-            new Wheels { Model = "asbo" },
+            new Wheels { Model = "asterope2", White = true },
+            new Wheels { Model = "asbo", White = true },
             new Wheels { Model = "pizzaboy", Bike = true },
             new Wheels { Model = "faggio2", Bike = true },
             new Wheels { Model = "esskey", Bike = true }
@@ -316,6 +318,9 @@ namespace Hoodrich.Locations
 
         /// <summary>What he came in, which decides the paint and the helmet.</summary>
         private Wheels _ride;
+
+        /// <summary>Whether he has been sent on his way after the handover. See Off.</summary>
+        private bool _droveOff;
 
         /// <summary>When he next has something to say on the way, and how many he has left.</summary>
         private int _chatAt;
@@ -719,6 +724,8 @@ namespace Hoodrich.Locations
         /// <summary>Back on the moped and gone.</summary>
         private void Leaving(int now)
         {
+            Off(now);
+
             var done = now - _phaseFrom > LeaveCapMs;
 
             if (!done)
@@ -735,6 +742,57 @@ namespace Hoodrich.Locations
             Clean();
             State = FoodState.None;
             What = "";
+        }
+
+        /// <summary>
+        /// Aboard, and actually going.
+        ///
+        /// LEAVE ONLY TELLS HIM TO GET IN. That is all it ever did -- so he walked to the
+        /// moped, got on it, and then sat there until the clean-up ran a minute later, which
+        /// from the pavement is a delivery driver who has decided to live outside your house.
+        /// The drive-away task existed the whole time and was in Away, at the END of that
+        /// minute, by which point he is handed to the game anyway.
+        ///
+        /// IT HAS TO BE WATCHED FOR RATHER THAN QUEUED. Entering a vehicle takes as long as it
+        /// takes, and a second task given on the same frame replaces the first -- tell him to
+        /// get in and drive off together and he does neither. So this waits until he is in the
+        /// seat and tasks him then, the same way the driver who bails out of a car in the
+        /// takeover is sent running only once he is on his feet.
+        ///
+        /// AND HE WALKS IF HE CANNOT RIDE. The moped can be gone, wedged, on fire or have
+        /// somebody stood against it; none of those is a reason to stand next to it for the
+        /// rest of the night.
+        /// </summary>
+        private void Off(int now)
+        {
+            if (_droveOff) return;
+            if (_rider == null || !_rider.Exists() || !_rider.IsAlive) return;
+
+            var aboard = _bike != null && _bike.Exists() && _rider.IsInVehicle(_bike);
+
+            if (!aboard && now - _phaseFrom < BoardCapMs) return;
+
+            _droveOff = true;
+
+            try
+            {
+                if (aboard)
+                {
+                    Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, _rider.Handle, _bike.Handle,
+                                  RideSpeed, Style);
+                }
+                else
+                {
+                    Function.Call(Hash.CLEAR_PED_TASKS, _rider.Handle);
+                    Function.Call(Hash.TASK_WANDER_STANDARD, _rider.Handle, 10f, 10);
+                }
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, _rider.Handle, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not send the LUber rider off: " + ex.Message);
+            }
         }
 
         // ---- the people and the things ------------------------------------------
@@ -774,10 +832,9 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _bike.Handle, true, true, false);
                 Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, _bike.Handle, 0f);
 
-                // ONLY THE ONE THAT IS MEANT TO BE WHITE. Everything used to be painted, on
-                // the reasoning that a delivery fleet is a fleet -- which is exactly the idea
-                // that has gone. A stock Asbo painted white is not a stock Asbo, and a Pizza
-                // Boy painted white is a Pizza Boy with its own livery taken off it.
+                // THE CARS, NOT THE SCOOTERS. See Rides: three shapes in one colour still
+                // reads as people using their own cars, and a Pizza Boy painted white is a
+                // Pizza Boy with its own livery taken off it.
                 //
                 // Written as a custom colour rather than a paint index for the reason
                 // Luber.Make gives: the index table has several whites in it and one of them
@@ -1038,6 +1095,9 @@ namespace Hoodrich.Locations
         /// <summary>How long the first line waits for his photograph before going without it.</summary>
         private const int FaceWaitMs = 6000;
 
+        /// <summary>How long he is given to get on the thing before he gives up and walks.</summary>
+        private const int BoardCapMs = 12000;
+
         /// <summary>How many updates one delivery can carry, and how far apart they fall.</summary>
         private const int ChatMost = 3;
         private const int ChatMinMs = 14000;
@@ -1210,6 +1270,7 @@ namespace Hoodrich.Locations
             // and carries its own copy of who is asking, which is the whole point of it.
             _chatAt = 0;
             _chatLeft = 0;
+            _droveOff = false;
         }
 
         /// <summary>
