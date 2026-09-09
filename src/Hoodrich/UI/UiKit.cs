@@ -276,6 +276,17 @@ namespace Hoodrich.UI
         public static string Drop => Hud.OnPad ? "X" : "SPACE";
         public static string All => Hud.OnPad ? "HOLD A" : "SHIFT";
 
+        /// <summary>
+        /// The same button held, for a screen whose "everything" is a LONG PRESS of the take
+        /// button rather than a second button alongside it.
+        ///
+        /// A takes one and A held takes the lot, which needs no second thing to learn and no
+        /// second thing to reach. The boot and the house still use Drop and All, because
+        /// putting a thing down and taking a thing are different actions there and deserve
+        /// different buttons.
+        /// </summary>
+        public static string HoldConfirm => Hud.OnPad ? "HOLD A" : "HOLD ENTER";
+
         // ======================================================================
         // Tags and words
         // ======================================================================

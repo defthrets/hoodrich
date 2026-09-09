@@ -1,6 +1,47 @@
 ﻿0.7.1 -- unreleased
 
 
+A ON THE PAD TAKES WHAT IS ON A BODY. IT WAS X.
+
+The loot screen borrowed the boot's pair -- jump to move one, jump with sprint
+to move them all -- and on a pad that is X, with A as the modifier. So the one
+button everybody presses to do the obvious thing did nothing here, and the
+obvious thing was on the button next to it.
+
+A takes the one under the cursor and A HELD takes the lot: the same action done
+harder, on the same button, with nothing extra to learn and nothing extra to
+reach for. The tap fires on release, so a hold does not take one on the way past.
+The boot and the house keep their pair, because putting a thing down and taking
+a thing are two different actions there.
+
+THE BODY IS A HIM OR A HER, AND THE SCREEN NOW KNOWS WHICH.
+
+"What was on him", "Nothing on him", "That's everything he had", "LEAVE HIM" --
+all of it was printed over women. The sex was worked out when the body was made
+and then thrown away; it is kept now, and every line reads from it.
+
+It is also worked out BETTER. IS_PED_MALE is not reliable and the model name is:
+every ped Rockstar ship carries its sex in the middle of its name, and that
+convention has no exceptions in the game's own list. A woman on the pavement came
+up as Errol Hobbs, six foot five, because the flag said male and nothing else was
+asked. The name decides now; the flag is the fallback for an add-on ped.
+
+AND THE CARD IS SET LIKE A CARD.
+
+ETHNICITY was printed through the date of birth -- the label sat exactly where
+the value above it ended -- so the gap between lines is now bigger than the thing
+that goes in it, which is the only arrangement that cannot collide.
+
+The name is the condensed face in capitals, which is how a name is printed on
+every licence anybody has been handed; it was the reading face at a display size,
+which is body copy made big. A long one is stepped down to fit rather than cut.
+There is a rule under it, which is most of what makes four labels beside a
+photograph read as a card. The photograph has an edge, matches the height of the
+text beside it, and the labels sit a shade quieter than the answers.
+
+An empty body no longer gets a whole tile of blank panel to say so in.
+
+
 A SCENE CAN TAKE SOMETHING OUT OF THE WORLD AS WELL AS PUT SOMETHING IN.
 
 The spooner records what you PUT somewhere. There is no tag anywhere in its

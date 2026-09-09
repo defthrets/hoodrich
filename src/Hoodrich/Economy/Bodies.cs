@@ -70,6 +70,20 @@ namespace Hoodrich.Economy
         public string Ethnicity = "";
         public string Affiliation = "";
 
+        /// <summary>
+        /// Whether the body is a woman, which the screen needs and the pronouns need.
+        ///
+        /// It was worked out and thrown away: the sex picked the first name and the height and
+        /// then went out of scope, so every line of copy on the screen said "him" over a woman
+        /// lying on the pavement.
+        /// </summary>
+        public bool Female;
+
+        /// <summary>"him" or "her", and the rest of it, so no screen has to work it out twice.</summary>
+        public string Him { get { return Female ? "her" : "him"; } }
+        public string He { get { return Female ? "she" : "he"; } }
+        public string His { get { return Female ? "her" : "his"; } }
+
         /// <summary>Their picture, once the game has made one. See UI.LootScreen.</summary>
         public string Face = "";
 
@@ -197,11 +211,11 @@ namespace Hoodrich.Economy
             try { seed = Seed(who); }
             catch { seed = (uint)who.Handle; }
 
-            var male = true;
-            try { male = Function.Call<bool>(Hash.IS_PED_MALE, who.Handle); }
-            catch { /* most of them are */ }
-
             var model = Model(who);
+
+            var male = Male(who, model);
+
+            body.Female = !male;
 
             body.Affiliation = Set(who, model);
             body.Ethnicity = Race(model, ref seed);
@@ -397,6 +411,32 @@ namespace Hoodrich.Economy
         {
             "White", "Black", "Hispanic", "Asian", "Mixed", "Middle Eastern"
         };
+
+        /// <summary>
+        /// Whether this one is a man, by the model's own name first and the flag second.
+        ///
+        /// IS_PED_MALE IS NOT RELIABLE AND THE MODEL NAME IS. Every ped model Rockstar ship
+        /// carries its sex in the middle of its name -- a_f_y_beach_01, s_m_y_cop_01,
+        /// mp_f_freemode_01 -- and that convention has no exceptions in the list this machine
+        /// has. The flag does: a woman on the pavement came up as Errol Hobbs, six foot five,
+        /// because the flag said male and nothing else was asked.
+        ///
+        /// So the name decides where it says anything, and the flag is the fallback for a
+        /// model whose name follows no convention -- an add-on ped, mostly.
+        /// </summary>
+        private static bool Male(Ped who, string model)
+        {
+            if (!string.IsNullOrEmpty(model))
+            {
+                var name = model.ToLowerInvariant();
+
+                if (name.Contains("_f_") || name.StartsWith("f_", StringComparison.Ordinal)) return false;
+                if (name.Contains("_m_") || name.StartsWith("m_", StringComparison.Ordinal)) return true;
+            }
+
+            try { return Function.Call<bool>(Hash.IS_PED_MALE, who.Handle); }
+            catch { return true; }
+        }
 
         private static string Called(bool male, string race, ref uint seed)
         {

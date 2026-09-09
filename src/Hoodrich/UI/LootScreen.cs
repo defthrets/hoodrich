@@ -34,8 +34,16 @@ namespace Hoodrich.UI
         private const float PadH = 0.024f;
 
         /// <summary>The identity strip: the photograph and the five things on the card.</summary>
-        private const float CardH = 0.090f;
-        private const float PhotoH = 0.076f;
+        /// <summary>
+        /// The card, and the photograph on it.
+        ///
+        /// TALLER THAN IT WAS, because the fields underneath the name now have room between
+        /// them rather than being stacked until they touched. The photograph matches the text
+        /// block beside it rather than falling short of it, which is the difference between a
+        /// card and a picture with some writing next to it.
+        /// </summary>
+        private const float CardH = 0.104f;
+        private const float PhotoH = 0.096f;
 
         /// <summary>One square of the grid, and how many across.</summary>
         private const float TileH = 0.082f;
@@ -43,6 +51,9 @@ namespace Hoodrich.UI
         private const int MaxRows = 3;
 
         private const float GridPad = 0.006f;
+
+        /// <summary>How much room "Nothing on him." gets. See Draw.</summary>
+        private const float EmptyH = 0.044f;
 
         /// <summary>The line under the grid that names the chosen thing.</summary>
         private const float NoteH = 0.050f;
@@ -96,6 +107,8 @@ namespace Hoodrich.UI
             _lastSelected = -1;
             _page = 0;
             _tookName = "";
+            _downSince = 0;
+            _tookAll = false;
             _openedAt = _pickedAt = Game.GameTime;
 
             _glide.Reset();
@@ -222,7 +235,10 @@ namespace Hoodrich.UI
 
             if (_body.Items.Count == 0)
             {
-                // Nothing left. One press of anything and he stands up.
+                _downSince = 0;
+                _tookAll = false;
+
+                // Nothing left. One press of anything and it is over.
                 if (Pressed(Control.Jump) || Pressed(Control.FrontendAccept)) Close();
                 return;
             }
@@ -232,16 +248,52 @@ namespace Hoodrich.UI
             else if (Pressed(Control.PhoneLeft) || Pressed(Control.FrontendLeft)) Move(-1, 0);
             else if (Pressed(Control.PhoneRight) || Pressed(Control.FrontendRight)) Move(1, 0);
 
-            if (Game.GameTime < _nextRepeat) return;
+            // A TAKES IT, AND A HELD TAKES THE LOT.
+            //
+            // IT WAS X, AND IT WAS X BECAUSE OF WHAT IT BORROWED. This screen used the boot's
+            // pair -- jump to move one, jump with sprint to move them all -- and on a pad that
+            // is X, with A as the modifier. So the one button everybody presses to do the
+            // obvious thing did nothing here, and the obvious thing was on the button next to
+            // it. The boot and the house keep that pair, because putting a thing down and
+            // taking a thing are two actions there; here there is only taking.
+            //
+            // TAP AND HOLD RATHER THAN TWO BUTTONS. The lot is the same action done harder,
+            // so it is the same button held -- nothing extra to learn and nothing extra to
+            // reach for. The tap fires on RELEASE, because a tap that fired on the press would
+            // take one and then take the lot a moment later while the finger was still down.
+            var take = Held(Control.FrontendAccept) || Held(Control.Context) || Held(Control.Jump);
 
-            // SPACE TAKES THE ONE UNDER THE CURSOR. Held with sprint, it takes the lot --
-            // the same pair of keys the boot and the house use to move things.
-            if (Held(Control.Jump))
+            if (take)
             {
-                if (Held(Control.Sprint)) Everything();
-                else One();
+                if (_downSince == 0) _downSince = Game.GameTime;
+
+                // Long enough: the lot, once, and the release afterwards does nothing.
+                if (!_tookAll && Game.GameTime - _downSince >= HoldMs)
+                {
+                    _tookAll = true;
+
+                    if (Game.GameTime >= _nextRepeat) Everything();
+                }
+
+                return;
             }
+
+            if (_downSince == 0) return;
+
+            var brief = !_tookAll;
+
+            _downSince = 0;
+            _tookAll = false;
+
+            if (brief && Game.GameTime >= _nextRepeat) One();
         }
+
+        /// <summary>When the take button went down, and whether the hold has already fired.</summary>
+        private int _downSince;
+        private bool _tookAll;
+
+        /// <summary>How long it has to be held before it means all of it rather than one.</summary>
+        private const int HoldMs = 420;
 
         private void Move(int dx, int dy)
         {
@@ -363,7 +415,12 @@ namespace Hoodrich.UI
             var tileW = (panelWidth - pad * 2f) / Columns;
             var tileH = TileH;
 
-            var height = UiKit.HeadH + CardH + GridPad + rows * tileH + GridPad + NoteH + UiKit.FootH;
+            // AN EMPTY BODY IS NOT A ROW OF NOTHING. A pocketful of air was given a whole
+            // tile's worth of height to say "Nothing on him." in, so the one case with the
+            // least to show got the biggest hole in the middle of it.
+            var shelf = count == 0 ? EmptyH : rows * tileH;
+
+            var height = UiKit.HeadH + CardH + GridPad + shelf + GridPad + NoteH + UiKit.FootH;
 
             var left = 0.5f - panelWidth * 0.5f;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
@@ -380,7 +437,8 @@ namespace Hoodrich.UI
             var wide = right - x;
 
             var y = UiKit.Head(left, top, panelWidth, pad, "people.png", "THE BODY",
-                               "what was on him", _body.Affiliation.ToUpperInvariant(), arrive);
+                               "what was on " + _body.Him,
+                               _body.Affiliation.ToUpperInvariant(), arrive);
 
             Identity(x, y, wide, arrive);
 
@@ -388,9 +446,9 @@ namespace Hoodrich.UI
 
             _glide.Begin();
 
-            Grid(x, y, tileW, tileH, rows, arrive);
+            Grid(x, y, tileW, tileH, rows, shelf, arrive);
 
-            y += rows * tileH + GridPad;
+            y += shelf + GridPad;
 
             Note(x, y, wide, arrive);
 
@@ -407,13 +465,18 @@ namespace Hoodrich.UI
         /// </summary>
         private void Identity(float x, float y, float wide, float arrive)
         {
-            var ink = Palette.Alpha(Palette.Text, (int)(255f * arrive));
-            var dim = Palette.Alpha(Palette.TextDim, (int)(190f * arrive));
+            var ink = Palette.Alpha(Palette.Text, (int)(252f * arrive));
+            var dim = Palette.Alpha(Palette.TextDim, (int)(200f * arrive));
+
+            // The quiet tone for a LABEL, which is a different job from a value nobody has
+            // read yet. Below the dim grey the panel uses for text somebody is meant to read.
+            var quiet = Color.FromArgb((int)(150f * arrive), 168, 172, 176);
 
             var photoW = Hud.ToX(PhotoH);
 
             // The plate the picture sits on, so the space reads as a photograph before there
-            // is one in it.
+            // is one in it -- and a hairline round it, because a photograph on a card has an
+            // edge and a floating rectangle of face does not.
             Hud.RectFrom(x, y, photoW, PhotoH, Color.FromArgb((int)(30f * arrive), 255, 255, 255));
 
             var made = Made();
@@ -425,41 +488,95 @@ namespace Hoodrich.UI
             }
             else
             {
-                Hud.Text("NO PHOTO", x + photoW * 0.5f, y + PhotoH * 0.5f - 0.008f, 0.24f,
-                         Palette.Alpha(Palette.TextDim, (int)(150f * arrive)), Hud.FontLabel);
+                Hud.Text("NO PHOTO", x + photoW * 0.5f, y + PhotoH * 0.5f - 0.008f, 0.22f,
+                         quiet, Hud.FontLabel);
             }
 
-            var tx = x + photoW + 0.010f;
-            var room = wide - photoW - 0.010f;
+            Frame(x, y, photoW, PhotoH, Color.FromArgb((int)(46f * arrive), 255, 255, 255));
 
-            Hud.Text(Hud.Fit(_body.Name, room, 0.42f, Hud.FontBody), tx, y - 0.002f, 0.42f,
-                     ink, Hud.FontBody, centre: false);
+            var tx = x + photoW + 0.014f;
+            var room = wide - photoW - 0.014f;
+
+            // THE NAME IS THE CONDENSED FACE IN CAPITALS, which is how a name is printed on
+            // every licence anybody has ever been handed -- and it was the reading face at
+            // 0.42, which is body copy made big. Long ones are stepped down rather than cut,
+            // because a surname with the end trimmed off is worse than a smaller one.
+            var name = _body.Name.ToUpperInvariant();
+            var size = Sized(name, NameSize, room);
+
+            Hud.Text(name, tx, y - 0.001f, size, ink, Hud.FontLabel, centre: false);
+
+            // A RULE UNDER IT. One line does most of the work of making this read as a card
+            // rather than as four labels next to a photograph: it separates the person from
+            // the particulars, which is what the box on a real one is doing.
+            Theme.Rule(tx, y + 0.029f, room, arrive * 0.75f);
 
             // The four fields, two to a line, on the same grid so the labels line up.
-            var half = room * 0.5f;
-            var line = y + 0.030f;
+            var half = room * 0.52f;
+            var line = y + 0.038f;
 
-            Field(tx, line, "D.O.B.", _body.Born, dim, ink);
-            Field(tx + half, line, "HEIGHT", _body.Height, dim, ink);
+            Field(tx, line, "D.O.B.", _body.Born, quiet, dim);
+            Field(tx + half, line, "HEIGHT", _body.Height, quiet, dim);
 
-            line += 0.024f;
+            line += FieldLine;
 
-            Field(tx, line, "ETHNICITY", _body.Ethnicity, dim, ink);
-            Field(tx + half, line, "AFFILIATION", _body.Affiliation, dim, ink);
+            Field(tx, line, "ETHNICITY", _body.Ethnicity, quiet, dim);
+            Field(tx + half, line, "AFFILIATION", _body.Affiliation, quiet, dim);
         }
 
-        private static void Field(float x, float y, string label, string value, Color dim, Color ink)
+        /// <summary>
+        /// One labelled particular: the caption above, the answer below.
+        ///
+        /// THE TWO USED TO TOUCH. The label sat at y, the value eleven thousandths under it at
+        /// a size thirteen thousandths tall, and the next line started twenty-four thousandths
+        /// down -- so the bottom of every value was exactly where the next label began, and on
+        /// a real screen ETHNICITY was printed through the date of birth. The gap is now bigger
+        /// than the thing that goes in it, which is the only arrangement that cannot collide.
+        /// </summary>
+        private static void Field(float x, float y, string label, string value, Color quiet, Color ink)
         {
-            Hud.Text(label, x, y, 0.21f, dim, Hud.FontLabel, centre: false);
-            Hud.Text(value, x, y + 0.011f, 0.29f, ink, Hud.FontBody, centre: false);
+            Hud.Text(label, x, y, 0.20f, quiet, Hud.FontLabel, centre: false);
+            Hud.Text(value, x, y + 0.0125f, 0.28f, ink, Hud.FontBody, centre: false);
         }
 
-        private void Grid(float x, float y, float tileW, float tileH, int rows, float arrive)
+        /// <summary>
+        /// The size a name is set at: the display size, unless it is too wide for the card.
+        ///
+        /// Stepped down by exactly the amount it is over, in one measurement, because the
+        /// game's text scale multiplies glyph widths. The same trick the gun counter uses on
+        /// its shelf, and for the same reason -- a title that runs off the edge is not a title.
+        /// </summary>
+        private static float Sized(string words, float want, float max)
+        {
+            if (string.IsNullOrEmpty(words) || max <= 0f) return want;
+
+            var w = Hud.MeasureText(words, want, Hud.FontLabel);
+
+            return w <= max || w <= 0f ? want : want * (max / w);
+        }
+
+        /// <summary>A hairline round a rectangle: four thin bars, no fill.</summary>
+        private static void Frame(float x, float y, float w, float h, Color ink)
+        {
+            var t = 0.0011f;
+            var tv = t * Hud.Aspect;
+
+            Hud.RectFrom(x, y, w, tv, ink);
+            Hud.RectFrom(x, y + h - tv, w, tv, ink);
+            Hud.RectFrom(x, y, t, h, ink);
+            Hud.RectFrom(x + w - t, y, t, h, ink);
+        }
+
+        /// <summary>How big the name is set, and the drop from one field line to the next.</summary>
+        private const float NameSize = 0.62f;
+        private const float FieldLine = 0.029f;
+
+        private void Grid(float x, float y, float tileW, float tileH, int rows, float shelf, float arrive)
         {
             if (_body.Items.Count == 0)
             {
-                Hud.Text("Nothing on him.", x + (tileW * Columns) * 0.5f,
-                         y + rows * tileH * 0.5f - 0.012f, 0.30f,
+                Hud.Text("Nothing on " + _body.Him + ".", x + (tileW * Columns) * 0.5f,
+                         y + shelf * 0.5f - 0.010f, 0.30f,
                          Palette.Alpha(Palette.TextDim, (int)(190f * arrive)), Hud.FontBody);
                 return;
             }
@@ -588,7 +705,7 @@ namespace Hoodrich.UI
 
             if (_body.Items.Count == 0)
             {
-                Hud.Text("That's everything he had.", tx, y + 0.008f, 0.32f,
+                Hud.Text("That's everything " + _body.He + " had.", tx, y + 0.008f, 0.32f,
                          Palette.Alpha(Palette.TextDim, (int)(215f * arrive)), Hud.FontBody, centre: false);
                 return;
             }
@@ -609,7 +726,7 @@ namespace Hoodrich.UI
                      Hud.FontBody, centre: false);
         }
 
-        private static string About(LootItem item)
+        private string About(LootItem item)
         {
             switch (item.Kind)
             {
@@ -622,7 +739,8 @@ namespace Hoodrich.UI
                     return "Straight in your pocket.";
 
                 case LootKind.Food:
-                    return "He wasn't going to eat it.";
+                    return _body.Female ? "She wasn't going to eat it."
+                                        : "He wasn't going to eat it.";
 
                 case LootKind.Drug:
                     return UiKit.PurityWord(item.Purity) + " -- " +
@@ -638,15 +756,15 @@ namespace Hoodrich.UI
 
             var ky = y + 0.011f;
 
-            UiKit.KeyRight(right, ky, UiKit.Back, "LEAVE HIM", arrive);
+            UiKit.KeyRight(right, ky, UiKit.Back, _body.Female ? "LEAVE HER" : "LEAVE HIM", arrive);
 
             if (_body.Items.Count == 0) return;
 
             var kx = UiKit.Key(x, ky, null, "arrow_leftright.png", "PICK", arrive);
 
-            kx = UiKit.Key(kx, ky, UiKit.Drop, null, "TAKE IT", arrive);
+            kx = UiKit.Key(kx, ky, UiKit.Confirm, null, "TAKE IT", arrive);
 
-            UiKit.Key(kx, ky, UiKit.All, null, "THE LOT", arrive);
+            UiKit.Key(kx, ky, UiKit.HoldConfirm, null, "THE LOT", arrive);
         }
 
         private static int Clamp(int v, int lo, int hi)
