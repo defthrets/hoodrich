@@ -114,6 +114,46 @@ namespace Hoodrich.Core
             public const uint Unarmed = 0xA2719263;
         }
 
+        /// <summary>
+        /// A map prop taken OUT of the world and kept out.
+        ///
+        /// THE SPOONER CANNOT SAY THIS AND IT IS THE HALF THAT WAS MISSING. Menyoo records
+        /// what you PUT somewhere -- a placement, with a model and a position -- and there is
+        /// no tag anywhere in its format for what you took away. Delete one of Denise's
+        /// cupboards to make room for a scale and a set of bags, save the file, and the
+        /// cupboard is back next session standing through the middle of everything.
+        ///
+        /// So this is ours. It is written in the same file, in a &lt;Removals&gt; block that
+        /// Menyoo ignores when it loads one -- so a scene with removals in it still opens in
+        /// the spooner and still saves out of it, minus this block. That is the whole reason
+        /// it is a sibling element rather than something clever hidden in the Note.
+        ///
+        /// A MODEL AND A PLACE, NOT A HANDLE. The game's own way of doing this is
+        /// CREATE_MODEL_HIDE, which takes a sphere and a model and hides every copy of that
+        /// model inside it. Handles do not survive a session and a coordinate does; the radius
+        /// is small on purpose, so hiding a bin at Denise's does not hide the one outside
+        /// Gerald's.
+        /// </summary>
+        internal sealed class Hidden
+        {
+            public string ModelName = "";
+            public uint ModelHash;
+            public Vector3 At;
+            public float Radius = DefaultRadius;
+            public string From = "";
+        }
+
+        /// <summary>
+        /// How big a sphere one removal covers.
+        ///
+        /// A METRE AND A HALF, which is a prop and its immediate air. CREATE_MODEL_HIDE hides
+        /// every copy of the model inside the sphere, so this is the number that decides
+        /// whether "that bin" means one bin or a street of them. Big enough that a coordinate
+        /// read off a prop's origin still covers the prop; small enough that the next one along
+        /// is somebody else's.
+        /// </summary>
+        public const float DefaultRadius = 1.5f;
+
         // ================================================================= reading
 
         /// <summary>
@@ -156,6 +196,118 @@ namespace Hoodrich.Core
             catch (Exception ex)
             {
                 Log.Warn("Could not read the placements in " + Path.GetFileName(path) + ": " + ex.Message);
+            }
+
+            return found;
+        }
+
+        /// <summary>
+        /// Adds one removal to a file, making the file if it is not there yet.
+        ///
+        /// READ, ADD, REWRITE, because there is no way to append to XML and pretending
+        /// otherwise produces a file with two roots that nothing will open. The whole file is
+        /// a few dozen lines; this is not the expensive part of anything.
+        ///
+        /// The same prop twice is one prop. Somebody who cannot remember whether they already
+        /// hid that bin should be able to hide it again and get a shrug, not a second row.
+        /// </summary>
+        public static bool Bury(string path, Hidden one)
+        {
+            if (one == null || one.ModelHash == 0) return false;
+
+            try
+            {
+                var have = File.Exists(path) ? Gone(path) : new List<Hidden>();
+
+                foreach (var had in have)
+                {
+                    if (had.ModelHash == one.ModelHash && had.At.DistanceTo(one.At) < 0.5f) return true;
+                }
+
+                have.Add(one);
+
+                var sb = new StringBuilder();
+
+                sb.Append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
+                sb.Append("<SpoonerPlacements>\n");
+                sb.Append("  <Note>Map props hidden by hand. Written by Hoodrich; Menyoo ignores the Removals block.</Note>\n");
+                sb.Append("  <Removals>\n");
+
+                foreach (var row in have)
+                {
+                    sb.Append("    <Remove>\n");
+                    sb.Append("      <HashName>").Append(Escape(row.ModelName ?? "")).Append("</HashName>\n");
+                    sb.Append("      <ModelHash>0x").Append(row.ModelHash.ToString("x8")).Append("</ModelHash>\n");
+                    sb.Append("      <X>").Append(row.At.X.ToString("0.###", CultureInfo.InvariantCulture)).Append("</X>\n");
+                    sb.Append("      <Y>").Append(row.At.Y.ToString("0.###", CultureInfo.InvariantCulture)).Append("</Y>\n");
+                    sb.Append("      <Z>").Append(row.At.Z.ToString("0.###", CultureInfo.InvariantCulture)).Append("</Z>\n");
+                    sb.Append("      <Radius>").Append(row.Radius.ToString("0.##", CultureInfo.InvariantCulture)).Append("</Radius>\n");
+                    sb.Append("    </Remove>\n");
+                }
+
+                sb.Append("  </Removals>\n");
+                sb.Append("</SpoonerPlacements>\n");
+
+                File.WriteAllText(path, sb.ToString());
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not write the removal: " + ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// The removals in one scene file, or an empty list for the great majority that have
+        /// none. Never throws, for the same reason Read never throws.
+        /// </summary>
+        public static List<Hidden> Gone(string path)
+        {
+            var found = new List<Hidden>();
+
+            try
+            {
+                var doc = new XmlDocument();
+                doc.Load(path);
+
+                var name = Path.GetFileNameWithoutExtension(path);
+
+                foreach (XmlNode node in doc.GetElementsByTagName("Remove"))
+                {
+                    try
+                    {
+                        var one = new Hidden { From = name };
+
+                        one.ModelName = Text(node, "HashName", "ModelName", "Model");
+
+                        one.ModelHash = AsHash(Text(node, "ModelHash"), null);
+
+                        if (one.ModelHash == 0 && one.ModelName.Length > 0)
+                        {
+                            one.ModelHash = AsHash(one.ModelName, null);
+                        }
+
+                        if (one.ModelHash == 0) continue;
+
+                        one.At = new Vector3(Number(node, 0f, "X"),
+                                             Number(node, 0f, "Y"),
+                                             Number(node, 0f, "Z"));
+
+                        var r = Number(node, 0f, "Radius");
+                        if (r > 0.05f) one.Radius = r;
+
+                        found.Add(one);
+                    }
+                    catch
+                    {
+                        // One bad row is one bad row.
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not read the removals in " + Path.GetFileName(path) + ": " + ex.Message);
             }
 
             return found;

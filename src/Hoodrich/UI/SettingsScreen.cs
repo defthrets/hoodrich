@@ -269,6 +269,104 @@ namespace Hoodrich.UI
         /// <summary>The spooner scenes, so the rows can reload them. Set by Main.</summary>
         public static Locations.Scenery Scenes;
 
+        /// <summary>
+        /// The map prop the camera is pointed at, taken out of the world for good.
+        ///
+        /// WHAT IT WILL AND WILL NOT TAKE. Only an object -- never a ped, never a vehicle,
+        /// never the player -- and never one of ours. A scene's own props are asked about
+        /// through Scenery.Mine, because hiding the crate a scene just built is a scene that
+        /// rebuilds it next session and hides it again, forever, and the file it wrote would
+        /// have to be edited by hand to undo.
+        ///
+        /// A LONG RAY AND A NARROW ONE. Twenty metres from the camera along the way it looks,
+        /// so a bin across the yard is as reachable as the one at your feet, and the flag is
+        /// objects only so the ray goes through people rather than stopping at them.
+        ///
+        /// The position written down is the OBJECT'S, not the point the ray hit -- a hit is a
+        /// spot on a surface and the sphere wants the middle of the thing.
+        /// </summary>
+        private static void Bury()
+        {
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return;
+
+                var eye = GameplayCamera.Position;
+                var to = eye + GameplayCamera.Direction * BuryReach;
+
+                // 16 is objects, and objects alone: the ray passes through anybody stood in
+                // front of the thing you mean.
+                var ray = Function.Call<int>(Hash.START_EXPENSIVE_SYNCHRONOUS_SHAPE_TEST_LOS_PROBE,
+                                             eye.X, eye.Y, eye.Z, to.X, to.Y, to.Z,
+                                             16, me.Handle, 7);
+
+                var hit = new OutputArgument();
+                var where = new OutputArgument();
+                var normal = new OutputArgument();
+                var thing = new OutputArgument();
+
+                Function.Call<int>(Hash.GET_SHAPE_TEST_RESULT, ray, hit, where, normal, thing);
+
+                var handle = thing.GetResult<int>();
+
+                if (!hit.GetResult<bool>() || handle == 0)
+                {
+                    Notify.Important("Nothing in front of you. Look straight at it and try again.");
+                    return;
+                }
+
+                var found = Entity.FromHandle(handle);
+
+                if (found == null || !found.Exists() || !(found is Prop))
+                {
+                    Notify.Important("That is not a prop.");
+                    return;
+                }
+
+                if (Scenes != null && Scenes.Mine(handle))
+                {
+                    Notify.Important("That one is ours -- take it out of the scene file instead.");
+                    return;
+                }
+
+                var hash = unchecked((uint)found.Model.Hash);
+
+                var one = new Core.Spooner.Hidden
+                {
+                    ModelName = Core.Names.Say(found.Model.Hash),
+                    ModelHash = hash,
+                    At = found.Position,
+                    Radius = Core.Spooner.DefaultRadius
+                };
+
+                var path = System.IO.Path.Combine(Core.Paths.Scenery, "hidden.xml");
+
+                if (!Core.Spooner.Bury(path, one))
+                {
+                    Notify.Important("Could not write it down. See the log.");
+                    return;
+                }
+
+                // GONE NOW AS WELL AS NEXT TIME. Writing it to a file that is read when a scene
+                // comes into range would leave it standing there for the rest of the session,
+                // which reads exactly like the button not working.
+                Function.Call(Hash.CREATE_MODEL_HIDE, one.At.X, one.At.Y, one.At.Z,
+                              one.Radius, unchecked((int)hash), false);
+
+                Log.Info("Hidden for good: " + one.ModelName + " at " + one.At + ".");
+                Notify.Important("~g~" + one.ModelName + "~s~ is gone, and stays gone.");
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not hide that: " + ex.Message);
+                Notify.Important("Could not hide that one.");
+            }
+        }
+
+        /// <summary>How far down the camera's line a prop can be and still be the one you mean.</summary>
+        private const float BuryReach = 20f;
+
         private void Head(string title)
         {
             _rows.Add(new Opt { Kind = OptKind.Heading, Label = title });
@@ -603,6 +701,20 @@ namespace Hoodrich.UI
                         ? found.Count + " placement(s) saved as " + name + "."
                         : "Could not write the scene file. See the log.");
                 }
+            });
+
+            // THE OTHER HALF OF A SPOONER SCENE, and the spooner cannot do it.
+            //
+            // Menyoo records what you PUT somewhere. There is no tag anywhere in its format for
+            // what you TOOK AWAY -- so a cupboard deleted to make room for a scale is back next
+            // session, standing through the middle of everything you arranged around it. This
+            // is that half: look at a map prop, press it, and it stays gone.
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Hide the prop I am looking at",
+                Note = "Takes a map object out for good and writes it into scenery\\hidden.xml",
+                Do = () => Bury()
             });
 
             Head("LUber");

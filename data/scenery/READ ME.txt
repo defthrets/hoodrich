@@ -18,7 +18,7 @@ wins over one of the same name in Menyoo's folder.
 
 WHAT SHIPS WITH THE MOD
 -----------------------
-Six scenes are in this folder already, 175 placements between them:
+Seven scenes are in this folder already, 194 placements between them:
 
   the-block.xml     Ten of the set stood around Chamberlain and Grove, most of
                     them holding a rifle, plus the fences at Lamar's.
@@ -45,6 +45,11 @@ Six scenes are in this folder already, 175 placements between them:
                     trays and cups -- and seven people placed by hand: two
                     meth heads on the pipe, two stood talking, two drinking,
                     one smoking.
+  denise-kitchen.xml
+                    The counter in Aunt Denise's kitchen, laid out for work:
+                    scale, spoon, baking soda, powdered milk, cut, a bag of
+                    powder and one of pills; weed dried, pruned, bagged and
+                    piled; acetone, ammonia and acid on the floor beside it.
 
 They came out of the spooner and were copied in here, so they no longer need
 Menyoo installed. If you still have the originals in menyooStuff\Spooner under
@@ -58,7 +63,36 @@ A shipped file can also name the saves it was made from, in its Note:
 
 and those files are skipped in menyooStuff\Spooner from then on, so a thing
 taken out of the shipped copy -- a sign, a model swapped for one with collision
--- does not come back from the original. The four files here each name theirs.
+-- does not come back from the original. Five of the files here name theirs.
+
+TAKING SOMETHING OUT
+--------------------
+The spooner records what you PUT somewhere. There is no tag anywhere in its
+format for what you took AWAY -- so a cupboard you deleted to make room for the
+scale is back next session, standing through the middle of everything you
+arranged around it.
+
+So a scene file may also carry a Removals block, which Menyoo ignores when it
+loads one:
+
+  <Removals>
+    <Remove>
+      <HashName>prop_bin_07a</HashName>
+      <ModelHash>0x0d33bb1d</ModelHash>
+      <X>-14.2</X><Y>-1438.6</Y><Z>31.1</Z>
+      <Radius>1.5</Radius>
+    </Remove>
+  </Removals>
+
+Every copy of that model inside that sphere is hidden while the scene is up, and
+put back when you are well past it. The radius is small on purpose: hiding a bin
+at Denise's must not hide the one outside Gerald's.
+
+You do not have to write it by hand. Open the mod's settings, find "Spooner
+scenes", look straight at the thing you want gone and press "Hide the prop I am
+looking at". It goes immediately and is written into hidden.xml in this folder,
+so it is gone from then on as well. It will not take one of its own scene's
+props, and it will not take a person or a car.
 
 WHAT IS KEPT
 ------------

@@ -60,6 +60,12 @@ namespace Hoodrich.Locations
             public string Path = "";
             public List<Spooner.Placed> Items = new List<Spooner.Placed>();
 
+            /// <summary>Map props this scene takes OUT. See Spooner.Hidden and Vanish.</summary>
+            public List<Spooner.Hidden> Gone = new List<Spooner.Hidden>();
+
+            /// <summary>Whether those holes are currently being held open.</summary>
+            public bool Holed;
+
             public Vector3 Centre;
             public float Radius;
 
@@ -319,14 +325,19 @@ namespace Hoodrich.Locations
                 if (!seen.Add(name)) continue;
 
                 var items = Spooner.Read(path);
-                if (items.Count == 0) continue;
+                var gone = Spooner.Gone(path);
+
+                // A FILE MAY BE NOTHING BUT REMOVALS. That is what hidden.xml is -- the one
+                // the settings screen writes when you take a map prop out by hand -- and
+                // refusing a file with no placements in it would have thrown it away.
+                if (items.Count == 0 && gone.Count == 0) continue;
 
                 // ANYTHING STUCK TO SOMETHING GOES UP LAST, so the thing it is stuck to is
                 // already standing when its turn comes. Sorting once here is the whole of the
                 // ordering problem; the builder itself can then just walk the list.
                 items.Sort((a, b) => (a.Attached ? 1 : 0) - (b.Attached ? 1 : 0));
 
-                var scene = new Scene { Name = name, Path = path, Items = items };
+                var scene = new Scene { Name = name, Path = path, Items = items, Gone = gone };
                 Measure(scene);
                 _scenes.Add(scene);
 
@@ -340,7 +351,8 @@ namespace Hoodrich.Locations
                 }
 
                 Log.Info("Scene \"" + name + "\": " + peds + " ped(s), " + props + " prop(s), " + cars +
-                         " vehicle(s), around " + scene.Centre.X.ToString("0") + ", " +
+                         " vehicle(s)" + (gone.Count > 0 ? ", " + gone.Count + " removal(s)" : "") +
+                         ", around " + scene.Centre.X.ToString("0") + ", " +
                          scene.Centre.Y.ToString("0") + " and " + scene.Radius.ToString("0") + " m out.");
             }
 
@@ -354,16 +366,28 @@ namespace Hoodrich.Locations
         private static void Measure(Scene scene)
         {
             var sum = Vector3.Zero;
+            var many = 0;
 
-            foreach (var item in scene.Items) sum += item.At;
+            foreach (var item in scene.Items) { sum += item.At; many++; }
 
-            scene.Centre = sum / Math.Max(1, scene.Items.Count);
+            // REMOVALS COUNT TOWARDS WHERE A SCENE IS, because a file can be nothing but
+            // removals -- and a scene measured off an empty list sits at the origin with a
+            // radius of nothing, which is a hole in the world held open in the sea.
+            foreach (var hole in scene.Gone) { sum += hole.At; many++; }
+
+            scene.Centre = sum / Math.Max(1, many);
 
             var far = 0f;
 
             foreach (var item in scene.Items)
             {
                 var d = item.At.DistanceTo(scene.Centre);
+                if (d > far) far = d;
+            }
+
+            foreach (var hole in scene.Gone)
+            {
+                var d = hole.At.DistanceTo(scene.Centre);
                 if (d > far) far = d;
             }
 
@@ -430,6 +454,10 @@ namespace Hoodrich.Locations
         /// </summary>
         private static void Begin(Scene scene)
         {
+            // The holes first, before anything is stood up. A prop placed where a map object
+            // still is would spend the frame or two before the hide inside it.
+            Vanish(scene, true);
+
             scene.Working = true;
             scene.Cursor = 0;
             scene.Made = 0;
@@ -1382,8 +1410,43 @@ namespace Hoodrich.Locations
 
         // ---- taking it out again ---------------------------------------------------
 
+        /// <summary>
+        /// The map props this scene takes out, taken out -- or put back.
+        ///
+        /// CREATE_MODEL_HIDE is the game's own answer and it is a SPHERE AND A MODEL rather
+        /// than a handle, which is exactly what survives a session. The last argument is the
+        /// network flag and it is false: this is a singleplayer mod and a hidden object that
+        /// announces itself to nobody is the right kind of hidden.
+        ///
+        /// Held only while the scene is up. A hole kept open across the whole map would mean a
+        /// bin missing from a street twelve blocks away that happens to share a model with one
+        /// somebody deleted at Denise's -- which is the same reason the radius is small.
+        /// </summary>
+        private static void Vanish(Scene scene, bool on)
+        {
+            if (scene.Gone.Count == 0 || scene.Holed == on) return;
+
+            foreach (var hole in scene.Gone)
+            {
+                try
+                {
+                    Function.Call(on ? Hash.CREATE_MODEL_HIDE : Hash.REMOVE_MODEL_HIDE,
+                                  hole.At.X, hole.At.Y, hole.At.Z,
+                                  hole.Radius, unchecked((int)hole.ModelHash), false);
+                }
+                catch
+                {
+                    // The next pass through here asks again.
+                }
+            }
+
+            scene.Holed = on;
+        }
+
         private static void Drop(Scene scene)
         {
+            Vanish(scene, false);
+
             foreach (var e in scene.Up)
             {
                 try

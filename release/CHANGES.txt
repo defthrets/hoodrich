@@ -1,6 +1,31 @@
 ﻿0.7.1 -- unreleased
 
 
+A SCENE CAN TAKE SOMETHING OUT OF THE WORLD AS WELL AS PUT SOMETHING IN.
+
+The spooner records what you PUT somewhere. There is no tag anywhere in its
+format for what you took AWAY -- so a cupboard deleted to make room for a scale
+and a set of bags is back next session, standing through the middle of
+everything arranged around it. Half of an evening's work saved and half of it
+lost, with nothing to say which half.
+
+A scene file may now carry a Removals block, which Menyoo ignores when it loads
+one, so a file with removals in it still opens in the spooner and still saves
+out of it. Every copy of that model inside a small sphere is hidden while the
+scene is up and put back once you are well past. The sphere is small on purpose:
+hiding a bin at Denise's must not hide the one outside Gerald's.
+
+Nobody has to write that by hand. Settings, Spooner scenes, "Hide the prop I am
+looking at" -- look straight at the thing, press it, and it is gone now and
+written into hidden.xml for every session after. It will not take one of a
+scene's own props, and it will not take a person or a car.
+
+AND AUNT DENISE'S KITCHEN IS DRESSED FOR WORK. Nineteen props on the counter:
+scale, spoon, baking soda, powdered milk, cut, a bag of powder and one of pills;
+weed dried, pruned, bagged and piled; acetone, ammonia and acid on the floor
+beside it. Seven scenes ship now, 194 placements between them.
+
+
 HOLD LEFT OR RIGHT AND THE WARDROBE RAIL RUNS.
 
 The closet has always offered every garment the body owns. The counts come
