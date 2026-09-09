@@ -46,6 +46,17 @@ WORD_GAP = 0.16
 RULE = 0.115
 RULE_GAP = 0.135
 
+# THE STENCIL CUTS.
+#
+# Bahnschrift is not a stencil face, so the bridges are cut afterwards: thin bands taken
+# straight across the word at fixed heights, which is what an army stencil does and why every
+# letter breaks at the same two lines. Cutting per letter would be more faithful to a foundry
+# stencil and less faithful to a crate, and a crate is what this is.
+#
+# As a share of the cap height: where the middle of each band sits, and how thick it is.
+SLITS = (0.34, 0.66)
+SLIT = 0.075
+
 # Air round the whole thing so nothing is clipped when the game scales it.
 PAD = 0.04
 
@@ -134,6 +145,14 @@ def main():
 
     # THE RULE, the full width of the word and nothing wider. It is the thing that makes the
     # reference read as a sign, and it is the one part that is not letterforms.
+    # CUT BEFORE THE RULE GOES ON, so the rule underneath stays whole -- a stencil breaks
+    # the letters and not the line they stand on.
+    for at in SLITS:
+        mid = pad + cap * at
+        half = cap * SLIT * 0.5
+
+        d.rectangle([0, mid - half, width, mid + half], fill=(0, 0, 0, 0))
+
     top = pad + cap + ruleGap
 
     d.rectangle([pad, top, width - pad - 1, top + rule - 1], fill=(255, 255, 255, 255))

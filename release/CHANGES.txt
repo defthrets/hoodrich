@@ -54,7 +54,8 @@ where the car is not.
 THE GUN COUNTER IS THE HOOD ARMOURY, AND IT HAS A SIGN. It said HOOD WEAPONRY
 in the script face -- the face the phone uses for a person's name -- so the
 shop was introducing itself in the same hand a contact does. It is a drawn
-mark now: heavy squared capitals, letter-spaced, sat on a rule, white so the
+mark now: heavy squared capitals, letter-spaced, cut through with stencil
+slits the way a crate is stencilled, sat on a rule, white so the
 screen tints it like every other piece of art in the mod. The words come back
 if the file is missing, so nothing is ever left with a gap where a header was.
 
