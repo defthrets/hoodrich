@@ -586,8 +586,9 @@ namespace Hoodrich.UI
 
             _model.Show(piece.Hash, parts);
 
-            if (!_model.Live) return;
-
+            // NOT GATED ON THERE BEING ONE YET. Turn is what drives the wait for a model that
+            // is still streaming, so gating it on the object existing meant a gun that had not
+            // arrived could never arrive -- which is every weapon he does not already own.
             _model.Turn();
             _model.Watch(true);
         }

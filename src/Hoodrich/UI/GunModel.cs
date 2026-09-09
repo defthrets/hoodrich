@@ -97,6 +97,26 @@ namespace Hoodrich.UI
         private int _object;
         private uint _weapon;
         private string _fitted = "";
+
+        /// <summary>
+        /// What has been asked for but not built yet, and when the asking started.
+        ///
+        /// A WEAPON YOU DO NOT OWN HAS NO MODEL IN MEMORY. The game streams in the models for
+        /// the guns you are carrying and nothing else -- so CREATE_WEAPON_OBJECT succeeded for
+        /// the Combat Pistol and the Micro SMG, which are his, and quietly returned nothing for
+        /// the Vintage, the Double Action, the Mk II, the Double Barrel, the Pipe Bomb and
+        /// every melee weapon on the shelf, which are not. From the crate it looked like half
+        /// the shop had no gun in it.
+        ///
+        /// THE MODEL HAS TO BE ASKED FOR AND THEN WAITED ON, and waiting is the awkward half:
+        /// the blocking form of that request yields the script, and this is called from a draw.
+        /// So it is asked for here and built on whichever later frame it turns up, which from
+        /// the outside is a gun that appears a beat after you scroll onto it.
+        /// </summary>
+        private uint _want;
+        private List<uint> _wantParts;
+        private string _wantKey = "";
+        private int _asked;
         private float _turn;
         private int _lastAt;
 
@@ -218,10 +238,74 @@ namespace Hoodrich.UI
             var key = Key(parts);
 
             if (_object != 0 && weapon == _weapon && key == _fitted) return;
+            if (_object == 0 && weapon == _want && key == _wantKey) return;
 
             Clear();
 
             if (weapon == 0 || Bench == null) return;
+
+            // Wanted rather than made. Build does the making, once the model has arrived.
+            _want = weapon;
+            _wantParts = parts;
+            _wantKey = key;
+            _asked = 0;
+        }
+
+        /// <summary>
+        /// Builds it once the game has the model, and gives up quietly if it never arrives.
+        ///
+        /// GIVING UP MATTERS. A weapon this build of the game does not have would otherwise be
+        /// requested on every frame the counter is open, for ever, and the shelf would sit
+        /// empty with nothing in the log to say why.
+        /// </summary>
+        private void Build()
+        {
+            if (_object != 0 || _want == 0 || Bench == null) return;
+
+            var now = Game.GameTime;
+
+            if (_asked == 0) _asked = now;
+
+            try
+            {
+                var model = Function.Call<int>(Hash.GET_WEAPONTYPE_MODEL, _want);
+
+                if (model == 0)
+                {
+                    _want = 0;
+                    return;
+                }
+
+                if (!Function.Call<bool>(Hash.HAS_MODEL_LOADED, model))
+                {
+                    Function.Call(Hash.REQUEST_MODEL, model);
+
+                    if (now - _asked > WaitMs)
+                    {
+                        Log.Info("Gun counter: the game would not load the model for that one.");
+                        _want = 0;
+                    }
+
+                    return;
+                }
+
+                Make(model);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not ask for a gun model: " + ex.Message);
+                _want = 0;
+            }
+        }
+
+        /// <summary>How long the model is waited on before that one is given up as absent.</summary>
+        private const int WaitMs = 4000;
+
+        private void Make(int model)
+        {
+            var weapon = _want;
+            var parts = _wantParts;
+            var key = _wantKey;
 
             try
             {
@@ -230,13 +314,24 @@ namespace Hoodrich.UI
                 _object = Function.Call<int>(Hash.CREATE_WEAPON_OBJECT, weapon, 0,
                                              at.X, at.Y, at.Z, true, 1.0f, 0);
 
-                if (_object == 0) return;
+                // HANDED BACK EITHER WAY. A model asked for and never released is memory this
+                // mod is holding for the rest of the session.
+                Function.Call(Hash.SET_MODEL_AS_NO_LONGER_NEEDED, model);
+
+                if (_object == 0)
+                {
+                    _want = 0;
+                    return;
+                }
 
                 // EVERY ONE EVER MADE, so none of them can be lost. See Sweep.
                 _made.Add(_object);
 
                 _weapon = weapon;
                 _fitted = key;
+
+                _want = 0;
+                _asked = 0;
 
                 Function.Call(Hash.SET_ENTITY_COLLISION, _object, false, false);
                 Function.Call(Hash.FREEZE_ENTITY_POSITION, _object, true);
@@ -270,6 +365,10 @@ namespace Hoodrich.UI
         /// <summary>On its side on the bench, turning where it lies.</summary>
         public void Turn()
         {
+            // The one place per frame anything is driven from, so the waiting for a model that
+            // is still streaming happens here too.
+            Build();
+
             if (_object == 0 || Bench == null) return;
 
             var now = Game.GameTime;
@@ -326,6 +425,11 @@ namespace Hoodrich.UI
             _weapon = 0;
             _fitted = "";
             _lastAt = 0;
+
+            _want = 0;
+            _wantParts = null;
+            _wantKey = "";
+            _asked = 0;
 
             Sweep();
         }
