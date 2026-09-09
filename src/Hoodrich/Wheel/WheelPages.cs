@@ -1205,7 +1205,7 @@ namespace Hoodrich.Wheel
                 value: masked ? "ON" : "",
                 enabled: ToggleMask != null,
                 disabledReason: "Not wired up");
-            page.WithIcon(Icons.FromFile("balaclava.png"));
+            page.WithIcon(Icons.FromFile("bandana.png"));
 
             // LAST, where Socials used to sit. It is a service you use rather than a part of
             // the business, and the only app on here that will still be useful to somebody who

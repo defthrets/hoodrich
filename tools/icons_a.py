@@ -541,44 +541,48 @@ def wifi():
     save(img, "wifi.png")
 
 
-def balaclava():
-    """A three-hole balaclava, DRAWN AS AN OUTLINE.
+def bandana():
+    """A bandana, knotted, hanging as a face cover.
 
-    THE POLARITY WAS WRONG, and it took four goes to see it. Every reference for this thing is
-    a BLACK mask on white paper. Icons in this set are white ink on nothing, tinted at draw
-    time and laid on a dark panel -- so filling the silhouette makes the mask WHITE, and a
-    white head-shaped blob with two slits and a mouth in it is a grey alien. It is a grey alien
-    whatever you do to the chin, the proportions or the tilt of the eyes, all of which were
-    tried.
+    IT REPLACES THE BALACLAVA, which was drawn five times and was wrong five times -- see the
+    note that used to be here. The last one worked, as an outline, and an outline is the one
+    thing in this set that does not hold at eighteen pixels. A bandana is a better icon for the
+    same idea: a triangle with a knot on it is a shape nothing else in the set could be
+    mistaken for, and it is solid, so it survives being shrunk.
 
-    Outlined instead, and the openings filled. Now the mask is DARK -- the panel showing
-    through -- the hood's edge is a bright line round it, and the eyes and mouth are bright
-    marks in the middle. That is the reference, translated into this medium rather than copied
-    into it.
+    SOLID IS SAFE HERE AND IT WAS NOT THERE. The reason a filled balaclava came out as a grey
+    alien is that filling it made a white HEAD -- and this medium is white ink on a dark panel.
+    A bandana filled white is a white cloth, which is what a bandana often is. The polarity
+    only bites when the silhouette is a face.
 
-    THE EYES ARE NEARLY LEVEL. Sloping them down toward the nose is the angry V a cartoon draws
-    for eyebrows and it is the other half of what made this an alien. A cut in fabric sits
-    along the eye line, which falls very slightly at the OUTER corners and nowhere else.
-
-    One curve down the right and mirrored, so the halves cannot drift apart.
+    Three pieces, the way the reference has them: the rolled band across the top, the cloth
+    hanging off it to a point, and the knot with its two ends splayed above.
     """
     img, d = canvas()
 
-    right = cbez((256, 46), (356, 48), (404, 118), (404, 196))
-    right += cbez((404, 196), (406, 282), (394, 346), (374, 400))
-    right += cbez((374, 400), (362, 452), (306, 482), (172, 482))
+    # The cloth: a wide curved top falling away to a point.
+    poly(d, cbez((78, 246), (152, 186), (360, 186), (434, 246))
+         + cbez((434, 246), (426, 338), (348, 422), (256, 484))
+         + cbez((256, 484), (164, 422), (86, 338), (78, 246)))
 
-    hood = right + [(512 - x, y) for x, y in reversed(right)]
+    # The rolled band over the top of it, the full width of the cloth.
+    stroke(d, cbez((72, 240), (150, 170), (362, 170), (440, 240)), 46)
 
-    stroke(d, hood, 40, W, closed=True)
+    # And the daylight between the two, in the middle only -- they are still one piece of cloth
+    # at the ends, which is what stops the band reading as a hoop floating above it.
+    stroke(d, cbez((142, 218), (198, 184), (314, 184), (370, 218)), 13, CLEAR)
 
-    for cx, deg in ((182, -6), (330, 6)):
-        eye = scale(circle(cx, 202, 56, 48), cx, 202, 1.0, 0.21)
-        poly(d, rot(eye, cx, 202, deg))
+    # THE TIE ENDS ARE STUBS, NOT WINGS. They were long curved ribbons splayed out either side
+    # and the whole icon came out as a moth -- two wings, a body and a pair of legs where the
+    # folds in the cloth were. A knot has short ends and they stick UP, close in.
+    ribbon(d, [(234, 156), (176, 86)], 46, 20)
+    ribbon(d, [(278, 156), (336, 86)], 46, 20)
 
-    poly(d, scale(circle(256, 316, 46, 48), 256, 316, 1.0, 0.44))
+    # The knot, last and over the top of them, and wider than either -- it is the thing that
+    # says this is tied rather than draped.
+    disc(d, 256, 152, 48)
 
-    save(img, "balaclava.png")
+    save(img, "bandana.png")
 
 
 def garage():
@@ -904,6 +908,6 @@ ALL = [wifi, arrow_right, arrow_left, arrow_updown, arrow_leftright,
        reply, repost, heart, like, tick, drop, disc_,
        warning, locked, key, eyes, footfall, rank, people, pin, deal,
        socials, mobile, phone, megaphone, music, tattoo, health, scales, crown, skull, police,
-       mask, balaclava,
+       mask, bandana,
        garage, car, tow, bank, card, cash, money, crate, box, brick, stash, bed, dog, fire, spray,
        cap, gang_f]
