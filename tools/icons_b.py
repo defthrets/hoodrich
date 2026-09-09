@@ -345,20 +345,55 @@ def shrooms():
 
 
 def acid():
+    """
+    LSD: one perforated tab.
+
+    IT WAS A WHOLE SHEET AND THAT WAS THE WRONG UNIT. Four by four squares with dots in
+    them is a picture of a supply -- what a chemist has -- and the game sells this by the
+    TAB, one at a time. A grid also loses everything at 128 pixels: sixteen cells, twelve
+    perforation lines and sixteen dots come out as texture, and texture at icon size is a
+    grey smudge that could be anything.
+
+    THE STAMP EDGE IS THE WHOLE IDENTITY. Nothing else in the drawer has a bumpy outline --
+    the baggie is a pouch, the bar is a rectangle with score lines, the tablets are round --
+    so the silhouette alone says which one this is before any detail is read. That is the
+    test every icon here has to pass, and a sheet failed it by being a square.
+
+    ADDITIVE BUMPS, NOT BITTEN-OUT NOTCHES. Both read as a stamp at full size; only one
+    survives the downsample. Notches cut INTO a 288-wide square leave the ink between them
+    thin, and thin white on transparent is the first thing to go when four pixels become
+    one. Bumps put the detail OUTSIDE the body, where there is nothing to compete with it.
+
+    THE CENTRE IS A HOLE. It could be a ring drawn in MID, and a hole is louder: the panel
+    behind shows through it, so the circle reads at any size and in any tint, which a
+    lighter grey does not. Same trick as the face punched into the pills.
+    """
     img, d = canvas()
 
-    rrect(d, 96, 96, 416, 416, 10)
+    x0, y0, x1, y1 = 112, 112, 400, 400
 
-    for i in range(1, 4):
-        p = 96 + i * 80
-        for k in range(96, 416, 20):
-            rect(d, p - 3, k, p + 3, k + 10, CLEAR)
-            rect(d, k, p - 3, k + 10, p + 3, CLEAR)
+    # The paper.
+    rect(d, x0, y0, x1, y1)
 
-    for i in range(4):
-        for j in range(4):
-            disc(d, 136 + i * 80, 136 + j * 80, 20, MID)
-            disc(d, 136 + i * 80, 136 + j * 80, 7, W)
+    # THE PERFORATIONS: five to a side, centred ON the edge so half of each disc bulges out
+    # and the other half lands on paper that is already there. The corners are deliberately
+    # left square -- a real stamp tears between the holes, not through them, and a bump at
+    # the corner reads as a flower.
+    n = 5
+    r = 22
+
+    step = (x1 - x0) / float(n)
+
+    for i in range(n):
+        at = x0 + step * (i + 0.5)
+
+        disc(d, at, y0, r)
+        disc(d, at, y1, r)
+        disc(d, x0, at, r)
+        disc(d, x1, at, r)
+
+    # The print on it, punched through.
+    disc(d, 256, 256, 78, CLEAR)
 
     save(img, "acid.png")
 
