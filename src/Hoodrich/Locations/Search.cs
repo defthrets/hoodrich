@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Control = GTA.Control;
 using GTA;
 using GTA.Native;
@@ -46,6 +46,28 @@ namespace Hoodrich.Locations
         /// <summary>How long the key is held before he kneels. Long enough that a stray press is not a search.</summary>
         private const int HoldMs = 600;
 
+        /// <summary>
+        /// THE OFFER SHOWS ITSELF WHEN YOU WALK UP, rather than waiting to be asked.
+        ///
+        /// It only ever appeared while a key was DOWN, which is the one arrangement that
+        /// cannot teach anybody anything: to find out that a body could be searched you had to
+        /// already be pressing the key that searches it. Somebody who did not know the feature
+        /// existed walked past every corpse in the game.
+        ///
+        /// So it introduces itself once per body -- up, held long enough to read, and gone --
+        /// and then stays out of the way. A prompt that sat there for as long as you stood
+        /// near the body would be the same mistake in the other direction: this mod puts you
+        /// next to a lot of bodies, and a permanent line at the bottom of the screen stops
+        /// being information and becomes furniture.
+        ///
+        /// PRESSING EITHER KEY STILL BRINGS IT STRAIGHT BACK, at full and for as long as you
+        /// hold, which is what makes the disappearing safe: the offer going away never means
+        /// the offer is gone.
+        /// </summary>
+        private const int GreetRiseMs = 260;
+        private const int GreetHoldMs = 2400;
+        private const int GreetFallMs = 620;
+
         /// <summary>How long the offer stays up once you have stopped asking for it.</summary>
         private const int OfferMs = 2500;
 
@@ -72,6 +94,10 @@ namespace Hoodrich.Locations
         private Ped _at;
 
         private int _nextScan;
+
+        /// <summary>Which body the offer has already introduced itself over, and when it started.</summary>
+        private int _greetedFor;
+        private int _greetedAt;
         private int _sweptAt;
 
         /// <summary>When the offer was last asked for, when the hold started, and when he knelt.</summary>
@@ -101,8 +127,20 @@ namespace Hoodrich.Locations
 
             if (_screen.IsOpen)
             {
-                // He stays down while the pockets are open, and the body has to stay put.
-                Kneel(player);
+                // HE STAYS DOWN WHILE THE POCKETS ARE OPEN -- AND NOT A FRAME LONGER.
+                //
+                // THIS LINE IS WHY HE GOT STUCK KNEELING. IsOpen is true while the panel is
+                // LEAVING as well as while it is up, which is a tenth of a second after the
+                // player presses B -- and by then Close has already run Done, which is Stand,
+                // which stopped the animation. So the frame after standing him up, this knelt
+                // him again, with a looping task and no duration, and nothing was ever going to
+                // stop it a second time. He searched a body once and spent the rest of the
+                // session on one knee.
+                //
+                // The guard is the search itself rather than the panel: _kneltAt is what says
+                // this class has somebody on the floor in front of it, and Stand clears it. The
+                // panel's own leaving animation is none of the ped's business.
+                if (_kneltAt != 0) Kneel(player);
 
                 if (_at == null || !_at.Exists() ||
                     (player != null && player.Exists() && player.Position.DistanceTo(_at.Position) > Leave))
@@ -137,7 +175,26 @@ namespace Hoodrich.Locations
                 Scan(player);
             }
 
-            if (_near == null || !_near.Exists()) { _holdSince = 0; _offeredAt = 0; return; }
+            if (_near == null || !_near.Exists())
+            {
+                _holdSince = 0;
+                _offeredAt = 0;
+
+                // OFF THE BODY, AND THE GREETING IS RE-ARMED. Walking away and coming back is
+                // somebody having another look, and it should say so again -- and the handle is
+                // cleared rather than kept, so a fresh body that happens to be handed the same
+                // number is greeted rather than silently skipped.
+                _greetedFor = 0;
+                return;
+            }
+
+            // A DIFFERENT BODY IS A DIFFERENT OFFER. Two lying together are two searches, and
+            // the second one should announce itself as the first did.
+            if (_near.Handle != _greetedFor)
+            {
+                _greetedFor = _near.Handle;
+                _greetedAt = now;
+            }
 
             // SOMEBODY ELSE'S MENU IS UP. The same courtesy the phone and the boot give.
             if (Menus.Owner() != null) { _holdSince = 0; return; }
@@ -165,19 +222,61 @@ namespace Hoodrich.Locations
 
             var held = doing ? (now - _holdSince) / (float)HoldMs : -1f;
 
-            // Up while either key is down, and for a moment after -- long enough on a pad to
-            // let go of one and find the other.
-            if (_offeredAt != 0 && now - _offeredAt < OfferMs)
+            // HOW SOLID IT IS: full while a key is down and for a moment after -- long enough
+            // on a pad to let go of one and find the other -- and otherwise whatever is left of
+            // the greeting it gave when you walked up.
+            //
+            // THE LOUDER OF THE TWO WINS rather than one replacing the other. Pressing the key
+            // halfway through the greeting must not make the prompt dip on its way to being
+            // shown, which is what taking the second value alone would do.
+            var show = _offeredAt != 0 && now - _offeredAt < OfferMs ? 1f : 0f;
+
+            var greet = Greeting(now);
+            if (greet > show) show = greet;
+
+            if (show > 0.01f)
             {
                 var cap = Hud.OnPad ? "HOLD D-PAD LEFT" : "HOLD E";
 
-                UiKit.Prompt(cap, "Search the body", 1f, held);
+                UiKit.Prompt(cap, "Search the body", show, held);
             }
 
             if (held < 1f) return;
 
             _holdSince = 0;
             Begin(now);
+        }
+
+        /// <summary>
+        /// How much of the greeting is left: up, held, and away. 0 once it has said its piece.
+        ///
+        /// EASED AT BOTH ENDS AND SLOWER GOING THAN COMING. A prompt that snaps on is an alert
+        /// and this is not one; a prompt that snaps off looks like it was interrupted, and the
+        /// player then wonders whether they missed something. It arrives in a quarter of a
+        /// second and takes more than twice that to leave, which reads as it having finished
+        /// rather than having been cut off.
+        /// </summary>
+        private float Greeting(int now)
+        {
+            if (_greetedFor == 0) return 0f;
+
+            var age = now - _greetedAt;
+            if (age < 0) return 0f;
+
+            if (age < GreetRiseMs)
+            {
+                var t = age / (float)GreetRiseMs;
+                return 1f - (1f - t) * (1f - t);
+            }
+
+            age -= GreetRiseMs;
+            if (age < GreetHoldMs) return 1f;
+
+            age -= GreetHoldMs;
+            if (age >= GreetFallMs) return 0f;
+
+            var k = 1f - age / (float)GreetFallMs;
+            return k * k;
         }
 
         /// <summary>Down on one knee, and the pockets a beat later.</summary>
@@ -244,6 +343,34 @@ namespace Hoodrich.Locations
             {
                 // He gets up on his own.
             }
+
+            // AND THE TASK ITSELF, not only the clip. STOP_ANIM_TASK asks the ped to stop
+            // playing one named animation, which is right when that is all he is doing and not
+            // enough when the engine has him in a task that will start it again -- a scripted
+            // animation with no duration is a task, and the ped keeps the task after the clip
+            // stops. This is the belt to that brace: he searched a body once and stayed on one
+            // knee, and one missing line of cleanup is not worth a second report of it.
+            try
+            {
+                if (player != null && player.Exists())
+                {
+                    // CLEAR_PED_SECONDARY_TASK by its own name rather than the wrapper: SHVDN's
+                    // ClearAnimation is marked obsolete in 3.9 and the replacement it names is
+                    // not in the 3.6 this builds against, so the native is the one thing that
+                    // is true in both.
+                    Function.Call(Hash.CLEAR_PED_SECONDARY_TASK, player.Handle);
+                }
+            }
+            catch
+            {
+                // Both attempts have now been made; there is nothing else to try.
+            }
+
+            // THE GREETING IS SPENT ONCE HE HAS SEARCHED IT. Standing up over a body he has
+            // just been through and being told he could search it is the mod not paying
+            // attention -- and Scan skips emptied ones anyway, so this is only about the body he
+            // left something on.
+            _greetedFor = 0;
 
             _kneeling = false;
             _kneltAt = 0;
