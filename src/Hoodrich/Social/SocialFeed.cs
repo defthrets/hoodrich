@@ -1286,6 +1286,9 @@ namespace Hoodrich.Social
         /// <summary>And how often it is somebody from the block talking about the block.</summary>
         private const double HoodChance = 0.25;
 
+        /// <summary>And how much of it is somebody naming a specific place. See the note in Ambient.</summary>
+        private const double LocalChance = 0.28;
+
         private void Ambient(bool backdated, bool business = false)
         {
             // Roughly one ambient post in five is two other gangs going at each other.
@@ -1301,8 +1304,30 @@ namespace Hoodrich.Social
 
             // A quarter of the rest is the block talking about the block, which only the block
             // is allowed to do -- see the hoodOnly note in Build.
-            var which = business ? "AmbientOrg"
-                      : (_rng.NextDouble() < HoodChance ? "AmbientHood" : "Ambient");
+            // AND SOME OF IT IS SOMEBODY NAMING WHERE THEY WERE.
+            //
+            // Ambient talks about "{hood}" and "{localspot}" -- the block in the abstract,
+            // which is right for the block's own chatter and is also the whole feed sounding
+            // identical after an hour of reading it. Local names the actual place: the LTD on
+            // Grove Street, the pier at Del Perro, the Yellow Jack. A city that gets named is
+            // a city somebody lives in, and it is the one set that covers the map rather than
+            // the six streets this mod happens to be set on.
+            //
+            // One roll for all three, so the shares add up rather than compounding.
+            string which;
+
+            if (business)
+            {
+                which = "AmbientOrg";
+            }
+            else
+            {
+                var pick = _rng.NextDouble();
+
+                which = pick < HoodChance ? "AmbientHood"
+                      : pick < HoodChance + LocalChance ? "Local"
+                      : "Ambient";
+            }
 
             var post = Build(which, null);
             if (post == null) return;
