@@ -697,13 +697,26 @@ namespace Hoodrich.UI
 
             var piece = Chosen;
 
-            // WHAT SHELF, and how much of it he has. Small, above the name, because it is the
-            // thing you change least often.
-            Hud.Text(Current.Name.ToUpperInvariant(), mid, RackY, 0.30f,
-                     Fade(Palette.TextDim, arrive), Hud.FontLabel);
+            // WHAT SHELF, WHERE ON IT, AND HOW MANY OF IT HE HAS -- one line, three tones.
+            //
+            // THE NUMBER USED TO BE THE TALLY AND IT SAT UNDER A RACK NAME, which is the one
+            // place on a screen where "5 / 8" can only mean the fifth of eight. It did not
+            // move when you walked the shelf, because it was never a position: it was how many
+            // of that rack he already owned. Two true things wearing each other's clothes.
+            //
+            // So the position is the position, in the brighter tone, where the eye was already
+            // going -- and the tally is still here, in words and in green, where it cannot be
+            // read as anything else.
+            var where = Current.Stock.Length == 0
+                ? ""
+                : (_row + 1) + " / " + Current.Stock.Length;
 
-            Hud.Text(Held(Current) + " / " + Current.Stock.Length, mid, RackY + 0.024f, 0.26f,
-                     Fade(Palette.TextDim, arrive), Hud.FontLabel);
+            var held = Held(Current);
+
+            Runs(mid, RackY, RackGap,
+                 new Run(Current.Name.ToUpperInvariant(), Fade(Quiet, arrive), RackSize, Hud.FontLabel),
+                 new Run(where, Fade(Sub, arrive), RackSize, Hud.FontLabel),
+                 new Run(held > 0 ? held + " HELD" : "", Fade(Palette.Cash, arrive * 0.8f), RackSize, Hud.FontLabel));
 
             if (piece == null)
             {
@@ -721,27 +734,43 @@ namespace Hoodrich.UI
             if (t < 1f && _slidOff.Length > 0)
             {
                 // Out the way you came from, fading as it goes.
-                Hud.Text(_slidOff.ToUpperInvariant(), mid - _slidDir * shove * t, NameY, 0.62f,
-                         Fade(Palette.Text, (1f - t) * 0.55f * arrive), Hud.FontChaletLondon);
+                var going = _slidOff.ToUpperInvariant();
+
+                Hud.Text(going, mid - _slidDir * shove * t, NameY, Fits(going, NameSize, Hud.FontLabel, NameMax),
+                         Fade(Ink, (1f - t) * 0.5f * arrive), Hud.FontLabel);
             }
 
             var owned = Owns(piece);
+            var name = piece.Name.ToUpperInvariant();
 
-            Hud.Text(piece.Name.ToUpperInvariant(), mid + _slidDir * shove * (1f - t), NameY, 0.62f,
-                     Fade(Palette.Text, t * arrive), Hud.FontChaletLondon);
+            Hud.Text(name, mid + _slidDir * shove * (1f - t), NameY, Fits(name, NameSize, Hud.FontLabel, NameMax),
+                     Fade(Ink, t * arrive), Hud.FontLabel);
 
-            Hud.Text(owned ? "OWNED" : "$" + piece.Price.ToString("N0"), mid, PriceY, 0.40f,
-                     Fade(owned ? Palette.Cash : Palette.Text, t * arrive), Hud.FontChaletLondon);
+            Hud.Text(owned ? "OWNED" : "$" + piece.Price.ToString("N0"), mid, PriceY, PriceSize,
+                     Fade(owned ? Palette.Cash : Ink, t * arrive), Hud.FontLabel);
 
+            // THE ONE LINE SOMEBODY WROTE, so it is the one line set in the reading face and
+            // left in sentence case. Everything else on this screen is a label.
             if (!string.IsNullOrEmpty(piece.Note))
             {
-                Hud.Text(piece.Note, mid, NoteY, 0.28f,
-                         Fade(Palette.TextDim, t * arrive), Hud.FontBody);
+                Hud.Text(piece.Note, mid, NoteY, NoteSize,
+                         Fade(Sub, t * arrive), Hud.FontBody);
             }
 
-            // ---- rounds ----
-            Hud.Text(Boxes(piece), mid, AmmoY, 0.30f,
-                     Fade(Palette.TextDim, arrive), Hud.FontBody);
+            // ---- rounds, with the money in the money colour ----
+            var lot = BoxWords(piece);
+            var cost = BoxCost(piece);
+
+            if (cost.Length == 0)
+            {
+                Hud.Text(lot, mid, AmmoY, AmmoSize, Fade(Quiet, arrive), Hud.FontBody);
+            }
+            else
+            {
+                Runs(mid, AmmoY, AmmoGap,
+                     new Run(lot, Fade(Quiet, arrive), AmmoSize, Hud.FontBody),
+                     new Run(cost, Fade(Palette.Cash, arrive), AmmoSize, Hud.FontBody));
+            }
 
             // ---- and what bolts on, once you have gone down into it ----
             if (_onParts && _part >= 0 && _part < _parts.Count)
@@ -749,37 +778,166 @@ namespace Hoodrich.UI
                 var part = _parts[_part];
 
                 var on = Bolted(piece, part);
+                var bit = part.Name.ToUpperInvariant();
 
-                Hud.Text((_part + 1) + " / " + _parts.Count, mid, PartCountY, 0.26f,
-                         Fade(Palette.TextDim, arrive), Hud.FontLabel);
+                Hud.Text((_part + 1) + " / " + _parts.Count, mid, PartCountY, TinySize,
+                         Fade(Quiet, arrive), Hud.FontLabel);
 
-                Hud.Text(part.Name.ToUpperInvariant(),
-                         mid + _slidDir * shove * (1f - t), PartY, 0.44f,
-                         Fade(on ? Palette.Cash : Palette.Text, t * arrive), Hud.FontChaletLondon);
+                Hud.Text(bit, mid + _slidDir * shove * (1f - t), PartY,
+                         Fits(bit, PartSize, Hud.FontLabel, NameMax),
+                         Fade(on ? Palette.Cash : Ink, t * arrive), Hud.FontLabel);
 
                 Hud.Text(on ? "FITTED" : (part.Price > 0 ? "$" + part.Price.ToString("N0") : "FREE"),
-                         mid, PartPriceY, 0.30f,
-                         Fade(Palette.TextDim, t * arrive), Hud.FontBody);
+                         mid, PartPriceY, AmmoSize,
+                         Fade(on ? Palette.Cash : Sub, t * arrive), Hud.FontBody);
             }
             else if (_parts.Count > 0)
             {
-                Hud.Text(_parts.Count + " PARTS", mid, PartCountY, 0.26f,
-                         Fade(Palette.TextDim, arrive), Hud.FontLabel);
+                Hud.Text(_parts.Count + " PARTS", mid, PartCountY, TinySize,
+                         Fade(Quiet, arrive), Hud.FontLabel);
             }
 
             Keys(mid - Hud.ToX(0.34f), mid + Hud.ToX(0.34f), HintY);
         }
 
+        /// <summary>
+        /// A line made of runs, each with its own colour, laid out from the middle.
+        ///
+        /// WHY NOT ONE STRING. "SMGS 2 / 8 5 HELD" in a single tone is a line you have to
+        /// read; in three it is a line you glance at -- the shelf grey, the place on it
+        /// bright, the tally green. The game has no rich text, so it is measured and placed:
+        /// total width first, then each run drawn left-aligned across it.
+        ///
+        /// EVERY RUN ON A LINE IS THE SAME SIZE, deliberately. The y a piece of text is drawn
+        /// at is its TOP, not its baseline, so two sizes on one line sit on two different
+        /// baselines and the smaller one floats. Mixing sizes is what the stack of lines is
+        /// for.
+        /// </summary>
+        private static void Runs(float mid, float y, float gap, params Run[] runs)
+        {
+            if (runs == null || runs.Length == 0) return;
+
+            var wide = 0f;
+            var said = 0;
+
+            for (var i = 0; i < runs.Length; i++)
+            {
+                if (string.IsNullOrEmpty(runs[i].Word)) continue;
+
+                wide += Hud.MeasureText(runs[i].Word, runs[i].Size, runs[i].Face);
+                said++;
+            }
+
+            if (said == 0) return;
+
+            wide += gap * (said - 1);
+
+            var x = mid - wide * 0.5f;
+
+            for (var i = 0; i < runs.Length; i++)
+            {
+                var run = runs[i];
+                if (string.IsNullOrEmpty(run.Word)) continue;
+
+                Hud.Text(run.Word, x, y, run.Size, run.Ink, run.Face, centre: false);
+
+                x += Hud.MeasureText(run.Word, run.Size, run.Face) + gap;
+            }
+        }
+
+        /// <summary>One coloured run of a line. See Runs.</summary>
+        private struct Run
+        {
+            public readonly string Word;
+            public readonly System.Drawing.Color Ink;
+            public readonly float Size;
+            public readonly int Face;
+
+            public Run(string word, System.Drawing.Color ink, float size, int face)
+            {
+                Word = word;
+                Ink = ink;
+                Size = size;
+                Face = face;
+            }
+        }
+
+        /// <summary>
+        /// The size a name is set at: the display size, unless the name is too wide for it.
+        ///
+        /// "PISTOL" AND "ASSAULT RIFLE MK II" ARE THE SAME LINE OF THIS LAYOUT and one is
+        /// three times the other. A display size earns itself on the short ones; a long one
+        /// set at it runs off both edges of the screen, which is not a title, it is a fault.
+        ///
+        /// Stepped down by exactly the amount it is over, because the game's text scale
+        /// multiplies glyph widths -- so the measured width at one scale gives the scale that
+        /// fits, in one measurement rather than a search.
+        /// </summary>
+        private static float Fits(string words, float want, int face, float max)
+        {
+            if (string.IsNullOrEmpty(words) || max <= 0f) return want;
+
+            var wide = Hud.MeasureText(words, want, face);
+
+            return wide <= max || wide <= 0f ? want : want * (max / wide);
+        }
+
         /// <summary>Where each line sits. Everything is low, so the bench stays clear.</summary>
-        private const float RackY = 0.700f;
-        private const float NameY = 0.748f;
-        private const float PriceY = 0.800f;
-        private const float NoteY = 0.828f;
-        private const float AmmoY = 0.856f;
-        private const float PartCountY = 0.884f;
-        private const float PartY = 0.906f;
-        private const float PartPriceY = 0.940f;
-        private const float HintY = 0.968f;
+        private const float RackY = 0.678f;
+        private const float NameY = 0.703f;
+        private const float PriceY = 0.769f;
+        private const float NoteY = 0.806f;
+        private const float AmmoY = 0.834f;
+        private const float PartCountY = 0.862f;
+        private const float PartY = 0.884f;
+        private const float PartPriceY = 0.920f;
+        private const float HintY = 0.960f;
+
+        /// <summary>
+        /// THREE FACES DOING THREE JOBS, which is the whole of this.
+        ///
+        /// It was two sizes of the same face before -- the reading face, Chalet London, blown
+        /// up to 0.62 for the gun's name. Body copy at a display size does not become a title,
+        /// it becomes big body copy: loose, soft, and nothing like the game it is sitting in
+        /// front of.
+        ///
+        /// THE NAME IS CONDENSED NOW. Chalet Comprime Cologne is the face Rockstar sets weapon
+        /// names in on the wheel, and at nearly a full unit of scale it is tall, tight and
+        /// certain -- a title, at last, rather than a caption that has been enlarged.
+        ///
+        /// The reading face keeps the two lines that are actually read: the sentence somebody
+        /// wrote about the gun, and the rounds. Everything else -- rack, tallies, part names,
+        /// the footer -- is a LABEL, and labels are condensed.
+        /// </summary>
+        private const float RackSize = 0.28f;
+        private const float NameSize = 0.94f;
+        private const float PriceSize = 0.46f;
+        private const float NoteSize = 0.30f;
+        private const float AmmoSize = 0.30f;
+        private const float TinySize = 0.27f;
+        private const float PartSize = 0.58f;
+
+        /// <summary>The air inside a multi-tone line, and how wide a name may get.</summary>
+        private const float RackGap = 0.012f;
+        private const float AmmoGap = 0.008f;
+        private const float NameMax = 0.66f;
+
+        /// <summary>
+        /// This screen's own three tones, because it is the one drawn on daylight concrete.
+        ///
+        /// EVERY OTHER PANEL IN THIS MOD SITS ON A DARK RECTANGLE and can use the shared dim
+        /// grey at alpha 190. This one has no panel at all, on purpose -- Stretch's yard is
+        /// behind it, lit, pale and moving -- and that grey vanishes into a concrete floor at
+        /// midday. Same hues, lifted until they hold.
+        /// </summary>
+        private static readonly System.Drawing.Color Ink =
+            System.Drawing.Color.FromArgb(250, 255, 255, 255);
+
+        private static readonly System.Drawing.Color Sub =
+            System.Drawing.Color.FromArgb(238, 214, 217, 219);
+
+        private static readonly System.Drawing.Color Quiet =
+            System.Drawing.Color.FromArgb(220, 178, 182, 185);
 
         /// <summary>How far a name travels as it comes in, and how long it takes.</summary>
         private const float SlideBy = 0.13f;
@@ -793,17 +951,30 @@ namespace Hoodrich.UI
             return got;
         }
 
-        /// <summary>The rounds line, as one string rather than a column of them.</summary>
-        private string Boxes(Piece piece)
+        /// <summary>
+        /// The rounds line, in two halves so the price can be in the price colour.
+        ///
+        /// SET IN CAPS NOW LIKE EVERY OTHER LABEL HERE. It was the only line on the screen in
+        /// sentence case that was not a sentence -- "1 box · 100 rounds · $440" reading as
+        /// prose next to a wall of capitals.
+        /// </summary>
+        private string BoxWords(Piece piece)
         {
             if (piece.AmmoBox <= 0) return "NO ROUNDS FOR THAT ONE";
 
             // LotsNow is the number the lot index means, which is not the index.
             var lots = LotsNow;
             var rounds = piece.AmmoBox * lots;
-            var cost = AmmoPrice(piece) * lots;
 
-            return lots + (lots == 1 ? " box" : " boxes") + "  ·  " + rounds + " rounds  ·  $" + cost.ToString("N0");
+            return lots + (lots == 1 ? " BOX" : " BOXES") + "  ·  " + rounds + " ROUNDS  ·";
+        }
+
+        /// <summary>And what that lot costs, or nothing at all for a gun that takes none.</summary>
+        private string BoxCost(Piece piece)
+        {
+            if (piece.AmmoBox <= 0) return "";
+
+            return "$" + (AmmoPrice(piece) * LotsNow).ToString("N0");
         }
 
         /// <summary>Whether that part is already on that gun.</summary>
@@ -1094,7 +1265,9 @@ namespace Hoodrich.UI
         private void Keys(float x, float right, float y)
         {
             var pad = Hud.OnPad;
-            var ink = Palette.TextDim;
+
+            // The counter's own quiet tone rather than the shared one. See Quiet.
+            var ink = Quiet;
 
             var hx = Hud.Hint("arrow_updown.png", "PICK", x, y, 0.24f, ink);
             hx = Hud.Hint("arrow_leftright.png", _onParts ? "BACK" : "ROUNDS", hx, y, 0.24f, ink);

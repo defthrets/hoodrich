@@ -1,6 +1,36 @@
 ﻿0.7.1 -- unreleased
 
 
+THE GUN COUNTER IS SET IN THREE FACES INSTEAD OF TWO SIZES OF ONE.
+
+The gun's name was the reading face blown up to a display size, and body copy
+made big does not become a title -- it becomes big body copy. It is set in
+Chalet Comprime Cologne now, the condensed face Rockstar puts weapon names in
+on the wheel, at nearly a full unit of scale: tall, tight, and finally the same
+language as the game behind it. Names too long for that size are stepped down
+to fit rather than run off both edges.
+
+The reading face keeps the two lines that are actually read -- the sentence
+somebody wrote about the gun, and the rounds. Everything else is a label, and
+labels are condensed.
+
+The rounds line is in capitals like every other label, and its price is in the
+money colour. The tones are all a shade brighter: this is the one screen in the
+mod with no panel behind it, and the shared dim grey disappeared into a
+concrete floor at midday.
+
+THE NUMBER UNDER THE RACK NAME IS THE POSITION NOW.
+
+It used to be the tally -- how many of that rack you already owned -- sat
+directly under a rack name, which is the one place on a screen where "5 / 8"
+can only be read as the fifth of eight. It never moved as you walked the shelf,
+because it was never a position.
+
+Both things are still there. The position is where the eye was already going;
+the tally is after it, in words and in green, where it cannot be mistaken for
+anything else.
+
+
 THEY PULL UP, STAND ON IT FOR FIVE SECONDS, AND THEN GO ROUND.
 
 A car used to start its lock on the frame it arrived, so whatever speed it came
