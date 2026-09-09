@@ -1,4 +1,4 @@
-﻿{
+{
   "_comment": [
     "The block, talking about itself.",
     "",
@@ -2434,6 +2434,10 @@
       "{weathertalk} and there is still a man selling {drink} outside {localspot}"
     ],
     "Ambient": [
+      "somebody left a whole strip of paper on the bus seat. i am not touching that",
+      "guy outside the 24/7 been staring at the same billboard for forty minutes. leave him be",
+      "whoever is cutting sheets in this neighbourhood, your scissors are loud",
+      "there is a man on the beach explaining the ocean to the ocean {timeofday}",
       "you can always tell who's walking over for something and who's walking to the shop",
       "man came straight across four lanes for that. knew exactly where he was going",
       "there's a fella does the rounds on grove every afternoon, same time, same face",
@@ -3735,6 +3739,34 @@
       "Money moving on {here} and everybody can see it",
       "That's not normal for a Tuesday on {here}"
     ],
+    "_lsd": [
+      "PRODUCT SETS. A set named <Event><Product> is used instead of <Event> when that",
+      "product is the one that moved -- SaleLSD instead of Sale. See SocialFeed.SetFor.",
+      "It is a general rule, so any drug in drugs.json can have its own lines by adding a",
+      "set here and touching no code; anything without one keeps the general words.",
+      "",
+      "Acid gets them because it is the one product on the block nobody treats as business.",
+      "Weight is weight and everybody talks about it the same way; a sheet of paper is a",
+      "story somebody tells afterwards."
+    ],
+
+    "SaleLSD": [
+      "Somebody out on {here} selling paper {filler}",
+      "Whoever's on {here} ain't shifting weight. Little squares. Different crowd entirely",
+      "The {here} crowd went from wanting a gram to wanting a corner of a page. Times change",
+      "Kid on {here} bought one tab and asked if it was gonna work. Brother it works",
+      "Seen money change hands on {here} for something you could lose in your pocket",
+      "New thing on {here} {timeofday}. Ain't powder, ain't green. Paper"
+    ],
+
+    "BigSaleLSD": [
+      "Whole sheet gone on {here} {timeofday}. Half this block is gonna see God",
+      "{here} is about to have a WEEK. Somebody moved a lot of paper through there",
+      "Whatever went through {here} tonight, half of them won't sleep and none of them will mind",
+      "That was not a small amount of acid to put on one street {filler}",
+      "Somebody cleared a book on {here}. Check on your friends {timeofday}"
+    ],
+
     "Sale": [
       "It's active on {here} again {filler}",
       "Same faces on the same corner on {here}",
@@ -7173,6 +7205,9 @@
       "bring a spare. you'll need it"
     ],
     "AmbientHood": [
+      "dude sat on the wall on {here} watching his own hands. he good. he is fine",
+      "somebody put music on somewhere on {here} and a grown man is crying about it",
+      "half of {here} is very quiet tonight and the other half will not shut up. same reason",
       "Line at {localspot} is around the block {timeofday}",
       "{station} DJ said our block by name and everybody lost it",
       "kid on the block calling everybody 'boss'. he seven",

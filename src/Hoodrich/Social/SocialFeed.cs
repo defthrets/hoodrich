@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -1401,7 +1401,7 @@ namespace Hoodrich.Social
             var chance = ChanceFor(kind);
             if (chance < 1f && _rng.NextDouble() > chance) return;
 
-            var post = Build(kind.ToString(), subject, amount);
+            var post = Build(SetFor(kind, subject), subject, amount);
             if (post == null) return;
 
             post.AboutYou = true;
@@ -1825,6 +1825,46 @@ namespace Hoodrich.Social
         }
 
         // ---- building a post ---------------------------------------------------
+
+        /// <summary>
+        /// The post set for an event, preferring one named after the SUBJECT when there is one.
+        ///
+        /// Sale becomes SaleLSD when the product is LSD and socials.json has that set; otherwise
+        /// it stays Sale and nothing changes. Every event and every subject, not a list of
+        /// blessed ones.
+        ///
+        /// A GENERAL RULE RATHER THAN A DRUG'S SPECIAL CASE, and the difference is who has to
+        /// touch code later. "If the product is acid, use the acid lines" is one drug; this is
+        /// every drug anybody ever adds, and every gang, and every job -- all of them can have
+        /// their own words by putting a set in the file and changing nothing here.
+        ///
+        /// LETTERS AND DIGITS ONLY, so a subject with a space or an apostrophe in it produces a
+        /// key somebody can actually type into the json. Cocaine gives SaleCocaine.
+        ///
+        /// AND IT ONLY EVER NARROWS. An unknown combination falls back to the plain set, so
+        /// naming a set after a product that does not exist is dead weight rather than a
+        /// silently missing post -- and the general lines still cover every product that has
+        /// not been given its own.
+        /// </summary>
+        private string SetFor(SocialEvent kind, string subject)
+        {
+            var set = kind.ToString();
+
+            if (string.IsNullOrEmpty(subject)) return set;
+
+            var tidy = new System.Text.StringBuilder(set, set.Length + subject.Length);
+
+            foreach (var c in subject)
+            {
+                if (char.IsLetterOrDigit(c)) tidy.Append(c);
+            }
+
+            if (tidy.Length == set.Length) return set;
+
+            var special = tidy.ToString();
+
+            return _templates.ContainsKey(special) ? special : set;
+        }
 
         private Post Build(string set, string subject, int amount = 0)
         {
