@@ -1,6 +1,29 @@
 ﻿0.7.1 -- unreleased
 
 
+THE KITCHEN USES THE GAME'S OWN DRUG-PROCESSOR ANIMATIONS.
+
+Rockstar authored two ambient scenarios for exactly this -- somebody stood at a
+table weighing, bagging and cutting -- and the mod was not using either of them.
+Every clip it did use was a warehouse press-operator or a maid at a worktop,
+borrowed because it had the right SHAPE. Near misses, all of them.
+
+Weed is worked on the weed one and everything else on the coke one, including
+meth: the meth clips are a man at a chemistry rig and this is a kitchen counter
+in a house, and the near-right animation for the right room beats the right
+animation for the wrong one.
+
+CRACK GETS THE BAKING SODA IDLES, which the coke set has a whole second variant
+for, and which is what crack is actually cut with.
+
+And it is a SET, not a clip. Each has a base loop and a handful of idles, and
+the batch now cycles between them the way the scenario does: he works, he stops
+to check a bag, he goes back to it. A single clip on loop is a pose.
+
+The last-resort fallback is now the drug's own scenario, which is these same
+animations run by the game -- with the table prop it brings along.
+
+
 THE GUN COUNTER IS SET IN THREE FACES INSTEAD OF TWO SIZES OF ONE.
 
 The gun's name was the reading face blown up to a display size, and body copy

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Native;
@@ -32,6 +32,128 @@ namespace Hoodrich.Economy
                 Name = name;
             }
         }
+
+        /// <summary>
+        /// THE GAME ALREADY HAS THIS ANIMATION AND IT IS BETTER THAN ANYTHING BELOW.
+        ///
+        /// WORLD_HUMAN_DRUG_PROCESSORS_WEED and _COKE are two ambient scenarios Rockstar
+        /// authored for exactly this: somebody stood at a table with the product in front of
+        /// them, weighing, bagging, cutting. Everything else in this file is a warehouse clip
+        /// or a maid clip borrowed because it has the right SHAPE -- hands busy at a worktop --
+        /// and each one is a near miss. These are not near misses. They are the thing.
+        ///
+        /// A SET, NOT A CLIP, which is the other half of why they are better. Each has a base
+        /// loop and a handful of idles, and the scenario cycles between them: he works, he
+        /// pauses to check a bag, he goes back to it. A single clip on loop is a pose; this is
+        /// a person. See Tick.
+        ///
+        /// THE COKE ONES ARE AUTHORED FEMALE AND THE WEED ONES MALE, which is Rockstar's
+        /// business and not a choice here -- there is no male coke variant to pick. They play
+        /// on any ped because the skeleton is the same. A very close look at the powder set on
+        /// Franklin shows its origins in the shoulders; nobody has ever noticed.
+        ///
+        /// female_b is the interesting one: its idles have BAKING SODA variants, which is
+        /// literally what crack is cut with, so that is the set crack gets.
+        ///
+        /// Every dictionary and clip name here was taken out of the game's own dump rather
+        /// than typed -- see the reference lists. A wrong name fails silently.
+        /// </summary>
+        private sealed class Bench
+        {
+            public readonly string Loop;
+            public readonly string Idles;
+            public readonly string[] Idle;
+            public readonly string Scenario;
+
+            public Bench(string root, string[] idle, string scenario)
+            {
+                Loop = root + "@base";
+                Idles = root + "@idles";
+                Idle = idle;
+                Scenario = scenario;
+            }
+        }
+
+        private static readonly Bench Weed = new Bench(
+            "anim@amb@drug_processors@weed@male_a",
+            new[] { "idle_a", "idle_b", "idle_c", "idle_d", "idle_e", "idle_f", "idle_g" },
+            "WORLD_HUMAN_DRUG_PROCESSORS_WEED");
+
+        private static readonly Bench Powder = new Bench(
+            "anim@amb@drug_processors@coke@female_a",
+            new[] { "idle_a", "idle_b", "idle_c", "idle_d" },
+            "WORLD_HUMAN_DRUG_PROCESSORS_COKE");
+
+        private static readonly Bench Soda = new Bench(
+            "anim@amb@drug_processors@coke@female_b",
+            new[] { "idle_a_bakingsoda", "idle_b_bakingsoda", "idle_c_bakingsoda", "idle_d_bakingsoda" },
+            "WORLD_HUMAN_DRUG_PROCESSORS_COKE");
+
+        /// <summary>
+        /// Which bench a drug is worked on: the weed one for weed, the coke one for everything
+        /// else, and the baking-soda one for crack.
+        ///
+        /// EVERYTHING ELSE, INCLUDING METH, and that is deliberate. Meth has its own clips
+        /// further down this file and they are good ones -- but they are a man at a chemistry
+        /// rig, and this is a kitchen counter in a house. The right animation for the wrong
+        /// room loses to the near-right animation for the right one.
+        /// </summary>
+        private static Bench BenchFor(string drugId)
+        {
+            if (string.IsNullOrEmpty(drugId)) return Powder;
+
+            if (drugId.Equals("weed", StringComparison.OrdinalIgnoreCase)) return Weed;
+            if (drugId.Equals("crack", StringComparison.OrdinalIgnoreCase)) return Soda;
+
+            return Powder;
+        }
+
+        /// <summary>The scenario that IS this drug's bench, for the last-resort fallback.</summary>
+        public static string ScenarioFor(string drugId)
+        {
+            return BenchFor(drugId).Scenario;
+        }
+
+        /// <summary>
+        /// How long he works before an idle, and how long an idle runs.
+        ///
+        /// The idles are three to six second cycles and are looped for the window rather than
+        /// played once, because a clip played once ends and leaves him with no task at all --
+        /// and "no task" on a tick that checks whether he is working restarts the whole thing.
+        /// Looped and then blended back to the base loop, the join is a person changing what
+        /// their hands are doing.
+        /// </summary>
+        private const int WorkMinMs = 7000;
+        private const int WorkMaxMs = 15000;
+        private const int IdleMinMs = 4000;
+        private const int IdleMaxMs = 7000;
+
+        /// <summary>
+        /// Softer than the rest of this file's 4.0, because these transitions are seen.
+        ///
+        /// Every other clip here is tasked once at the start of a batch, where a fast blend out
+        /// of standing still is right. The bench changes clip every ten seconds in front of
+        /// you, and at 4.0 each change is a snap.
+        /// </summary>
+        private const float BenchBlend = 2f;
+
+        private static readonly Random Rng = new Random();
+
+        private Bench _bench;
+        private bool _onIdle;
+        private int _turnAt;
+
+        /// <summary>
+        /// How long after tasking a clip the player counts as working regardless.
+        ///
+        /// IS_ENTITY_PLAYING_ANIM IS FALSE ON THE FRAME YOU TASK IT and stays false through the
+        /// blend, which this file has already been bitten by once -- see TryPlay. The caller
+        /// restarts the animation whenever IsPlaying says no, so without this every hand-over
+        /// from base to idle is a window where the batch decides nothing is running and starts
+        /// the whole thing again from the top.
+        /// </summary>
+        private const int SettleMs = 500;
+        private int _settled;
 
         /// <summary>
         /// The house animation for working a counter, tried before anything drug-specific.
@@ -174,6 +296,9 @@ namespace Hoodrich.Economy
             {
                 if (_playingDict == null) return false;
 
+                // Still blending in. See SettleMs.
+                if (Game.GameTime < _settled) return true;
+
                 try
                 {
                     var player = Game.Player.Character;
@@ -214,6 +339,14 @@ namespace Hoodrich.Economy
                     foreach (var clip in clips) Function.Call(Hash.REQUEST_ANIM_DICT, clip.Dict);
                 }
 
+                // The benches first, because they are what is going to be used. All three,
+                // since the menu is open and the drug is not settled until it is picked.
+                foreach (var bench in new[] { Weed, Powder, Soda })
+                {
+                    Function.Call(Hash.REQUEST_ANIM_DICT, bench.Loop);
+                    Function.Call(Hash.REQUEST_ANIM_DICT, bench.Idles);
+                }
+
                 foreach (var clip in Counter) Function.Call(Hash.REQUEST_ANIM_DICT, clip.Dict);
                 foreach (var clip in Fallback) Function.Call(Hash.REQUEST_ANIM_DICT, clip.Dict);
             }
@@ -232,7 +365,22 @@ namespace Hoodrich.Economy
 
             if (!ByDrug.TryGetValue(drugId ?? "", out var clips)) clips = Fallback;
 
-            // The counter animation first, whatever is being worked. Cutting is one action in
+            // THE BENCH FIRST, ahead of everything, because it is the animation this scene is
+            // actually of rather than one borrowed for its shape. Everything below is what
+            // happens on an install that has not got it.
+            var bench = BenchFor(drugId);
+
+            if (bench != null && Play(player, bench.Loop, "base", LoopFlag, BenchBlend))
+            {
+                _bench = bench;
+                _onIdle = false;
+                _turnAt = Game.GameTime + WorkMinMs + Rng.Next(WorkMaxMs - WorkMinMs);
+                return true;
+            }
+
+            _bench = null;
+
+            // The counter animation next, whatever is being worked. Cutting is one action in
             // one room, so it should look like one action -- the per-drug clips below are what
             // happens if this install has not got it.
             foreach (var clip in Counter)
@@ -255,6 +403,39 @@ namespace Hoodrich.Economy
             return false;
         }
 
+        /// <summary>
+        /// Works the bench: back and forth between the loop and an idle, on its own clock.
+        ///
+        /// Called every tick of a batch. Does nothing at all unless a bench is what took, which
+        /// means an install without those dictionaries carries no cost for this existing.
+        /// </summary>
+        public void Tick(Ped player)
+        {
+            if (_bench == null || player == null || !player.Exists()) return;
+
+            var now = Game.GameTime;
+            if (now < _turnAt) return;
+
+            if (_onIdle)
+            {
+                // Back to work.
+                if (!Play(player, _bench.Loop, "base", LoopFlag, BenchBlend)) { _turnAt = now + 1500; return; }
+
+                _onIdle = false;
+                _turnAt = now + WorkMinMs + Rng.Next(WorkMaxMs - WorkMinMs);
+                return;
+            }
+
+            if (_bench.Idle.Length == 0) { _turnAt = now + WorkMaxMs; return; }
+
+            var pick = _bench.Idle[Rng.Next(_bench.Idle.Length)];
+
+            if (!Play(player, _bench.Idles, pick, LoopFlag, BenchBlend)) { _turnAt = now + 1500; return; }
+
+            _onIdle = true;
+            _turnAt = now + IdleMinMs + Rng.Next(IdleMaxMs - IdleMinMs);
+        }
+
         private bool TryPlay(Ped player, Clip clip)
         {
             try
@@ -274,6 +455,8 @@ namespace Hoodrich.Economy
                 // planting to the floor. false, 0, false is what every shipped resource uses.
                 Function.Call(Hash.TASK_PLAY_ANIM, player.Handle, clip.Dict, clip.Name,
                               4f, -4f, -1, LoopFlag, 0f, false, 0, false);
+
+                _settled = Game.GameTime + SettleMs;
 
                 // AND THAT IS THE END OF IT. It used to ask, on this very line, whether the ped
                 // was now playing the clip -- and take a "no" as proof the name was wrong.
@@ -304,8 +487,41 @@ namespace Hoodrich.Economy
             }
         }
 
+        /// <summary>
+        /// Tasks one clip by name, and says whether it went out.
+        ///
+        /// The same call TryPlay makes, without the catalogue around it -- the bench knows its
+        /// own names and does not walk a ladder of candidates.
+        /// </summary>
+        private bool Play(Ped player, string dict, string clip, int flag, float blend)
+        {
+            try
+            {
+                Function.Call(Hash.REQUEST_ANIM_DICT, dict);
+
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict)) return false;
+
+                Function.Call(Hash.TASK_PLAY_ANIM, player.Handle, dict, clip,
+                              blend, -blend, -1, flag, 0f, false, 0, false);
+
+                _playingDict = dict;
+                _playingClip = clip;
+                _settled = Game.GameTime + SettleMs;
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Prep animation '" + dict + "/" + clip + "' failed: " + ex.Message);
+                return false;
+            }
+        }
+
         public void Stop(Ped player)
         {
+            _bench = null;
+            _onIdle = false;
+
             if (_playingDict == null) return;
 
             try

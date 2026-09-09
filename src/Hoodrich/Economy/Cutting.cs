@@ -274,6 +274,22 @@ namespace Hoodrich.Economy
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return;
 
+            // THE DRUG'S OWN SCENARIO FIRST, which is the same animation the clips above were
+            // trying to play by hand -- WORLD_HUMAN_DRUG_PROCESSORS_WEED and _COKE. If the
+            // dictionaries would not stream for us the game can still run them itself, and it
+            // brings the table prop with it.
+            try
+            {
+                var mine = Economy.PrepAnimation.ScenarioFor(_product == null ? "" : _product.Id);
+
+                Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, player.Handle, mine, 0, true);
+                return;
+            }
+            catch
+            {
+                // The old pair below.
+            }
+
             foreach (var scenario in WorkScenarios)
             {
                 try
@@ -344,6 +360,10 @@ namespace Hoodrich.Economy
             // Not once the fallback is in. Start issues a TASK_PLAY_ANIM, which would cancel
             // the scenario on the very next tick and then fail again -- a man twitching between
             // two animations for the rest of the batch.
+            // The bench, if that is what took: he works, he stops to check a bag, he goes
+            // back to it. Nothing at all on an install where a borrowed clip is running.
+            _anim.Tick(player);
+
             if (!_anim.IsPlaying && !_scenarioTried)
             {
                 _anim.Start(player, _product.Id);
