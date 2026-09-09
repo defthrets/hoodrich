@@ -32,6 +32,9 @@ namespace Hoodrich.UI
     internal sealed class GunScreen
     {
         private const float PanelWidthH = 0.74f;
+
+        /// <summary>How far in from the left edge the panel sits while the bench is in view.</summary>
+        private const float Aside = 0.030f;
         private const float RowHeight = 0.030f;
         private const float PartRow = 0.028f;
         private const float PadH = 0.024f;
@@ -93,16 +96,20 @@ namespace Hoodrich.UI
         /// </summary>
         private readonly GunModel _model = new GunModel();
 
-        /// <summary>
-        /// Where the window was last drawn, in screen fractions, and whether there is one.
-        ///
-        /// Written by the drawing pass and read by the NEXT one, because the panel has to be
-        /// painted around the hole before anything knows where the hole is -- the layout is
-        /// computed inside the draw. One frame behind on a box that only moves when the panel
-        /// opens, which nobody can see.
-        /// </summary>
-        private float _winX, _winY, _winW, _winH;
-        private bool _window;
+        /// <summary>Set by Main: where the bench is, and which way it faces. See GunModel.</summary>
+        public Func<GTA.Math.Vector3> Bench
+        {
+            get { return _model.Bench; }
+            set { _model.Bench = value; }
+        }
+
+        public Func<float> Facing
+        {
+            get { return _model.Facing; }
+            set { _model.Facing = value; }
+        }
+
+
         private int _part;
         private int _lastPart = -1;
         private int _partTop;
@@ -159,18 +166,17 @@ namespace Hoodrich.UI
         /// </summary>
         public void RestoreWorld()
         {
-            _model.Clear();
-            _window = false;
+            _model.Stand();
         }
 
         public void Close()
         {
             if (!IsOpen) return;
 
-            // THE GUN GOES WITH THE SCREEN. It is a real object in the room: left behind, it
-            // would be a rifle hanging in mid-air outside the shop for the rest of the night.
-            _model.Clear();
-            _window = false;
+            // THE GUN AND THE CAMERA BOTH GO WITH THE SCREEN. The gun is a real object on a
+            // real table -- left behind it lies there for the night -- and a scripted camera
+            // nobody put away is a player who cannot see where he is walking.
+            _model.Stand();
 
             InputGuard.Swallow();
             _curtain.Close();
@@ -507,9 +513,9 @@ namespace Hoodrich.UI
         {
             var piece = Chosen;
 
-            if (piece == null || !_window)
+            if (piece == null)
             {
-                _model.Clear();
+                _model.Stand();
                 return;
             }
 
@@ -543,7 +549,10 @@ namespace Hoodrich.UI
 
             _model.Show(piece.Hash, parts);
 
-            if (_model.Live) _model.Place(_winX + _winW * 0.5f, _winY + _winH * 0.5f, _winW, _winH);
+            if (!_model.Live) return;
+
+            _model.Turn();
+            _model.Watch(true);
         }
 
         /// <summary>
@@ -601,9 +610,9 @@ namespace Hoodrich.UI
         {
             if (!IsOpen)
             {
-                // Shut. Nothing of ours is left hanging in the room. See GunModel.
-                _model.Clear();
-                _window = false;
+                // Shut. Nothing of ours is left in the room and the camera is the player's
+                // again. See GunModel.
+                _model.Stand();
                 return;
             }
 
@@ -616,7 +625,13 @@ namespace Hoodrich.UI
             var height = 0.215f + rows * RowHeight;
             var panelWidth = Hud.ToX(PanelWidthH);
             var pad = Hud.ToX(PadH);
-            var left = 0.5f - panelWidth * 0.5f;
+            // ASIDE RATHER THAN CENTRED, so the bench is not behind it.
+            //
+            // A centred panel this wide covers the middle of the screen, which is exactly
+            // where a camera pointed at a table puts the table. Pushed to the left, the gun
+            // has the right of the screen to itself and nothing has to be cut out of anything.
+            // It goes back to the middle when there is no gun to show.
+            var left = _model.Live ? Aside : 0.5f - panelWidth * 0.5f;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
 
             var age = Game.GameTime - _shownAt;
@@ -624,19 +639,12 @@ namespace Hoodrich.UI
             arrive = 1f - (1f - arrive) * (1f - arrive);
             top += EnterRise * (1f - arrive);
 
-            // PAINTED AROUND THE PICTURE BOX when there is a model to show through it. Two
-            // dimensional drawing happens after the world, so a panel is always in front of
-            // anything in the room -- the only way to show a real object is to not paint over
-            // it. See Theme.PanelAround, and GunModel for why it is worth the hole.
-            if (_window)
-            {
-                Theme.PanelAround(left, top, panelWidth, height,
-                                  _winX, _winY, _winW, _winH, arrive);
-            }
-            else
-            {
-                Theme.Panel(left, top, panelWidth, height, arrive);
-            }
+            // WHOLE AGAIN. There was a hole cut in this for the gun to be seen through,
+            // because two dimensional drawing happens after the world and a panel is always in
+            // front of anything standing in the room. The gun is on a bench now with the camera
+            // pointed at it, and the panel simply moves aside instead of being cut open -- see
+            // Aside, and GunModel.
+            Theme.Panel(left, top, panelWidth, height, arrive);
 
             var x = left + pad;
             var right = left + panelWidth - pad;
@@ -785,39 +793,19 @@ namespace Hoodrich.UI
         private void ChosenColumn(float x, float right, float y, float floor, float arrive)
         {
             var piece = Chosen;
-            if (piece == null)
-            {
-                _window = false;
-                return;
-            }
+            if (piece == null) return;
 
             var owned = Owns(piece);
             var wide = right - x;
 
-            // WHERE THE WINDOW IS. Measured here because this is where the layout happens,
-            // and read by the panel on the NEXT frame -- see the note on _winX.
-            _winX = x;
-            _winY = y;
-            _winW = wide;
-            _winH = BigH + 0.024f;
-            _window = true;
+            // NO PICTURE AT ALL WHILE THE REAL ONE IS ON THE BENCH. A photograph of the gun
+            // beside a camera shot of the same gun is the same thing twice, and the smaller,
+            // flatter copy is the one that loses.
+            if (_model.Live) return;
 
-            var live = _model.Live;
-
-            // NO PLATE BEHIND A REAL GUN. The plate is there so a flat white icon has
-            // something to sit on; behind a model it is the thing hiding the model.
-            if (!live)
-            {
-                Hud.RectFrom(x, y, wide, BigH + 0.024f, Palette.Alpha(Palette.PanelRowAlt, 18));
-            }
-
+            // A soft plate behind the picture, so a white icon has something to sit on.
+            Hud.RectFrom(x, y, wide, BigH + 0.024f, Palette.Alpha(Palette.PanelRowAlt, 18));
             Theme.Rim(x, y, wide, BigH + 0.024f, 0.0014f, Palette.Alpha(Theme.RimInk, 40));
-
-            // The photograph is the fallback now rather than the picture. It is still the
-            // better thing to look at where the game has one -- it is lit, and it is not
-            // spinning -- but eleven of these guns have no photograph and every one of them
-            // has a model.
-            if (live) return;
 
             var drawn = Art(IconOf(piece), x + wide * 0.5f, y + 0.012f + BigH * 0.5f, Hud.ToX(BigW), BigH, Palette.Text);
             if (!drawn)

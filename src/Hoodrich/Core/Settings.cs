@@ -329,6 +329,23 @@ namespace Hoodrich.Core
         /// expires because the point of it is "that just happened, over there", which stops
         /// being useful about as fast as the body stops being interesting.
         /// </summary>
+        /// <summary>
+        /// The bench in front of Stretch that a gun is laid on while you look at it.
+        ///
+        /// A COORDINATE CAN ONLY HONESTLY COME FROM SOMEBODY STANDING ON IT, which is the same
+        /// argument the doors make. These are a guess an arm's length in front of him at about
+        /// table height: put a table down, stand where the middle of it is, and write what the
+        /// settings screen tells you in here.
+        ///
+        /// The camera is NOT a setting. It is worked out from these -- back along the heading,
+        /// up a little, looking down at the top -- because a camera position is the one thing
+        /// nobody can judge while standing still. See UI.GunModel.
+        /// </summary>
+        public float BenchX = -130.35f;
+        public float BenchY = -1462.55f;
+        public float BenchZ = 34.60f;
+        public float BenchHeading = 294.841f;
+
         public bool KillMarks = true;
         public int KillMarkSeconds = 50;
 
@@ -743,6 +760,11 @@ namespace Hoodrich.Core
                 if (!string.IsNullOrEmpty(packed)) Economy.Fit.Set(prop, Economy.Fit.Unpack(packed), persist: false);
             }
             s.DrugAnimLength = Clamp(ini.GetFloat("Highs", "AnimLength", s.DrugAnimLength), 0.5f, 3f);
+
+            s.BenchX = ini.GetFloat("Guns", "BenchX", s.BenchX);
+            s.BenchY = ini.GetFloat("Guns", "BenchY", s.BenchY);
+            s.BenchZ = ini.GetFloat("Guns", "BenchZ", s.BenchZ);
+            s.BenchHeading = ini.GetFloat("Guns", "BenchHeading", s.BenchHeading);
 
             s.KillMarks = ini.GetBool("Map", "KillMarks", s.KillMarks);
             s.KillMarkSeconds = (int)Clamp(ini.GetInt("Map", "KillMarkSeconds", s.KillMarkSeconds), 0f, 600f);

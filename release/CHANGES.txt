@@ -1,7 +1,7 @@
 ﻿0.7.1 -- unreleased
 
 
-THE GUN COUNTER SHOWS YOU THE ACTUAL GUN, TURNING, WITH THE PARTS ON IT.
+THE GUN COUNTER LAYS THE GUN ON THE BENCH AND THE CAMERA GOES TO IT.
 
 Eleven of the weapons on that counter had no picture, and it was never going to
 be fixed by looking harder. The game ships four weapon-art packs -- and having
@@ -11,28 +11,33 @@ Rifle, the Double Barrel, the Switchblade, the Machete, the Pipe Bomb and the
 Flare are in none of them. Rockstar never made those photographs.
 
 Every one of those weapons has a MODEL, though, because you can hold it. So the
-picture box is a window cut into the panel now, and the real gun floats in the
-room behind it, slowly turning -- which cannot be missing, and which is also the
-thing that was asked for.
+gun you are looking at is laid on its side on the bench in front of Stretch and
+the camera comes round to it, which cannot be missing.
+
+THIS IS THE THIRD ARRANGEMENT OF IT and the first that is not fighting the
+engine. The first two floated the gun in front of the gameplay camera and cut a
+hole in the panel to see it through -- because two dimensional drawing is
+composited after the world, so nothing in the room can ever be drawn in front of
+a rectangle. That worked, and it was always a workaround: the hole had to be
+filled with a painted backdrop, and anything a metre from the camera sits inside
+the near depth of field, so the gun came out soft while the shop behind it was
+sharp.
+
+A bench answers all of it at once. The gun lies on a real table in real light,
+the panel moves aside instead of being cut open, and the camera is ours -- so it
+is pointed from a fixed spot at a distance the game is happy to focus at.
 
 AND IT WEARS WHAT YOU ARE LOOKING AT. Not just the parts you have bought: the
 one under the cursor goes on as you scroll to it and comes off as you scroll
 away. The question a parts list is actually asking is "what does it look like
 with that on", and now the answer is in front of you before you pay.
 
-Why a window rather than a picture in the panel: everything this mod draws is
-two dimensional, and two dimensional is drawn after the world -- so a panel is
-always in front of anything standing in the room, whatever order the calls go
-in. There is no way to put a model behind a screen. The screen has to not paint
-over it.
-
-IT HANGS AGAINST A BACKDROP rather than against whatever happens to be behind
-the shop. The window is a hole on purpose, so the first version had a pistol
-turning in front of a hedge -- which is a preview you cannot read. The backdrop
-is drawn as two triangles IN THE WORLD, in the panel's own colour, because that
-is the only pass anything can be drawn in that ends up behind the gun: draw it
-in two dimensions and it covers the gun instead. It sits far enough back to
-clear a rifle swinging end-on.
+WHERE THE BENCH IS, IS IN THE INI, because a coordinate can only honestly come
+from somebody who has stood on it. The shipped one is a guess an arm's length in
+front of him at about table height: put a table down, stand where the middle of
+its top is, and write down what the settings screen tells you. The camera is not
+a setting -- it is worked out from the bench, because a camera position is the
+one thing nobody can judge while standing still.
 
 The photograph is still used where the game has one. It is lit, and it is not
 spinning.

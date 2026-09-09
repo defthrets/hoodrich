@@ -899,6 +899,14 @@ namespace Hoodrich
                 // The headstone goes the moment his pockets are empty. See UI.Graves.Looted.
                 _graves.Looted = who => _bodies != null && _bodies.Done(who);
 
+                // WHERE A GUN IS LAID WHILE YOU LOOK AT IT. See UI.GunModel; the camera works
+                // itself out from these two.
+                _gunScreen.Bench = () => _cfg == null
+                    ? new GTA.Math.Vector3(-130.35f, -1462.55f, 34.60f)
+                    : new GTA.Math.Vector3(_cfg.BenchX, _cfg.BenchY, _cfg.BenchZ);
+
+                _gunScreen.Facing = () => _cfg == null ? 294.841f : _cfg.BenchHeading;
+
                 // The pegs live in the save, so the rail needs it. Without this every peg row
                 // is a beep -- which is exactly what the screen does when it has no state, on
                 // purpose, rather than throwing at somebody stood at a wardrobe.
