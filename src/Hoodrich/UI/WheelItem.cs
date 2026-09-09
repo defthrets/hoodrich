@@ -153,10 +153,32 @@ namespace Hoodrich.UI
         public string PanelTitle = "";
         public readonly List<PanelRow> Panel = new List<PanelRow>();
 
+        /// <summary>
+        /// A brand to wear in the page header, in data\icons, beside the title.
+        ///
+        /// BESIDE THE TITLE AND NOT INSTEAD OF IT. A logo where the words were looks smart and
+        /// costs you the breadcrumb -- the header is how you know which page you drilled into,
+        /// and a mark that appears on three different pages cannot tell you that. So the mark
+        /// says whose app this is and the words still say where in it you are.
+        ///
+        /// The shape is given rather than measured: the file is loaded by the game, not by us,
+        /// and nothing on this side can ask it how wide it is.
+        /// </summary>
+        public string Sign = "";
+        public float SignAspect = 1f;
+
         public WheelPage(string title, string subtitle = "")
         {
             Title = title;
             Subtitle = subtitle;
+        }
+
+        /// <summary>The mark this page's header wears. See Sign.</summary>
+        public WheelPage WithSign(string file, float aspect)
+        {
+            Sign = file ?? "";
+            SignAspect = aspect <= 0f ? 1f : aspect;
+            return this;
         }
 
         public WheelPage Row(string label, string value, Color? tint = null, string art = null,

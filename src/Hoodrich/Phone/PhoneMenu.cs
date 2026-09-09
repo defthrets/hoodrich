@@ -64,6 +64,9 @@ namespace Hoodrich.Phone
 
         private const float StatusH = 0.030f;
         private const float HeaderH = 0.058f;
+
+        /// <summary>How tall a header's brand is drawn. See WheelPage.Sign.</summary>
+        private const float SignH = 0.030f;
         private const float FooterH = 0.038f;
 
         // ---- the grid -----------------------------------------------------------
@@ -1172,14 +1175,36 @@ namespace Hoodrich.Phone
                 return;
             }
 
-            Hud.Text(Hud.Fit(title.ToUpperInvariant(), w - pad * 2f, 0.44f, Hud.FontLabel),
-                     left + pad, top + (string.IsNullOrEmpty(under) ? 0.016f : 0.007f), 0.44f,
+            // THE BRAND FIRST, WHERE A PAGE HAS ONE.
+            //
+            // Drawn before the words and the words moved along, rather than drawn over the top
+            // of them: the title is fitted to the room it has, so a mark that did not push it
+            // would sit on the first two letters of it at every width.
+            var textX = left + pad;
+            var room = w - pad * 2f;
+
+            if (!string.IsNullOrEmpty(page.Sign))
+            {
+                var signH = SignH;
+                var signW = Hud.ToX(signH * (page.SignAspect <= 0f ? 1f : page.SignAspect));
+
+                if (Hud.File(page.Sign, textX + signW * 0.5f,
+                             top + (HeaderH - 0.0018f) * 0.5f, signW, signH, 0f,
+                             Fade(Palette.Text, fade)))
+                {
+                    textX += signW + Hud.ToX(0.008f);
+                    room -= signW + Hud.ToX(0.008f);
+                }
+            }
+
+            Hud.Text(Hud.Fit(title.ToUpperInvariant(), room, 0.44f, Hud.FontLabel),
+                     textX, top + (string.IsNullOrEmpty(under) ? 0.016f : 0.007f), 0.44f,
                      Fade(Palette.Text, fade), Hud.FontLabel, centre: false);
 
             if (!string.IsNullOrEmpty(under))
             {
-                Hud.Text(Hud.Fit(under, w - pad * 2f, 0.25f, Hud.FontBody),
-                         left + pad, top + 0.032f, 0.25f,
+                Hud.Text(Hud.Fit(under, room, 0.25f, Hud.FontBody),
+                         textX, top + 0.032f, 0.25f,
                          Fade(Palette.TextDim, fade), Hud.FontBody, centre: false);
             }
 

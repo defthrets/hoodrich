@@ -84,6 +84,11 @@ and looked exactly like it. The slab takes the whole word, so there is no boxed
 half -- and the three pictures say what the company actually does, which no
 arrangement of five letters was ever going to.
 
+IT IS ON THE FOOD MENU TOO, beside the title rather than instead of it -- the
+mark says whose app you are in and ORDER FOOD still says where in it you are,
+which a logo on three different pages cannot. Any page on the phone can wear a
+brand in its header now; that one is the first to.
+
 The phone can lay out art that is not square now. Every file in data\icons is,
 so a tile drew art in a square box and the rows that put an icon in a gutter
 stepped past a square -- right for all of them, wrong for a wordmark, which came

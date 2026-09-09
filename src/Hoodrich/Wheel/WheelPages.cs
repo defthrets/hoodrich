@@ -1530,6 +1530,11 @@ namespace Hoodrich.Wheel
             page.PanelTitle = "What are you having?";
             page.AsList = true;
 
+            // WHOSE MENU THIS IS. The tile on the home screen and the band on the ride picker
+            // both wear the mark; the menu you actually spend money on was the one screen in
+            // the app with nothing on it but words.
+            page.WithSign("luber.png", LuberMark);
+
             var full = Core.Pantry.Slots > 0 && Core.Pantry.Total >= Core.Pantry.Slots;
 
             var any = false;
