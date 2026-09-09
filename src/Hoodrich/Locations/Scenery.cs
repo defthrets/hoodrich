@@ -96,6 +96,27 @@ namespace Hoodrich.Locations
         }
 
         private readonly List<Scene> _scenes = new List<Scene>();
+
+        /// <summary>
+        /// Whether that handle is something a scene of ours put there.
+        ///
+        /// FOR ANYBODY WHO WANTS TO CLEAR UP AROUND IT. The gun counter tidies away weapon
+        /// objects left near the bench by an earlier run of the script -- and the rifle laid on
+        /// that crate in Menyoo is a weapon object too, sat right where the tidying happens. It
+        /// is not the counter's job to know a scene from a stray; it is this file's, because
+        /// this file put one of them there.
+        /// </summary>
+        public bool Mine(int handle)
+        {
+            if (handle == 0) return false;
+
+            for (var i = 0; i < _scenes.Count; i++)
+            {
+                if (_scenes[i].ByHandle.ContainsKey(handle)) return true;
+            }
+
+            return false;
+        }
         private bool _read;
         private int _nextLook;
         private int _nextSolid;

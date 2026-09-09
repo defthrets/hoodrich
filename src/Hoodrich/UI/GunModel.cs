@@ -73,6 +73,9 @@ namespace Hoodrich.UI
         /// <summary>How long the camera takes to go, and to come back.</summary>
         private const int EaseMs = 550;
 
+        /// <summary>Set by Main: whether a handle belongs to a placed scene. See Tidy.</summary>
+        public Func<int, bool> Scenery;
+
         /// <summary>Set by Main: where the bench is, and which way it faces.</summary>
         public Func<Vector3> Bench;
         public Func<float> Facing;
@@ -454,6 +457,66 @@ namespace Hoodrich.UI
 
             Sweep();
         }
+
+        /// <summary>
+        /// Weapons left on and around the bench by an EARLIER RUN of the script, taken away.
+        ///
+        /// THE LIST OF WHAT WE MADE DIES WITH THE SCRIPT. Sweep can only clear handles this
+        /// instance created, so anything a previous one left -- and the version before the
+        /// delete was fixed left a lot -- is an orphan that nothing points at. Reloading does
+        /// not help: the old instance tears down with the old broken code, and the new one has
+        /// never heard of them.
+        ///
+        /// So this looks rather than remembers: any object near the bench whose model is one of
+        /// the guns on the shelf, that is not ours this second and was not put there by a
+        /// scene. That last test is the one that matters -- the rifle laid on that crate by hand
+        /// IS a weapon object, sitting exactly where the tidying happens, and Scenery is the
+        /// only thing that can tell it from a stray.
+        ///
+        /// Run once when the counter opens. It is a look at a dozen props, not a sweep of the
+        /// city, and it happens on the frame the camera is already moving.
+        /// </summary>
+        public void Tidy(IEnumerable<uint> catalogue)
+        {
+            if (catalogue == null || Bench == null) return;
+
+            try
+            {
+                var models = new HashSet<int>();
+
+                foreach (var weapon in catalogue)
+                {
+                    if (weapon == 0) continue;
+
+                    var m = Function.Call<int>(Hash.GET_WEAPONTYPE_MODEL, weapon);
+                    if (m != 0) models.Add(m);
+                }
+
+                if (models.Count == 0) return;
+
+                var gone = 0;
+
+                foreach (var thing in World.GetNearbyProps(Bench(), TidyRange))
+                {
+                    if (thing == null || !thing.Exists()) continue;
+                    if (thing.Handle == _object) continue;
+                    if (!models.Contains(thing.Model.Hash)) continue;
+                    if (Scenery != null && Scenery(thing.Handle)) continue;
+
+                    thing.Delete();
+                    gone++;
+                }
+
+                if (gone > 0) Log.Info("Gun counter: cleared " + gone + " gun(s) left over from an earlier run.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not tidy the bench: " + ex.Message);
+            }
+        }
+
+        /// <summary>How far around the bench is tidied. The crate and its immediate air.</summary>
+        private const float TidyRange = 12f;
 
         /// <summary>Everything off the bench and the camera back to the player.</summary>
         public void Stand()

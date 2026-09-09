@@ -2331,6 +2331,9 @@ namespace Hoodrich
 
                 _gunScreen.Facing = () => _cfg == null ? 115f : _cfg.BenchHeading;
 
+                // So the tidy-up round the crate does not take the rifle somebody laid on it.
+                _gunScreen.Scenery = handle => _scenes != null && _scenes.Mine(handle);
+
                 // AFTER _gunScreen EXISTS, which is the whole point of it being here.
                 //
                 // This block sat a hundred and sixteen lines earlier and set .Locker on a field

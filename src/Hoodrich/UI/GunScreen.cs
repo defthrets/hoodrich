@@ -124,6 +124,22 @@ namespace Hoodrich.UI
             set { _model.Facing = value; }
         }
 
+        /// <summary>Set by Main: whether a handle is a placed scene's. See GunModel.Tidy.</summary>
+        public Func<int, bool> Scenery
+        {
+            get { return _model.Scenery; }
+            set { _model.Scenery = value; }
+        }
+
+        /// <summary>Every weapon on every rack, for the tidy-up to recognise its own kind.</summary>
+        private static IEnumerable<uint> Catalogue()
+        {
+            foreach (var rack in Racks)
+            {
+                foreach (var piece in rack.Stock) yield return piece.Hash;
+            }
+        }
+
 
         private int _part;
         private int _lastPart = -1;
@@ -153,6 +169,11 @@ namespace Hoodrich.UI
 
         public void Open()
         {
+            // Anything an earlier run of the script left lying about the crate. See
+            // GunModel.Tidy -- the list of what we made does not survive a reload, so the
+            // strays from before it are found by looking rather than by remembering.
+            _model.Tidy(Catalogue());
+
             _curtain.Open();
             _shownAt = Game.GameTime;
             _glide.Reset();
