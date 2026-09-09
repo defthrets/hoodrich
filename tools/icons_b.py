@@ -43,49 +43,75 @@ def _capsule(d, cx, cy, deg, length, r):
     poly(d, rot([(cx - half + 40, cy - r + 14), (cx - 30, cy - r + 14), (cx - 30, cy - r + 26), (cx - half + 40, cy - r + 26)], cx, cy, deg), W)
 
 
-def _tablet(d, cx, cy, r, body=W, bevel=LOW, face=True):
-    """A round pressed tablet, with the stamp punched clean through it."""
-    disc(d, cx, cy, r, body)
+def _pill_shape(d, cx, cy, r, deep, fill):
+    """The silhouette of a tablet -- its top face and the wall under it -- in one tone."""
+    disc(d, cx, cy + deep, r, fill)
+    disc(d, cx, cy, r, fill)
+    rect(d, cx - r, cy, cx + r, cy + deep, fill)
 
-    # The chamfer round the edge. It is what stops a disc reading as a coin.
-    ring(d, cx, cy, r - r * 0.10, r * 0.055, bevel)
 
-    if not face:
+def _pill(d, cx, cy, r, smile=True):
+    """
+    One pressed tablet, seen slightly from above.
+
+    THE SIDE WALL IS THE WHOLE THING. A disc with a bevel on it is a coin -- it has no
+    thickness, and a pill's thickness is the one feature that says which of the two it is.
+    So the wall is a second disc set down by a fifth of the radius, in the tone that means
+    "a plane below the body", and the top face sits on it. What is left showing is a crescent
+    of edge under the tablet, which is exactly what every drawing of a pill has and what the
+    version before this one did not.
+    """
+    deep = r * 0.22
+
+    # The wall first: the whole silhouette in the lower tone, then the face laid on top of it.
+    _pill_shape(d, cx, cy, r, deep, MID)
+
+    disc(d, cx, cy, r, W)
+
+    # The chamfer where the face rolls into the wall.
+    ring(d, cx, cy, r - r * 0.09, r * 0.05, LOW)
+
+    if not smile:
         return
 
     # PUNCHED, NOT DRAWN. The stamp on a pressed pill is a recess, and a recess in this kit is
-    # a hole -- CLEAR shows the panel through, which is the same thing the score lines on the
-    # bar do. Drawing it in a tone instead would make the face a sticker.
-    eye = r * 0.135
-    disc(d, cx - r * 0.34, cy - r * 0.28, eye, CLEAR)
-    disc(d, cx + r * 0.34, cy - r * 0.28, eye, CLEAR)
+    # a hole -- CLEAR shows the panel through, the same thing the score lines on the bar do.
+    # Drawn in a tone it would be a sticker on a disc.
+    eye = r * 0.14
+    disc(d, cx - r * 0.33, cy - r * 0.27, eye, CLEAR)
+    disc(d, cx + r * 0.33, cy - r * 0.27, eye, CLEAR)
 
-    # And the smile. Angles run clockwise on screen, so 30 to 150 sweeps through the bottom.
-    stroke(d, arc(cx, cy - r * 0.06, r * 0.55, 30, 150, 26), r * 0.15, CLEAR)
+    # Angles run clockwise on screen, so 32 to 148 sweeps through the bottom.
+    stroke(d, arc(cx, cy - r * 0.04, r * 0.52, 32, 148, 26), r * 0.15, CLEAR)
 
 
 def pills():
     """
     Ecstasy: two pressed tablets with a smiley stamped into them.
 
-    THE CAPSULES ARE GONE AND THEY WERE THE WRONG DRUG. Two two-tone capsules is a picture of
-    a prescription -- it is what the painkiller this slot briefly held actually looks like --
-    and it was doing no work at all to tell you which of the two pill products you were
-    holding, because the bar next to it is also a white pressed thing.
+    THE CAPSULES WERE THE WRONG DRUG. Two two-tone capsules is a picture of a prescription --
+    it is what the painkiller this slot briefly held actually looks like -- and it did nothing
+    to tell you which of the two PILL products you were holding, because the bar next to it is
+    also a white pressed thing.
 
-    A ROUND TABLET WITH A FACE PUNCHED INTO IT IS UNMISTAKABLE at sixty pixels, which is the
-    size these are drawn at, and it is the one drug in the game with an iconography everybody
-    already knows.
-
-    Two of them, the back one at MID and turned away from the light, because a single tablet
-    centred in a square reads as a button.
+    TWO, SIDE BY SIDE AND BARELY TOUCHING, rather than one behind another. A tablet mostly
+    hidden behind another tablet is a shape with no silhouette of its own; set down and across
+    it reads as a second pill at a glance, which is what "a couple" has to mean at sixty
+    pixels. The gap between them is carved rather than drawn: the front one's silhouette is
+    punched out of the back one with a margin, so there is a clean line between the two in
+    whatever colour the panel is.
     """
     img, d = canvas()
 
-    # Behind, and drawn first: whatever the front one covers, it owns.
-    _tablet(d, 196, 200, 116, MID, LOW)
+    # The smaller one, behind and down to the right. Far enough across that most of its
+    # outline is its own: two tablets that overlap by a third are two tablets, and two that
+    # overlap by two thirds are one tablet with a bump on it.
+    _pill(d, 352, 356, 120)
 
-    _tablet(d, 300, 312, 150, W, LOW)
+    # A margin cut out of it, so the big one has a clean edge against it.
+    _pill_shape(d, 186, 206, 146 + 14, 146 * 0.22, CLEAR)
+
+    _pill(d, 186, 206, 146)
 
     save(img, "pills.png")
 
