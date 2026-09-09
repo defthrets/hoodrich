@@ -399,9 +399,22 @@ def acid():
     disc(d, 256, 256, 82, CLEAR)
 
     for ex in (226, 286):
-        disc(d, ex, 232, 12)
+        disc(d, ex, 224, 12)
 
-    stroke(d, arc(256, 258, 44, 30, 150), 15, W, caps=True)
+    stroke(d, arc(256, 246, 44, 25, 155), 15, W, caps=True)
+
+    # THE TONGUE, out of the corner rather than straight down. Centred it reads as a chin, or
+    # as a drip; off to one side it can only be a tongue, and the asymmetry is the one thing
+    # that survives when the whole face is nine pixels across.
+    #
+    # It OVERLAPS the smile rather than starting under it: two white shapes a pixel apart
+    # become one grey smear at 32, and one that touches stays one shape all the way down.
+    #
+    # KEPT INSIDE THE PRINT. The punched circle is 82 across and the tongue was reaching its
+    # edge at the bottom right -- where it met the white paper it merged with it, so the
+    # print looked broken rather than the tongue looking long. Every white mark on this face
+    # has to finish before the hole does.
+    poly(d, rrect_pts(256, 274, 292, 318, 18))
 
     save(img, "acid.png")
 
