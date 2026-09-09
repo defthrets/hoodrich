@@ -1,6 +1,29 @@
 ﻿0.7.1 -- unreleased
 
 
+SCENE PROPS INDOORS STOP FLICKERING.
+
+AN OBJECT A SCRIPT MAKES BELONGS TO NO ROOM. The game culls what is inside an
+interior through its portals -- doorways and windows -- and to do that every
+entity in there has to be assigned to a room. One created by a script is assigned
+to none, so the portal system has no answer for it and settles the question
+differently from one frame to the next: drawn, culled, drawn.
+
+That is the flicker exactly, and it is why the six scenes before Denise's kitchen
+never showed it. Every one of them is outdoors.
+
+The room is read off the thing itself once it exists -- it is standing at the
+coordinate, so the game can say which interior and which room that is -- and then
+forced, which is the difference between happening to resolve there and being
+there. Nothing at all happens to a prop in the open air.
+
+And the draw distance comes out of the file now. Menyoo writes one per placement
+and this had never read it, so everything got whatever a script object is handed
+by default, which for a carton on a worktop is short enough to blink as you cross
+the kitchen. Honoured up to a ceiling, because a hundred props each insisting on
+being drawn from two kilometres away is a bill somebody pays in frames.
+
+
 ECSTASY HAS ITS OWN ICON: TWO PRESSED TABLETS, A SMILEY AND A HEART.
 
 It was two capsules, which is a picture of a prescription -- it is what the

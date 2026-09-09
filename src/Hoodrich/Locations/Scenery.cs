@@ -817,8 +817,77 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_ENTITY_DYNAMIC, prop.Handle, false);
             }
 
+            Settle(prop, item);
+
             return prop;
         }
+
+        /// <summary>
+        /// TOLD WHICH ROOM IT IS IN, AND HOW FAR OFF TO DRAW. Both of these are why the first
+        /// scene built INSIDE a house flickered.
+        ///
+        /// AN OBJECT A SCRIPT MAKES BELONGS TO NO ROOM. The game culls what is inside an
+        /// interior through its portals -- doorways and windows -- and to do that every entity
+        /// in there has to be assigned to a room. One created by CREATE_OBJECT is assigned to
+        /// none, so the portal system has no answer for it and settles the question differently
+        /// from frame to frame: drawn, culled, drawn. That is the flicker exactly, and it is
+        /// why the six scenes before this one never showed it. Every one of them is outdoors.
+        ///
+        /// The room is read off the object itself once it exists -- it is standing at the
+        /// coordinate, so the game can say which interior and which room that is -- and then
+        /// forced, which is the difference between "it happens to resolve there" and "it is
+        /// there". Nothing at all happens to a prop in the open air: the interior comes back as
+        /// zero and this returns.
+        ///
+        /// AND THE DRAW DISTANCE, from the file. Menyoo writes one per placement and it was
+        /// never read, so everything got whatever a script object is given by default -- which
+        /// for a carton on a worktop is short enough to blink as you cross the kitchen.
+        /// </summary>
+        private static void Settle(Entity thing, Spooner.Placed item)
+        {
+            if (thing == null || !thing.Exists()) return;
+
+            try
+            {
+                var lod = item == null || item.Lod <= 0 ? LodDefault : item.Lod;
+
+                if (lod > LodMost) lod = LodMost;
+                if (lod < LodLeast) lod = LodLeast;
+
+                Function.Call(Hash.SET_ENTITY_LOD_DIST, thing.Handle, lod);
+            }
+            catch
+            {
+                // It draws at whatever the game gives it.
+            }
+
+            try
+            {
+                var inside = Function.Call<int>(Hash.GET_INTERIOR_FROM_ENTITY, thing.Handle);
+
+                if (inside == 0) return;
+
+                var room = Function.Call<int>(Hash.GET_ROOM_KEY_FROM_ENTITY, thing.Handle);
+
+                Function.Call(Hash.FORCE_ROOM_FOR_ENTITY, thing.Handle, inside, room);
+            }
+            catch
+            {
+                // Outdoors, or an interior that will not say. It draws as it did before.
+            }
+        }
+
+        /// <summary>
+        /// What a scene thing is drawn from, when the file does not say.
+        ///
+        /// Menyoo writes 16960 on everything, which is its way of saying "always" -- honoured
+        /// up to a ceiling, because a hundred props each insisting on being drawn from two
+        /// kilometres away is a bill somebody pays in frames. Three hundred metres is further
+        /// than any scene in this mod is visible from anyway.
+        /// </summary>
+        private const int LodDefault = 300;
+        private const int LodLeast = 60;
+        private const int LodMost = 500;
 
         private static Entity Car(Spooner.Placed item, Model model)
         {
@@ -832,6 +901,8 @@ namespace Hoodrich.Locations
 
             if (item.Frozen) car.IsPositionFrozen = true;
             else Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, car.Handle);
+
+            Settle(car, item);
 
             return car;
         }
@@ -924,6 +995,8 @@ namespace Hoodrich.Locations
             // Frozen LAST, and only where the file said so. The animation still plays on a
             // frozen ped; what stops is it being shoved off its mark by traffic or by you.
             if (item.Frozen) ped.IsPositionFrozen = true;
+
+            Settle(ped, item);
 
             return ped;
         }

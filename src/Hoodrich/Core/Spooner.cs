@@ -108,6 +108,16 @@ namespace Hoodrich.Core
             /// <summary>How the animation is played: 1 loops, and a looping idle is the point.</summary>
             public int AnimFlag = 1;
 
+            /// <summary>
+            /// How far away it is still drawn, out of the file.
+            ///
+            /// Menyoo writes one per placement and this never read it, so every scene thing
+            /// got whatever CREATE_OBJECT hands a script object by default -- which for a
+            /// small prop is short. A carton on a worktop that stops drawing at eight metres
+            /// is a carton that blinks as you walk past it.
+            /// </summary>
+            public int Lod;
+
             public bool Armed => WeaponHash != 0 && WeaponHash != Unarmed;
 
             /// <summary>WEAPON_UNARMED. Seven of the ten peds in the first real file had a rifle and two had this.</summary>
@@ -320,6 +330,8 @@ namespace Hoodrich.Core
                 var p = new Placed { From = from };
 
                 p.ModelName = Text(node, "HashName", "ModelName", "Model");
+
+                p.Lod = Whole(node, 0, "LodDistance", "LodDist");
 
                 // NOT A FLOAT. Menyoo writes the hash as 0xe83b93b7, which a float parse
                 // rejects outright -- and even in decimal a float has 24 bits of mantissa and
