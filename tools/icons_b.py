@@ -346,43 +346,46 @@ def shrooms():
 
 def acid():
     """
-    LSD: one perforated tab.
+    LSD: one perforated tab with the face on it.
 
     IT WAS A WHOLE SHEET AND THAT WAS THE WRONG UNIT. Four by four squares with dots in
     them is a picture of a supply -- what a chemist has -- and the game sells this by the
-    TAB, one at a time. A grid also loses everything at 128 pixels: sixteen cells, twelve
-    perforation lines and sixteen dots come out as texture, and texture at icon size is a
+    TAB, one at a time. A grid also lost everything at 128 pixels: sixteen cells, twelve
+    perforation lines and sixteen dots came out as texture, and texture at icon size is a
     grey smudge that could be anything.
 
     THE STAMP EDGE IS THE WHOLE IDENTITY. Nothing else in the drawer has a bumpy outline --
     the baggie is a pouch, the bar is a rectangle with score lines, the tablets are round --
-    so the silhouette alone says which one this is before any detail is read. That is the
-    test every icon here has to pass, and a sheet failed it by being a square.
+    so the silhouette says which drug this is before any detail is read.
 
-    ADDITIVE BUMPS, NOT BITTEN-OUT NOTCHES. Both read as a stamp at full size; only one
-    survives the downsample. Notches cut INTO a 288-wide square leave the ink between them
-    thin, and thin white on transparent is the first thing to go when four pixels become
-    one. Bumps put the detail OUTSIDE the body, where there is nothing to compete with it.
+    THE BUMPS TOUCH, WHICH IS WHAT MAKES IT A STAMP AND NOT A GEAR. They were spaced a
+    diameter and a half apart, leaving flat edge between each pair, and a flat with a lump
+    on it every so often reads as a cog. A real perforation is a ROW of holes punched
+    edge-to-edge and then torn, so what is left is a continuous scallop -- convex arcs
+    meeting at cusps with no straight line anywhere along the side. Setting the radius to
+    exactly half the spacing is that, and it is the whole difference.
 
-    THE CENTRE IS A HOLE. It could be a ring drawn in MID, and a hole is louder: the panel
-    behind shows through it, so the circle reads at any size and in any tint, which a
-    lighter grey does not. Same trick as the face punched into the pills.
+    THE SMILEY IS THE ONE THING EVERYBODY ALREADY KNOWS. Blotter art is a century of
+    unrelated drawings and exactly one of them is common knowledge; a tab with a face on it
+    needs no caption. Drawn in ink INSIDE the punched circle, so the reading is paper, then
+    print, then face -- three plainly separate things, and the mouth cannot merge with the
+    circle it sits in.
     """
     img, d = canvas()
 
     x0, y0, x1, y1 = 112, 112, 400, 400
 
-    # The paper.
     rect(d, x0, y0, x1, y1)
 
-    # THE PERFORATIONS: five to a side, centred ON the edge so half of each disc bulges out
-    # and the other half lands on paper that is already there. The corners are deliberately
-    # left square -- a real stamp tears between the holes, not through them, and a bump at
-    # the corner reads as a flower.
-    n = 5
-    r = 22
-
+    # THE PERFORATIONS: six to a side, each disc's radius exactly half the spacing, so
+    # neighbours meet and the edge is one unbroken scallop. Centred ON the edge, so half of
+    # each bulges out and the other half lands on paper already there.
+    #
+    # The corners stay square. A real stamp tears BETWEEN the holes, not through them, and a
+    # bump sitting on a corner reads as a flower.
+    n = 6
     step = (x1 - x0) / float(n)
+    r = step * 0.5
 
     for i in range(n):
         at = x0 + step * (i + 0.5)
@@ -392,8 +395,13 @@ def acid():
         disc(d, x0, at, r)
         disc(d, x1, at, r)
 
-    # The print on it, punched through.
-    disc(d, 256, 256, 78, CLEAR)
+    # The print, punched through, and the face drawn back into it.
+    disc(d, 256, 256, 82, CLEAR)
+
+    for ex in (226, 286):
+        disc(d, ex, 232, 12)
+
+    stroke(d, arc(256, 258, 44, 30, 150), 15, W, caps=True)
 
     save(img, "acid.png")
 
