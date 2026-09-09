@@ -94,6 +94,18 @@ namespace Hoodrich.UI
         /// <summary>
         /// The real gun, turning in the window. See UI.GunModel for why this exists at all.
         /// </summary>
+        /// <summary>
+        /// When the thing being shown last changed, and which way it went.
+        ///
+        /// THE ANIMATION IS THE LIST NOW. A panel could show ten guns at once and let a cursor
+        /// say which one you meant; one gun on a table cannot, so the only thing that says you
+        /// have moved is the movement. The name that is leaving goes out the way you came from
+        /// and the new one comes in from the way you are going, which is the whole of it.
+        /// </summary>
+        private int _slidAt;
+        private int _slidDir;
+        private string _slidOff = "";
+
         private readonly GunModel _model = new GunModel();
 
         /// <summary>Set by Main: where the bench is, and which way it faces. See GunModel.</summary>
@@ -214,15 +226,20 @@ namespace Hoodrich.UI
                 return;
             }
 
-            if (Pressed(Control.PhoneUp)) { if (_onParts) PartMove(-1); else Move(-1); }
-            else if (Pressed(Control.PhoneDown)) { if (_onParts) PartMove(1); else Move(1); }
-            else if (Pressed(Control.PhoneLeft)) { if (_onParts) Across(); else Lot(-1); }
-            else if (Pressed(Control.PhoneRight)) { if (!_onParts) Lot(1); }
-            // RELOAD BEFORE JUMP. On a pad both are X, and with Jump tested first the press
-            // racked the shelf and never reached the parts the hint on the bar was promising.
-            // Keyboard is unaffected: R is Reload and Space is Jump, and each still does what
-            // it did.
-            else if (Pressed(Control.Reload)) Across();
+            // LEFT AND RIGHT WALK THE SHELF, DOWN GOES INTO WHAT BOLTS ON.
+            //
+            // The counter was a list you scrolled with a cursor because it was a panel. It is
+            // not a panel any more -- it is one gun on a table with its name under it -- so the
+            // shape of the input follows: sideways is the next gun, downwards is into that
+            // gun's parts, and up is back out of them. There is nothing to run a cursor down.
+            if (Pressed(Control.PhoneLeft)) { if (_onParts) PartMove(-1); else Move(-1); }
+            else if (Pressed(Control.PhoneRight)) { if (_onParts) PartMove(1); else Move(1); }
+            else if (Pressed(Control.PhoneDown)) { if (!_onParts && _parts.Count > 0) Across(); }
+            else if (Pressed(Control.PhoneUp)) { if (_onParts) Across(); }
+
+            // AMMO MOVED HERE off left and right, which now belong to the shelf. On a pad it
+            // is X, which is where the hint on the bar says it is.
+            else if (Pressed(Control.Reload)) Lot(1);
             else if (Pressed(Control.FrontendRb) || Pressed(Control.Jump)) Shelf(1);
             else if (Pressed(Control.FrontendLb) || Pressed(Control.Cover)) Shelf(-1);
             else if (Pressed(Control.PhoneSelect) || Pressed(Control.Context)) { if (_onParts) BuyPart(); else Buy(); }
@@ -261,18 +278,34 @@ namespace Hoodrich.UI
             _partTop = 0;
         }
 
+        /// <summary>Remembers what is leaving and which way, for the slide. See _slidAt.</summary>
+        private void Slid(int step, string leaving)
+        {
+            _slidAt = Game.GameTime;
+            _slidDir = step >= 0 ? 1 : -1;
+            _slidOff = leaving ?? "";
+        }
+
         private void Move(int step)
         {
             var count = Current.Stock.Length;
             if (count == 0) return;
 
             var before = _row;
+
+            // WHAT IS LEAVING, CAUGHT BEFORE IT GOES. The slide draws the outgoing name as
+            // well as the incoming one, and once _row has moved there is nothing left that
+            // knows what used to be there.
+            var was = Chosen;
+
             _row = (_row + step + count) % count;
 
             if (_row != before)
             {
                 _lastRow = before;
                 _pickedAt = Game.GameTime;
+
+                Slid(step, was == null ? "" : was.Name);
             }
 
             _lot = 0;
@@ -323,8 +356,12 @@ namespace Hoodrich.UI
         {
             if (_parts.Count == 0) return;
 
+            var was = _part >= 0 && _part < _parts.Count ? _parts[_part].Name : "";
+
             _lastPart = _part;
             _part = (_part + step + _parts.Count) % _parts.Count;
+
+            Slid(step, was);
 
             if (_part < _partTop) _partTop = _part;
             if (_part >= _partTop + PartsShown) _partTop = _part - PartsShown + 1;
@@ -621,51 +658,147 @@ namespace Hoodrich.UI
             // AFTER the guard, so a closed counter is not quietly spawning weapons behind it.
             Posing();
 
-            var rows = Math.Max(Current.Stock.Length, 8);
-            var height = 0.215f + rows * RowHeight;
-            var panelWidth = Hud.ToX(PanelWidthH);
-            var pad = Hud.ToX(PadH);
-            // ASIDE RATHER THAN CENTRED, so the bench is not behind it.
-            //
-            // A centred panel this wide covers the middle of the screen, which is exactly
-            // where a camera pointed at a table puts the table. Pushed to the left, the gun
-            // has the right of the screen to itself and nothing has to be cut out of anything.
-            // It goes back to the middle when there is no gun to show.
-            var left = _model.Live ? Aside : 0.5f - panelWidth * 0.5f;
-            var top = 0.5f - height * 0.5f + _curtain.Lift;
-
             var age = Game.GameTime - _shownAt;
             var arrive = age >= EnterMs ? 1f : age / (float)EnterMs;
             arrive = 1f - (1f - arrive) * (1f - arrive);
-            top += EnterRise * (1f - arrive);
 
-            // WHOLE AGAIN. There was a hole cut in this for the gun to be seen through,
-            // because two dimensional drawing happens after the world and a panel is always in
-            // front of anything standing in the room. The gun is on a bench now with the camera
-            // pointed at it, and the panel simply moves aside instead of being cut open -- see
-            // Aside, and GunModel.
-            Theme.Panel(left, top, panelWidth, height, arrive);
+            // NO PANEL AT ALL, which is the whole of this layout.
+            //
+            // There is a gun on a table with a camera on it. A rectangle over the top of that
+            // is a picture of a thing in front of the thing -- so everything here is text laid
+            // on the shot, low enough to leave the bench clear, in the manner the corner HUD
+            // already uses while you are posted up.
+            const float mid = 0.5f;
 
-            var x = left + pad;
-            var right = left + panelWidth - pad;
-            var y = top + 0.013f;
+            var piece = Chosen;
 
-            Sign(x, y);
-            Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, y + 0.010f, 0.34f, Palette.Cash, Hud.FontChaletLondon);
+            // WHAT SHELF, and how much of it he has. Small, above the name, because it is the
+            // thing you change least often.
+            Hud.Text(Current.Name.ToUpperInvariant(), mid, RackY, 0.30f,
+                     Fade(Palette.TextDim, arrive), Hud.FontLabel);
 
-            y += 0.044f;
-            y = Shelves(x, y, panelWidth, pad);
+            Hud.Text(Held(Current) + " / " + Current.Stock.Length, mid, RackY + 0.024f, 0.26f,
+                     Fade(Palette.TextDim, arrive), Hud.FontLabel);
 
-            // The split: the stock down the left, the chosen gun on the right.
-            var splitX = x + (right - x) * 0.55f;
-            var gap = Hud.ToX(0.014f);
+            if (piece == null)
+            {
+                Keys(mid - Hud.ToX(0.34f), mid + Hud.ToX(0.34f), HintY);
+                return;
+            }
 
-            _glide.Begin();
-            StockColumn(x, splitX - gap, y, pad, arrive);
-            ChosenColumn(splitX + gap, right, y, top + height - 0.050f, arrive);
+            // ---- the one that is leaving, and the one that is arriving ----
+            var slid = Game.GameTime - _slidAt;
+            var t = slid >= SlideMs ? 1f : slid / (float)SlideMs;
+            t = 1f - (1f - t) * (1f - t);
 
-            Keys(x, right, top + height - 0.020f);
-            _glide.Draw(arrive);
+            var shove = Hud.ToX(SlideBy);
+
+            if (t < 1f && _slidOff.Length > 0)
+            {
+                // Out the way you came from, fading as it goes.
+                Hud.Text(_slidOff.ToUpperInvariant(), mid - _slidDir * shove * t, NameY, 0.62f,
+                         Fade(Palette.Text, (1f - t) * 0.55f * arrive), Hud.FontChaletLondon);
+            }
+
+            var owned = Owns(piece);
+
+            Hud.Text(piece.Name.ToUpperInvariant(), mid + _slidDir * shove * (1f - t), NameY, 0.62f,
+                     Fade(Palette.Text, t * arrive), Hud.FontChaletLondon);
+
+            Hud.Text(owned ? "OWNED" : "$" + piece.Price.ToString("N0"), mid, PriceY, 0.40f,
+                     Fade(owned ? Palette.Cash : Palette.Text, t * arrive), Hud.FontChaletLondon);
+
+            if (!string.IsNullOrEmpty(piece.Note))
+            {
+                Hud.Text(piece.Note, mid, NoteY, 0.28f,
+                         Fade(Palette.TextDim, t * arrive), Hud.FontBody);
+            }
+
+            // ---- rounds ----
+            Hud.Text(Boxes(piece), mid, AmmoY, 0.30f,
+                     Fade(Palette.TextDim, arrive), Hud.FontBody);
+
+            // ---- and what bolts on, once you have gone down into it ----
+            if (_onParts && _part >= 0 && _part < _parts.Count)
+            {
+                var part = _parts[_part];
+
+                var on = Bolted(piece, part);
+
+                Hud.Text((_part + 1) + " / " + _parts.Count, mid, PartCountY, 0.26f,
+                         Fade(Palette.TextDim, arrive), Hud.FontLabel);
+
+                Hud.Text(part.Name.ToUpperInvariant(),
+                         mid + _slidDir * shove * (1f - t), PartY, 0.44f,
+                         Fade(on ? Palette.Cash : Palette.Text, t * arrive), Hud.FontChaletLondon);
+
+                Hud.Text(on ? "FITTED" : (part.Price > 0 ? "$" + part.Price.ToString("N0") : "FREE"),
+                         mid, PartPriceY, 0.30f,
+                         Fade(Palette.TextDim, t * arrive), Hud.FontBody);
+            }
+            else if (_parts.Count > 0)
+            {
+                Hud.Text(_parts.Count + " PARTS", mid, PartCountY, 0.26f,
+                         Fade(Palette.TextDim, arrive), Hud.FontLabel);
+            }
+
+            Keys(mid - Hud.ToX(0.34f), mid + Hud.ToX(0.34f), HintY);
+        }
+
+        /// <summary>Where each line sits. Everything is low, so the bench stays clear.</summary>
+        private const float RackY = 0.700f;
+        private const float NameY = 0.748f;
+        private const float PriceY = 0.800f;
+        private const float NoteY = 0.828f;
+        private const float AmmoY = 0.856f;
+        private const float PartCountY = 0.884f;
+        private const float PartY = 0.906f;
+        private const float PartPriceY = 0.940f;
+        private const float HintY = 0.968f;
+
+        /// <summary>How far a name travels as it comes in, and how long it takes.</summary>
+        private const float SlideBy = 0.13f;
+        private const int SlideMs = 190;
+
+        /// <summary>How many of a shelf he already has.</summary>
+        private static int Held(Rack rack)
+        {
+            var got = 0;
+            foreach (var piece in rack.Stock) if (Owns(piece)) got++;
+            return got;
+        }
+
+        /// <summary>The rounds line, as one string rather than a column of them.</summary>
+        private string Boxes(Piece piece)
+        {
+            if (piece.AmmoBox <= 0) return "NO ROUNDS FOR THAT ONE";
+
+            // LotsNow is the number the lot index means, which is not the index.
+            var lots = LotsNow;
+            var rounds = piece.AmmoBox * lots;
+            var cost = AmmoPrice(piece) * lots;
+
+            return lots + (lots == 1 ? " box" : " boxes") + "  ·  " + rounds + " rounds  ·  $" + cost.ToString("N0");
+        }
+
+        /// <summary>Whether that part is already on that gun.</summary>
+        private static bool Bolted(Piece piece, Parts.Part part)
+        {
+            try
+            {
+                var player = Game.Player.Character;
+                return player != null && player.Exists() && Parts.Fitted(player, piece.Hash, part);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static System.Drawing.Color Fade(System.Drawing.Color c, float by)
+        {
+            var a = (int)(c.A * Math.Max(0f, Math.Min(1f, by)));
+            return System.Drawing.Color.FromArgb(a, c.R, c.G, c.B);
         }
 
         /// <summary>
