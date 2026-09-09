@@ -101,9 +101,10 @@ namespace Hoodrich.Locations
         ///
         /// The Chavos is painted white and the white is not decoration: a plain white sedan
         /// with nothing on it is the most anonymous car on the road and is exactly what this
-        /// job gets done in. The Asbo is left completely stock, which is the joke -- somebody
-        /// is delivering your dinner in the smallest car in the game. The Pizza Boy already
-        /// has the box on the back, so it wants nothing doing to it at all.
+        /// job gets done in. The Asterope GZ and the Asbo are left completely stock -- one is
+        /// the dullest saloon on the road and the other is the smallest car in the game, and
+        /// somebody is delivering your dinner in it. The Pizza Boy already has the box on the
+        /// back, so it wants nothing doing to it at all.
         ///
         /// ONE ROLL, NOT A LIST WALKED IN ORDER. Walking it top-down would mean every delivery
         /// on an install that has the Chavos came in the Chavos. One is picked at random and
@@ -114,6 +115,7 @@ namespace Hoodrich.Locations
         private static readonly Wheels[] Rides =
         {
             new Wheels { Model = "chavosv6", White = true },
+            new Wheels { Model = "asterope2" },
             new Wheels { Model = "asbo" },
             new Wheels { Model = "pizzaboy", Bike = true },
             new Wheels { Model = "faggio2", Bike = true },
