@@ -43,11 +43,49 @@ def _capsule(d, cx, cy, deg, length, r):
     poly(d, rot([(cx - half + 40, cy - r + 14), (cx - 30, cy - r + 14), (cx - 30, cy - r + 26), (cx - half + 40, cy - r + 26)], cx, cy, deg), W)
 
 
+def _tablet(d, cx, cy, r, body=W, bevel=LOW, face=True):
+    """A round pressed tablet, with the stamp punched clean through it."""
+    disc(d, cx, cy, r, body)
+
+    # The chamfer round the edge. It is what stops a disc reading as a coin.
+    ring(d, cx, cy, r - r * 0.10, r * 0.055, bevel)
+
+    if not face:
+        return
+
+    # PUNCHED, NOT DRAWN. The stamp on a pressed pill is a recess, and a recess in this kit is
+    # a hole -- CLEAR shows the panel through, which is the same thing the score lines on the
+    # bar do. Drawing it in a tone instead would make the face a sticker.
+    eye = r * 0.135
+    disc(d, cx - r * 0.34, cy - r * 0.28, eye, CLEAR)
+    disc(d, cx + r * 0.34, cy - r * 0.28, eye, CLEAR)
+
+    # And the smile. Angles run clockwise on screen, so 30 to 150 sweeps through the bottom.
+    stroke(d, arc(cx, cy - r * 0.06, r * 0.55, 30, 150, 26), r * 0.15, CLEAR)
+
+
 def pills():
+    """
+    Ecstasy: two pressed tablets with a smiley stamped into them.
+
+    THE CAPSULES ARE GONE AND THEY WERE THE WRONG DRUG. Two two-tone capsules is a picture of
+    a prescription -- it is what the painkiller this slot briefly held actually looks like --
+    and it was doing no work at all to tell you which of the two pill products you were
+    holding, because the bar next to it is also a white pressed thing.
+
+    A ROUND TABLET WITH A FACE PUNCHED INTO IT IS UNMISTAKABLE at sixty pixels, which is the
+    size these are drawn at, and it is the one drug in the game with an iconography everybody
+    already knows.
+
+    Two of them, the back one at MID and turned away from the light, because a single tablet
+    centred in a square reads as a button.
+    """
     img, d = canvas()
 
-    _capsule(d, 220, 226, -36, 300, 60)
-    _capsule(d, 296, 300, 32, 300, 60)
+    # Behind, and drawn first: whatever the front one covers, it owns.
+    _tablet(d, 196, 200, 116, MID, LOW)
+
+    _tablet(d, 300, 312, 150, W, LOW)
 
     save(img, "pills.png")
 
