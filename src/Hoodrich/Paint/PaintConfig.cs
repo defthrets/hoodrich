@@ -487,7 +487,19 @@
         ///     1030  splatters_paint   pale, speckled, takes colour honestly. The default.
         ///     1020  splatters_mud     bigger, wetter blobs. Fuller coverage, brown cast.
         ///     1040  splatters_water   faint. Barely marks a wall.
-        ///     1010  splatters_blood   red, and it looks it.
+        ///     1010  splatters_blood   see below. The best SHAPE of the four.
+        ///
+        /// BLOOD IS NOT THE BOOBY PRIZE THIS LIST USED TO CALL IT. "Red, and it looks it" was
+        /// the whole entry, written when the only question about a texture was whether your
+        /// colour survived it. Judged on SHAPE rather than on colour it is the best of the
+        /// four: a dense middle with flung droplets round the edge, which is what comes off an
+        /// aerosol at the end of a stroke. The paint texture is speckle with holes through it
+        /// and no edge behaviour at all.
+        ///
+        /// The red is real and it is the cost. Your colour multiplies it, so everything drags
+        /// toward red -- greens and blues come out muddy. What it is superb at is BLACK and the
+        /// near-blacks, where the multiply takes the red out entirely and leaves you the
+        /// shape: nothing left of the blood but the spatter.
         ///
         /// AND THE IMPACT FAMILY, which is what a bullet leaves in a wall.
         ///
