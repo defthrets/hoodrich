@@ -68,6 +68,29 @@ namespace Hoodrich.Gangs
 
         /// <summary>When they were first noticed off the blocks, or nought while they are on.</summary>
         public int StrayedAt;
+
+        /// <summary>
+        /// The circle he is riding while he hangs about, and where round it he is.
+        ///
+        /// A BIKE THAT ARRIVES AND STOPS IS A PARKED BIKE. Sitting was written for a carload
+        /// pulling up at a kerb, which is exactly what a carload does -- but four men who rode
+        /// to the courts together do not sit on stationary bikes for forty seconds looking at
+        /// each other. They ride round each other, and every so often somebody holds it on the
+        /// brake and fills the place with smoke.
+        ///
+        /// Its own radius and its own place on it per rider, so four of them are four laps
+        /// rather than one queue.
+        /// </summary>
+        public Vector3 Ring;
+        public float RingRadius;
+        public float RingAngle;
+
+        /// <summary>When the next point on the lap is handed out.</summary>
+        public int LapAt;
+
+        /// <summary>While this is in the future the back wheel is going. And when the next one starts.</summary>
+        public int BurnUntil;
+        public int BurnAfter;
     }
 
     /// <summary>
@@ -564,7 +587,13 @@ namespace Hoodrich.Gangs
 
             if (roll.Phase == RollPhase.Sitting)
             {
-                if (now < roll.SitUntil) return false;
+                if (now < roll.SitUntil)
+                {
+                    Lapping(roll, now);
+                    return false;
+                }
+
+                Straighten(roll);
 
                 roll.Phase = RollPhase.Rolling;
                 roll.Nudges = 0;
@@ -612,6 +641,8 @@ namespace Hoodrich.Gangs
                 {
                     roll.Phase = RollPhase.Sitting;
                     roll.SitUntil = now + _rng.Next(SitMinMs, SitMaxMs);
+
+                    Circling(roll, now);
                     return false;
                 }
 
@@ -832,6 +863,164 @@ namespace Hoodrich.Gangs
         ///
         /// Failing that, found rather than listed. See Green.
         /// </summary>
+        /// <summary>
+        /// Sets a bike up to ride laps where it stopped.
+        ///
+        /// ONLY BIKES, AND ONLY WHERE THERE IS ROOM. A carload parking up at a kerb is a
+        /// carload parking up at a kerb -- that is what they came to do, and a saloon turning
+        /// circles on Grove Street is a takeover, which is a different thing this mod already
+        /// has. This is the pack of them on bikes at the courts.
+        ///
+        /// THE CIRCLE IS WHERE HE STOPPED, not the coordinate he was sent to. He was told to
+        /// drive to within four metres of a point and he stopped wherever the last obstacle
+        /// let him, so measuring from him keeps four riders on four circles instead of all of
+        /// them converging on one spot and shunting each other off it.
+        /// </summary>
+        private void Circling(Roll roll, int now)
+        {
+            if (!roll.OnFoot) return;
+            if (roll.Car == null || !roll.Car.Exists()) return;
+            if (roll.Driver == null || !roll.Driver.Exists() || !roll.Driver.IsAlive) return;
+
+            var here = roll.Car.Position;
+
+            roll.RingRadius = LapMin + (float)_rng.NextDouble() * (LapMax - LapMin);
+
+            // The middle is a radius BEHIND him, so his first point is roughly ahead rather
+            // than a hard turn on the spot the moment he arrives.
+            var back = roll.Car.ForwardVector;
+            back.Z = 0f;
+
+            if (back.Length() < 0.1f) back = new Vector3(1f, 0f, 0f);
+            else back.Normalize();
+
+            roll.Ring = here - back * roll.RingRadius;
+            roll.Ring.Z = here.Z;
+
+            var out_ = here - roll.Ring;
+            roll.RingAngle = (float)Math.Atan2(out_.Y, out_.X);
+
+            roll.LapAt = 0;
+            roll.BurnUntil = 0;
+            roll.BurnAfter = now + _rng.Next(BurnFirstMinMs, BurnFirstMaxMs);
+        }
+
+        /// <summary>
+        /// One tick of hanging about on a bike: round the circle, and now and then a burnout.
+        ///
+        /// THE LAP IS POINTS, NOT A LOCK. A car does a circle by holding full steering lock
+        /// with the grip cut, and a bike given the same treatment falls over -- it has two
+        /// wheels and the game will not hold it up through that. So a rider is handed the next
+        /// point on his circle every second and a bit, at walking-ish pace, and rides between
+        /// them. From outside it is a man riding round in circles, which is the thing.
+        ///
+        /// THE BURNOUT IS A LOCK, because that one works on a bike: burnout mode holds the
+        /// front and spins the rear, which is exactly what somebody does at a stop. The temp
+        /// action runs for as long as it was asked for and the lap picks up after it.
+        /// </summary>
+        private void Lapping(Roll roll, int now)
+        {
+            if (!roll.OnFoot || roll.RingRadius <= 0f) return;
+            if (roll.Car == null || !roll.Car.Exists()) return;
+            if (roll.Driver == null || !roll.Driver.Exists() || !roll.Driver.IsAlive) return;
+
+            // Mid-burnout. Nothing to do but let it run.
+            if (now < roll.BurnUntil) return;
+
+            if (roll.BurnUntil != 0)
+            {
+                // Just finished one. Off the brake, and back to the lap on the next tick.
+                roll.BurnUntil = 0;
+                roll.LapAt = 0;
+
+                try { Function.Call(Hash.SET_VEHICLE_BURNOUT, roll.Car.Handle, false); }
+                catch { }
+
+                roll.BurnAfter = now + _rng.Next(BurnRestMinMs, BurnRestMaxMs);
+                return;
+            }
+
+            if (now >= roll.BurnAfter)
+            {
+                var ms = BurnMinMs + _rng.Next(BurnMaxMs - BurnMinMs);
+
+                try
+                {
+                    Function.Call(Hash.CLEAR_PED_TASKS, roll.Driver.Handle);
+                    Function.Call(Hash.SET_VEHICLE_BURNOUT, roll.Car.Handle, true);
+                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, roll.Driver.Handle,
+                                  roll.Car.Handle, BurnAction, ms);
+
+                    roll.BurnUntil = now + ms;
+                }
+                catch
+                {
+                    roll.BurnAfter = now + BurnRestMinMs;
+                }
+
+                return;
+            }
+
+            if (now < roll.LapAt) return;
+
+            roll.RingAngle += LapStep;
+
+            var at = roll.Ring + new Vector3((float)Math.Cos(roll.RingAngle) * roll.RingRadius,
+                                             (float)Math.Sin(roll.RingAngle) * roll.RingRadius,
+                                             0f);
+
+            try
+            {
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, roll.Driver.Handle, roll.Car.Handle,
+                              at.X, at.Y, at.Z, LapSpeed, 0, roll.Car.Model.Hash,
+                              StyleBike, 2f, true);
+
+                Function.Call(Hash.SET_DRIVE_TASK_CRUISE_SPEED, roll.Driver.Handle, LapSpeed);
+            }
+            catch
+            {
+                // The next point comes round anyway.
+            }
+
+            roll.LapAt = now + LapEveryMs;
+        }
+
+        /// <summary>Off the brake and off the circle, whatever he was in the middle of.</summary>
+        private static void Straighten(Roll roll)
+        {
+            roll.RingRadius = 0f;
+            roll.BurnUntil = 0;
+            roll.LapAt = 0;
+
+            if (roll.Car == null || !roll.Car.Exists()) return;
+
+            try { Function.Call(Hash.SET_VEHICLE_BURNOUT, roll.Car.Handle, false); }
+            catch { }
+        }
+
+        /// <summary>
+        /// The shape of a lap and the rhythm of the burnouts.
+        ///
+        /// TIGHT. Six to nine metres is a circle you ride round rather than a block you ride
+        /// round, and at four metres a second a rider is most of a second between points --
+        /// which is a lean, not a stop. The step is a fifth of a turn, so five points is a lap.
+        ///
+        /// 23 is the burnout temp action, the same one the takeover's dirt bikes use.
+        /// </summary>
+        private const float LapMin = 6f;
+        private const float LapMax = 9f;
+        private const float LapStep = 1.2566371f;
+        private const float LapSpeed = 4f;
+        private const int LapEveryMs = 1100;
+
+        private const int BurnAction = 23;
+        private const int BurnMinMs = 2200;
+        private const int BurnMaxMs = 4200;
+        private const int BurnFirstMinMs = 2500;
+        private const int BurnFirstMaxMs = 12000;
+        private const int BurnRestMinMs = 7000;
+        private const int BurnRestMaxMs = 20000;
+
         private Vector3 Hangout(Vector3 from)
         {
             var best = Vector3.Zero;
@@ -1064,6 +1253,14 @@ namespace Hoodrich.Gangs
             foreach (var roll in _out)
             {
                 if (!roll.OnFoot) continue;
+
+                // NOT WHILE HE IS RIDING THE CIRCLE. Pacing reads the road ahead and sets a
+                // cruise speed off it, and a man doing laps of a basketball court at four
+                // metres a second would be handed the open-road number every second and a half
+                // -- so the tight circle would open into a wide fast one and then into the
+                // fence. See Lapping.
+                if (roll.Phase == RollPhase.Sitting) continue;
+
                 if (now < roll.PaceAt) continue;
 
                 roll.PaceAt = now + PaceEveryMs;

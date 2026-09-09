@@ -587,8 +587,8 @@ namespace Hoodrich.Supply
             // Whatever this drug is actually counted in.
             //
             // Everything was divided by a thousand and called kilos, which is right for a
-            // brick off a boat and nonsense for twenty pills -- Gerald's oxys came through as
-            // "0 kilos of oxycodone", a delivery of nothing. DrugDef already knows whether it
+            // brick off a boat and nonsense for twenty pills -- Gerald's rolls came through as
+            // "0 kilos of ecstasy", a delivery of nothing. DrugDef already knows whether it
             // deals in grams or in units, and every other readout in the mod asks it.
             Notify.Important("~y~-$" + cost.ToString("N0") + "~s~  " +
                              product.Bulk(grams) + " of " +

@@ -1234,9 +1234,9 @@ namespace Hoodrich.Wheel
         /// What a plug carries, said the way the rest of the mod says it.
         ///
         /// The drug IDS were being printed straight out and uppercased, and one of them does
-        /// not match its own name: the id is "ecstasy" and the product is Oxycodone -- percs.
+        /// not match its own name: the id and the product are both ecstasy again -- it spent
         /// So Gerald's contact row advertised ecstasy, which he has never sold, while the buy
-        /// screen two clicks later correctly called the same thing Oxycodone.
+        /// a while called Oxycodone, and a screen two clicks later called it that as well.
         ///
         /// An id is a key. It is not a word for a player to read, and this is the only place
         /// one ever reached the screen.
@@ -1697,7 +1697,7 @@ namespace Hoodrich.Wheel
 
                 // SHORT. The right-hand value is a status, not a stock list.
                 //
-                // It was the full product list -- "MARIJUANA, OXYCODONE, ALPRAZOLAM" -- which
+                // It was the full product list -- "MARIJUANA, ECSTASY, ALPRAZOLAM" -- which
                 // is wider than the row, so the label was squeezed down to "Ge..." and the
                 // list was drawn straight over the top of it. The names belong on the detail
                 // line underneath, where there is room and where they already are.

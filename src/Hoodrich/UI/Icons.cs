@@ -141,7 +141,7 @@
         public static readonly Icon Heroin = new Icon(Menu,
             "mp_specitem_heroin", "shop_michael_icon_a", "shop_health_icon_a").WithFile("heroin.png");
         /// <summary>
-        /// Oxycodone.
+        /// Ecstasy.
         ///
         /// It was radar_crim_wanted as a ~BLIP_~ tag, on the strength of the tag working in
         /// text. It does not work HERE -- the dialogue row drew nothing at all, which is worse

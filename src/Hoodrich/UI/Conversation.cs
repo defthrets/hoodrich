@@ -1062,7 +1062,7 @@ namespace Hoodrich.UI
 
                 // How strong it is, straight after what it is.
                 //
-                // Measured rather than parked at a fixed offset: "Marijuana." and "Oxycodone."
+                // Measured rather than parked at a fixed offset: "Marijuana." and "Ecstasy."
                 // are different widths, and one constant x sits inside the end of one word and
                 // out in the middle of nothing after the other.
                 if (!string.IsNullOrEmpty(choice.MarkFile))

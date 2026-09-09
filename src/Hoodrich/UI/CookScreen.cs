@@ -254,7 +254,7 @@ namespace Hoodrich.UI
         /// the room before it can go on the counter -- but free space is ONE number shared by
         /// every product. So the moment the house held more of anything than you could carry,
         /// every row on this screen printed that same free-space figure instead of its own
-        /// amount: marijuana 161g, oxycodone 161 pills, cocaine 161g, all of it the same 161.
+        /// amount: marijuana 161g, ecstasy 161 pills, cocaine 161g, all of it the same 161.
         ///
         /// It looked exactly like the products were sharing a pool. They never were -- Stash
         /// keys bulk by drug id and always has. Pressing fifty pills only moved the number on

@@ -124,7 +124,7 @@ namespace Hoodrich.Economy
         ///
         /// Pills are the only thing in the catalogue nobody measures in grams. A buyer asks for
         /// one, two or four of them, a dealer counts them out, and every number the player is
-        /// shown should say so -- "3.5g of oxycodone" is not a thing anybody has ever said.
+        /// shown should say so -- "3.5g of ecstasy" is not a thing anybody has ever said.
         /// </summary>
         public bool Counted;
 
@@ -168,7 +168,7 @@ namespace Hoodrich.Economy
         /// </summary>
         public string Bulk(float quantity)
         {
-            // COUNTED THINGS ARE NOT WEIGHED. Oxycodone and Alprazolam are pills and bars; the
+            // COUNTED THINGS ARE NOT WEIGHED. Ecstasy and Alprazolam are pills and bars; the
             // data has said so all along and this stamped a g on them anyway, so a supplier was
             // offering fourteen and a half thousand GRAMS of pills.
             if (Counted) return quantity.ToString("N0") + " " + UnitName;
@@ -347,7 +347,7 @@ namespace Hoodrich.Economy
         {
             Register(new DrugDef { Id = "weed", Name = "Marijuana", Tag = "WEED", BasePrice = 10f, Tier = 1, HeatFactor = 0.5f, SplitVerb = "Bag up", UnitName = "baggies", WorkVerb = "Bagging up" });
             Register(new DrugDef { Id = "crack", Name = "Crack", Tag = "CRK", BasePrice = 25f, Tier = 2, HeatFactor = 1.0f, SplitVerb = "Rock up", UnitName = "rocks", WorkVerb = "Rocking up" });
-            Register(new DrugDef { Id = "ecstasy", Name = "Oxycodone", Tag = "OXY", BasePrice = 35f, Tier = 2, HeatFactor = 0.8f, SplitVerb = "Press", UnitName = "pills", Counted = true, WorkVerb = "Cutting and repressing" });
+            Register(new DrugDef { Id = "ecstasy", Name = "Ecstasy", Tag = "E", BasePrice = 35f, Tier = 2, HeatFactor = 0.8f, SplitVerb = "Press", UnitName = "pills", Counted = true, WorkVerb = "Cutting and repressing" });
             Register(new DrugDef { Id = "meth", Name = "Meth", Tag = "METH", BasePrice = 28f, Tier = 2, HeatFactor = 1.1f, SplitVerb = "Break down", UnitName = "shards", WorkVerb = "Breaking down" });
             Register(new DrugDef { Id = "heroin", Name = "Heroin", Tag = "H", BasePrice = 45f, Tier = 3, HeatFactor = 1.4f, SplitVerb = "Cut", UnitName = "bags" });
             Register(new DrugDef { Id = "coke", Name = "Cocaine", Tag = "COKE", BasePrice = 100f, Tier = 3, HeatFactor = 1.6f, SplitVerb = "Cut", UnitName = "grams" });

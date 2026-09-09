@@ -557,7 +557,7 @@ namespace Hoodrich.Gangs
             // WHAT HE FRONTS, not what his set is filed under.
             //
             // This read gang.Drugs[0], which for the Families is weed -- so the man whose
-            // whole business is bars and oxys opened his explanation of that business with the
+            // whole business is bars and pills opened his explanation of that business with the
             // word "marijuana". The gang's list is what the set moves between them all; the
             // front list is what THIS man puts in your hand, and he is the one talking.
             var product = _drugs.Get(FirstFront.Length > 0 ? FirstFront[0] : "");
@@ -573,7 +573,7 @@ namespace Hoodrich.Gangs
             // And what he warns you off doing with it.
             //
             // "Don't smoke it" was written when the first front was weed. He deals bars and
-            // oxys, and nobody smokes either -- the warning was telling the player something
+            // pills, and nobody smokes either -- the warning was telling the player something
             // about a product that is not in their hand. A counted drug is pills, and what a
             // man tells you not to do with pills is eat them.
             //
@@ -1215,19 +1215,14 @@ namespace Hoodrich.Gangs
         private static readonly string[] FirstFront = { "xanax" };
 
         /// <summary>
-        /// The second one, and it is oxys.
+        /// The second one, and it is pills.
         ///
         /// One entry, on purpose. It used to be a list you picked from, which is a nice idea
         /// and the wrong one here: the two packages are a test he sets, and a test you get to
-        /// choose the terms of is not much of a test. Bars the first time and oxys the second
+        /// choose the terms of is not much of a test. Bars the first time and rolls the second
         /// is also him showing you a bit more of what he actually moves, which is the point of
         /// there being a second one at all.
         /// </summary>
-        // "ecstasy" IS oxycodone. The id is the one it shipped with and the display name is
-        // what it actually is -- drugs.json has ecstasy/Oxycodone, and the id cannot be renamed
-        // because every save on disk stores drug ids. Said here because the line below promises
-        // the player oxys, and a reader checking whether that promise is kept will otherwise
-        // find the wrong word and "fix" a bug that is not there.
         private static readonly string[] LaterFronts = { "ecstasy" };
 
         private DialogueNode OfferWork(LeaderDef def, GangDef gang)
@@ -1293,29 +1288,29 @@ namespace Hoodrich.Gangs
             }
 
             // The second package. Handed over, not chosen from.
-            var oxys = stock[0];
+            var pills = stock[0];
 
             // He NAMES it. "Twenty pills" is what they are counted in and not what they are:
-            // he is handing you oxycodone and the whole point of a second package is that it is
+            // he is handing you ecstasy and the whole point of a second package is that it is
             // a different product from the first, which a generic word erases.
             var node = Node(def, gang,
                 "Aight, you been out there once and you came back. Second one's different -- " +
-                FrontGrams.ToString("0") + " percs. Oxycodone, straight out the bag, they don't " +
+                FrontGrams.ToString("0") + " rolls. Straight out the bag, they don't " +
                 "need nothin' doin' to 'em same as the bars. All of it gone, then you see me, " +
                 "and after that we talk about where it comes from.");
 
             // Amount() and Singular, not "g" and "a gram".
             //
-            // Xanax is counted in bars and oxy in pills, so the old line offered the player
+            // Xanax is counted in bars and this in pills, so the old line offered the player
             // "20g of Alprazolam ... about $40 a gram out there" for a product the entire rest
             // of the mod calls twenty bars at forty dollars a bar. Amount() exists for exactly
             // this and says so in its own summary; this node was the one place that went round
             // it.
-            node.Say("Give it here.", () => TakeWork(def, gang, oxys),
-                     FrontGrams.ToString("0") + " " + oxys.Name.ToLowerInvariant() + "  ·  about $" +
-                     oxys.BasePrice.ToString("0") + " a " + oxys.Singular + " out there");
+            node.Say("Give it here.", () => TakeWork(def, gang, pills),
+                     FrontGrams.ToString("0") + " " + pills.Name.ToLowerInvariant() + "  ·  about $" +
+                     pills.BasePrice.ToString("0") + " a " + pills.Singular + " out there");
 
-            node.WithIcon(Icons.ForDrug(oxys.Id));
+            node.WithIcon(Icons.ForDrug(pills.Id));
             node.MovesOn();
 
             node.Say("Not right now.", () => Root(def));

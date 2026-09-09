@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Hoodrich.UI
 {
@@ -174,7 +174,7 @@ namespace Hoodrich.UI
             who.Row("Gerald", "The flats on Grove", Palette.Cash,
                     "Where you begin. He gives you a package, you move all of it, you bring him "
                     + "the money. Do that twice and he tells you where it comes from. He deals "
-                    + "PILLS -- bars first, then oxys",
+                    + "PILLS -- bars first, then rolls",
                     r => r.ArtFile = "pills.png");
 
             who.Row("Lamar", "Forum Drive, once you are in", null,

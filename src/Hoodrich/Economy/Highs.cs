@@ -22,7 +22,7 @@ namespace Hoodrich.Economy
     /// it are there to support that one thing:
     ///
     ///   weed      time slows and the world drifts. Nothing is urgent.
-    ///   oxy       everything goes soft. You stop taking damage properly and heal as you walk.
+    ///   e         colour that moves, and the legs to run about in it all night.
     ///   bars      a bright shiny day, and you cannot walk in a straight line.
     ///   crack     rage. Time drags, you hit like a truck, and it is over in forty seconds.
     ///   coke      speed. You run faster than the game normally lets you, and you cannot stand still.
@@ -486,22 +486,51 @@ namespace Hoodrich.Economy
             },
 
 
-            // OXYCODONE. The painkiller one, so it is about not feeling things: half damage,
-            // healing as you walk, and a soft sway. No speed, no strength, nothing sharp.
+            // ECSTASY. COLOUR AND ENERGY, which is the one thing none of the other six do.
+            //
+            // It spent a while as a painkiller -- half damage, healing as you walk, a drunk
+            // gait and a soft sway -- and every one of those numbers was about NOT feeling
+            // things. A roll is the opposite of that. It is the drug you take to go all night.
+            //
+            // THE PICTURE MOVES, which is what separates this from the two other bright ones.
+            // Coke is over-lit and SHARP; the bars are a sunny day. Here the colour warps and
+            // slides, at six tenths so the world underneath stays readable -- slightly
+            // psychedelic rather than a trip, because the trip is heroin and this one has to
+            // be able to run about in.
+            //
+            // AND METH'S LEGS. 1.45 is between the wired one and coke, with time left at
+            // normal on purpose: every other fast drug in here also drags the world, which
+            // makes YOU feel quick. Nothing drags here, so the speed is genuinely yours.
+            //
+            // The comedown is long because a roll's is.
             new Recipe
             {
                 Drug = "ecstasy",
                 Doing = Pop,
-                Cycles = new[] { "drug_flying_01", "drug_flying_base", "drug_wobbly" },
-                Strength = 0.7f,
-                Clipset = "move_m@drunk@moderatedrunk",
-                Shake = 0.14f,
-                Time = 0.9f,
-                Takes = 0.45f,
-                Heals = 4f,
-                Ms = 120000,
-                DownMs = 12000,
-                Line = "cant feel a thing. not one thing"
+
+                // Colour that moves. drug_gas_huffin warps, dont_tazeme_bro saturates, and the
+                // flying pair are the pale bright ones behind them. All four are in the game's
+                // own timecycle list on this machine; the ladder is for installs that differ.
+                Cycles = new[] { "drug_gas_huffin", "dont_tazeme_bro", "drug_flying_02", "drug_wobbly" },
+                Strength = 0.6f,
+
+                Fx = "DrugsMichaelAliensFightIn",
+
+                // Hurrying, not staggering. The drunk clipset it used to wear was the single
+                // loudest thing about the old version and it said the exact wrong word.
+                Clipset = "move_m@hurry@a",
+
+                // Enough to feel, well short of the sway that reads as drunk.
+                Shake = 0.22f,
+
+                Time = 1f,
+                Run = 1.45f,
+                Hits = 1f,
+                Takes = 0.7f,
+                Heals = 1.6f,
+                Ms = 180000,
+                DownMs = 45000,
+                Line = "everyone here is beautiful and i love this song"
             },
 
             // BARS. A BRIGHT SHINY DAY AND A DRUNK WALK, which is the whole brief.
@@ -1420,12 +1449,30 @@ namespace Hoodrich.Economy
                 }
 
                 Log.Debug("Screen effect " + name + " would not run.");
+
+                // AND A RECIPE THAT ASKED FOR ONE ASKED FOR A REASON. A name the game does not
+                // have leaves nothing on the screen at all -- which is the same failure as the
+                // effect being switched off, and indistinguishable from it. So it falls back
+                // to one this mod has watched run rather than to nothing.
+                //
+                // Once, guarded by the name check: the fallback failing means the install has
+                // no screen effects worth the name and there is nothing further to try.
+                if (name != Proven) Fx(Proven);
             }
             catch
             {
                 // The timecycle is doing most of the work anyway.
             }
         }
+
+        /// <summary>
+        /// A screen effect this mod has seen run, for when a recipe names one it has not.
+        ///
+        /// ANIMPOSTFX names cannot be checked against anything on disk the way animation and
+        /// timecycle names can -- there is no list of them anywhere in the install -- so the
+        /// only proof a name is real is having watched it work. This one has.
+        /// </summary>
+        private const string Proven = "DrugsTrevorClownsFightIn";
 
         /// <summary>The high ends and the wreckage starts. Or it just ends.</summary>
         private void Crash(Recipe last)
