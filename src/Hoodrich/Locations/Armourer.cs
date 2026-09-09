@@ -68,7 +68,14 @@ namespace Hoodrich.Locations
         private const int UpdateIntervalMs = 700;
 
         /// <summary>Pistol blip, which is what he is.</summary>
-        private const int Sprite = 110;
+        /// <summary>
+        /// 556 radar_supplies.
+        ///
+        /// It was 110, the gun shop, which is Ammu-Nation's own blip -- so the map said there
+        /// was a licensed firearms retailer on Forum Drive. There is not. There is a man with a
+        /// holdall, and supplies is what that is.
+        /// </summary>
+        private const int Sprite = 556;
 
         /// <summary>
         /// Big by name. Tried in order, first one this install has wins -- the heavy Families

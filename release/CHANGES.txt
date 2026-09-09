@@ -1,6 +1,28 @@
 ﻿0.7.1 -- unreleased
 
 
+THE MAP SAYS WHAT THINGS ARE NOW.
+
+Six blips were wearing somebody else's picture, and most of them were wearing
+the SAME somebody else's -- a plain car outline was a car you own, a car on
+Hao's forecourt, a LUber coming to get you, a mission vehicle and a bay to park
+in. Five different things reading as one thing is a map you have to remember
+rather than read.
+
+  A car you own          a set of keys, which is the only blip in the game
+                         that means "this one is yours"
+  Hao and his lot        his own, instead of the same outline as your car
+  A LUber on its way     not the mark for a car that is yours, because the one
+                         thing worth knowing about a LUber is that it is not
+  Stretch                supplies. It was Ammu-Nation's own gun-shop blip, so
+                         the map said there was a licensed firearms retailer on
+                         Forum Drive. There is not. There is a man with a holdall
+  Trigger                a dog
+  Your food on the way   the shape of what is actually bringing it
+
+Every number is written down in BLIPS.md against the file that uses it.
+
+
 THE LUBER DRIVER WILL NOT STOP TEXTING YOU.
 
 One message at the order and one at the door is a tracking page with a face on

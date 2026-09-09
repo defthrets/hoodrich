@@ -2116,7 +2116,8 @@ namespace Hoodrich.Locations
                 _blip = _dog.AddBlip();
                 if (_blip == null || !_blip.Exists()) return;
 
-                Function.Call(Hash.SET_BLIP_SPRITE, _blip.Handle, 442);
+                // 923 radar_dog, which is a dog. It was 442, which is not.
+                Function.Call(Hash.SET_BLIP_SPRITE, _blip.Handle, 923);
                 Function.Call(Hash.SET_BLIP_SCALE, _blip.Handle, 0.7f);
                 Function.Call(Hash.SET_BLIP_AS_SHORT_RANGE, _blip.Handle, true);
                 // Two, the same green the shops and the garage use. Five is the game's

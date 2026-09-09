@@ -321,7 +321,12 @@ namespace Hoodrich.Locations
 
                     // 225 is the game's own personal-vehicle marker, which is the picture
                     // somebody looking for their car already knows to look for.
-                    blip.Sprite = (BlipSprite)225;
+                    // 811 radar_van_keys. It was 225, the car outline, which is what the map
+                    // already puts on every mission vehicle and on Hao's forecourt -- so a car
+                    // you OWN looked like any other car anybody had left somewhere. A set of
+                    // keys is the difference, and it is the only blip in the game that means
+                    // "this one is yours". See BLIPS.md.
+                    blip.Sprite = (BlipSprite)811;
                     blip.Color = BlipColor.Blue;
                     blip.Scale = 0.85f;
 

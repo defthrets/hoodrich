@@ -1468,7 +1468,9 @@ namespace Hoodrich.Locations
                 _blip = _car.AddBlip();
                 if (_blip == null || !_blip.Exists()) return;
 
-                _blip.Sprite = BlipSprite.PersonalVehicleCar;
+                // 161. It was the personal-vehicle car, which is the mark for a car that is
+                // YOURS -- and the one thing worth knowing about a LUber is that it is not.
+                Function.Call(Hash.SET_BLIP_SPRITE, _blip.Handle, 161);
                 _blip.Color = BlipColor.Blue;
                 _blip.Scale = 0.8f;
                 _blip.Name = "LUber";

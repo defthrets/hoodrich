@@ -15,8 +15,19 @@ what it is and `496` does not.
 | id | name | where |
 |---|---|---|
 | 855 | `radar_ped_gang_leader` | Lamar, the fixer -- `Fixer.cs` |
-| 110 | `radar_gun_shop` | Grimes -- `Armourer.cs` |
+| 556 | `radar_supplies` | Stretch at the counter -- `Armourer.cs` |
+| 811 | `radar_van_keys` | a car you own -- `OwnedCars.cs` |
+| 810 | `radar_vehicle_deluxo` | Hao and his lot -- `Hao.cs` |
+| 923 | `radar_dog` | Trigger -- `Trigger.cs` |
+| 161 | `radar_mp_noise` | a LUber on its way to you -- `Luber.cs` |
 | 464 | `radar_spray_can` | tag spots -- `TagRun.cs` |
+
+Set in Bare Minimum's `data/vendors.json` rather than here, because the shops are
+its feature and the groups are its table:
+
+| 827 | `radar_biker_bottle` | liquor stores |
+| 889 | `radar_pizza_this` | fast food |
+
 | 952 | `radar_trashbag` | bad end of the reputation bar -- `PostUp.cs` |
 | 621 | `radar_pickup_dtb_health` | good end of the reputation bar |
 | 774 | `radar_sub_periscope` | inside the heat bar -- `PostUp.cs` |

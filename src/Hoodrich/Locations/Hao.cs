@@ -74,7 +74,14 @@ namespace Hoodrich.Locations
         private const int UpdateIntervalMs = 700;
 
         /// <summary>radar_gang_vehicle -- a car, which is what he is.</summary>
-        private const int Sprite = 225;
+        /// <summary>
+        /// 810. The lot, and the man on it.
+        ///
+        /// It was 225, a plain car outline, which is the same mark the mod puts on a car you
+        /// own, on a mission vehicle and on a bay to park in. Four different things reading as
+        /// one thing is a map you have to remember rather than read.
+        /// </summary>
+        private const int Sprite = 810;
 
         /// <summary>
         /// The Tuners-era Hao first, because that is the man this is.
