@@ -735,17 +735,27 @@ def brick():
 
 
 def stash():
+    """A holdall.
+
+    IT READ AS A BARBELL, and it was two shapes doing it: a MID disc at each end of a
+    horizontal line is a bar with a weight on either side of it, whatever the outline round it
+    is doing. The dashed zip was the other half -- eight LOW rectangles eight pixels wide are
+    nothing at all once the game has shrunk this to twenty.
+
+    The bag itself was always right, so it has not been touched. The discs are gone, replaced
+    by the base panel a holdall actually has, and the zip is CUT OUT rather than drawn on: a
+    hole survives being shrunk in a way a pale line never does.
+    """
     img, d = canvas()
 
     stroke(d, arc(256, 196, 116, 200, 340, 30), 30)
     rrect(d, 56, 186, 456, 424, 100)
 
-    stroke(d, [(96, 300), (416, 300)], 14, MID)
-    for x in range(120, 400, 32):
-        rect(d, x, 292, x + 8, 308, LOW)
+    # The base it stands on, which is the shape the two discs were standing in for.
+    rrect(d, 92, 344, 420, 410, 46, MID)
 
-    disc(d, 108, 306, 52, MID)
-    disc(d, 404, 306, 52, MID)
+    # The zip, cut out.
+    rrect(d, 122, 288, 390, 312, 12, CLEAR)
 
     save(img, "stash.png")
 
@@ -799,19 +809,29 @@ def fire():
 
 
 def spray():
+    """A rattle can, with the spray coming off it.
+
+    THE OLD ONE, PUT BACK. The 512-pixel redraw made a tidier can and a worse icon: the spray
+    shrank to three dots of nine, twelve and sixteen pixels tucked against the cap, which
+    vanish -- so what was left was a plain cylinder with a MID band across it, and a plain
+    cylinder is a battery, a lighter, a drinks can, anything. The thing that says AEROSOL is
+    the stuff coming OUT of it, and on the old one that was three fat discs thrown clear of
+    the nozzle where they can be seen.
+
+    Same geometry as make_icons_old.py drew it, which worked at 64 pixels and works at 128.
+    """
     img, d = canvas()
 
-    rrect(d, 172, 128, 340, 472, 24)
-    rrect(d, 196, 100, 316, 142, 16)
-    rrect(d, 226, 50, 286, 106, 10)
-    rect(d, 250, 34, 262, 52)
+    rrect(d, 166, 150, 346, 476, 30)
+    rect(d, 206, 96, 306, 154)
+    rrect(d, 186, 44, 326, 100, 18)
 
-    rect(d, 172, 218, 340, 334, MID)
-    rect(d, 172, 254, 340, 264, LOW)
+    # The label, cut out.
+    rect(d, 196, 220, 316, 250, CLEAR)
 
-    disc(d, 328, 62, 16)
-    disc(d, 370, 42, 12)
-    disc(d, 362, 92, 9)
+    # And the spray, thrown clear of the nozzle where it can actually be seen.
+    for cx, cy in ((398, 96), (438, 168), (372, 196)):
+        disc(d, cx, cy, 26)
 
     save(img, "spray.png")
 

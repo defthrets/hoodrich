@@ -1,6 +1,25 @@
 ﻿0.7.1 -- unreleased
 
 
+TWO ICONS THAT WERE NOT READING.
+
+THE INVENTORY BAG WAS A BARBELL. Two grey discs either side of a horizontal
+line is a bar with a weight on each end, whatever the outline round it happens
+to be doing, and the dashed zip was no help -- eight little rectangles eight
+pixels wide are nothing at all once the game has shrunk the icon to twenty. The
+bag itself was always right and has not been touched. The discs are gone,
+replaced by the base panel a holdall actually has, and the zip is now cut out
+of the bag rather than drawn on it: a hole survives being shrunk in a way a
+pale line never does.
+
+THE SPRAY CAN IS THE OLD ONE AGAIN. The redraw made a tidier can and a worse
+icon -- the spray shrank to three dots tucked up against the cap, where they
+vanish, and what was left was a plain cylinder with a band across it. A plain
+cylinder is a battery, a lighter, a drinks can, anything. The thing that says
+aerosol is what is coming OUT of it, and the old one threw three fat dots clear
+of the nozzle where they can actually be seen.
+
+
 EVERY PHOTOGRAPH THIS MOD RENDERS WAS BEING THROWN AWAY ON TEXTS.
 
 A text message asked whether its picture had loaded using the native that
