@@ -151,6 +151,61 @@ namespace Hoodrich.Locations
         private const float StageArrived = 5f;
 
         /// <summary>
+        /// WHERE A PERFORMER PERFORMS: the middle, not the mark it was walked to.
+        ///
+        /// The four marks were walked round the junction and they are honest -- they are where
+        /// a car CAN stand at this crossroads. What they are not is where the show should
+        /// happen. On Carson they sit between two and a half and fifteen metres from the
+        /// circle, so one car was spinning on the centre spot and another was fifteen metres
+        /// away with its back to it, and the two did not read as one event. A takeover is
+        /// cars going round IN THE MIDDLE, together, with everybody stood round them.
+        ///
+        /// So the marks now decide ONE thing: how many perform. Where they perform is an even
+        /// share of a small ring round the circle -- four cars at ninety degrees, two at a
+        /// hundred and eighty -- turned so that the first of them sits on the bearing the
+        /// first mark was walked at. The junction still sets the arrangement's angle; it no
+        /// longer sets the spacing.
+        ///
+        /// EVEN, AND NOT THE WALKED BEARINGS, which was the first attempt and had to go. The
+        /// walked bearings are uneven because a junction is -- two of Carson's four are sixty
+        /// degrees apart -- and sixty degrees on a small ring is two cars six metres apart.
+        /// A car pivoting about its front axle swings its tail through four, so that pair
+        /// would have been hitting each other on every rotation. The bearings were about where
+        /// a car may STAND at a kerb, and nothing here is standing at a kerb any more.
+        ///
+        /// SEVEN METRES, so four cars are ten apart -- clear of each other with a car's length
+        /// to spare -- and the whole arrangement still sits inside a nineteen-metre ring of
+        /// people with room in front of them.
+        /// </summary>
+        private const float PitchRing = 7f;
+
+        private Vector3 Pitch(int slot)
+        {
+            var many = Math.Max(1, Stages.Length);
+
+            if (slot < 0) slot = 0;
+            if (slot >= many) slot = many - 1;
+
+            // The angle the first mark was walked at, so the set of them is turned to the
+            // junction rather than to the world's north.
+            var first = Stages.Length > 0 ? Stages[0].At - Circle : Vector3.Zero;
+            first.Z = 0f;
+
+            var phase = first.Length() < 1f
+                ? 0f
+                : (float)Math.Atan2(first.X, first.Y);
+
+            var turn = phase + slot * (float)Math.PI * 2f / many;
+
+            var at = Circle + new Vector3((float)Math.Sin(turn), (float)Math.Cos(turn), 0f) * PitchRing;
+
+            // The circle's own height. The marks were walked on the road and so is this.
+            at.Z = Circle.Z;
+
+            return at;
+        }
+
+        /// <summary>
         /// How far a performer may travel off its place before it is sent back.
         ///
         /// THE ONLY THING THAT INTERRUPTS A SHOW. It used to be interrupted for reaching the
@@ -159,16 +214,18 @@ namespace Hoodrich.Locations
         /// own mark, so the show was mostly cars stopping. A donut that travels is a donut,
         /// and a donut that reaches the crowd is the crowd's problem.
         ///
-        /// TEN, DOWN FROM TWELVE, AND IT IS MEANT TO BITE. Twelve was set to be generous to
-        /// the loops themselves -- on tyres with two fifths of their grip they go wide, and the
-        /// point was not to interrupt one. Ten is inside that, deliberately: a car whose loop
-        /// has grown into a lap of the junction gets hauled back to the middle of it and starts
-        /// again from a stop, which is the correction a driver would make himself.
+        /// SEVEN, DOWN FROM TWELVE BY WAY OF TEN, AND EACH STEP HAS BEEN THE SAME ARGUMENT.
+        /// Twelve was generous to the loops themselves -- on tyres with two fifths of their
+        /// grip they went wide, and the point was not to interrupt one. There are no wide
+        /// loops any more: the show is a car spinning on its own centre with the front planted
+        /// (see Show), and a car doing that sweeps two and a half metres. Anything past seven
+        /// is not a wide donut, it is a car that has got away from its driver, and hauling it
+        /// back is what he would do.
         ///
-        /// It still has to be wider than StageArrived or a car would be sent back to a marker
-        /// it is already at, for ever.
+        /// It still has to be wider than StageArrived or a car would be sent back to a spot it
+        /// is already standing on, for ever.
         /// </summary>
-        private const float StageLeash = 10f;
+        private const float StageLeash = 7f;
 
         /// <summary>
         /// How long a performer tries to reach its marker before waiting where it is.
@@ -4168,11 +4225,11 @@ namespace Hoodrich.Locations
                         continue;
                     }
 
-                    var bay = Stages[r.Stage];
+                    var bay = Pitch(r.Stage);
 
-                    if (r.Car.Position.DistanceTo(bay.At) > StageArrived)
+                    if (r.Car.Position.DistanceTo(bay) > StageArrived)
                     {
-                        Hold(r, now, bay.At);
+                        Hold(r, now, bay);
                         continue;
                     }
 
@@ -4191,11 +4248,11 @@ namespace Hoodrich.Locations
                 // WAITING HIS TURN. He is not in the pit and is not trying to be.
                 if (r.Stage >= 0)
                 {
-                    var bay = Stages[r.Stage];
+                    var bay = Pitch(r.Stage);
 
                     if (!r.AtStage)
                     {
-                        if (r.Car.Position.DistanceTo(bay.At) > StageArrived)
+                        if (r.Car.Position.DistanceTo(bay) > StageArrived)
                         {
                             // HE WAITS WHERE HE IS RATHER THAN NOT AT ALL, and this is why the
                             // middle stayed empty all night.
@@ -4217,7 +4274,7 @@ namespace Hoodrich.Locations
                                 // Same patience as a car going home: he is driving round the
                                 // edge of a crowd, so being stopped is normal and asking again
                                 // is the answer rather than forcing through.
-                                Hold(r, now, bay.At);
+                                Hold(r, now, bay);
                                 continue;
                             }
 
@@ -4260,7 +4317,7 @@ namespace Hoodrich.Locations
                             // He waits where he stopped.
                         }
                     }
-                    else if (r.Car.Position.DistanceTo(bay.At) > StageLeash)
+                    else if (r.Car.Position.DistanceTo(bay) > StageLeash)
                     {
                         // IT HAS SLID OFF ITS MARK, and only that. It used to be interrupted
                         // for reaching the people too -- brake, gather itself, sit until the
@@ -4279,8 +4336,15 @@ namespace Hoodrich.Locations
                         try
                         {
                             Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+
+                            // OFF THE BRAKES FIRST. Burnout mode holds the front wheels, and a
+                            // car whose front wheels are held does not drive back to anything
+                            // -- it sits where it is grinding, and the arrival branch it was
+                            // just handed to waits for it forever.
+                            Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
+
                             Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle,
-                                          r.Car.Handle, bay.At.X, bay.At.Y, bay.At.Z,
+                                          r.Car.Handle, bay.X, bay.Y, bay.Z,
                                           12f, 0, r.Car.Model.Hash, RushStyle, 3f, true);
                         }
                         catch
@@ -5086,7 +5150,7 @@ namespace Hoodrich.Locations
                 // TO THE MARKER. He waits his turn there like everybody else -- the pit
                 // is entered from a marker and from nowhere else, so a spawned car and one
                 // that was already here arrive in it the same way.
-                var to = Toward(car.Position, Stages[stage].At);
+                var to = Toward(car.Position, Pitch(stage));
 
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, driver.Handle, car.Handle,
                               to.X, to.Y, to.Z, 12f, 0, car.Model.Hash,
@@ -5129,7 +5193,7 @@ namespace Hoodrich.Locations
                 // whole junction where stopping for somebody is the right behaviour.
                 // HIS OWN MARKER IF HE HAS ONE, and off the map only if he has not.
                 var back = r.Stage >= 0
-                    ? Toward(r.Car.Position, Stages[r.Stage].At)
+                    ? Toward(r.Car.Position, Pitch(r.Stage))
                     : OnRoad(150f + (float)_rng.NextDouble() * 110f);
 
                 if (back == Vector3.Zero) back = Middle.Around(190f);
@@ -5225,14 +5289,12 @@ namespace Hoodrich.Locations
 
                     try
                     {
-                        // BACK TO THE MIDDLE, AND STILL SIDEWAYS. Aimed at the centre rather
-                        // than at the nearest point on his ring: a car that slid wide hauling
-                        // itself back towards the middle is what losing it and catching it
-                        // looks like. The tyres stay on -- this is a correction inside his
-                        // go, not the end of it.
+                        // BACK TO THE MIDDLE. Burnout mode has to come OFF for this and
+                        // only for this -- a car held on its front brakes cannot drive
+                        // anywhere -- and Still puts it back the moment he is in again.
                         Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
-                        Slick(r.Car, true);
                         Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
+                        Slick(r.Car, false);
 
                         Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle,
                                       r.Car.Handle, Circle.X, Circle.Y, Circle.Z,
@@ -5300,10 +5362,14 @@ namespace Hoodrich.Locations
         ///   spot, which is the thing everybody stands around a takeover to watch.
         ///   LOCK -- see Show. From nothing, which is the only way a donut looks like one.
         ///
-        /// THE TYRES GO ON NOW rather than at the lock. Drift tyres and reduced grip are what
-        /// make the standing burnout smoke in the first place, and changing grip halfway
-        /// through a move is a car that suddenly steps sideways for no reason anybody watching
-        /// can see. Set once, on arrival, and left alone until he leaves.
+        /// THE TYRES GO ON NOW rather than at the lock, so nothing about the car changes
+        /// between the brake and the spin. Changing grip halfway through a move is a car that
+        /// steps sideways for no reason anybody watching can see.
+        ///
+        /// Drift tyres and not reduced grip, which is the change that came with the standing
+        /// donut: drift tyres loosen the REAR, which is what should be loose, and reduced grip
+        /// loosens all four, which lets the front wash out and takes the car with it. See
+        /// Still.
         /// </summary>
         private void Settle(Runner r, int now)
         {
@@ -5319,11 +5385,8 @@ namespace Hoodrich.Locations
 
                 Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
 
-                // Both, because they are different things: drift tyres are the real ones off
-                // the tuning menu, and reduced grip is the blunt instrument behind them for a
-                // build that has not got the first.
+                Slick(r.Car, false);
                 Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
-                Slick(r.Car, true);
             }
             catch
             {
@@ -5380,9 +5443,7 @@ namespace Hoodrich.Locations
         {
             try
             {
-                Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
-                Slick(r.Car, true);
-                Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
+                Still(r.Car);
                 Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, r.Car.Handle, Spin(r.Way), LockMs);
 
                 r.NextAction = now + LockMs - TopUpLead;
@@ -5390,6 +5451,48 @@ namespace Hoodrich.Locations
             catch
             {
                 r.NextAction = now + 1000;
+            }
+        }
+
+        /// <summary>
+        /// THE CAR SET UP TO SPIN ON ITS OWN CENTRE RATHER THAN TO TRAVEL, which is the whole
+        /// difference between what this was and what it is.
+        ///
+        /// It used to be burnout mode OFF and the grip cut to two fifths, which is a DRIFT
+        /// rig: the back steps out, the front washes wide with it, and the car describes a big
+        /// circle across the junction while it does. That is a lovely thing on an empty road
+        /// and it is not what happens in the middle of a takeover -- the whole event is sixty
+        /// people stood in a ring round a car that stays inside it.
+        ///
+        /// Two changes and they are opposites of what was there:
+        ///
+        /// BURNOUT MODE ON, HELD. It holds the front brakes and spins the rears, which is
+        /// exactly what a driver does with his left foot to hold a car on the spot. It used to
+        /// be turned OFF explicitly here, and the comment said it was "the opposite of what is
+        /// wanted" -- true of a travelling donut, and the reason this looked like one.
+        ///
+        /// GRIP LEFT ALONE. Reduced grip is what let the front end wash out, and the front end
+        /// washing out is the travelling. With the fronts gripping and the rears spinning
+        /// under full lock the car pivots about its front axle: the back swings round, the
+        /// nose stays, and it goes nowhere. Drift tyres stay on -- they loosen the REAR, which
+        /// is what is meant to be loose, and they are where the smoke comes from.
+        ///
+        /// One method rather than three copies, because Show, Lock and the return from a
+        /// correction all have to agree about this or the car changes character mid-spin.
+        /// </summary>
+        private void Still(Vehicle car)
+        {
+            if (car == null || !car.Exists()) return;
+
+            try
+            {
+                Slick(car, false);
+                Function.Call(Hash.SET_DRIFT_TYRES, car.Handle, true);
+                Function.Call(Hash.SET_VEHICLE_BURNOUT, car.Handle, true);
+            }
+            catch
+            {
+                // The lock still goes out.
             }
         }
 
@@ -5407,11 +5510,14 @@ namespace Hoodrich.Locations
         /// <summary>
         /// The show on a marker: full lock and the throttle, re-issued before it runs out.
         ///
-        /// BURNOUT MODE OFF, GRIP DOWN. Those two are the whole trick. Burnout mode holds a car
-        /// on the spot with its rears going, which is the opposite of what is wanted here, so
-        /// it is turned off explicitly rather than left to whatever the car was doing on the
-        /// way in. Reduced grip and drift tyres are what let the back come round instead of the
-        /// car simply steering in a tight circle.
+        /// BURNOUT MODE ON, GRIP LEFT ALONE. See Still -- both of those are the reverse of
+        /// what stood here, and between them they are the difference between a car spinning on
+        /// its own centre and a car drifting a circle across the junction.
+        ///
+        /// It also means the five seconds of standing burnout the car arrives on does not have
+        /// to be undone: Smoke holds it still with the rears going and this adds the lock to
+        /// it, so the change the crowd sees is the wheel going over, not the car being
+        /// re-rigged underneath.
         /// </summary>
         private void Show(Runner r, int now)
         {
@@ -5420,9 +5526,7 @@ namespace Hoodrich.Locations
 
             try
             {
-                Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
-                Slick(r.Car, true);
-                Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
+                Still(r.Car);
                 Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, r.Car.Handle, Spin(r.Way), LockMs);
             }
             catch
