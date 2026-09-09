@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -45,12 +45,19 @@ namespace Hoodrich.UI
         private const float Spin = 26f;
 
         /// <summary>
-        /// Laid on its side, which is how a gun sits on a counter.
+        /// Lying flat, at the angle a weapon model has to be held at to lie flat.
         ///
-        /// Rolled rather than pitched: a pistol stood on its butt is a pistol somebody has
-        /// balanced, and a rifle stood on its end is a broom.
+        /// NOT GUESSED. These are read straight off the rifle Michael laid on that crate in
+        /// Menyoo -- pitch -87.33, roll 74.54 -- because a weapon's model does not point the
+        /// way you would expect and "rolled ninety degrees" puts it on its nose. He had
+        /// already solved it by eye; this is his answer, written down.
+        ///
+        /// The YAW is what turns. With the model already flat, yaw is the spin about the
+        /// table, which is the one that reads as a thing being shown to you.
         /// </summary>
-        private const float Roll = 90f;
+        private const float LiePitch = -87.33f;
+        private const float LieRoll = 74.54f;
+        private const float LieYaw = 180f;
 
         /// <summary>
         /// Where the camera stands, worked out FROM the bench rather than asked for.
@@ -218,7 +225,8 @@ namespace Hoodrich.UI
                 Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, _object, at.X, at.Y, at.Z,
                               false, false, false);
 
-                Function.Call(Hash.SET_ENTITY_ROTATION, _object, 0f, Roll, _turn, 2, true);
+                Function.Call(Hash.SET_ENTITY_ROTATION, _object,
+                              LiePitch, LieRoll, LieYaw + _turn, 2, true);
             }
             catch (Exception ex)
             {

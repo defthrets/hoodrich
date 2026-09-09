@@ -341,10 +341,18 @@ namespace Hoodrich.Core
         /// up a little, looking down at the top -- because a camera position is the one thing
         /// nobody can judge while standing still. See UI.GunModel.
         /// </summary>
-        public float BenchX = -130.35f;
-        public float BenchY = -1462.55f;
-        public float BenchZ = 34.60f;
-        public float BenchHeading = 294.841f;
+        public float BenchX = -128.147f;
+        public float BenchY = -1461.071f;
+        public float BenchZ = 33.701f;
+
+        /// <summary>
+        /// Which side the camera stands on, NOT which way the bench points.
+        ///
+        /// A hundred and fifteen degrees is the way Stretch is facing, which is the side a
+        /// customer stands on -- so the camera looks at the crate over the gun rather than
+        /// through the back of his head.
+        /// </summary>
+        public float BenchHeading = 115f;
 
         public bool KillMarks = true;
         public int KillMarkSeconds = 50;
