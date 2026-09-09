@@ -180,6 +180,14 @@ namespace Hoodrich.Api
                     case "pills": file = "pills.png"; break;
                     case "xanax": file = "xanax.png"; break;
 
+                    // THE ART WAS ALREADY DRAWN. acid.png is a perforated sheet of blotter with
+                    // the squares marked out, which has been in the set since before there was
+                    // anything to put it on -- so LSD arrived with its own tile and nothing had
+                    // to be drawn for it. Both names answer to it: "acid" is what anybody would
+                    // type, and the id is "lsd".
+                    case "lsd":
+                    case "acid": file = "acid.png"; break;
+
                     // A drug added to drugs.json without art still gets a tile rather than a
                     // hole. Our own screens fall back to a text glyph, which another mod's
                     // grid has no way to draw.

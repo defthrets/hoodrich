@@ -1,4 +1,4 @@
-﻿{
+{
   "_comment": [
     "The catalogue.",
     "",
@@ -86,6 +86,44 @@
         }
       ],
       "codeWord": "blues"
+    },
+    {
+      "_note": "TABS, NOT GRAMS. Blotter is sold by the square and always has been -- a gram of",
+      "_note2": "acid is a phrase nobody has ever said. Counted like the pills, cut like a sheet.",
+      "_note3": "CHEAP TO BUY AND CHEAP TO SELL, and the widest gap on the list between the two:",
+      "_note4": "the weight is nothing, so what a supplier charges is nearly nothing, and what a",
+      "_note5": "square goes for is what somebody will pay for an afternoon. Low heat -- nobody",
+      "_note6": "gets robbed over paper, and the police are not looking for it.",
+      "id": "lsd",
+      "name": "LSD",
+      "tag": "LSD",
+      "tier": 2,
+      "basePrice": 20,
+      "bulkPrice": 4,
+      "lotGrams": 10000,
+      "heatFactor": 0.6,
+      "splitVerb": "Cut",
+      "unitName": "tabs",
+      "workVerb": "Cutting sheets",
+      "counted": true,
+      "deals": [
+        {
+          "quantity": 1,
+          "label": "a tab",
+          "price": 20
+        },
+        {
+          "quantity": 2,
+          "label": "two tabs",
+          "price": 35
+        },
+        {
+          "quantity": 5,
+          "label": "five tabs",
+          "price": 80
+        }
+      ],
+      "codeWord": "paper"
     },
     {
       "id": "xanax",
