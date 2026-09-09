@@ -159,12 +159,16 @@ namespace Hoodrich.Locations
         /// own mark, so the show was mostly cars stopping. A donut that travels is a donut,
         /// and a donut that reaches the crowd is the crowd's problem.
         ///
-        /// Twelve metres is a car that has slid clean off its place rather than one working
-        /// a wide loop round it -- and on tyres with two fifths of their grip the loops are
-        /// wide. It still has to be wider than StageArrived or a car would be sent back to
-        /// a marker it is already at, for ever.
+        /// TEN, DOWN FROM TWELVE, AND IT IS MEANT TO BITE. Twelve was set to be generous to
+        /// the loops themselves -- on tyres with two fifths of their grip they go wide, and the
+        /// point was not to interrupt one. Ten is inside that, deliberately: a car whose loop
+        /// has grown into a lap of the junction gets hauled back to the middle of it and starts
+        /// again from a stop, which is the correction a driver would make himself.
+        ///
+        /// It still has to be wider than StageArrived or a car would be sent back to a marker
+        /// it is already at, for ever.
         /// </summary>
-        private const float StageLeash = 12f;
+        private const float StageLeash = 10f;
 
         /// <summary>
         /// How long a performer tries to reach its marker before waiting where it is.
@@ -471,25 +475,31 @@ namespace Hoodrich.Locations
         private const float HardTurnAt = 34f;
 
         /// <summary>
-        /// And how close a stranger gets before he stops being asked and starts being dealt
-        /// with.
+        /// THREE RINGS, AND EACH ONE IS A DIFFERENT ANSWER TO THE SAME CAR.
         ///
-        /// THE TURN-ROUND IS A REQUEST AND THIS IS NOT. Out at the cordon a car is asked to go
-        /// back the way it came, which works on a driver who is listening -- most are. The ones
-        /// that are not, because they are mid-manoeuvre or wedged or being shoved by something
-        /// else, carry on into a junction with sixty people stood in it.
+        /// It used to be two -- turned away out wide, and dealt with at the crowd's edge -- and
+        /// two is not enough to say the thing that actually happens. A car that ignores the
+        /// first warning has not earned the same treatment as one that drives through a crowd
+        /// of sixty into the middle of the circle.
         ///
-        /// At the ring the asking stops. Nineteen metres is where the crowd starts, and a car
-        /// that has got that far through a closed junction was never going to be talked out of
-        /// it -- so the crowd has its go at him, and then he gets out and walks. NOT deleted,
-        /// which is what used to happen here and what the name still remembers: see Ditch.
+        /// OUTSIDE (BlockAt): asked to go back the way it came. Most drivers do.
+        /// AT THE CROWD (MobAt): the crowd goes for it, the driver gets out and runs, and the
+        /// car stays where it stopped for the rest of the night. See Ditch.
+        /// IN THE CIRCLE (ClearAt): it is removed, driver and all.
         ///
-        /// ONLY TRAFFIC. Something with a driver in it, that is not ours and is not yours. A
-        /// parked car is left alone whoever it belongs to, because the one thing worse than a
-        /// stranger driving through the takeover is your own car disappearing off the kerb you
-        /// left it on.
+        /// THE LAST ONE IS A REVERSAL AND IT IS ON PURPOSE. Nothing in this file deleted a car
+        /// for a long time, for a good reason -- a car vanishing in front of sixty people reads
+        /// as a bug, and the argument for it is written up next to Ditch. What that argument
+        /// did not account for is the CIRCLE: the ring of tarmac the whole event exists to keep
+        /// clear. A car parked in it is not scenery, it is the show cancelled, and there is no
+        /// second kerb to send it to because it is already past everything.
+        ///
+        /// So the middle ring keeps the thing that was worth keeping -- the crowd gets its go,
+        /// the driver walks -- and only the last few metres, where nothing may stand, still
+        /// removes anything.
         /// </summary>
-        private const float EatAt = 19f;
+        private const float MobAt = 30f;
+        private const float ClearAt = 13f;
 
         /// <summary>How often one car may be turned round, so it is not re-tasked every tick.</summary>
         /// <summary>
@@ -966,6 +976,16 @@ namespace Hoodrich.Locations
 
             /// <summary>Driving back to the middle after sliding wide.</summary>
             public bool Returning;
+
+            /// <summary>
+            /// When the standing burnout begins, or nought if it is not owed one.
+            ///
+            /// The whole arrival is three things in a row and this is the only one that needs
+            /// remembering: brake, smoke, lock. The brake and the smoke are each asked for once
+            /// and last exactly as long as they were asked for, so a single time stamp between
+            /// them says which of the three he is in. See Settle.
+            /// </summary>
+            public int Burn;
         }
 
         private readonly Settings _cfg;
@@ -1835,10 +1855,18 @@ namespace Hoodrich.Locations
                     // nobody is coming back for it. The same window as a driven one, then it
                     // goes.
                     if ((driver == null || !driver.Exists() || !driver.IsAlive)
-                        && !Ours(car) && !LawCar(car) && car.Position.DistanceTo(Middle) < EatAt)
+                        && !Ours(car) && !LawCar(car))
                     {
-                        Stray(car);
-                        continue;
+                        var gap = car.Position.DistanceTo(Middle);
+
+                        // ONE LEFT IN THE CIRCLE GOES, whoever left it there and however it
+                        // came to be empty -- the driver dragged out of it, dead, or simply
+                        // parked there before any of this started. The circle is the one piece
+                        // of ground with nothing on it.
+                        if (gap < ClearAt) { Vanish(car, null); continue; }
+
+                        // Further out it is somebody's car on a street, which is all it is.
+                        if (gap < MobAt) { Stray(car); continue; }
                     }
 
                     if (driver == null || !driver.Exists() || !driver.IsAlive) continue;
@@ -1871,12 +1899,21 @@ namespace Hoodrich.Locations
                     // them away would stop the drifters reaching the circle at all.
                     var in_ = car.Position.DistanceTo(Middle);
 
-                    // GOT THROUGH. It is not going to be persuaded now -- but it is not eaten
-                    // on the spot either. THE CROWD GETS ITS TURN FIRST: Crowding puts the
-                    // nearest few on the driver the moment a stranger's car is inside the
-                    // ring, and a car deleted on the tick it crossed the line was a beating
-                    // nobody saw -- the log had the two lines a second apart. See Eat.
-                    if (in_ < EatAt)
+                    // GOT THROUGH, and how far through decides what happens to him.
+                    //
+                    // THE CROWD STILL GETS ITS TURN FIRST, which is the thing worth keeping
+                    // from the old two-ring arrangement: a car removed on the tick it crossed
+                    // the line was a beating nobody saw -- the log had the two lines a second
+                    // apart. So the crowd's ring is wide, and the ring that removes anything is
+                    // the last few metres, where the show cannot happen around him.
+                    if (in_ < ClearAt)
+                    {
+                        Vanish(car, driver);
+                        continue;
+                    }
+
+                    // AT THE CROWD. They go for him, he gets out, and the car stays.
+                    if (in_ < MobAt)
                     {
                         Ditch(car, driver);
                         continue;
@@ -2205,6 +2242,48 @@ namespace Hoodrich.Locations
             catch
             {
                 // He keeps his seat and they keep at him. Next tick.
+            }
+        }
+
+        /// <summary>
+        /// Taken off the circle, and the only thing in this file that removes anything.
+        ///
+        /// NOT OUT OF SIGHT, because there is nowhere out of sight to do it -- so it is at
+        /// least quick, and it is only ever the last few metres, where a car simply cannot be.
+        /// Everything further out is turned round or set upon and left where it stopped.
+        ///
+        /// THE DRIVER GOES WITH IT. A man stood in the middle of a burnout circle where his car
+        /// used to be is a worse sight than the car was, and he has nothing left to do there.
+        ///
+        /// Never ours, never the player's, never anybody with a badge -- the caller tests all
+        /// three, because they are the same tests everything else in Calm makes.
+        /// </summary>
+        private void Vanish(Vehicle car, Ped driver)
+        {
+            try
+            {
+                _beaten.Remove(car.Handle);
+                _letIn.Remove(car.Handle);
+                _turned.Remove(car.Handle);
+
+                for (var i = _strays.Count - 1; i >= 0; i--)
+                {
+                    if (_strays[i] != null && _strays[i].Exists() && _strays[i].Handle == car.Handle)
+                    {
+                        _strays.RemoveAt(i);
+                    }
+                }
+
+                // The crowd may be halfway through pushing this very car off the tarmac.
+                if (_shoving != null && _shoving.Exists() && _shoving.Handle == car.Handle) Unpush();
+
+                if (driver != null && driver.Exists()) driver.Delete();
+
+                car.Delete();
+            }
+            catch
+            {
+                // Next tick. It is still in the circle and will be asked again.
             }
         }
 
@@ -4163,14 +4242,18 @@ namespace Hoodrich.Locations
                         {
                             Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
 
-                            // THE SHOW. Every one of them spins; the only thing decided here
-                            // is which way round. It used to be a coin flip against a standing
-                            // burnout, and with four places that meant two cars sat still --
-                            // and on a bad flip, three. A takeover is the cars going round.
-                            // Kept up in bursts below for as long as the car is on its place.
+                            // THE SHOW, AND IT NO LONGER BEGINS ON THE FRAME HE ARRIVES.
+                            // Every one of them spins; the only thing decided here is which way
+                            // round. It used to be a coin flip against a standing burnout, and
+                            // with four places that meant two cars sat still -- and on a bad
+                            // flip, three. A takeover is the cars going round.
+                            //
+                            // What it is NOT is a car arriving already going round. See Settle:
+                            // he stops on his mark, he stands on it there for five seconds, and
+                            // the lock starts from nothing after that.
                             r.Way = _rng.Next(2) == 0 ? 1 : -1;
                             Reckless(r, true);
-                            Show(r, now);
+                            Settle(r, now);
                         }
                         catch
                         {
@@ -4209,6 +4292,14 @@ namespace Hoodrich.Locations
                         r.Sent = now;
                         r.Stuck = 0;
                         r.NextAction = 0;
+                        r.Burn = 0;
+                    }
+                    else if (r.Burn != 0)
+                    {
+                        // Braking, or about to start smoking. Neither is topped up -- both are
+                        // asked for once and run exactly as long as they were asked for, so
+                        // there is nothing to do here but wait for the clock.
+                        if (now >= r.Burn) Smoke(r, now);
                     }
                     else if (now >= r.NextAction)
                     {
@@ -4255,32 +4346,13 @@ namespace Hoodrich.Locations
                     // circle, across it. That is the "run up" and it is why they looked like
                     // they were driving through rather than working.
                     //
-                    // A real one stops. He rolls up, he sits there a second with the crowd
-                    // round him, and THEN he stands on it from nothing. So the first thing
-                    // after arriving is a brake, and the lock does not start until it is done.
-                    r.NextAction = now + SettleMs;
-                    r.SwapAt = now + SettleMs + SwapMs;
+                    // A real one stops. He rolls up, he sits there with the crowd round him,
+                    // he stands on it against the brake for a bit, and THEN he lets it go. So
+                    // the first thing after arriving is a brake and the lock is the third.
                     r.Returning = false;
 
-                    try
-                    {
-                        Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
-
-                        // Temp action 1 is the brake. Held for the whole settle, so he is
-                        // stopped rather than coasting to a halt across the middle of it.
-                        Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle,
-                                      r.Car.Handle, 1, SettleMs);
-
-                        // Both, because they are different things: drift tyres are the real
-                        // ones off the tuning menu, and reduced grip is the blunt instrument
-                        // behind them for a build that has not got the first.
-                        Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
-                        Slick(r.Car, true);
-                    }
-                    catch
-                    {
-                        // It still goes round.
-                    }
+                    Settle(r, now);
+                    r.SwapAt = r.NextAction + SwapMs;
 
                     continue;
                 }
@@ -5039,6 +5111,7 @@ namespace Hoodrich.Locations
         {
             r.Leaving = true;
             r.Circling = false;
+            r.Burn = 0;
 
             try
             {
@@ -5177,6 +5250,14 @@ namespace Hoodrich.Locations
                 {
                     r.Returning = false;
                     r.NextAction = 0;
+                    r.Burn = 0;
+                }
+
+                // Still braking, or owed his five seconds of smoke. See Settle.
+                if (r.Burn != 0)
+                {
+                    if (now >= r.Burn) Smoke(r, now);
+                    continue;
                 }
 
                 // EVERY THIRTY SECONDS, THE OTHER WAY.
@@ -5202,6 +5283,92 @@ namespace Hoodrich.Locations
                 Lock(r, now);
             }
         }
+
+        /// <summary>
+        /// HE PULLS UP AND STOPS, WHICH IS WHERE EVERY ONE OF THESE NOW BEGINS.
+        ///
+        /// A car that starts its lock on the frame it arrives does not do a donut, it does a
+        /// slide -- whatever speed it came in at goes straight into the first burst of steering
+        /// and carries it across the junction. That is the run-up, and it is why they used to
+        /// look like they were driving through rather than working.
+        ///
+        /// So the arrival is three things in a row, and only the last of them is the show:
+        ///
+        ///   BRAKE, for SettleMs -- temp action 1, held rather than coasted, so he is actually
+        ///   stopped on his mark and not still rolling across it.
+        ///   SMOKE, for BurnMs -- see Smoke. Stood on the brake with the back going, on the
+        ///   spot, which is the thing everybody stands around a takeover to watch.
+        ///   LOCK -- see Show. From nothing, which is the only way a donut looks like one.
+        ///
+        /// THE TYRES GO ON NOW rather than at the lock. Drift tyres and reduced grip are what
+        /// make the standing burnout smoke in the first place, and changing grip halfway
+        /// through a move is a car that suddenly steps sideways for no reason anybody watching
+        /// can see. Set once, on arrival, and left alone until he leaves.
+        /// </summary>
+        private void Settle(Runner r, int now)
+        {
+            r.Burn = now + SettleMs;
+            r.NextAction = now + SettleMs + BurnMs;
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+
+                // Temp action 1 is the brake, held for the whole settle.
+                Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, r.Car.Handle, 1, SettleMs);
+
+                Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
+
+                // Both, because they are different things: drift tyres are the real ones off
+                // the tuning menu, and reduced grip is the blunt instrument behind them for a
+                // build that has not got the first.
+                Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
+                Slick(r.Car, true);
+            }
+            catch
+            {
+                // The clock still runs and the lock still comes.
+            }
+        }
+
+        /// <summary>
+        /// FIVE SECONDS STOOD STILL WITH THE BACK GOING.
+        ///
+        /// Burnout mode is the native that holds the front and spins the rear, and it is
+        /// exactly the wrong thing during a donut -- Show turns it off explicitly for that
+        /// reason. Here it is the whole point: he is not going anywhere for five seconds, the
+        /// crowd is right up against the wing, and the junction fills with smoke before
+        /// anything has moved.
+        ///
+        /// Asked for once and never topped up. It ends by expiring, and the tick that notices
+        /// Burn has been cleared hands him to Show, so the transition out of it is the lock
+        /// arriving rather than the smoke being cancelled.
+        /// </summary>
+        private void Smoke(Runner r, int now)
+        {
+            r.Burn = 0;
+            r.NextAction = now + BurnMs;
+
+            try
+            {
+                Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, true);
+                Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, r.Car.Handle, BurnHold, BurnMs);
+            }
+            catch
+            {
+                r.NextAction = now + 500;
+            }
+        }
+
+        /// <summary>
+        /// How long the standing burnout lasts, and the temp action that is one.
+        ///
+        /// Five seconds. Long enough to be a thing he did rather than a hesitation before the
+        /// lock, short enough that a junction with four marks on it is never all smoke and no
+        /// movement. 23 is the burnout action -- the same one the dirt bikes use.
+        /// </summary>
+        private const int BurnMs = 5000;
+        private const int BurnHold = 23;
 
         /// <summary>
         /// Full lock and the throttle, his way, asked for long enough that the next one is
@@ -5249,6 +5416,7 @@ namespace Hoodrich.Locations
         private void Show(Runner r, int now)
         {
             r.NextAction = now + LockMs - TopUpLead;
+            r.Burn = 0;
 
             try
             {
