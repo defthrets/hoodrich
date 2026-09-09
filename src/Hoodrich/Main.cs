@@ -2375,6 +2375,11 @@ namespace Hoodrich
 
                 _buffalo.Busy = () => _war != null && _war.IsRunning;
 
+                // A HIGH ENDING TAKES HIS WALK OFF WITH IT. Clearing a movement clipset clears
+                // whatever is on him, and the wardrobe's choice is one -- so the latch is
+                // dropped and the next tick puts his own gait back. See Highs.Walk.
+                _highs.Walk = () => _carrying = false;
+
                 _search = new Locations.Search(_bodies)
                 {
                     Busy = () => _phone.IsOpen || (_boot != null && _boot.IsOpen),

@@ -1101,7 +1101,11 @@ namespace Hoodrich.Economy
 
                     if (went) Recombine();
 
-                    Hold(me, Lurching(now) ? _clipset : "", _shake, _sunny);
+                    // Drunk while the drunk walk is on him, and not otherwise. Lurching turns
+                    // the gait on and off through a high; the flag goes with it.
+                    var gait = Lurching(now) ? _clipset : "";
+
+                    Hold(me, gait, _shake, _sunny, Sozzled(gait));
 
                     Trip(me, now);
                     return;
@@ -1116,7 +1120,9 @@ namespace Hoodrich.Economy
                     Cycle(DownAfterGrey, 1f);
                 }
 
-                Hold(me, DownClipset, DownShake, false);
+                // NOT DRUNK. The comedown is exhaustion, not drink -- move_m@injured is a man
+                // who has been up all night, and he should not be falling over on it.
+                Hold(me, DownClipset, DownShake, false, false);
             }
             catch (Exception ex)
             {
@@ -1289,7 +1295,7 @@ namespace Hoodrich.Economy
         private const int LurchEveryMs = 30000;
 
         /// <summary>The per-frame half: the gait, the sway, and the sky.</summary>
-        private void Hold(Ped me, string clipset, float shake, bool sunny)
+        private void Hold(Ped me, string clipset, float shake, bool sunny, bool drunk)
         {
             // ASKED FOR NOTHING MEANS TAKE IT OFF. Every other caller passes a real clipset
             // and this branch never runs for them; the single bar passes empty between its
@@ -1308,6 +1314,28 @@ namespace Hoodrich.Economy
                 _clip = clipset;
             }
 
+            // THE STUMBLE FOLLOWS THE GAIT, NOT THE CAMERA.
+            //
+            // IT USED TO RIDE ON THE SHAKE and that is why he kept tripping after the bars had
+            // worn off. SET_PED_IS_DRUNK is the game's loose-balance flag -- it is what makes
+            // him catch his foot and go over -- and it was switched on with the camera shake
+            // and never switched off again until the whole thing tore down. The comedown shakes
+            // too, so for the fifteen seconds AFTER the log said "xanax wore off" he was still
+            // flagged drunk, still stumbling, on a screen that had told him it was over.
+            //
+            // Tied to the walk instead: he stumbles while he is walking like a drunk and stops
+            // when he is walking like a man who has been up all night, which is what the
+            // comedown's gait actually is. Written only on a change, because it is a state flag
+            // on the ped and another mod on this machine writes the same one for its own
+            // reasons -- see Bare Minimum's Effects.Unsteady, which sets it when you are
+            // exhausted. Two writers on one flag is survivable; two writers both hammering it
+            // every frame is not.
+            if (drunk != _drunk)
+            {
+                Function.Call(Hash.SET_PED_IS_DRUNK, me.Handle, drunk);
+                _drunk = drunk;
+            }
+
             if (shake > 0.001f)
             {
                 // STARTED ONCE AND THEN MODULATED. Calling SHAKE_GAMEPLAY_CAM again restarts
@@ -1317,8 +1345,6 @@ namespace Hoodrich.Economy
                 {
                     Function.Call(Hash.SHAKE_GAMEPLAY_CAM, "DRUNK_SHAKE", shake);
                     _shaking = true;
-
-                    Function.Call(Hash.SET_PED_IS_DRUNK, me.Handle, true);
                 }
                 else
                 {
@@ -1332,6 +1358,16 @@ namespace Hoodrich.Economy
                 _weather = true;
             }
         }
+
+        /// <summary>Whether that gait is one of the game's drunk ones. See Hold.</summary>
+        private static bool Sozzled(string clipset)
+        {
+            return !string.IsNullOrEmpty(clipset) &&
+                   clipset.IndexOf("drunk", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>Whether we are the ones holding the loose-balance flag on. See Hold.</summary>
+        private bool _drunk;
 
         private static bool Streamed(string set)
         {
@@ -1853,12 +1889,24 @@ namespace Hoodrich.Economy
                     Function.Call(Hash.SET_PED_IS_DRUNK, me.Handle, false);
                     Function.Call(Hash.RESET_PED_MOVEMENT_CLIPSET, me.Handle, 0f);
                 }
+
+                _clip = "";
+                _drunk = false;
             }
             catch (Exception ex)
             {
                 Log.Debug("Could not sweep up after the last run: " + ex.Message);
             }
         }
+
+        /// <summary>
+        /// Set by Main: put his chosen walk back on, because Clear has just taken it off.
+        ///
+        /// A HOOK RATHER THAN A REFERENCE. This file knows about drugs; it has no business
+        /// knowing that a wardrobe exists, and the one thing it needs from it -- "his gait, as
+        /// he last chose it" -- is a single call somebody else already owns.
+        /// </summary>
+        public Action Walk;
 
         /// <summary>
         /// The look, the sway, the gait and the sky, put back.
@@ -1903,11 +1951,27 @@ namespace Hoodrich.Economy
                 // nothing left running that could put it right.
                 Function.Call(Hash.SET_TIME_SCALE, 1f);
 
-                if (_shaking)
-                {
-                    Function.Call(Hash.STOP_GAMEPLAY_CAM_SHAKING, true);
-                    _shaking = false;
-                }
+                // ASKED FOR UNCONDITIONALLY, WHICH IS THE FIX AND THE WHOLE OF IT.
+                //
+                // HE KEPT TRIPPING AFTER THE BARS HAD WORN OFF, and the reason is that this
+                // put his legs back only where its own bookkeeping said it had taken them. The
+                // stumble is SET_PED_IS_DRUNK, which Hold turns on with the camera shake -- and
+                // turning that flag off does not by itself put a walk back, because the game
+                // fitted its own drunk gait underneath it. The reset that would have was
+                // guarded by _clip.
+                //
+                // _clip IS OUR RECORD, NOT THE GAME'S. Hold only writes it when the clipset
+                // actually streamed in: ask for one that has not loaded yet and the field stays
+                // empty while SET_PED_IS_DRUNK has already changed how he walks. So the one
+                // case where he most needs his legs back is the one case that skipped it.
+                //
+                // Sweep, at the top of this file, already worked this out for the startup case
+                // and says so: it asks for nothing and clears unconditionally. This is the same
+                // reasoning applied to the end of every high rather than only to the first tick
+                // of a session. None of these calls costs anything on a player who is already
+                // upright.
+                Function.Call(Hash.STOP_GAMEPLAY_CAM_SHAKING, true);
+                _shaking = false;
 
                 if (_weather)
                 {
@@ -1920,13 +1984,20 @@ namespace Hoodrich.Economy
                 if (me != null && me.Exists())
                 {
                     Function.Call(Hash.SET_PED_IS_DRUNK, me.Handle, false);
-
-                    if (!string.IsNullOrEmpty(_clip))
-                    {
-                        Function.Call(Hash.RESET_PED_MOVEMENT_CLIPSET, me.Handle, 0.5f);
-                        _clip = "";
-                    }
+                    Function.Call(Hash.RESET_PED_MOVEMENT_CLIPSET, me.Handle, 0.5f);
                 }
+
+                _clip = "";
+                _drunk = false;
+
+                // AND HIS OWN WALK BACK, because the line above just took it off him too.
+                //
+                // The wardrobe's walk is a movement clipset like any other and RESET takes
+                // whatever is on him, ours or his. Main sets his once and latches it, so
+                // without this the first high of a session ended with his chosen gait gone for
+                // the rest of it -- which nobody would connect to having taken a bar an hour
+                // earlier. See Walk.
+                if (Walk != null) Walk();
             }
             catch (Exception ex)
             {

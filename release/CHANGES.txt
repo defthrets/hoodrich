@@ -1,6 +1,32 @@
 ﻿0.7.1 -- unreleased
 
 
+YOU STOP TRIPPING WHEN THE BARS WEAR OFF.
+
+The stumble is the game's own loose-balance flag, and it was switched on with the
+CAMERA SHAKE and never switched off until the whole thing tore down. The comedown
+shakes too -- so for the fifteen seconds after the ticker said the xanax had worn
+off, you were still flagged drunk and still going over, on a screen that had told
+you it was finished.
+
+It follows the WALK now. You stumble while you are walking like a drunk and stop
+when you are walking like a man who has been up all night, which is what the
+comedown's gait already was.
+
+Written only when it changes, because it is a state flag on the ped and another
+mod on the same machine writes the same one -- Bare Minimum sets it when you are
+exhausted. Two writers on one flag is survivable; two both hammering it every
+frame is not.
+
+And a high that ends puts your walk back whatever it thinks it did to you. The
+reset was guarded by this file's own record of what it had applied -- a record it
+only writes when a clipset actually streams in, so the one case where you most
+need your legs back was the case that skipped it. It also drops the wardrobe's
+latch on the way out: clearing a movement clipset clears whichever one is on him,
+including the walk you chose, and without that the first high of a session took
+it away for the rest of the session.
+
+
 SCENE PROPS INDOORS STOP FLICKERING.
 
 AN OBJECT A SCRIPT MAKES BELONGS TO NO ROOM. The game culls what is inside an
