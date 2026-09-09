@@ -545,13 +545,23 @@ namespace Hoodrich.Locations
             "WORLD_HUMAN_MOBILE_FILM_SHOCKING", "WORLD_HUMAN_MOBILE_FILM_SHOCKING",
             "WORLD_HUMAN_MOBILE_FILM_SHOCKING", "WORLD_HUMAN_MOBILE_FILM_SHOCKING",
 
-            // Talking to whoever they came with. HANG_OUT_STREET is the loose-limbed gesturing
-            // idle the game uses for somebody mid-conversation -- it reads as two people
-            // talking when two of them happen to be stood together, which on a ring this
-            // tightly packed is most of them.
-            "WORLD_HUMAN_HANG_OUT_STREET", "WORLD_HUMAN_HANG_OUT_STREET",
-            "WORLD_HUMAN_HANG_OUT_STREET", "WORLD_HUMAN_HANG_OUT_STREET",
-            "WORLD_HUMAN_HANG_OUT_STREET",
+            // NOTHING THAT LEANS. This was five of HANG_OUT_STREET and one of STAND_MOBILE,
+            // and a quarter of the ring spent the night propped against thin air.
+            //
+            // That is not those scenarios misbehaving, it is what they ARE. Half the standing
+            // idles in this game are authored for a ped up against a wall or a railing, and
+            // the ones that are not carry _UPRIGHT on the end of the name -- which is the
+            // whole reason that suffix exists. STAND_MOBILE leans; STAND_MOBILE_UPRIGHT does
+            // not. The list had one of each in it, three lines apart.
+            //
+            // Nothing on a ring of people stood in the middle of a junction has anything to
+            // lean on, so nothing in this list may be a leaning idle. Fidgeting and looking
+            // about is what somebody waiting for the next car actually does.
+            "WORLD_HUMAN_STAND_IMPATIENT_UPRIGHT", "WORLD_HUMAN_STAND_IMPATIENT_UPRIGHT",
+            "WORLD_HUMAN_STAND_IMPATIENT_UPRIGHT",
+
+            // And a couple who are having a better night than that.
+            "WORLD_HUMAN_PARTYING", "WORLD_HUMAN_PARTYING",
 
             // On a beer.
             "WORLD_HUMAN_DRINKING", "WORLD_HUMAN_DRINKING", "WORLD_HUMAN_DRINKING",
@@ -559,7 +569,7 @@ namespace Hoodrich.Locations
 
             // On a cigarette, and a couple just on their phones rather than filming.
             "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_SMOKING",
-            "WORLD_HUMAN_STAND_MOBILE_UPRIGHT", "WORLD_HUMAN_STAND_MOBILE"
+            "WORLD_HUMAN_STAND_MOBILE_UPRIGHT", "WORLD_HUMAN_STAND_MOBILE_UPRIGHT"
         };
 
         /// <summary>

@@ -1,6 +1,22 @@
 ﻿0.7.1 -- unreleased
 
 
+NOBODY AT A TAKEOVER LEANS ON THIN AIR ANY MORE.
+
+A quarter of the ring was propped against a wall that is not there, and that is
+not a scenario misbehaving -- it is what those scenarios ARE. Half the standing
+idles in this game are authored for somebody up against a wall or a railing,
+and the ones that are not carry _UPRIGHT on the end of the name. That suffix is
+the whole tell. The crowd's list had STAND_MOBILE and STAND_MOBILE_UPRIGHT in
+it, three lines apart, and five of the loose "hanging out on the street" idle,
+which is the leaning one.
+
+Nobody stood in the middle of a junction has anything to lean on, so nothing in
+that list is a leaning idle now. They fidget and look about, which is what
+somebody waiting for the next car actually does, and a couple of them are
+having a better night than that.
+
+
 A BODY YOU MADE GETS A HEADSTONE ON THE MAP.
 
 Bodies are lootable now, and a body you have walked away from is a body you
