@@ -36,6 +36,16 @@ namespace Hoodrich.Locations
         private const int TickMs = 1500;
         private const float LookRange = 120f;
 
+        /// <summary>
+        /// What goes on the plate of the one this makes.
+        ///
+        /// THE ONLY THING THAT SAYS WHICH SANCHEZ IS HIS. Without it the standing mark below
+        /// would put a grey blip on every Sanchez in the county -- there is no other way to
+        /// tell his from one the traffic generator has just put on the road. Same reasoning as
+        /// the Buffalo, and the same trick.
+        /// </summary>
+        private const string Says = "FRANKLIN";
+
         /// <summary>Not swapped out from under him while he is actually riding it.</summary>
         private const float StoppedSpeed = 1.5f;
 
@@ -71,6 +81,11 @@ namespace Hoodrich.Locations
             {
                 var player = Game.Player.Character;
                 if (player == null || !player.Exists() || !player.IsAlive) return;
+
+                // HIS MARK, PUT BACK. The blip was added once, at the swap, on a bike that is
+                // handed straight back to the game -- so it went the first time the street
+                // streamed out and nothing ever added another. Marking is a standing job now.
+                Keep(player);
 
                 foreach (var bike in World.GetNearbyVehicles(player.Position, LookRange))
                 {
@@ -171,6 +186,10 @@ namespace Hoodrich.Locations
                 Log.Debug("His bike: could not finish dressing it: " + ex.Message);
             }
 
+            // NAMED, so the standing mark above can tell it from every other Sanchez.
+            try { Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, made.Handle, Says); }
+            catch { /* it keeps whatever the game gave it, and goes unmarked after a stream */ }
+
             Mark(made);
 
             // The game's, not ours.
@@ -180,6 +199,35 @@ namespace Hoodrich.Locations
             _last = made;
 
             Log.Info("His bike: the Bagger is a " + Wanted + " now" + (rider != null ? ", with him on it." : "."));
+        }
+
+        /// <summary>His, by its plate, and only if it has lost its mark.</summary>
+        private void Keep(Ped player)
+        {
+            var want = Wanted;
+            if (want.Length == 0) return;
+
+            try
+            {
+                var model = new Model(want);
+
+                foreach (var bike in World.GetNearbyVehicles(player.Position, LookRange))
+                {
+                    if (bike == null || !bike.Exists()) continue;
+                    if (bike.Model != model) continue;
+
+                    var plate = (Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, bike.Handle) ?? "").Trim();
+                    if (!plate.Equals(Says, StringComparison.OrdinalIgnoreCase)) continue;
+
+                    if (Function.Call<int>(Hash.GET_BLIP_FROM_ENTITY, bike.Handle) != 0) continue;
+
+                    Mark(bike);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not put his bike back on the map: " + ex.Message);
+            }
         }
 
         /// <summary>

@@ -77,6 +77,21 @@ namespace Hoodrich.UI
         public Func<Vector3> Bench;
         public Func<float> Facing;
 
+        /// <summary>
+        /// The rifle Michael laid on that crate, and how far in front of it ours sits.
+        ///
+        /// THE MARKER IS BETTER THAN THE COORDINATE. The bench in the ini is a number somebody
+        /// worked out; the rifle is a thing standing on the crate, put there by hand, at
+        /// exactly the height the crate's top actually is. Finding it and measuring from it
+        /// cannot be off by the half metre an arithmetic guess was off by -- and if the crate
+        /// is ever moved, the gun moves with it and nothing needs editing.
+        ///
+        /// The ini is still the fallback, for an install where the scene did not load.
+        /// </summary>
+        private const string Marker = "w_ar_assaultrifle";
+        private const float InFront = 0.34f;
+        private const float MarkerNear = 4f;
+
         private readonly List<int> _made = new List<int>();
 
         private int _object;
@@ -88,6 +103,52 @@ namespace Hoodrich.UI
         private int _cam;
 
         public bool Live => _object != 0;
+
+        /// <summary>
+        /// Where the gun actually goes: in front of the rifle on the crate, if it is there.
+        ///
+        /// OUR OWN OBJECT IS EXCLUDED, and it has to be -- pick the Assault Rifle off the shelf
+        /// and the thing being placed is the same model as the marker, so without this it would
+        /// find itself and walk a third of a metre forward every frame until it was in the road.
+        /// </summary>
+        private Vector3 Where()
+        {
+            var at = Bench == null ? Vector3.Zero : Bench();
+
+            try
+            {
+                var want = new Model(Marker);
+                var best = Vector3.Zero;
+                var gap = MarkerNear;
+
+                foreach (var prop in World.GetNearbyProps(at, MarkerNear))
+                {
+                    if (prop == null || !prop.Exists()) continue;
+                    if (prop.Handle == _object) continue;
+                    if (prop.Model != want) continue;
+
+                    var d = prop.Position.DistanceTo(at);
+                    if (d > gap) continue;
+
+                    gap = d;
+                    best = prop.Position;
+                }
+
+                if (best == Vector3.Zero) return at;
+
+                var face = Facing == null ? 0f : Facing();
+                var rad = face * (float)Math.PI / 180f;
+
+                // The way the camera looks from, which is the side "in front of it" means.
+                var toward = new Vector3((float)Math.Sin(rad), (float)-Math.Cos(rad), 0f);
+
+                return best + toward * InFront;
+            }
+            catch
+            {
+                return at;
+            }
+        }
 
         // ---- the camera ----------------------------------------------------------------
 
@@ -116,7 +177,7 @@ namespace Hoodrich.UI
 
                 if (_cam != 0 || Bench == null) return;
 
-                var at = Bench();
+                var at = Where();
                 var face = Facing == null ? 0f : Facing();
 
                 var rad = face * (float)Math.PI / 180f;
@@ -164,7 +225,7 @@ namespace Hoodrich.UI
 
             try
             {
-                var at = Bench();
+                var at = Where();
 
                 _object = Function.Call<int>(Hash.CREATE_WEAPON_OBJECT, weapon, 0,
                                              at.X, at.Y, at.Z, true, 1.0f, 0);
@@ -220,7 +281,7 @@ namespace Hoodrich.UI
 
             try
             {
-                var at = Bench();
+                var at = Where();
 
                 Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, _object, at.X, at.Y, at.Z,
                               false, false, false);

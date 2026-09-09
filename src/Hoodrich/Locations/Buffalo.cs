@@ -93,6 +93,17 @@ namespace Hoodrich.Locations
 
             try
             {
+                // HIS MARK, PUT BACK, EVERY TIME IT IS NEEDED.
+                //
+                // The blip was added once, at the moment of the swap, and it is attached to a
+                // car that is handed straight back to the game -- so the first time the street
+                // streams out, the blip goes with it and nothing ever puts another one on. From
+                // the map his car simply stopped existing, which is what it looked like.
+                //
+                // Marking is now a standing job rather than a moment: anything of his without a
+                // blip on it gets one, whichever of the two cars it is.
+                Keep(player);
+
                 var car = Near(player);
                 if (car == null) return;
 
@@ -128,6 +139,53 @@ namespace Hoodrich.Locations
 
             return null;
         }
+
+        /// <summary>
+        /// Either of the two cars that are his: the one the story gave him, and the one this
+        /// file turned it into. Both are named by their plate, because there are other
+        /// Buffalos and swapping or marking somebody else's is this mod editing a stranger's
+        /// property.
+        /// </summary>
+        private static bool Franklins(Vehicle car)
+        {
+            try
+            {
+                var plate = (Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle) ?? "").Trim();
+
+                if (car.Model == new Model(Was)) return plate.Equals(His, StringComparison.OrdinalIgnoreCase);
+                if (car.Model == new Model(Now)) return plate.Equals(Says, StringComparison.OrdinalIgnoreCase);
+
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Anything of his within sight that has lost its mark gets it back.</summary>
+        private void Keep(Ped player)
+        {
+            try
+            {
+                foreach (var car in World.GetNearbyVehicles(player, MarkRange))
+                {
+                    if (car == null || !car.Exists()) continue;
+                    if (!Franklins(car)) continue;
+
+                    if (Function.Call<int>(Hash.GET_BLIP_FROM_ENTITY, car.Handle) != 0) continue;
+
+                    Mark(car);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not put his car back on the map: " + ex.Message);
+            }
+        }
+
+        /// <summary>How far out a car of his is noticed for marking. Wider than the swap.</summary>
+        private const float MarkRange = 150f;
 
         /// <summary>His car, back on the map, in grey. See the note on Greyed.</summary>
         private static void Mark(Vehicle car)
