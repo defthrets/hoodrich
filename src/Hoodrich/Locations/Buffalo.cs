@@ -42,6 +42,9 @@ namespace Hoodrich.Locations
         /// </summary>
         private const string His = "FC1988";
 
+        /// <summary>And what it says once it is his rather than the story's.</summary>
+        private const string Says = "HOODRICH";
+
         /// <summary>
         /// Competition suspension. Type 15, and the index is asked for rather than written
         /// down -- "competition" is the LAST one a model offers and how many it offers is
@@ -202,7 +205,11 @@ namespace Hoodrich.Locations
             {
                 Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, made.Handle, true, true);
 
-                Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, made.Handle, His);
+                // NOT THE PLATE IT CAME WITH. FC1988 is the plate the game printed on a car
+                // he was given; this is the one a man who owns the block puts on the car he
+                // paid for. It is also why the swap only ever happens once per respawn --
+                // the new plate no longer answers the test that found the old car.
+                Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, made.Handle, Says);
 
                 Function.Call(Hash.SET_VEHICLE_MOD_KIT, made.Handle, 0);
 

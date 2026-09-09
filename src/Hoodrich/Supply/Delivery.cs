@@ -784,7 +784,8 @@ namespace Hoodrich.Supply
                 }
 
                 _car.IsPersistent = true;
-                BlackOut(_car, _def != null ? _def.RidePaint : -1);
+                BlackOut(_car, _def != null ? _def.RidePaint : -1,
+                         _def == null ? "" : _def.Plate);
 
                 var pedModel = ResolveDriverModel();
                 if (pedModel == null)
@@ -854,7 +855,7 @@ namespace Hoodrich.Supply
         /// still the anonymous car this always spawned and only a man who has been given a
         /// colour deviates from it.
         /// </summary>
-        private static void BlackOut(Vehicle car, int paint)
+        private static void BlackOut(Vehicle car, int paint, string plate)
         {
             try
             {
@@ -872,7 +873,11 @@ namespace Hoodrich.Supply
                 Function.Call(Hash.SET_VEHICLE_MOD_COLOR_2, car.Handle, 0, 0);
 
                 Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, car.Handle, 0f);
-                Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle, "HOODRCH");
+                // HIS OWN PLATE WHERE HE HAS ONE. The fleet plate is what a car with nobody
+                // behind it wears; a man who has been supplying this block for years has
+                // put something of his own on the back of his.
+                Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle,
+                              string.IsNullOrEmpty(plate) ? "HOODRCH" : plate);
 
                 OpenHisWindow(car);
             }

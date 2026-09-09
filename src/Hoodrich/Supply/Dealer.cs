@@ -262,6 +262,16 @@ namespace Hoodrich.Supply
         /// </summary>
         public int RidePaint = -1;
 
+        /// <summary>
+        /// What it says on the back of his car.
+        ///
+        /// The same reasoning as the paint: two men turning up in identical black cars with
+        /// identical plates are one supplier with two phone numbers. A plate he chose is a
+        /// fact about him, and it is the first thing you read walking up to a parked car.
+        /// Empty leaves the fleet plate on it.
+        /// </summary>
+        public string Plate = "";
+
         public float PriceMultiplier = 1f;
 
         /// <summary>

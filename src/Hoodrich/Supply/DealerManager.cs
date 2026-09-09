@@ -175,6 +175,7 @@ namespace Hoodrich.Supply
             ReplaceList(def.Drugs, node["drugs"]);
             ReplaceList(def.Rides, node["rides"]);
             def.RidePaint = node["ridePaint"].AsInt(def.RidePaint);
+            def.Plate = node["plate"].AsString(def.Plate);
             def.OpeningText = node["openingText"].AsString(def.OpeningText);
             def.Portrait = node["portrait"].AsString(FaceFor(def.Id));
             // A string or a list of them, so an old file keeps working unchanged.
