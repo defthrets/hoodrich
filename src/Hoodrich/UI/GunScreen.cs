@@ -529,7 +529,7 @@ namespace Hoodrich.UI
 
             _model.Show(piece.Hash, parts);
 
-            if (_model.Live) _model.Place(_winX + _winW * 0.5f, _winY + _winH * 0.5f);
+            if (_model.Live) _model.Place(_winX + _winW * 0.5f, _winY + _winH * 0.5f, _winW, _winH);
         }
 
         /// <summary>

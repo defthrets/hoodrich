@@ -26,6 +26,14 @@ always in front of anything standing in the room, whatever order the calls go
 in. There is no way to put a model behind a screen. The screen has to not paint
 over it.
 
+IT HANGS AGAINST A BACKDROP rather than against whatever happens to be behind
+the shop. The window is a hole on purpose, so the first version had a pistol
+turning in front of a hedge -- which is a preview you cannot read. The backdrop
+is drawn as two triangles IN THE WORLD, in the panel's own colour, because that
+is the only pass anything can be drawn in that ends up behind the gun: draw it
+in two dimensions and it covers the gun instead. It sits far enough back to
+clear a rifle swinging end-on.
+
 The photograph is still used where the game has one. It is lit, and it is not
 spinning.
 

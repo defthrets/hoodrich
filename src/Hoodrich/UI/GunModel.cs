@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -44,6 +44,17 @@ namespace Hoodrich.UI
 
         /// <summary>Tipped down a little, so it is seen along the barrel rather than edge on.</summary>
         private const float Tilt = 12f;
+
+        /// <summary>
+        /// How far behind the gun the backdrop hangs, and how much wider than the window it is.
+        ///
+        /// FAR ENOUGH TO CLEAR THE LONGEST GUN. A sniper rifle turning end-on sweeps most of a
+        /// metre, and a backdrop closer than that gets a barrel through it twice a revolution.
+        /// Wider than the window because the panel's hole has a hard edge and a backdrop that
+        /// only just covers it shows a sliver of grass at the corners on a wide monitor.
+        /// </summary>
+        private const float BackSet = 1.15f;
+        private const float BackOver = 1.06f;
 
         private int _object;
         private uint _weapon;
@@ -128,7 +139,7 @@ namespace Hoodrich.UI
         /// number that happened to look right on one machine. At a given depth the visible
         /// height is 2 * depth * tan(fov/2), and the width is that times the aspect.
         /// </summary>
-        public void Place(float sx, float sy)
+        public void Place(float sx, float sy, float sw, float sh)
         {
             if (_object == 0) return;
 
@@ -178,11 +189,83 @@ namespace Hoodrich.UI
                 // whichever way you happen to be standing.
                 Function.Call(Hash.SET_ENTITY_ROTATION, _object,
                               Tilt, 0f, rot.Z + _turn, 2, true);
+
+                Backdrop(cam, forward, right, up, halfH, aspect, sx, sy, sw, sh);
             }
             catch (Exception ex)
             {
                 Log.Debug("Could not place the gun in the window: " + ex.Message);
             }
+        }
+
+        /// <summary>
+        /// A flat panel hung behind the gun, so it is read against something rather than
+        /// against a hedge.
+        ///
+        /// DRAWN AS TWO TRIANGLES IN THE WORLD, which is the only way this can work. The window
+        /// is a hole in the panel precisely so the world shows through it -- so anything drawn
+        /// to fill that hole has to be drawn in the SAME pass as the gun, or it is either in
+        /// front of it (2D, which covers the gun) or not there at all. DRAW_POLY is world
+        /// space, flat, untextured and takes a colour, which is exactly a backdrop.
+        ///
+        /// It hangs further from the camera than the gun does and is sized for ITS depth, not
+        /// the gun's -- the same window is a bigger rectangle the further back you put it, and
+        /// a backdrop sized for the near plane leaves the corners open.
+        ///
+        /// The panel's own colour, so the window reads as part of the screen rather than as a
+        /// hole with a grey card behind it.
+        /// </summary>
+        private static void Backdrop(Vector3 cam, Vector3 forward, Vector3 right, Vector3 up,
+                                     float halfH, float aspect,
+                                     float sx, float sy, float sw, float sh)
+        {
+            try
+            {
+                var depth = Depth + BackSet;
+
+                // Sized at ITS OWN depth. halfH came in for the gun's plane; the backdrop is
+                // further away, and the same angle covers more ground out there.
+                var scale = depth / Depth;
+
+                var hH = halfH * scale;
+                var hW = hH * aspect;
+
+                var x0 = (sx - sw * 0.5f * BackOver - 0.5f) * 2f * hW;
+                var x1 = (sx + sw * 0.5f * BackOver - 0.5f) * 2f * hW;
+
+                var y0 = -(sy - sh * 0.5f * BackOver - 0.5f) * 2f * hH;
+                var y1 = -(sy + sh * 0.5f * BackOver - 0.5f) * 2f * hH;
+
+                var mid = cam + forward * depth;
+
+                var a = mid + right * x0 + up * y0;
+                var b = mid + right * x1 + up * y0;
+                var c = mid + right * x1 + up * y1;
+                var d = mid + right * x0 + up * y1;
+
+                // The panel's own colour, so the window reads as a recess in the screen
+                // rather than as a hole with a card behind it.
+                var ink = Theme.Body;
+
+                // BOTH WINDINGS. A triangle is one-sided and which side you are looking at
+                // depends on how the camera is turned; drawing each one twice, wound the other
+                // way, costs two calls and removes the question.
+                Face(a, b, c, ink);
+                Face(a, c, b, ink);
+                Face(a, c, d, ink);
+                Face(a, d, c, ink);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not hang the backdrop: " + ex.Message);
+            }
+        }
+
+        private static void Face(Vector3 a, Vector3 b, Vector3 c, System.Drawing.Color ink)
+        {
+            Function.Call(Hash.DRAW_POLY,
+                          a.X, a.Y, a.Z, b.X, b.Y, b.Z, c.X, c.Y, c.Z,
+                          (int)ink.R, (int)ink.G, (int)ink.B, 255);
         }
 
         public void Clear()
