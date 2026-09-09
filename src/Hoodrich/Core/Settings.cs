@@ -314,6 +314,15 @@ namespace Hoodrich.Core
         /// <summary>How much longer or shorter every drug-taking animation runs.</summary>
         public float DrugAnimLength = 1f;
 
+        /// <summary>
+        /// What a mask off the counter at Vespucci costs.
+        ///
+        /// Once per mask, per body -- see PlayerState.Masks. Cheap on purpose: the point of the
+        /// shop is that you can afford to change your face before a job, not that it is another
+        /// thing to grind for.
+        /// </summary>
+        public int MaskPrice = 350;
+
         public int MaskSlot = 8;
         public bool MaskAsProp;
         public int MaskDrawable = 4;
@@ -724,6 +733,7 @@ namespace Hoodrich.Core
             }
             s.DrugAnimLength = Clamp(ini.GetFloat("Highs", "AnimLength", s.DrugAnimLength), 0.5f, 3f);
 
+            s.MaskPrice = (int)Clamp(ini.GetInt("Mask", "Price", s.MaskPrice), 0f, 100000f);
             s.MaskSlot = (int)Clamp(ini.GetInt("Mask", "Slot", s.MaskSlot), 0f, 11f);
             s.MaskAsProp = ini.GetBool("Mask", "AsProp", s.MaskAsProp);
             s.MaskDrawable = (int)Clamp(ini.GetInt("Mask", "Drawable", s.MaskDrawable), 0f, 400f);

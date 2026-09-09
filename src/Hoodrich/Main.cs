@@ -137,6 +137,9 @@ namespace Hoodrich
         /// <summary>The closet at Denise's, and whether he has been dressed from the save yet this session.</summary>
         private readonly WardrobeScreen _wardrobeScreen;
         private readonly Wardrobe _wardrobe;
+
+        private readonly MaskScreen _maskScreen;
+        private readonly MaskShop _maskShop;
         private bool _dressed;
         private bool _carrying;
         private int _dressedBody;
@@ -855,6 +858,38 @@ namespace Hoodrich
 
                 _wardrobeScreen = new WardrobeScreen();
                 _wardrobe = new Wardrobe(_wardrobeScreen);
+
+                // THE COUNTER ON VESPUCCI BEACH. It sells whatever the body he walked in with
+                // can wear, which is a handful on Franklin and the whole Online catalogue on a
+                // freemode one -- the shop counts the slot rather than holding a list of its
+                // own. See UI.MaskScreen.
+                _maskScreen = new MaskScreen
+                {
+                    State = _state,
+                    Cfg = _cfg,
+                    Price = () => _cfg == null ? 0 : _cfg.MaskPrice,
+                    // Marked dirty rather than written on the spot. The save is on a clock
+                    // like everything else's -- see the writer further down -- and a shop that
+                    // wrote the file on every colour change would be writing it forty times a
+                    // visit.
+                    Save = () => _state?.Touch(),
+                    Charge = cost =>
+                    {
+                        if (cost <= 0) return true;
+                        if (Game.Player.Money < cost) return false;
+
+                        UI.Cash.Take(cost);
+                        return true;
+                    }
+                };
+
+                _maskShop = new MaskShop(_maskScreen)
+                {
+                    // Shut while something louder is on, the same as every other door.
+                    Busy = () => _war != null && _war.IsRunning
+                };
+
+                _maskShop.Mark();
 
                 // The pegs live in the save, so the rail needs it. Without this every peg row
                 // is a beep -- which is exactly what the screen does when it has no state, on
@@ -1938,6 +1973,7 @@ namespace Hoodrich
                                    || _gunScreen.IsOpen || _carScreen.IsOpen || _plateScreen.IsOpen
                                    || _modShop.IsOpen
                                    || _graffiti.IsOpen || _ridePick.IsOpen || _wardrobeScreen.IsOpen
+                                   || (_maskScreen != null && _maskScreen.IsOpen)
                                    || (_boot != null && _boot.IsOpen)
                                    || (_search != null && _search.IsOpen),
                 };
@@ -3263,6 +3299,19 @@ namespace Hoodrich
                     }
                 }
 
+                if (_maskScreen != null && _maskScreen.IsOpen)
+                {
+                    if (!available) _maskScreen.Close();
+                    else
+                    {
+                        _maskScreen.Update();
+                        _maskScreen.Draw();
+                        SlowTick();
+                        _failures = 0;
+                        return;
+                    }
+                }
+
                 if (_graffiti.IsOpen)
                 {
                     if (!available) _graffiti.Close();
@@ -3530,6 +3579,7 @@ namespace Hoodrich
                     _sleep.Update();
                     _kitchen.Update();
                     _wardrobe.Update();
+                    _maskShop?.Update();
                     _boot?.Update();
                     _search?.Update(Game.Player.Character);
                     _buffalo.Update(Game.Player.Character);

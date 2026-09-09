@@ -1,6 +1,40 @@
 ﻿0.7.1 -- unreleased
 
 
+THERE IS A MASK SHOP ON VESPUCCI BEACH.
+
+Online has a mask counter on the boardwalk and the building is in single player
+too -- it is just shut, the way half the shops in this city are shut when the
+story is not using them. There is a door on the front of it now: a blip, a
+counter, and somebody who serves you.
+
+IT SELLS WHATEVER YOU CAN WEAR, and it works that out by asking the game rather
+than by holding a list. Nothing in this game NAMES any of it -- there is no
+native that says "drawable seven is a hockey mask" -- so a written-out
+catalogue would be a list of guesses that goes wrong the moment a clothing pack
+lands. The counter walks the slot live and shows what is actually on it, which
+is why it can never advertise something your install has not got.
+
+WHICH ALSO MEANS THE SHELF CHANGES SIZE. A drawable number is an index into one
+model's wardrobe. Franklin's mask slot holds a handful. The Online freemode
+bodies hold the entire Online mask catalogue -- so walk in as Franklin and the
+shelf is short, walk in wearing a freemode body and every mask Online has is on
+it, with all of its colours. The shop does not need to know which body you are
+in. It counts.
+
+WHAT YOU BUY IS YOURS, per body, and free every time after. The record carries
+the model for the same reason the wardrobe's outfits do: the thirty-first mask
+on one body is a different object on another, and paying for one must not
+quietly hand you the other. $350 a mask, in the ini.
+
+Try before you buy. Left and right walk the shelf and the colours, and he is
+stood there wearing whatever the cursor is on -- there is nowhere in this mod to
+render a floating head and there does not need to be. Walk out without buying
+and it comes off again.
+
+Whatever you take home is what the mask key puts on from then on.
+
+
 THE SPRAY CAPS ARE DRAWN FROM THE FRONT NOW, AND THEY LOOK LIKE CAPS.
 
 They were drawn from ABOVE -- a tall rounded body with the stem standing up out

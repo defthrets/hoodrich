@@ -496,6 +496,16 @@ namespace Hoodrich.State
         public readonly List<string> Outfits = new List<string>();
 
         /// <summary>
+        /// The masks he has paid for, as "BODY|slot:drawable:texture".
+        ///
+        /// THE BODY IS IN THE KEY, for the same reason it is in Outfit: a drawable index is an
+        /// index into ONE model's wardrobe, and the thirty-first mask on Franklin is a
+        /// different object from the thirty-first on a freemode body. Buying one must not
+        /// quietly hand you the other.
+        /// </summary>
+        public readonly List<string> Masks = new List<string>();
+
+        /// <summary>
         /// How he walks and how he holds a gun, by index into the lists on the closet rail.
         ///
         /// Kept as numbers rather than as the clipset names, because the names are the rail's
@@ -739,6 +749,7 @@ namespace Hoodrich.State
             VoiceHeard.Clear();
             Outfit.Clear();
             Outfits.Clear();
+            Masks.Clear();
             Walk = 0;
             Shoot = 0;
             Owned.Clear();
@@ -1061,6 +1072,13 @@ namespace Hoodrich.State
             return arr;
         }
 
+        private Json MasksJson()
+        {
+            var arr = Json.Array();
+            foreach (var row in Masks) arr.Add(Json.Str(row));
+            return arr;
+        }
+
         private Json OfferedJson()
         {
             var arr = Json.Array();
@@ -1169,6 +1187,7 @@ namespace Hoodrich.State
                 .Set("voiceHeard", VoiceHeardJson())
                 .Set("outfit", OutfitJson())
                 .Set("outfits", OutfitsJson())
+                .Set("masks", MasksJson())
                 .Set("walk", Walk)
                 .Set("shoot", Shoot)
                 .Set("triggerIsYours", TriggerIsYours)
@@ -1322,6 +1341,16 @@ namespace Hoodrich.State
                 {
                     var row = node.AsString("");
                     if (!string.IsNullOrEmpty(row)) Outfits.Add(row);
+                }
+
+                // A save from before the shop opened has none, which reads as an empty list and
+                // charges him for the first of everything. Nothing to migrate.
+                Masks.Clear();
+
+                foreach (var node in doc["masks"].Items)
+                {
+                    var row = node.AsString("");
+                    if (!string.IsNullOrEmpty(row)) Masks.Add(row);
                 }
 
                 Walk = doc["walk"].AsInt(0);
