@@ -188,8 +188,17 @@ namespace Hoodrich.UI
                 {
                     if (_cam == 0) return;
 
-                    Function.Call(Hash.RENDER_SCRIPT_CAMS, false, true, EaseMs, true, false);
-                    Function.Call(Hash.DESTROY_CAM, _cam, false);
+                    // HANDED BACK ON THE SPOT, WITH NO EASE. It used to ask for a half second
+                    // interpolation home and then destroy the camera in the same breath -- so
+                    // the game was left interpolating away from a camera that no longer
+                    // existed, and the view stopped where it was. There is no fixing that with
+                    // a shorter ease; the ease is the bug.
+                    //
+                    // Cut instead. A cut back to the player is a frame nobody minds; a camera
+                    // that never comes back is the end of the session.
+                    Function.Call(Hash.SET_CAM_ACTIVE, _cam, false);
+                    Function.Call(Hash.RENDER_SCRIPT_CAMS, false, false, 0, true, false);
+                    Function.Call(Hash.DESTROY_CAM, _cam, true);
 
                     _cam = 0;
                     return;
@@ -406,13 +415,16 @@ namespace Hoodrich.UI
                 // handle and zeroes it -- handing it a fresh OutputArgument built from a copy
                 // deletes nothing and reports nothing, which is a rifle left lying on a bench
                 // with no line in the log to say so.
+                // NOT RELEASED FIRST. IsPersistent = false is SET_ENTITY_AS_NO_LONGER_NEEDED,
+                // which hands the thing back to the game -- and a thing the game owns is not
+                // ours to delete any more, so the delete that followed it did nothing. That is
+                // why they piled up in the air: every one of them was politely handed over and
+                // then asked to leave by somebody with no standing to ask.
+                //
+                // Delete outright. Entity.Delete claims it and removes it, in that order.
                 var thing = Entity.FromHandle(_object);
 
-                if (thing != null && thing.Exists())
-                {
-                    thing.IsPersistent = false;
-                    thing.Delete();
-                }
+                if (thing != null && thing.Exists()) thing.Delete();
             }
             catch (Exception ex)
             {
@@ -464,7 +476,7 @@ namespace Hoodrich.UI
                     var thing = Entity.FromHandle(handle);
                     if (thing == null || !thing.Exists()) continue;
 
-                    thing.IsPersistent = false;
+                    // Outright, for the reason Clear gives.
                     thing.Delete();
                 }
                 catch

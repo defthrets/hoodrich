@@ -3348,6 +3348,15 @@ namespace Hoodrich
                     }
                 }
 
+                // A SHUT COUNTER OWNS NOTHING, CHECKED EVERY TICK.
+                //
+                // Close, RestoreWorld and the closed branch of the draw all put the camera and
+                // the guns away, and between them they still left a way through -- a screen
+                // that stops being open by any route none of the three is on. This does not
+                // care how it got shut. It costs a null check on a frame where there is
+                // nothing to put away, which is nearly all of them.
+                if (!_gunScreen.IsOpen) _gunScreen.RestoreWorld();
+
                 if (_gunScreen.IsOpen)
                 {
                     if (!available || !_bigj.InReach) _gunScreen.Close();
