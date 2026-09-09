@@ -28,6 +28,10 @@ its feature and the groups are its table:
 
 | 827 | `radar_biker_bottle` | liquor stores |
 | 889 | `radar_pizza_this` | fast food |
+| 521 | `radar_laptop` | cafes |
+
+The rest of that table moves faster than this file does -- read
+`groups` in `vendors.json` for what every venue kind is wearing today.
 
 | 952 | `radar_trashbag` | bad end of the reputation bar -- `PostUp.cs` |
 | 621 | `radar_pickup_dtb_health` | good end of the reputation bar |
