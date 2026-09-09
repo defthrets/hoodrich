@@ -542,10 +542,13 @@ def _spray_cap(name, nozzle):
     for dx in range(-120, 121, 20):
         stroke(d, [(164 + dx, 86), (164 + dx * 0.826, 344)], 7, LOW)
 
-    # ---- the skirt it sits on, and the stem that goes into the can ----
-    ellipse(d, 164, 368, 116, 28)
-    rrect(d, 130, 362, 198, 468, 16)
-    rect(d, 136, 412, 192, 448, MID)
+    # ---- and the stem that goes into the can ----
+    #
+    # NO SKIRT. There was a flared ellipse as wide as the body sat under it, and there is no
+    # such thing on the object -- the bowed bottom edge IS the skirt, and putting a second one
+    # under it gave the cap a saucer to stand on. The stem comes straight out of the bottom.
+    rrect(d, 132, 356, 196, 468, 16)
+    rect(d, 138, 408, 190, 446, MID)
 
     # ---- and the nozzle, which is the whole point of the object ----
     disc(d, 164, 178, nozzle, CLEAR)

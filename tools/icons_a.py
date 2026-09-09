@@ -542,38 +542,41 @@ def wifi():
 
 
 def balaclava():
-    """A three-hole balaclava, off a reference rather than off memory.
+    """A three-hole balaclava, DRAWN AS AN OUTLINE.
 
-    THE SHAPE IS AN HOURGLASS, and that is the thing every previous attempt missed. A hood is
-    not a head on some shoulders: it is a dome that comes out wide at the temples, PINCHES IN
-    at the jaw, and flares out again onto the chest -- and that pinch is the whole silhouette.
-    Without it you get a bowling ball on a plinth, which is what was here.
+    THE POLARITY WAS WRONG, and it took four goes to see it. Every reference for this thing is
+    a BLACK mask on white paper. Icons in this set are white ink on nothing, tinted at draw
+    time and laid on a dark panel -- so filling the silhouette makes the mask WHITE, and a
+    white head-shaped blob with two slits and a mouth in it is a grey alien. It is a grey alien
+    whatever you do to the chin, the proportions or the tilt of the eyes, all of which were
+    tried.
 
-    A FLAT SILHOUETTE WITH THREE HOLES IN IT. No MID plane, no shading, nothing that is not
-    either the outline or a hole. That is how the reference is built and it is why it survives
-    being twenty pixels tall, where a grey wedge down one cheek is just a smudge.
+    Outlined instead, and the openings filled. Now the mask is DARK -- the panel showing
+    through -- the hood's edge is a bright line round it, and the eyes and mouth are bright
+    marks in the middle. That is the reference, translated into this medium rather than copied
+    into it.
 
-    Drawn as one closed curve down the right and mirrored, so the two halves cannot drift apart
-    -- which they will, every time, if both sides are typed out by hand.
+    THE EYES ARE NEARLY LEVEL. Sloping them down toward the nose is the angry V a cartoon draws
+    for eyebrows and it is the other half of what made this an alien. A cut in fabric sits
+    along the eye line, which falls very slightly at the OUTER corners and nowhere else.
+
+    One curve down the right and mirrored, so the halves cannot drift apart.
     """
     img, d = canvas()
 
-    # Down the right-hand side: crown, temple, the pinch at the jaw, the flare, the hem.
-    right = cbez((256, 40), (334, 40), (382, 92), (382, 166))
-    right += cbez((382, 166), (382, 252), (352, 278), (344, 318))
-    right += cbez((344, 318), (338, 352), (378, 368), (390, 406))
-    right += cbez((390, 406), (400, 448), (332, 468), (256, 468))
+    right = cbez((256, 46), (356, 48), (404, 118), (404, 196))
+    right += cbez((404, 196), (406, 282), (394, 346), (374, 400))
+    right += cbez((374, 400), (362, 452), (306, 482), (172, 482))
 
-    poly(d, right + [(512 - x, y) for x, y in reversed(right)])
+    hood = right + [(512 - x, y) for x, y in reversed(right)]
 
-    # The eyes. Rounded lozenges, tipped very slightly down at the outer ends, which is what
-    # the opening does when it is cut to sit on a face.
-    for cx, rx, deg in ((196, 43, 8), (316, 43, -8)):
-        eye = scale(circle(cx, 208, rx, 48), cx, 208, 1.0, 0.62)
-        poly(d, rot(eye, cx, 208, deg), CLEAR)
+    stroke(d, hood, 40, W, closed=True)
 
-    # And the mouth, on its own below them.
-    poly(d, scale(circle(256, 308, 36, 48), 256, 308, 1.0, 0.78), CLEAR)
+    for cx, deg in ((182, -6), (330, 6)):
+        eye = scale(circle(cx, 202, 56, 48), cx, 202, 1.0, 0.21)
+        poly(d, rot(eye, cx, 202, deg))
+
+    poly(d, scale(circle(256, 316, 46, 48), 256, 316, 1.0, 0.44))
 
     save(img, "balaclava.png")
 
@@ -742,49 +745,61 @@ def brick():
 
 
 def stash():
-    """A backpack, off a reference rather than off memory.
+    """A backpack.
 
-    IT HAS BEEN A BARBELL AND THEN A LOAF, and both times the problem was the same one: a
-    holdall is a horizontal blob, and a horizontal blob with anything on either end of it is
-    something else. There is no version of that shape that survives being twenty pixels wide.
+    THE TOP IS A SHALLOW CURVE, NOT A DOME. It was drawn as a half circle across the full
+    width of the bag, which makes the curve as tall as the bag is half wide -- so the thing had
+    a great balloon on top of it and the body underneath looked squashed. On a real one the
+    rise across the top is under a third of the width: rounded shoulders and a top that is
+    nearly flat between them.
 
-    A backpack is a VERTICAL object with three separate parts that are still three separate
-    parts when it is tiny -- the body, the front pocket over the bottom half of it, and the
-    strap looping off the side. That is a silhouette you can recognise with every detail
-    stripped out, which is the only test that matters here.
+    So the outline is written out rather than assembled from a dome and a box. That also fixes
+    what was wrong underneath it -- the dome and the box were separate shapes with separate
+    centres, and the hair line meant to separate the bag from the panel behind it came out thin
+    across the crown and fat down the sides.
 
-    A PURE SILHOUETTE WITH WHITE CUTS, which is not how the rest of this set is built and is
-    how the reference is built. The parts are separated by GAPS rather than by tone: a MID
-    plane at this size is a smudge, whereas a two-pixel gap is still a two-pixel gap. So each
-    piece is punched out slightly larger than itself before it is drawn, which leaves the hair
-    line between it and whatever is behind it.
+    A flat silhouette with white cuts, like the reference: parts separated by GAPS rather than
+    by tone, because a grey plane at this size is a smudge and a two-pixel gap is not.
     """
     img, d = canvas()
 
+    def shell(x0, x1, top, bot, rise, r):
+        """A bag body: rounded shoulders, a nearly flat top, a rounded bottom."""
+        lip = top + rise
+
+        pts = [(x0, bot - r)]
+        pts += cbez((x0, lip), (x0, top + 6), (x0 + rise * 0.6, top), (x0 + rise * 1.15, top))
+        pts += [(x1 - rise * 1.15, top)]
+        pts += cbez((x1 - rise * 1.15, top), (x1 - rise * 0.6, top), (x1, top + 6), (x1, lip))
+        pts += [(x1, bot - r)]
+        pts += bez((x1, bot - r), (x1, bot), (x1 - r, bot))
+        pts += [(x0 + r, bot)]
+        pts += bez((x0 + r, bot), (x0, bot), (x0, bot - r))
+
+        return pts
+
     # The strap, behind everything. A loop, so it has a hole in it.
-    rrect(d, 352, 146, 452, 424, 50)
-    rrect(d, 380, 184, 426, 384, 23, CLEAR)
+    rrect(d, 350, 168, 448, 420, 48)
+    rrect(d, 378, 206, 422, 380, 22, CLEAR)
 
-    # The back panel, peeking out to the right of the body.
-    poly(d, arc(282, 214, 120, 180, 360, 40))
-    rrect(d, 162, 214, 402, 438, 46)
+    # The panel behind, showing past the body on the right.
+    poly(d, shell(168, 400, 132, 434, 66, 44))
 
-    # The body, with the hair line that separates it from the panel behind.
-    poly(d, arc(224, 206, 130, 180, 360, 40))
-    rrect(d, 94, 206, 354, 462, 54, CLEAR)
+    # The body, and the hair line that separates the two. The gap is the SAME outline grown by
+    # ten all round rather than a second shape with its own numbers.
+    poly(d, shell(94, 354, 96, 462, 76, 54), CLEAR)
+    poly(d, shell(104, 344, 106, 452, 70, 46))
 
-    poly(d, arc(224, 200, 120, 180, 360, 40))
-    rrect(d, 104, 200, 344, 452, 46)
+    # The grab handle, sat on the crown. Its legs land inside the curve rather than stopping at
+    # the highest point of it, which is what had it floating.
+    stroke(d, arc(224, 116, 44, 184, 356, 24), 21)
 
-    # The grab handle on top.
-    stroke(d, arc(214, 80, 46, 182, 358, 24), 22)
-
-    # The front pocket, over the bottom half and standing slightly proud on the left.
-    rrect(d, 62, 258, 310, 472, 52, CLEAR)
-    rrect(d, 72, 268, 300, 452, 44)
+    # The front pocket, over the bottom half and standing proud on the left.
+    rrect(d, 62, 262, 308, 462, 50, CLEAR)
+    rrect(d, 72, 272, 298, 452, 42)
 
     # And its zip.
-    rrect(d, 112, 316, 260, 350, 13, CLEAR)
+    rrect(d, 112, 320, 258, 352, 13, CLEAR)
 
     save(img, "stash.png")
 

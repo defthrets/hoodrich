@@ -11,8 +11,9 @@ look at the face of it, which is the part with the hole in.
 So all three are the real object now: a body wider at the top than the bottom,
 ribbed down the face with the ribs following the taper, the nozzle punched out
 of the middle with the spray hole drawn back into it, and the stem hanging
-below on a flared skirt. The taper and the stem underneath are what stop it
-being a can at any size.
+below. The taper and the stem underneath are what stop it being a can at any
+size, and there is no flared skirt -- the bowed bottom edge is the skirt, and
+the ellipse that was under it gave the cap a saucer to stand on.
 
 AND THE OVERSPRAY TILE WEARS ONE. There used to be two drawings of the same
 object, and the only reason the second existed was that a phone tile forced its
@@ -22,13 +23,20 @@ shaped like a tile. Tiles take a shape now, so the app shows a fat cap: the one
 with the biggest nozzle, which is the only part of a cap that survives being
 drawn at eighteen pixels.
 
-THE BALACLAVA IS AN HOURGLASS, which is the thing three attempts at it kept
-missing. A hood is not a head sat on some shoulders: it is a dome that comes
-out wide at the temples, PINCHES IN at the jaw, and flares out again onto the
-chest, and that pinch is the entire silhouette. Without it you get a bowling
-ball on a plinth, which is what was there. Three holes, flat, no shading --
-which is not how the rest of this set is built and is how the thing actually
-reads at twenty pixels.
+THE BALACLAVA WAS BEING DRAWN INSIDE OUT. Four attempts at it came out as a
+grey alien and every one of them got blamed on something else -- the eye holes
+were made into slits, the chin was widened, the whole head was reproportioned --
+and none of it helped, because the fault was the polarity. Every reference for
+one of these is a BLACK mask on white paper. Icons here are white ink laid on a
+dark panel, so filling the silhouette makes the mask white, and a white
+head-shaped blob with two slits and a mouth in it is a grey alien whatever you
+do to it.
+
+It is outlined now, with the openings filled. The mask is dark, the hood's edge
+is a bright line round it, and the eyes and mouth are bright marks in the
+middle -- which is the reference translated into this medium rather than copied
+into it. The eyes are also nearly level: sloping them down toward the nose is
+the angry V a cartoon draws for eyebrows, and that was the other half of it.
 
 AND THE INVENTORY BAG IS A BACKPACK. It had been a barbell and then a loaf, and
 both times the fault was the same: a holdall is a horizontal blob, and a
@@ -36,7 +44,8 @@ horizontal blob with anything on either end is something else. There is no
 version of that shape that survives being twenty pixels wide. A backpack is a
 vertical object with three parts that are still three parts when it is tiny --
 the body, the pocket over the bottom half of it, and the strap looping off the
-side -- so you can recognise it with every detail stripped out.
+side. Its top is a shallow curve rather than the half-circle it was first given,
+which had a balloon sat on a squashed bag.
 
 THE SPRAY CAN IS THE OLD ONE AGAIN. The redraw made a tidier can and a worse
 icon -- the spray shrank to three dots tucked up against the cap, where they
