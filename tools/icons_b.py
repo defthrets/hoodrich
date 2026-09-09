@@ -501,28 +501,69 @@ def ammo():
     save(img, "ammo.png")
 
 
-def _spray_cap(name, hole):
+def _spray_cap(name, nozzle):
+    """A cap, FROM THE FRONT.
+
+    IT WAS DRAWN FROM ABOVE, and that is why it read as a can: a tall rounded body with the
+    stem standing up out of the top of it is the silhouette of an aerosol, whatever the little
+    ellipse on top is meant to be. Nobody looks at a cap from above. You look at the face of
+    it, which is the part with the hole in.
+
+    So: a body WIDER AT THE TOP than the bottom, ribbed down the face, with the nozzle in the
+    middle of it and the stem hanging BELOW on a flared skirt. That is the shape in every
+    photograph of one, and the taper plus the stem underneath is what stops it being a can at
+    any size.
+
+    THE RIBS FOLLOW THE TAPER rather than running straight down, which is both what the real
+    thing does and the only way they stay inside the outline without being clipped.
+
+    The three caps differ by the size of the nozzle, which is the one thing about them a player
+    is choosing. Its housing is punched out and the spray hole is drawn back in the middle of
+    it -- a dark disc with a bright pinhole, exactly as it photographs.
+    """
     img, d = canvas(328, 512)
 
-    rrect(d, 60, 150, 268, 470, 24)
-    ellipse(d, 164, 150, 104, 36, MID)
-    disc(d, 164, 150, hole, CLEAR)
-    rrect(d, 144, 50, 184, 152, 8)
-    rect(d, 60, 300, 268, 312, LOW)
+    # ---- the body ----
+    top, bot = 58, 356
+    r = 44
+
+    body = [(24 + r, top), (304 - r, top)]
+    body += bez((304 - r, top), (304, top), (300, 104))
+    body += [(280, 330)]
+    body += bez((280, 330), (274, 356), (250, 362))
+    body += bez((250, 362), (164, 390), (78, 362))
+    body += bez((78, 362), (54, 356), (48, 330))
+    body += [(28, 104)]
+    body += bez((28, 104), (24, top), (24 + r, top))
+
+    poly(d, body)
+
+    # ---- the ribs, narrowing with the body ----
+    for dx in range(-120, 121, 20):
+        stroke(d, [(164 + dx, 86), (164 + dx * 0.826, 344)], 7, LOW)
+
+    # ---- the skirt it sits on, and the stem that goes into the can ----
+    ellipse(d, 164, 368, 116, 28)
+    rrect(d, 130, 362, 198, 468, 16)
+    rect(d, 136, 412, 192, 448, MID)
+
+    # ---- and the nozzle, which is the whole point of the object ----
+    disc(d, 164, 178, nozzle, CLEAR)
+    disc(d, 164, 178, max(7, nozzle * 0.19), W)
 
     save(img, name, 82, 128)
 
 
 def cap_fat():
-    _spray_cap("cap_fat.png", 40)
+    _spray_cap("cap_fat.png", 76)
 
 
 def cap_stock():
-    _spray_cap("cap_stock.png", 26)
+    _spray_cap("cap_stock.png", 56)
 
 
 def cap_thin():
-    _spray_cap("cap_thin.png", 14)
+    _spray_cap("cap_thin.png", 38)
 
 
 ALL = [baggie, pills, xanax, heroin, coke, crack, meth, weed, leaf, blunt, bong, edibles, shrooms,

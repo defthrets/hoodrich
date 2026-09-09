@@ -1188,7 +1188,10 @@ namespace Hoodrich.Wheel
             // Tiles take a shape now (see WheelPage.WithIcon), so the app wears the same cap
             // the picker shows you, and there is one drawing of it instead of two that had to
             // be kept looking like each other.
-            page.WithIcon(Icons.FromFile("cap_stock.png"), CapMark);
+            //
+            // THE FAT ONE of the three, because it is the one with the biggest nozzle and the
+            // nozzle is the only part of a cap that survives being drawn at eighteen pixels.
+            page.WithIcon(Icons.FromFile("cap_fat.png"), CapMark);
 
             // THE MASK. One tile, nothing behind it: on if it is off, off if it is on. The
             // label stays and the value carries the state, same as the can beside it.
