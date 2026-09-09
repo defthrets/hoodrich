@@ -1,6 +1,31 @@
 ﻿0.7.1 -- unreleased
 
 
+HOLD LEFT OR RIGHT AND THE WARDROBE RAIL RUNS.
+
+The closet has always offered every garment the body owns. The counts come
+straight from the game, nothing is filtered, and the row says so out loud --
+"47 OF 312". What it had no way of doing was reaching the three hundredth of
+anything. One press was one garment, so the far end of a rail was three hundred
+presses away, and a rail nobody can reach the end of is a short rail with a long
+number printed on it.
+
+Slow first and then quick: nine a second after a short hold, winding up over a
+second and a half to thirty-five. A single press is still a single garment --
+the wait before the first repeat is longer than any tap. The click plays every
+fifth step once it is running, because thirty a second is not feedback, it is a
+noise.
+
+Only the racks run. Holding right on "Wear it" is not a request for forty
+outfits, and on the walks it would flick him through every way of moving in the
+game several times a second. Those rows are six long, not six hundred.
+
+AND THE CLOSET NOW WRITES DOWN WHAT IT HAS. Every drawable and every texture the
+body owns, counted into the log when the door opens -- twelve component slots
+and all eight prop slots, including the three the menu has no row for. "Does it
+have all the clothes in it" is not a question anybody can answer by scrolling.
+
+
 THE PERFORMERS SPIN ON THE SPOT, IN THE MIDDLE, TOGETHER.
 
 Two things were wrong and they were both about where the show is.

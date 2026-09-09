@@ -251,11 +251,82 @@ namespace Hoodrich.UI
             _curtain.Open();
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
 
+            Stock();
             Look();
+        }
+
+        /// <summary>
+        /// EVERY DRAWABLE AND EVERY TEXTURE THIS BODY OWNS, counted and written to the log.
+        ///
+        /// Because "does the closet have all the clothes in it" is a question nobody can answer
+        /// by scrolling, and it is asked. The rail takes its counts from the game and filters
+        /// nothing, so the answer is yes by construction -- but a construction argument is not
+        /// evidence, and this is: twelve component slots and eight prop slots, the drawables in
+        /// each and the textures across all of them, for whichever body is standing there.
+        ///
+        /// ALL EIGHT PROP SLOTS, INCLUDING THE THREE THE MENU HAS NO ROW FOR. Three, four and
+        /// five are mouth and the two hands, and every body anybody has looked at has nothing
+        /// in them -- so they are not worth a row that always says NOTHING ON. If this line
+        /// ever prints a number against one of them, they are worth a row, and that is exactly
+        /// the sort of thing that should be found out from the game rather than assumed.
+        ///
+        /// Once, when the closet opens. It is twenty native calls plus one per garment, on a
+        /// frame where the camera is already moving and nobody is driving.
+        /// </summary>
+        private static void Stock()
+        {
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return;
+
+                var parts = 0;
+                var shades = 0;
+                var said = "";
+
+                for (var slot = 0; slot < 12; slot++)
+                {
+                    var n = Function.Call<int>(Hash.GET_NUMBER_OF_PED_DRAWABLE_VARIATIONS, me.Handle, slot);
+                    if (n <= 0) continue;
+
+                    parts += n;
+                    said += " c" + slot + ":" + n;
+
+                    for (var d = 0; d < n; d++)
+                    {
+                        shades += Function.Call<int>(Hash.GET_NUMBER_OF_PED_TEXTURE_VARIATIONS,
+                                                     me.Handle, slot, d);
+                    }
+                }
+
+                for (var slot = 0; slot < 8; slot++)
+                {
+                    var n = Function.Call<int>(Hash.GET_NUMBER_OF_PED_PROP_DRAWABLE_VARIATIONS, me.Handle, slot);
+                    if (n <= 0) continue;
+
+                    parts += n;
+                    said += " p" + slot + ":" + n;
+
+                    for (var d = 0; d < n; d++)
+                    {
+                        shades += Function.Call<int>(Hash.GET_NUMBER_OF_PED_PROP_TEXTURE_VARIATIONS,
+                                                     me.Handle, slot, d);
+                    }
+                }
+
+                Log.Info("Wardrobe: " + me.Model.Hash.ToString() + " has " + parts +
+                         " garment(s) in " + shades + " colours --" + said);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not count the wardrobe: " + ex.Message);
+            }
         }
 
         public void Close()
         {
+            Rest();
+
             if (!IsOpen) return;
 
             try { Done?.Invoke(); }
@@ -411,12 +482,112 @@ namespace Hoodrich.UI
 
             if (Pressed(Control.PhoneCancel)) { Close(); return; }
 
-            if (Pressed(Control.PhoneUp)) Move(-1);
-            else if (Pressed(Control.PhoneDown)) Move(1);
-            else if (Pressed(Control.PhoneLeft)) Peg(-1);
-            else if (Pressed(Control.PhoneRight)) Peg(1);
-            else if (Pressed(Control.PhoneSelect) || Pressed(Control.Context)) Choose();
+            if (Pressed(Control.PhoneUp)) { Rest(); Move(-1); }
+            else if (Pressed(Control.PhoneDown)) { Rest(); Move(1); }
+            else if (Pressed(Control.PhoneLeft)) { Peg(-1); Grab(-1); }
+            else if (Pressed(Control.PhoneRight)) { Peg(1); Grab(1); }
+            else if (Pressed(Control.PhoneSelect) || Pressed(Control.Context)) { Rest(); Choose(); }
+            else Running();
         }
+
+        /// <summary>
+        /// HOLD IT DOWN AND THE RAIL RUNS, and this is the difference between a wardrobe that
+        /// has everything in it and one you can get everything out of.
+        ///
+        /// The closet has always offered every garment the body owns -- the counts come from
+        /// the game, nothing is filtered, and the row says so out loud: "47 OF 312". What it
+        /// did not have was any way to reach the three hundredth of anything. One press was one
+        /// garment, so the far end of a rail was three hundred presses away, and a rail nobody
+        /// can reach the end of is a short rail with a long number printed on it.
+        ///
+        /// SLOW FIRST, THEN QUICK. It starts at nine a second after a short hold, which is
+        /// browsing, and winds up over a second and a half to thirty-five, which is travelling.
+        /// A single press is still a single garment -- the delay before the first repeat is
+        /// what protects that, and it is longer than any tap.
+        ///
+        /// ONLY THE RACKS. Holding right on "Wear it" is not a request for forty outfits, and
+        /// holding it on the walks would flick him through every way of moving in the game
+        /// several times a second. Those rows take a press each, as they should: there are six
+        /// of them, not six hundred.
+        /// </summary>
+        private const int RepeatWaitMs = 380;
+        private const int RepeatSlowMs = 110;
+        private const int RepeatFastMs = 28;
+        private const int RepeatWindUpMs = 1500;
+
+        /// <summary>One click in this many steps while it is running. Thirty a second is a noise.</summary>
+        private const int RepeatClickEvery = 5;
+
+        private int _runDir;
+        private int _runSince;
+        private int _runNext;
+        private int _runSteps;
+
+        /// <summary>A direction has just been pressed: start the clock on it.</summary>
+        private void Grab(int dir)
+        {
+            _runDir = dir;
+            _runSince = Game.GameTime;
+            _runNext = _runSince + RepeatWaitMs;
+            _runSteps = 0;
+        }
+
+        /// <summary>Let go of it.</summary>
+        private void Rest()
+        {
+            _runDir = 0;
+            _runSteps = 0;
+        }
+
+        /// <summary>Still held down, and past due for another one.</summary>
+        private void Running()
+        {
+            if (_runDir == 0) return;
+
+            var control = _runDir < 0 ? Control.PhoneLeft : Control.PhoneRight;
+
+            if (!Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)control))
+            {
+                Rest();
+                return;
+            }
+
+            // Whatever row it started on. Moving up or down lets go of it anyway, so this can
+            // only be the row the hold began on -- but it is checked rather than assumed,
+            // because a body swap can change what a row is underneath a held finger.
+            var s = Slots[_row];
+
+            if (s.Peg || s.Body || s.Act != Deed.None || s.Style != Kind.None)
+            {
+                Rest();
+                return;
+            }
+
+            var now = Game.GameTime;
+            if (now < _runNext) return;
+
+            _runQuiet = _runSteps % RepeatClickEvery != 0;
+            Step(_runDir);
+            _runQuiet = false;
+
+            _runSteps++;
+            _runNext = now + Pace(now);
+        }
+
+        /// <summary>The gap to the next one: slow at first, quick once it has wound up.</summary>
+        private int Pace(int now)
+        {
+            var run = now - _runSince - RepeatWaitMs;
+
+            if (run <= 0) return RepeatSlowMs;
+
+            var t = run >= RepeatWindUpMs ? 1f : run / (float)RepeatWindUpMs;
+
+            return (int)(RepeatSlowMs + (RepeatFastMs - RepeatSlowMs) * t);
+        }
+
+        /// <summary>Whether this step should keep its mouth shut. See RepeatClickEvery.</summary>
+        private bool _runQuiet;
 
         /// <summary>Left and right: along the rail on a peg row, through the rack on any other.</summary>
         private void Peg(int by)
@@ -732,7 +903,8 @@ namespace Hoodrich.UI
 
                 Put(me, s, next, 0);
                 _pickedAt = Game.GameTime;
-                Hud.PlaySound("NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+
+                if (!_runQuiet) Hud.PlaySound("NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
             }
             catch (Exception ex)
             {
