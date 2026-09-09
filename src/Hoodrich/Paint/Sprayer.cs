@@ -282,6 +282,9 @@ namespace Hoodrich.Paint
         /// identical expression, which is exactly the shape of thing that gets tuned in one
         /// spot and not the other.
         /// </summary>
+        /// <summary>How solid this stroke is going on. See PaintConfig.InkAt.</summary>
+        private float _ink;
+
         private float Vary()
         {
             var j = _cfg.SizeJitter;
@@ -297,7 +300,7 @@ namespace Hoodrich.Paint
         /// worked before: the dab and the whole trail behind it shared one r,g,b, so all of
         /// them were the same shade by construction.
         /// </summary>
-        private void Put(Vector3 at, Vector3 into, Vector3 side, float size, int hit)
+        private void Put(Vector3 at, Vector3 into, Vector3 side, float size, int hit, float ink)
         {
             // Which texture this tool wants. Set here rather than once per session because the
             // player can swap tools between one mark and the next -- and now also because it
@@ -312,7 +315,7 @@ namespace Hoodrich.Paint
             var gain = _cfg.SprayCanLook ? _cfg.CanColourGain : 1f;
 
             _marks.Put(at, into, side, size,
-                       c.R / 255f * gain, c.G / 255f * gain, c.B / 255f * gain, hit);
+                       c.R / 255f * gain, c.G / 255f * gain, c.B / 255f * gain, hit, ink);
         }
 
         /// <summary>
@@ -398,6 +401,12 @@ namespace Hoodrich.Paint
             // opens out as it loses it, so the far half widens faster than the near half.
             var away = hit.Away;
 
+            // WIDER AND FAINTER ARE THE SAME FACT. The plume opens out as it loses pressure
+            // and the paint it carries is spread over that wider circle, so it arrives
+            // thinner. Worked out once here and used by the dab, by every mark of the trail
+            // behind it, and by the streak and the drip below -- all of them are this stroke.
+            _ink = _cfg.InkAt(away);
+
             var size = _cfg.LiveSizeAtOneMetre *
                        (float)Math.Pow(Math.Max(0.2f, away), _cfg.LiveSpreadPower) *
                        Scale;
@@ -456,7 +465,7 @@ namespace Hoodrich.Paint
                         if (midSize < _cfg.LiveMinSize) midSize = _cfg.LiveMinSize;
                         if (midSize > _cfg.LiveMaxSize) midSize = _cfg.LiveMaxSize;
 
-                        Put(mid, into, midSide, midSize, hit.Entity);
+                        Put(mid, into, midSide, midSize, hit.Entity, _ink);
                     }
                 }
             }
@@ -481,7 +490,7 @@ namespace Hoodrich.Paint
                 return;
             }
 
-            Put(at, into, side, size, hit.Entity);
+            Put(at, into, side, size, hit.Entity, _ink);
             _paintedAt = Game.GameTime;
 
             Running(hit, at, into, size);
@@ -589,7 +598,7 @@ namespace Hoodrich.Paint
             _marks.Streak(_streakFrom + (at - _streakFrom) * 0.5f, into,
                           _cfg.StrokeSideways ? along : across,
                           wide, tall,
-                          c.R / 255f, c.G / 255f, c.B / 255f, hit.Entity);
+                          c.R / 255f, c.G / 255f, c.B / 255f, hit.Entity, _ink);
 
             _streakFrom = at;
             _streakDir = Vector3.Zero;
@@ -753,8 +762,10 @@ namespace Hoodrich.Paint
             {
                 var c = Shade();
 
+                // The stroke that started it. A drip is the same paint running, not a
+                // fresh mark from wherever the player happens to be standing by now.
                 _runMark = _marks.Streak(spot, _runInto, side, wide, tall,
-                                         c.R / 255f, c.G / 255f, c.B / 255f, _runEntity);
+                                         c.R / 255f, c.G / 255f, c.B / 255f, _runEntity, _ink);
 
                 if (_runMark == null) _running = false;
 

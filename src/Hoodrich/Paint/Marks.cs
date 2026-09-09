@@ -46,6 +46,20 @@ namespace Hoodrich.Paint
         /// </summary>
         public int Type;
 
+        /// <summary>
+        /// How solid it went on, or 0 for whatever the config says today.
+        ///
+        /// PER MARK, because it is decided by how far away the wall was when it was laid --
+        /// see PaintConfig.InkAt -- and that is a fact about the mark, not about the session.
+        /// The sweep takes distant marks down and puts them back as you walk to them, so
+        /// without this every restored mark would come back at the density of whatever you
+        /// happened to be spraying at the time.
+        ///
+        /// Nought means "ask the config", which is what every save written before this says
+        /// and what the extinguisher's marks say when no fade is configured.
+        /// </summary>
+        public float Ink;
+
         /// <summary>The handle the game last gave it, so a stale one can be cleaned up.</summary>
         public int Handle;
 
@@ -202,7 +216,7 @@ namespace Hoodrich.Paint
 
         /// <summary>Puts one on the wall and remembers it.</summary>
         public void Put(Vector3 at, Vector3 into, Vector3 side, float size,
-                        float r, float g, float b, int hit = 0)
+                        float r, float g, float b, int hit = 0, float ink = 0f)
         {
             // A CAR IS NOT A WALL. The probe has always included vehicles and the paint has
             // never appeared on one, because the decal type walls use does not apply to them.
@@ -221,6 +235,7 @@ namespace Hoodrich.Paint
             {
                 At = at, Into = into, Side = side,
                 Size = size, R = r, G = g, B = b,
+                Ink = ink,
                 OnVehicle = onCar
             };
 
@@ -297,7 +312,7 @@ namespace Hoodrich.Paint
         /// back and make it longer.
         /// </summary>
         public Mark Streak(Vector3 at, Vector3 into, Vector3 side, float wide, float tall,
-                           float r, float g, float b, int hit = 0)
+                           float r, float g, float b, int hit = 0, float ink = 0f)
         {
             while (_marks.Count >= Math.Max(16, _cfg.MaxMarks))
             {
@@ -310,6 +325,7 @@ namespace Hoodrich.Paint
                 At = at, Into = into, Side = side,
                 Size = wide, Tall = tall,
                 R = r, G = g, B = b,
+                Ink = ink,
                 OnVehicle = _cfg.VehicleDecal > 0 && IsVehicle(hit)
             };
 
@@ -386,7 +402,9 @@ namespace Hoodrich.Paint
                                                 m.Into.X, m.Into.Y, m.Into.Z,
                                                 m.Side.X, m.Side.Y, m.Side.Z,
                                                 m.Size, m.Tall > 0f ? m.Tall : m.Size,
-                                                m.R, m.G, m.B, _cfg.Opacity,
+                                                m.R, m.G, m.B,
+                                                // Its own, if it was laid with one. See Mark.Ink.
+                                                m.Ink > 0f ? m.Ink : _cfg.Opacity,
                                                 // FALSE, FALSE, FALSE -- what every single
                                                 // ADD_DECAL call in the game's own scripts
                                                 // passes. This had true in the first slot,
@@ -932,6 +950,9 @@ namespace Hoodrich.Paint
                     .Set("w", Math.Round(m.Size, 3))
                     .Set("h", m.Tall > 0f ? Math.Round(m.Tall, 3) : 0.0)
                     .Set("r", Math.Round(m.R, 3)).Set("g", Math.Round(m.G, 3)).Set("b", Math.Round(m.B, 3))
+                    // Only when it has one. A mark with no ink of its own takes the config's,
+                    // which is what every file written before the fade existed says.
+                    .Set("o", m.Ink > 0f ? Math.Round(m.Ink, 3) : 0.0)
                     // Only when it differs from the session's own. Most marks match it, and
                     // ten bytes each across fifty thousand is half a megabyte of saying so.
                     .Set("t", m.Type == _type ? 0 : m.Type));
@@ -972,6 +993,7 @@ namespace Hoodrich.Paint
                     R = node["r"].AsFloat(1f),
                     G = node["g"].AsFloat(1f),
                     B = node["b"].AsFloat(1f),
+                    Ink = node["o"].AsFloat(0f),
 
                     // Absent, zero, or matching means the session's own -- which is what every
                     // file written before mud was an option says.

@@ -182,6 +182,8 @@ namespace Hoodrich.Core
         public int PaintMixTexture;
         public int PaintMixEvery;
         public float PaintColourGain = 1f;
+        public float PaintOpacity = 1f;
+        public float PaintOpacityFar = 0.6f;
 
         public float TagDotSize = 0.50f;
         public float BagRoll = 0f;
@@ -674,6 +676,8 @@ namespace Hoodrich.Core
             s.PaintMixTexture = ini.GetInt("Paint", "MixDecal", s.PaintMixTexture);
             s.PaintMixEvery = (int)Clamp(ini.GetInt("Paint", "MixEvery", s.PaintMixEvery), 0f, 100f);
             s.PaintColourGain = Clamp(ini.GetFloat("Paint", "CanColourGain", s.PaintColourGain), 0.1f, 8f);
+            s.PaintOpacity = Clamp(ini.GetFloat("Paint", "Opacity", s.PaintOpacity), 0.1f, 1f);
+            s.PaintOpacityFar = Clamp(ini.GetFloat("Paint", "OpacityFar", s.PaintOpacityFar), 0f, 1f);
             s.BagRoll = ini.GetFloat("Dealing", "BagRoll", s.BagRoll);
             s.BagYaw = ini.GetFloat("Dealing", "BagYaw", s.BagYaw);
 

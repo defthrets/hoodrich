@@ -244,13 +244,66 @@
         // ---- paint ---------------------------------------------------------------
 
         /// <summary>
-        /// How solid each mark goes on. 1 is fully opaque.
+        /// How solid a mark goes on WITH THE NOZZLE AT THE WALL. 1 is fully opaque.
         ///
         /// Was 0.92, which let the wall through every mark. Overlapping translucent marks do
         /// build up, but the FIRST pass over clean wall is the one you look at, and at 0.92
         /// that pass is visibly thin.
+        ///
+        /// It is now the NEAR end of a range rather than the only number. See OpacityFar.
         /// </summary>
         public float Opacity = 1f;
+
+        /// <summary>
+        /// And how solid at the far end of the can's reach.
+        ///
+        /// A CAN THAT LOSES WIDTH AND KEEPS DENSITY IS NOT A CAN. The width already opens out
+        /// with distance -- that is what turns a stream of decals into a spray, and it is the
+        /// oldest thing in this file. What went with it was nothing: a mark laid from the far
+        /// end of the reach was as solid as one laid with the cap against the plaster. So
+        /// backing off gave you a bigger stamp of exactly the same paint, and the halo of thin
+        /// overspray that surrounds every real stroke had nowhere to come from.
+        ///
+        /// The same pressure explains both. A plume holds together while it has pressure and
+        /// opens out as it loses it -- and the paint it is carrying is spread over that wider
+        /// circle, so it arrives thinner. Wider and fainter are the same fact.
+        ///
+        /// SQUARED, LIKE THE WIDTH, AND FOR THE SAME REASON. Linear would start thinning the
+        /// moment the cap leaves the wall, which is not what happens: close work is solid and
+        /// stays solid, and the fade is the far half. At the middle of the reach a mark is a
+        /// quarter of the way to this number, not half.
+        ///
+        /// Against LiveRange, so it is the tool's OWN reach: the extinguisher's four metres and
+        /// the can's two and a half both fade across the whole of themselves rather than the
+        /// can being faint everywhere because it was measured against a hose.
+        /// </summary>
+        public float OpacityFar = 0.6f;
+
+        /// <summary>
+        /// How solid a mark goes on from that far away.
+        ///
+        /// Nought is not a valid answer and never returned: a mark nobody can see is a decal
+        /// slot spent on nothing, and the pool is the scarcest thing this mod has.
+        /// </summary>
+        public float InkAt(float away)
+        {
+            var near = Opacity;
+            var far = OpacityFar;
+
+            if (far <= 0f || far >= near) return near;
+
+            var reach = LiveRange;
+            if (reach <= 0.01f) return near;
+
+            var t = away / reach;
+
+            if (t <= 0f) return near;
+            if (t >= 1f) return far;
+
+            t = t * t;
+
+            return near + (far - near) * t;
+        }
 
         /// <summary>
         /// Whether police who SEE you tagging book you for it.

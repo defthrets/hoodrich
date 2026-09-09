@@ -854,6 +854,8 @@ namespace Hoodrich
                 _paint.MixDecal = _cfg.PaintMixTexture;
                 _paint.MixEvery = _cfg.PaintMixEvery;
                 _paint.CanColourGain = _cfg.PaintColourGain;
+                _paint.Opacity = _cfg.PaintOpacity;
+                _paint.OpacityFar = _cfg.PaintOpacityFar;
 
                 _marks = new Paint.Marks(_paint);
                 _sprayer = new Paint.Sprayer(_paint, _marks);
