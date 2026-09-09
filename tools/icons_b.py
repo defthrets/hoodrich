@@ -398,23 +398,25 @@ def acid():
     # The print, punched through, and the face drawn back into it.
     disc(d, 256, 256, 82, CLEAR)
 
+    # BIG EYES. They were twelve and they were the first thing to go on the way down to 32 --
+    # a dot that small survives the resize as a smudge, and two smudges over a mouth is a
+    # face you have to be told about. Sixteen is a THIRD of the mouth's width, which sounds
+    # heavy written down and is what a printed smiley actually looks like.
     for ex in (226, 286):
-        disc(d, ex, 224, 12)
+        disc(d, ex, 224, 16)
 
     stroke(d, arc(256, 246, 44, 25, 155), 15, W, caps=True)
 
-    # THE TONGUE, out of the corner rather than straight down. Centred it reads as a chin, or
-    # as a drip; off to one side it can only be a tongue, and the asymmetry is the one thing
-    # that survives when the whole face is nine pixels across.
+    # THE TONGUE, out of the middle of the mouth and straight down, centred on the face.
     #
     # It OVERLAPS the smile rather than starting under it: two white shapes a pixel apart
     # become one grey smear at 32, and one that touches stays one shape all the way down.
     #
-    # KEPT INSIDE THE PRINT. The punched circle is 82 across and the tongue was reaching its
-    # edge at the bottom right -- where it met the white paper it merged with it, so the
-    # print looked broken rather than the tongue looking long. Every white mark on this face
-    # has to finish before the hole does.
-    poly(d, rrect_pts(256, 274, 292, 318, 18))
+    # AND IT FINISHES BEFORE THE PRINT DOES. The punched circle is 82 across, and a tongue
+    # that reaches its edge merges with the white paper beyond it -- which makes the print
+    # look broken rather than the tongue look long. Centred is the safest place for that as
+    # well as the right one: straight down the middle is where the hole is deepest.
+    poly(d, rrect_pts(234, 276, 278, 322, 20))
 
     save(img, "acid.png")
 
