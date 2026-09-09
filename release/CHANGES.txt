@@ -22,25 +22,21 @@ shaped like a tile. Tiles take a shape now, so the app shows a fat cap: the one
 with the biggest nozzle, which is the only part of a cap that survives being
 drawn at eighteen pixels.
 
-THE BALACLAVA IS A HEAD NOW. It was a rounded rectangle with a collar under it
-and a domino face punched into it -- and a circle with two eyes in it is a
-bowling ball, a sock puppet or a smiley, in that order. Nothing about the
-outline said head. The outline is a head: a dome that comes in at the crown,
-cheeks as the widest part, a jaw that narrows, and shoulders under it, drawn
-dimmer so the head is the bright shape rather than the whole thing being one
-blob. Three holes rather than two, because that is what a balaclava has, and
-the mouth is what stops it reading as a crash helmet.
+THE BALACLAVA IS AN HOURGLASS, which is the thing three attempts at it kept
+missing. A hood is not a head sat on some shoulders: it is a dome that comes
+out wide at the temples, PINCHES IN at the jaw, and flares out again onto the
+chest, and that pinch is the entire silhouette. Without it you get a bowling
+ball on a plinth, which is what was there. Three holes, flat, no shading --
+which is not how the rest of this set is built and is how the thing actually
+reads at twenty pixels.
 
-TWO MORE ICONS THAT WERE NOT READING.
-
-THE INVENTORY BAG WAS A BARBELL. Two grey discs either side of a horizontal
-line is a bar with a weight on each end, whatever the outline round it happens
-to be doing, and the dashed zip was no help -- eight little rectangles eight
-pixels wide are nothing at all once the game has shrunk the icon to twenty. The
-bag itself was always right and has not been touched. The discs are gone,
-replaced by the base panel a holdall actually has, and the zip is now cut out
-of the bag rather than drawn on it: a hole survives being shrunk in a way a
-pale line never does.
+AND THE INVENTORY BAG IS A BACKPACK. It had been a barbell and then a loaf, and
+both times the fault was the same: a holdall is a horizontal blob, and a
+horizontal blob with anything on either end is something else. There is no
+version of that shape that survives being twenty pixels wide. A backpack is a
+vertical object with three parts that are still three parts when it is tiny --
+the body, the pocket over the bottom half of it, and the strap looping off the
+side -- so you can recognise it with every detail stripped out.
 
 THE SPRAY CAN IS THE OLD ONE AGAIN. The redraw made a tidier can and a worse
 icon -- the spray shrank to three dots tucked up against the cap, where they

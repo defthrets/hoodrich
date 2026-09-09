@@ -542,46 +542,38 @@ def wifi():
 
 
 def balaclava():
-    """
-    A balaclava, from the front.
+    """A three-hole balaclava, off a reference rather than off memory.
 
-    THE HEAD SHAPE IS THE READ, and it was the part that was missing. What was here was a
-    rounded rectangle with a collar under it and a domino face punched in -- and a circle with
-    two eyes in it is a bowling ball, a sock puppet or a smiley, in that order. Nothing about
-    the outline said head.
+    THE SHAPE IS AN HOURGLASS, and that is the thing every previous attempt missed. A hood is
+    not a head on some shoulders: it is a dome that comes out wide at the temples, PINCHES IN
+    at the jaw, and flares out again onto the chest -- and that pinch is the whole silhouette.
+    Without it you get a bowling ball on a plinth, which is what was here.
 
-    So the outline is a head now: a dome that comes IN at the crown, cheeks that are the widest
-    part of it, a jaw that narrows, and a neck that flares out onto shoulders. That silhouette
-    is recognisable with every hole filled in, which is the test an icon has to pass.
+    A FLAT SILHOUETTE WITH THREE HOLES IN IT. No MID plane, no shading, nothing that is not
+    either the outline or a hole. That is how the reference is built and it is why it survives
+    being twenty pixels tall, where a grey wedge down one cheek is just a smudge.
 
-    THREE HOLES, because that is what a balaclava has. The eyes are white inside a punched
-    opening rather than punched themselves -- an opening with nothing in it is a letterbox --
-    and the mouth is a small hole on its own, which is the detail that stops it reading as a
-    motorcycle helmet at the sizes where the eyes are all you can see.
+    Drawn as one closed curve down the right and mirrored, so the two halves cannot drift apart
+    -- which they will, every time, if both sides are typed out by hand.
     """
     img, d = canvas()
 
-    # The head: crown, cheeks, jaw.
-    poly(d, cbez((108, 268), (104, 44), (404, 44), (400, 268), 48)
-            + [(388, 372), (124, 372)])
+    # Down the right-hand side: crown, temple, the pinch at the jaw, the flare, the hem.
+    right = cbez((256, 40), (334, 40), (382, 92), (382, 166))
+    right += cbez((382, 166), (382, 252), (352, 278), (344, 318))
+    right += cbez((344, 318), (338, 352), (378, 368), (390, 406))
+    right += cbez((390, 406), (400, 448), (332, 468), (256, 468))
 
-    # And the neck, out onto the shoulders -- turned away from the light, so the HEAD is the
-    # bright shape. A collar in full white merges with the jaw above it and the whole thing
-    # comes out as one blob at twenty pixels, which is the size that matters.
-    #
-    # A wedge of MID down one side of the face was tried instead and it was worse: it is a
-    # straight edge cutting across a curved one, which reads as a drawing mistake rather than
-    # as a shadow.
-    rrect(d, 100, 350, 412, 474, 76, MID)
+    poly(d, right + [(512 - x, y) for x, y in reversed(right)])
 
-    # The face opening, and the eyes in it.
-    rrect(d, 148, 178, 364, 272, 46, CLEAR)
+    # The eyes. Rounded lozenges, tipped very slightly down at the outer ends, which is what
+    # the opening does when it is cut to sit on a face.
+    for cx, rx, deg in ((196, 43, 8), (316, 43, -8)):
+        eye = scale(circle(cx, 208, rx, 48), cx, 208, 1.0, 0.62)
+        poly(d, rot(eye, cx, 208, deg), CLEAR)
 
-    ellipse(d, 200, 226, 32, 27)
-    ellipse(d, 312, 226, 32, 27)
-
-    # The mouth, on its own.
-    rrect(d, 212, 306, 300, 340, 17, CLEAR)
+    # And the mouth, on its own below them.
+    poly(d, scale(circle(256, 308, 36, 48), 256, 308, 1.0, 0.78), CLEAR)
 
     save(img, "balaclava.png")
 
@@ -750,27 +742,49 @@ def brick():
 
 
 def stash():
-    """A holdall.
+    """A backpack, off a reference rather than off memory.
 
-    IT READ AS A BARBELL, and it was two shapes doing it: a MID disc at each end of a
-    horizontal line is a bar with a weight on either side of it, whatever the outline round it
-    is doing. The dashed zip was the other half -- eight LOW rectangles eight pixels wide are
-    nothing at all once the game has shrunk this to twenty.
+    IT HAS BEEN A BARBELL AND THEN A LOAF, and both times the problem was the same one: a
+    holdall is a horizontal blob, and a horizontal blob with anything on either end of it is
+    something else. There is no version of that shape that survives being twenty pixels wide.
 
-    The bag itself was always right, so it has not been touched. The discs are gone, replaced
-    by the base panel a holdall actually has, and the zip is CUT OUT rather than drawn on: a
-    hole survives being shrunk in a way a pale line never does.
+    A backpack is a VERTICAL object with three separate parts that are still three separate
+    parts when it is tiny -- the body, the front pocket over the bottom half of it, and the
+    strap looping off the side. That is a silhouette you can recognise with every detail
+    stripped out, which is the only test that matters here.
+
+    A PURE SILHOUETTE WITH WHITE CUTS, which is not how the rest of this set is built and is
+    how the reference is built. The parts are separated by GAPS rather than by tone: a MID
+    plane at this size is a smudge, whereas a two-pixel gap is still a two-pixel gap. So each
+    piece is punched out slightly larger than itself before it is drawn, which leaves the hair
+    line between it and whatever is behind it.
     """
     img, d = canvas()
 
-    stroke(d, arc(256, 196, 116, 200, 340, 30), 30)
-    rrect(d, 56, 186, 456, 424, 100)
+    # The strap, behind everything. A loop, so it has a hole in it.
+    rrect(d, 352, 146, 452, 424, 50)
+    rrect(d, 380, 184, 426, 384, 23, CLEAR)
 
-    # The base it stands on, which is the shape the two discs were standing in for.
-    rrect(d, 92, 344, 420, 410, 46, MID)
+    # The back panel, peeking out to the right of the body.
+    poly(d, arc(282, 214, 120, 180, 360, 40))
+    rrect(d, 162, 214, 402, 438, 46)
 
-    # The zip, cut out.
-    rrect(d, 122, 288, 390, 312, 12, CLEAR)
+    # The body, with the hair line that separates it from the panel behind.
+    poly(d, arc(224, 206, 130, 180, 360, 40))
+    rrect(d, 94, 206, 354, 462, 54, CLEAR)
+
+    poly(d, arc(224, 200, 120, 180, 360, 40))
+    rrect(d, 104, 200, 344, 452, 46)
+
+    # The grab handle on top.
+    stroke(d, arc(214, 80, 46, 182, 358, 24), 22)
+
+    # The front pocket, over the bottom half and standing slightly proud on the left.
+    rrect(d, 62, 258, 310, 472, 52, CLEAR)
+    rrect(d, 72, 268, 300, 452, 44)
+
+    # And its zip.
+    rrect(d, 112, 316, 260, 350, 13, CLEAR)
 
     save(img, "stash.png")
 
