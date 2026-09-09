@@ -104,14 +104,18 @@ namespace Hoodrich.UI
         private const float InFront = -0.34f;
 
         /// <summary>
-        /// And a couple of centimetres up off the marker's own height.
+        /// How far up off the marker's own height, and it is nought again.
         ///
-        /// The rifle it measures from is a prop lying flat; a weapon object turned on its side
-        /// hangs a little lower from its own origin than that one does, so matching the height
-        /// exactly puts the barrel a whisker into the lid. Small enough that nothing floats,
-        /// big enough that nothing sinks.
+        /// TWO AND A HALF CENTIMETRES WAS NEVER WHAT WENT WRONG. It was asked for and it was
+        /// given, and the gun went up in the air on the same reload -- but by half a metre and
+        /// for a different reason entirely: the tidy-up had just deleted the rifle it measures
+        /// from, so Where fell through to the coordinate in the ini. Two changes on one screen
+        /// read as one change, which is why this is back at nought rather than tuned.
+        ///
+        /// It is the height he called perfect. If the barrel does sit a whisker low once the
+        /// marker is back where it belongs, this is the number to nudge.
         /// </summary>
-        private const float Lift = 0.025f;
+        private const float Lift = 0f;
         private const float MarkerNear = 4f;
 
         private readonly List<int> _made = new List<int>();
@@ -143,6 +147,9 @@ namespace Hoodrich.UI
         private int _lastAt;
 
         private int _cam;
+
+        /// <summary>Whether the missing marker has already been complained about.</summary>
+        private bool _lost;
 
         public bool Live => _object != 0;
 
@@ -176,7 +183,24 @@ namespace Hoodrich.UI
                     best = prop.Position;
                 }
 
-                if (best == Vector3.Zero) return at;
+                // NO MARKER, so the ini coordinate has to do -- and that is worth saying out
+                // loud, because the failure it produces is a gun hanging in mid air near
+                // Stretch with nothing anywhere explaining why. The last time it happened the
+                // tidy-up had deleted the rifle itself. See Scenery.Mine.
+                if (best == Vector3.Zero)
+                {
+                    if (!_lost)
+                    {
+                        _lost = true;
+
+                        Log.Warn("Gun counter: no " + Marker + " near the bench. The gun goes on the "
+                                 + "ini coordinate instead of on the crate, so it will look wrong.");
+                    }
+
+                    return at;
+                }
+
+                _lost = false;
 
                 var face = Facing == null ? 0f : Facing();
                 var rad = face * (float)Math.PI / 180f;
@@ -506,12 +530,26 @@ namespace Hoodrich.UI
 
                 var gone = 0;
 
+                var marker = new Model(Marker).Hash;
+
                 foreach (var thing in World.GetNearbyProps(Bench(), TidyRange))
                 {
                     if (thing == null || !thing.Exists()) continue;
                     if (thing.Handle == _object) continue;
                     if (!models.Contains(thing.Model.Hash)) continue;
                     if (Scenery != null && Scenery(thing.Handle)) continue;
+
+                    // AND THE MARKER MODEL IS NEVER TOUCHED UNLESS WE MADE IT, whatever the
+                    // scene says. This is the second lock on the same door, and it is here
+                    // because the first one failed silently and cost somebody the rifle they
+                    // had laid on that crate by hand -- after which the gun had nothing to
+                    // measure from and hung in the air off a coordinate in the ini.
+                    //
+                    // It means a genuinely orphaned assault rifle from a previous run of the
+                    // script survives, because _made is empty at that point. That is the right
+                    // way round: one gun left lying on a crate is a blemish, and deleting a
+                    // thing the player put there is the counter breaking his scene.
+                    if (thing.Model.Hash == marker && !_made.Contains(thing.Handle)) continue;
 
                     thing.Delete();
                     gone++;

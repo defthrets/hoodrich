@@ -105,6 +105,18 @@ namespace Hoodrich.Locations
         /// that crate in Menyoo is a weapon object too, sat right where the tidying happens. It
         /// is not the counter's job to know a scene from a stray; it is this file's, because
         /// this file put one of them there.
+        ///
+        /// ASKED OF THE HANDLE IT HAS TODAY, WHICH IS THE POINT AND WAS THE BUG.
+        ///
+        /// This used to ask ByHandle, and ByHandle is keyed by the handle SAVED IN THE FILE --
+        /// a number out of somebody else's Menyoo session that has no meaning in this one. So
+        /// it answered no to everything, every time, and the tidy-up ate the rifle this method
+        /// exists to spare. Was is the map with today's handles in it; its own comment says so.
+        ///
+        /// Up is scanned after it as a second net. Was is written for every single thing that
+        /// goes up and nothing takes entries out of it, so it should never come to that -- but
+        /// the cost of being wrong here is somebody's hand-placed prop deleted out from under
+        /// them, and that is worth a loop over a few dozen entities.
         /// </summary>
         public bool Mine(int handle)
         {
@@ -112,11 +124,20 @@ namespace Hoodrich.Locations
 
             for (var i = 0; i < _scenes.Count; i++)
             {
-                if (_scenes[i].ByHandle.ContainsKey(handle)) return true;
+                var scene = _scenes[i];
+
+                if (scene.Was.ContainsKey(handle)) return true;
+
+                for (var j = 0; j < scene.Up.Count; j++)
+                {
+                    var e = scene.Up[j];
+                    if (e != null && e.Handle == handle) return true;
+                }
             }
 
             return false;
         }
+
         private bool _read;
         private int _nextLook;
         private int _nextSolid;
