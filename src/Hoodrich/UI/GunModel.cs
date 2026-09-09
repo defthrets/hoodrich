@@ -89,7 +89,16 @@ namespace Hoodrich.UI
         /// The ini is still the fallback, for an install where the scene did not load.
         /// </summary>
         private const string Marker = "w_ar_assaultrifle";
-        private const float InFront = 0.34f;
+
+        /// <summary>
+        /// How far past the marker ours sits, and which way.
+        ///
+        /// NEGATIVE, WHICH MEANS THE FAR SIDE. Measured towards the camera it landed on the
+        /// near lip of the crate with the placed rifle behind it; measured away from the
+        /// camera it sits properly on the top with the rifle in front of it, which is the
+        /// arrangement of a thing being shown to somebody across a counter.
+        /// </summary>
+        private const float InFront = -0.34f;
         private const float MarkerNear = 4f;
 
         private readonly List<int> _made = new List<int>();
