@@ -99,48 +99,149 @@ namespace Hoodrich.Locations
         /// categories: handguns, then things that hold more, then rifles, then what you carry
         /// when you are not carrying, then what you throw.
         /// </summary>
+        /// <summary>
+        /// EVERYTHING HE CAN GET HOLD OF, which is nearly everything the game has.
+        ///
+        /// It was twenty-one pieces across five racks, hand-picked -- and that was the right
+        /// size while the counter was a list you scrolled. It is a gun on a crate now, one at a
+        /// time, so a long shelf costs nothing to look at and the only argument left for a
+        /// short one is that a man in a yard would not have it. He would. That is the business.
+        ///
+        /// WHAT IS LEFT OFF, and it is a short list: the joke weapons (a snowball, a newspaper,
+        /// a ball), the three the game itself names "Invalid", the vehicle-only rockets, the
+        /// jerry cans, and the two ray guns. Nothing in that list is a gun somebody would buy.
+        ///
+        /// Every id below was checked against data/weapons.json when this was written, which is
+        /// the file the rest of the mod reads. The one exception is the knuckle duster, which
+        /// that file does not list and the game has anyway.
+        ///
+        /// Priced under Ammu-Nation, because none of it came with paperwork.
+        /// </summary>
         public static readonly Piece[] Handguns =
         {
-            // Its own weapon, not the stock Pistol -- WEAPON_PISTOL is the one everybody
-            // already has, which is why asking for anything mapped to it hands over a normal
-            // one and takes your money for it.
-            new Piece("Combat Pistol",        "WEAPON_COMBATPISTOL",   500,  60, "Holds more"),
-            new Piece("Pistol",               "WEAPON_PISTOL",         450,  60, "Does the job"),
-            new Piece("SNS Pistol",           "WEAPON_SNSPISTOL",      300,  40, "Fits anywhere"),
-            new Piece("Vintage Pistol",       "WEAPON_VINTAGEPISTOL",  650,  40, "Somebody's grandad's"),
-            new Piece("Double Action",        "WEAPON_DOUBLEACTION",   900,  36, "Slow and mean"),
-            new Piece("AP Pistol",            "WEAPON_APPISTOL",      1600, 120, "Goes through things"),
+            new Piece("Pistol",               "WEAPON_PISTOL",             450,   60, "Does the job"),
+            new Piece("Combat Pistol",        "WEAPON_COMBATPISTOL",       500,   60, "Holds more"),
+            new Piece("SNS Pistol",           "WEAPON_SNSPISTOL",          300,   40, "Fits anywhere"),
+            new Piece("Vintage Pistol",       "WEAPON_VINTAGEPISTOL",      650,   40, "Somebody's grandad's"),
+            new Piece("Double Action",        "WEAPON_DOUBLEACTION",       900,   36, "Slow and mean"),
+            new Piece("Navy Revolver",        "WEAPON_NAVYREVOLVER",      1100,   36, "Older than the block"),
+            new Piece("Heavy Revolver",       "WEAPON_REVOLVER",          1400,   36, "Takes a hand off"),
+            new Piece("Pistol .50",           "WEAPON_PISTOL50",          1500,   54, "Loud and proud"),
+            new Piece("Heavy Pistol",         "WEAPON_HEAVYPISTOL",       1300,   54, "Weighs something"),
+            new Piece("AP Pistol",            "WEAPON_APPISTOL",          1600,  120, "Goes through things"),
+            new Piece("Ceramic Pistol",       "WEAPON_CERAMICPISTOL",     1800,   48, "Walks through a door"),
+            new Piece("Marksman Pistol",      "WEAPON_MARKSMANPISTOL",     700,   10, "One shot, then run"),
+            new Piece("Perico Pistol",        "WEAPON_GADGETPISTOL",      1900,   54, "Somebody's holiday"),
+            new Piece("WM 29 Pistol",         "WEAPON_PISTOLXM3",         1700,   48, "New money"),
+            new Piece("Stun Gun",             "WEAPON_STUNGUN",            600,    0, "Nobody dies"),
+            new Piece("Flare Gun",            "WEAPON_FLAREGUN",           400,   20, "For being seen"),
+            new Piece("Pistol Mk II",         "WEAPON_PISTOL_MK2",        2400,   72, "Done up"),
+            new Piece("SNS Pistol Mk II",     "WEAPON_SNSPISTOL_MK2",     2200,   48, "Done up"),
+            new Piece("Heavy Revolver Mk II", "WEAPON_REVOLVER_MK2",      3200,   36, "Done up"),
         };
 
-        public static readonly Piece[] Automatics =
+        public static readonly Piece[] Smgs =
         {
-            new Piece("Micro SMG",            "WEAPON_MICROSMG",      2200, 200, "Loud in a car"),
-            new Piece("Compact Rifle",        "WEAPON_COMPACTRIFLE",  4500, 180, "The choppa"),
-            new Piece("Carbine Rifle Mk II",  "WEAPON_CARBINERIFLE_MK2", 9500, 250, "Serious money"),
-            new Piece("Assault Rifle Mk II",  "WEAPON_ASSAULTRIFLE_MK2", 8500, 250, "Serious money"),
+            new Piece("Micro SMG",      "WEAPON_MICROSMG",          2200,  200, "Loud in a car"),
+            new Piece("Machine Pistol", "WEAPON_MACHINEPISTOL",     1800,  180, "Fits under a coat"),
+            new Piece("Tactical SMG",   "WEAPON_TECPISTOL",         2600,  200, "Steadier than it looks"),
+            new Piece("Mini SMG",       "WEAPON_MINISMG",           2400,  200, "Quick hands"),
+            new Piece("SMG",            "WEAPON_SMG",               3200,  250, "The workhorse"),
+            new Piece("Assault SMG",    "WEAPON_ASSAULTSMG",        4200,  250, "Halfway to a rifle"),
+            new Piece("Combat PDW",     "WEAPON_COMBATPDW",         4600,  250, "Somebody's contract job"),
+            new Piece("SMG Mk II",      "WEAPON_SMG_MK2",           6500,  300, "Done up"),
         };
 
         public static readonly Piece[] Shotguns =
         {
-            new Piece("Sawn-Off Shotgun",     "WEAPON_SAWNOFFSHOTGUN", 1900,  40, "Close work"),
-            new Piece("Double Barrel",        "WEAPON_DBSHOTGUN",      2400,  24, "Two and done"),
+            new Piece("Sawn-Off Shotgun",   "WEAPON_SAWNOFFSHOTGUN",    1900,   40, "Close work"),
+            new Piece("Double Barrel",      "WEAPON_DBSHOTGUN",         2400,   24, "Two and done"),
+            new Piece("Pump Shotgun",       "WEAPON_PUMPSHOTGUN",       2800,   40, "What everybody pictures"),
+            new Piece("Bullpup Shotgun",    "WEAPON_BULLPUPSHOTGUN",    3400,   40, "Short in the hands"),
+            new Piece("Sweeper Shotgun",    "WEAPON_AUTOSHOTGUN",       3800,   40, "Clears a hallway"),
+            new Piece("Assault Shotgun",    "WEAPON_ASSAULTSHOTGUN",    4400,   48, "Eight, fast"),
+            new Piece("Heavy Shotgun",      "WEAPON_HEAVYSHOTGUN",      5200,   48, "Overkill, indoors"),
+            new Piece("Combat Shotgun",     "WEAPON_COMBATSHOTGUN",     5600,   48, "Newer than the rest"),
+            new Piece("Pump Shotgun Mk II", "WEAPON_PUMPSHOTGUN_MK2",   6200,   48, "Done up"),
+        };
+
+        public static readonly Piece[] Rifles =
+        {
+            new Piece("Compact Rifle",         "WEAPON_COMPACTRIFLE",      4500,  180, "The choppa"),
+            new Piece("Advanced Rifle",        "WEAPON_ADVANCEDRIFLE",     5200,  250, "Light for what it is"),
+            new Piece("Assault Rifle",         "WEAPON_ASSAULTRIFLE",      5600,  250, "You know this one"),
+            new Piece("Carbine Rifle",         "WEAPON_CARBINERIFLE",      6400,  250, "Reaches further"),
+            new Piece("Special Carbine",       "WEAPON_SPECIALCARBINE",    6800,  250, "Steady at range"),
+            new Piece("Bullpup Rifle",         "WEAPON_BULLPUPRIFLE",      6200,  250, "Short and awkward"),
+            new Piece("Service Carbine",       "WEAPON_TACTICALRIFLE",     7200,  250, "Army surplus"),
+            new Piece("Military Rifle",        "WEAPON_MILITARYRIFLE",     7600,  250, "Not from a shop"),
+            new Piece("Heavy Rifle",           "WEAPON_HEAVYRIFLE",        7800,  250, "Hits like a truck"),
+            new Piece("Battle Rifle",          "WEAPON_BATTLERIFLE",       8200,  250, "Big rounds"),
+            new Piece("El Strickler",          "WEAPON_STRICKLER",         7400,  250, "Somebody's pride"),
+            new Piece("Gusenberg Sweeper",     "WEAPON_GUSENBERG",         5800,  250, "Museum piece, still works"),
+            new Piece("MG",                    "WEAPON_MG",                7000,  300, "Belt fed"),
+            new Piece("Combat MG",             "WEAPON_COMBATMG",          8600,  300, "Belt fed, angrier"),
+            new Piece("Assault Rifle Mk II",   "WEAPON_ASSAULTRIFLE_MK2",  8500,  250, "Serious money"),
+            new Piece("Carbine Rifle Mk II",   "WEAPON_CARBINERIFLE_MK2",  9500,  250, "Serious money"),
+            new Piece("Special Carbine Mk II", "WEAPON_SPECIALCARBINE_MK2",  9800,  250, "Done up"),
+            new Piece("Bullpup Rifle Mk II",   "WEAPON_BULLPUPRIFLE_MK2",  9200,  250, "Done up"),
+            new Piece("Combat MG Mk II",       "WEAPON_COMBATMG_MK2",     12000,  300, "Done up"),
+        };
+
+        public static readonly Piece[] Snipers =
+        {
+            new Piece("Musket",               "WEAPON_MUSKET",            1200,    8, "One shot. Genuinely one"),
+            new Piece("Sniper Rifle",         "WEAPON_SNIPERRIFLE",       7500,   30, "Patience required"),
+            new Piece("Marksman Rifle",       "WEAPON_MARKSMANRIFLE",     6800,   30, "Halfway between"),
+            new Piece("Precision Rifle",      "WEAPON_PRECISIONRIFLE",    9000,   20, "Somebody's tool"),
+            new Piece("Heavy Sniper",         "WEAPON_HEAVYSNIPER",      11000,   30, "Through an engine block"),
+            new Piece("Marksman Rifle Mk II", "WEAPON_MARKSMANRIFLE_MK2",  9500,   30, "Done up"),
+            new Piece("Heavy Sniper Mk II",   "WEAPON_HEAVYSNIPER_MK2",  14000,   30, "Done up"),
         };
 
         public static readonly Piece[] Melee =
         {
-            new Piece("Switchblade",          "WEAPON_SWITCHBLADE",     150,   0, "Quiet"),
-            new Piece("Knuckle Duster",       "WEAPON_KNUCKLE",         120,   0, "Quieter"),
-            new Piece("Machete",              "WEAPON_MACHETE",         250,   0, "Not subtle"),
-            new Piece("Baseball Bat",         "WEAPON_BAT",             100,   0, "Sporting equipment"),
-            new Piece("Crowbar",              "WEAPON_CROWBAR",         100,   0, "A tool, officer"),
+            new Piece("Switchblade",    "WEAPON_SWITCHBLADE",        150,    0, "Quiet"),
+            new Piece("Knuckle Duster", "WEAPON_KNUCKLE",            120,    0, "Quieter"),
+            new Piece("Knife",          "WEAPON_KNIFE",              130,    0, "Kitchen drawer"),
+            new Piece("Cavalry Dagger", "WEAPON_DAGGER",             400,    0, "Off somebody's wall"),
+            new Piece("Machete",        "WEAPON_MACHETE",            250,    0, "Not subtle"),
+            new Piece("Hatchet",        "WEAPON_HATCHET",            280,    0, "Not subtle either"),
+            new Piece("Battle Axe",     "WEAPON_BATTLEAXE",          600,    0, "Absurd, and it works"),
+            new Piece("Baseball Bat",   "WEAPON_BAT",                100,    0, "Sporting equipment"),
+            new Piece("Crowbar",        "WEAPON_CROWBAR",            100,    0, "A tool, officer"),
+            new Piece("Golf Club",      "WEAPON_GOLFCLUB",           110,    0, "Also sporting equipment"),
+            new Piece("Hammer",         "WEAPON_HAMMER",              90,    0, "From the shed"),
+            new Piece("Pipe Wrench",    "WEAPON_WRENCH",             120,    0, "From the same shed"),
+            new Piece("Pool Cue",       "WEAPON_POOLCUE",            100,    0, "Ended a night once"),
+            new Piece("Broken Bottle",  "WEAPON_BOTTLE",              40,    0, "Free with a drink"),
+            new Piece("Nightstick",     "WEAPON_NIGHTSTICK",         200,    0, "Do not ask"),
+            new Piece("Flashlight",     "WEAPON_FLASHLIGHT",          60,    0, "Two jobs"),
+            new Piece("Stone Hatchet",  "WEAPON_STONE_HATCHET",      700,    0, "Older than the city"),
         };
 
         public static readonly Piece[] Throwables =
         {
-            new Piece("Molotov",              "WEAPON_MOLOTOV",         350,   5, "Bottle and a rag"),
-            new Piece("Pipe Bomb",            "WEAPON_PIPEBOMB",        900,   5, "Homemade"),
-            new Piece("Sticky Bomb",          "WEAPON_STICKYBOMB",     2500,   5, "For doors"),
-            new Piece("Flare",                "WEAPON_FLARE",            80,  10, "For seeing"),
+            new Piece("Flare",          "WEAPON_FLARE",               80,   10, "For seeing"),
+            new Piece("Molotov",        "WEAPON_MOLOTOV",            350,    5, "Bottle and a rag"),
+            new Piece("Pipe Bomb",      "WEAPON_PIPEBOMB",           900,    5, "Homemade"),
+            new Piece("Grenade",        "WEAPON_GRENADE",           1400,    5, "Not homemade"),
+            new Piece("Tear Gas",       "WEAPON_SMOKEGRENADE",       800,    5, "Clears a room"),
+            new Piece("BZ Gas",         "WEAPON_BZGAS",             1100,    5, "Clears it differently"),
+            new Piece("Sticky Bomb",    "WEAPON_STICKYBOMB",        2500,    5, "For doors"),
+            new Piece("Proximity Mine", "WEAPON_PROXMINE",          2800,    5, "For whoever follows"),
+        };
+
+        public static readonly Piece[] Heavy =
+        {
+            new Piece("Compact Launcher",  "WEAPON_COMPACTLAUNCHER",   9000,   10, "Fits in a car"),
+            new Piece("Grenade Launcher",  "WEAPON_GRENADELAUNCHER",  14000,   20, "For a vehicle"),
+            new Piece("Tear Gas Launcher", "WEAPON_GRENADELAUNCHER_SMOKE",  8000,   20, "For a crowd"),
+            new Piece("Firework Launcher", "WEAPON_FIREWORK",          6000,   10, "For a party"),
+            new Piece("RPG",               "WEAPON_RPG",              22000,   10, "Ends the conversation"),
+            new Piece("Homing Launcher",   "WEAPON_HOMINGLAUNCHER",   28000,   10, "For the helicopter"),
+            new Piece("Minigun",           "WEAPON_MINIGUN",          35000,  500, "If you can carry it"),
+            new Piece("Railgun",           "WEAPON_RAILGUN",          45000,   20, "Do not ask him where"),
         };
 
         private readonly GangRegistry _gangs;

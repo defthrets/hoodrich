@@ -66,11 +66,14 @@ namespace Hoodrich.UI
 
         private static readonly Rack[] Racks =
         {
-            new Rack("HANDGUNS",   Armourer.Handguns,   156),
-            new Rack("AUTOMATICS", Armourer.Automatics, 159),
-            new Rack("SHOTGUNS",   Armourer.Shotguns,   158),
-            new Rack("BLADES",     Armourer.Melee,      154),
-            new Rack("THROWN",     Armourer.Throwables, 152),
+            new Rack("HANDGUNS",  Armourer.Handguns,   156),
+            new Rack("SMGS",      Armourer.Smgs,       159),
+            new Rack("SHOTGUNS",  Armourer.Shotguns,   158),
+            new Rack("RIFLES",    Armourer.Rifles,     150),
+            new Rack("SNIPERS",   Armourer.Snipers,    160),
+            new Rack("BLADES",    Armourer.Melee,      154),
+            new Rack("THROWN",    Armourer.Throwables, 152),
+            new Rack("HEAVY",     Armourer.Heavy,      157),
         };
 
         private readonly PlayerState _state;

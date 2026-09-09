@@ -1,6 +1,25 @@
 ﻿0.7.1 -- unreleased
 
 
+STRETCH SELLS NEARLY EVERY GUN IN THE GAME NOW.
+
+Twenty-one pieces across five racks became ninety-five across eight:
+handguns, SMGs, shotguns, rifles, snipers, blades, thrown and heavy.
+
+The short shelf was right while the counter was a list you scrolled -- twenty
+rows is a screen, a hundred is a chore. It is one gun on a crate now, one at a
+time, so length costs nothing to look at, and the only argument left for
+keeping it short was that a man in a yard would not have all this. He would.
+That is the business.
+
+WHAT IS LEFT OFF is a short list: the joke weapons, the three the game itself
+names "Invalid", the rockets that only exist on vehicles, the jerry cans and
+the two ray guns. Nothing on it is a gun anybody would buy.
+
+Every weapon id was checked against the mod's own weapons.json as the list was
+written, so nothing on that shelf is a name somebody typed from memory.
+
+
 THE GUN COUNTER LAYS THE GUN ON THE BENCH AND THE CAMERA GOES TO IT.
 
 Eleven of the weapons on that counter had no picture, and it was never going to
