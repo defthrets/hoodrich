@@ -70,6 +70,12 @@ the street at large.
 Two models in those lists did not exist on this build at all, so every
 account that hashed onto one had no face and never would. They are gone.
 
+LUBER HAS A LOGO. A square badge with LU knocked out of it on the phone's home
+screen, and the wordmark across the top of the ride picker -- LU heavy, ber
+lighter behind it, which is the reading the name wants. The tile was wearing
+car.png, which is also the owned-car blip, the tow and the boot, so the one
+app on that phone with a brand of its own was in the house picture.
+
 THE LOT IS HAO'S AUTOS, AND IT HAS A SIGN TOO. Blocks with the letters knocked
 out of them, one block a letter -- which in a white mask inverts exactly right:
 the blocks take the panel's colour and the letters are holes the panel shows

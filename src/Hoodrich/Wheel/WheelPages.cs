@@ -1204,7 +1204,11 @@ namespace Hoodrich.Wheel
             page.AddSub("LUber", "~", BuildLuberPage,
                 detail: "Cars with nobody in them and food with somebody on it. Slides in anywhere",
                 value: RideSummary());
-            page.WithIcon(Icons.FromFile("car.png"));
+
+            // ITS OWN BADGE, NOT THE MOD'S CAR. car.png is the owned-car blip, the tow, the
+            // boot and half of everything else -- so the one app on this phone with a brand
+            // was wearing the house picture. See tools/make_luber.py.
+            page.WithIcon(Icons.FromFile("luber_app.png"));
 
             return page;
         }

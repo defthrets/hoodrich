@@ -211,8 +211,17 @@ namespace Hoodrich.UI
             // ---- the band: whose app, what it wants, and how far through the list ----
             var bandText = bandTop + TopBand * 0.5f - 0.013f;
 
-            Hud.File("car.png", SideX + Hud.ToX(0.016f), bandTop + TopBand * 0.5f, 0.034f, 0f, ink);
-            Hud.Text("LUBER", SideX + Hud.ToX(0.040f), bandText, 0.36f, ink, Hud.FontLabel, centre: false);
+            // THE WORDMARK RATHER THAN THE WORD, and the mod's car picture goes with it --
+            // this is the app introducing itself, and an app has a logo. The typed name is
+            // still behind it for an install without the file.
+            var markH = 0.026f;
+            var markW = Hud.ToX(markH * LuberAspect);
+
+            if (!Hud.File("luber.png", SideX + markW * 0.5f, bandTop + TopBand * 0.5f,
+                          markW, markH, 0f, ink))
+            {
+                Hud.Text("LUBER", SideX, bandText, 0.36f, ink, Hud.FontLabel, centre: false);
+            }
             Hud.Text("WHERE TO?", 0.5f, bandText, 0.36f, dim, Hud.FontLabel);
             Hud.TextRight((_pick + 1) + " / " + _stops.Length, 1f - SideX, bandText, 0.36f, dim, Hud.FontLabel);
 
@@ -332,6 +341,9 @@ namespace Hoodrich.UI
 
             return mins < 1 ? 1 : mins;
         }
+
+        /// <summary>The shape of the wordmark file. See tools/make_luber.py.</summary>
+        private const float LuberAspect = 2.4465f;
 
         private static Color Dim(Color c, float k)
         {
