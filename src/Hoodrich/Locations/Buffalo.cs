@@ -42,6 +42,17 @@ namespace Hoodrich.Locations
         /// </summary>
         private const string His = "FC1988";
 
+        /// <summary>
+        /// Competition suspension. Type 15, and the index is asked for rather than written
+        /// down -- "competition" is the LAST one a model offers and how many it offers is
+        /// not the same on every car, so a hardcoded 3 fits the ones with four and silently
+        /// does nothing on the rest. The same reasoning as Hao's lot, and the same number.
+        /// </summary>
+        private const int ModSuspension = 15;
+
+        /// <summary>Dark smoke. 1 is pure black and hides the inside completely; 2 is the one people fit.</summary>
+        private const int DarkSmoke = 2;
+
         /// <summary>How often the street is looked at, and how far.</summary>
         private const int LookEveryMs = 900;
         private const float Reach = 12f;
@@ -194,6 +205,25 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, made.Handle, His);
 
                 Function.Call(Hash.SET_VEHICLE_MOD_KIT, made.Handle, 0);
+
+                // DROPPED AND TINTED. The two things anybody does to this car first, and
+                // the mod kit has to be on before either will take.
+                try
+                {
+                    var drops = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, made.Handle, ModSuspension);
+
+                    if (drops > 0)
+                    {
+                        Function.Call(Hash.SET_VEHICLE_MOD, made.Handle, ModSuspension, drops - 1, false);
+                    }
+                }
+                catch
+                {
+                    // It sits at stock height. Still his car.
+                }
+
+                Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, made.Handle, DarkSmoke);
+
                 Function.Call(Hash.SET_VEHICLE_COLOURS, made.Handle, primary, secondary);
                 Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, made.Handle, pearl, wheelColour);
                 Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, made.Handle, dirt);
@@ -215,7 +245,7 @@ namespace Hoodrich.Locations
 
             _swapped++;
 
-            Notify.Ticker("~g~that's the STX.~s~  Same car, eight years on.");
+            Notify.Ticker("~g~that's the STX.~s~  Dropped, tinted, same plate.");
 
             Log.Info("Buffalo: swapped his " + Was + " for a " + Now + ".");
         }
