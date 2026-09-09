@@ -1,6 +1,37 @@
 ﻿0.7.1 -- unreleased
 
 
+YOUR LUBER DRIVER IS A PERSON NOW.
+
+He has a name -- a different one every order, out of thirty first names and
+thirty surnames -- and he TEXTS you rather than the company posting a card at
+you. It arrives in the phone under his name, with his photograph on it, and it
+stays there: the delivery is a thread you can scroll back through like every
+other conversation in the game. The old card said LUBER with a company badge
+beside it, appeared, faded, and left no record that it had happened.
+
+He waits a couple of seconds before answering, which is both more human than a
+reply on the frame you pressed the button and the reason his photograph is
+ready in time. It was not, before: the message went out wearing the default
+silhouette, which on this build is the LS Customs badge, which is how a car
+customiser ended up signing for burgers.
+
+HE LOOKS THE PART AND HE SPEAKS. The rider is one of the game's Indian models
+rather than a courier ped -- a uniform is a costume with nobody in it, and this
+is somebody you have been texting. He says hello when he walks up and goodbye
+when he goes, in whatever voice his own model came with rather than one we
+picked for him.
+
+AND HE TURNS UP IN WHATEVER HE OWNS. A white Chavos V6, a completely stock
+Asbo, or a Pizza Boy with the box already on the back -- picked at random, so
+the same order twice does not look the same twice. Everything used to be
+painted white on the reasoning that a delivery fleet is a fleet, which is
+exactly the idea that has gone: these are people using their own cars. The
+helmet is now only for the ones on two wheels.
+
+Twenty more things for the feed to say about all that.
+
+
 NOTHING VANISHES AT A TAKEOVER ANY MORE.
 
 A stranger who drove into the middle of one used to be deleted, car and all,

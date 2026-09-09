@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -91,24 +91,139 @@ namespace Hoodrich.Locations
         private const int RightHandBone = 28422;
 
         /// <summary>The moped, in the order an install has them.</summary>
-        private static readonly string[] Bikes = { "faggio2", "faggio3", "faggio", "esskey" };
+        /// <summary>
+        /// What he turns up in.
+        ///
+        /// NOT ALWAYS A MOPED ANY MORE. Everybody doing this job on the same scooter is a
+        /// FLEET, and a fleet is something a company buys -- these are people using their own
+        /// vehicles, which is the whole business model, and it is why the same order twice
+        /// should not look the same twice.
+        ///
+        /// The Chavos is painted white and the white is not decoration: a plain white sedan
+        /// with nothing on it is the most anonymous car on the road and is exactly what this
+        /// job gets done in. The Asbo is left completely stock, which is the joke -- somebody
+        /// is delivering your dinner in the smallest car in the game. The Pizza Boy already
+        /// has the box on the back, so it wants nothing doing to it at all.
+        ///
+        /// ONE ROLL, NOT A LIST WALKED IN ORDER. Walking it top-down would mean every delivery
+        /// on an install that has the Chavos came in the Chavos. One is picked at random and
+        /// the rest of the list is only what it falls back to when that model is not in the
+        /// build -- which matters, because the first is an add-on and the last two are the old
+        /// mopeds that every install has.
+        /// </summary>
+        private static readonly Wheels[] Rides =
+        {
+            new Wheels { Model = "chavosv6", White = true },
+            new Wheels { Model = "asbo" },
+            new Wheels { Model = "pizzaboy", Bike = true },
+            new Wheels { Model = "faggio2", Bike = true },
+            new Wheels { Model = "esskey", Bike = true }
+        };
+
+        /// <summary>One of those: what it is, whether it gets painted, and whether he wears a lid.</summary>
+        private sealed class Wheels
+        {
+            public string Model = "";
+            public bool White;
+            public bool Bike;
+        }
 
         /// <summary>
         /// Who rides it.
         ///
-        /// The postal and courier peds, because they are the only people in this game already
-        /// dressed for carrying something to a door. Not a gang ped and not a random member of
-        /// the public: a man in a uniform is read as working before he has done anything.
+        /// THE UNIFORM WAS TRADED FOR A PERSON. This was the postal and courier peds, on the
+        /// reasoning that a man in a uniform reads as working before he has done anything --
+        /// which is true, and which stopped mattering the moment he started texting you by
+        /// name. A courier ped is a costume with nobody in it; the delivery is now somebody
+        /// you have had a conversation with, and he should look like the man whose name is at
+        /// the top of the thread.
+        ///
+        /// The helmet stays, which is what actually says moped-and-a-job at a glance.
+        ///
+        /// The couriers are still on the end of the list. They are what an install without the
+        /// first two falls back to, and a delivery from a postman beats no delivery.
         /// </summary>
         private static readonly string[] Riders =
         {
+            "a_m_y_indian_01", "a_m_m_indian_01",
             "s_m_m_postal_02", "s_m_m_postal_01", "s_m_m_ups_01", "s_m_m_ups_02"
+        };
+
+        /// <summary>
+        /// What he is called.
+        ///
+        /// A NAME PER ORDER, from the two halves. Every delivery in this city is a different
+        /// man and the thread in your phone should say so -- the same name twice in a night
+        /// reads as one driver on a loop, which is worse than no name at all.
+        ///
+        /// Both lists lean Punjabi and Gujarati because that is who does this job, in this
+        /// city, in the year this game is set in. It is a delivery driver, not a joke.
+        /// </summary>
+        private static readonly string[] Firsts =
+        {
+            "Ravi", "Sunil", "Amit", "Deepak", "Vikram", "Arjun", "Rajesh", "Manoj",
+            "Naveen", "Rohit", "Anil", "Dinesh", "Ajay", "Kiran", "Prakash", "Sanjay",
+            "Harpreet", "Gurpreet", "Jaspreet", "Baldev", "Satnam", "Sukhwinder",
+            "Nikhil", "Pranav", "Imran", "Karan", "Vijay", "Suresh", "Rakesh", "Yusuf"
+        };
+
+        private static readonly string[] Lasts =
+        {
+            "Patel", "Sharma", "Singh", "Kumar", "Reddy", "Gupta", "Desai", "Iyer",
+            "Nair", "Menon", "Rao", "Joshi", "Mehta", "Malhotra", "Kapoor", "Sethi",
+            "Dhillon", "Grewal", "Sandhu", "Bains", "Chaudhry", "Bhatt", "Shah",
+            "Verma", "Trivedi", "Pillai", "Khatri", "Sodhi", "Ahluwalia", "Chopra"
         };
 
         /// <summary>The bag in his hand, in the order an install has them.</summary>
         private static readonly string[] Bags =
         {
             "prop_food_bs_bag_01", "prop_carrier_bag_01", "prop_paper_bag_01"
+        };
+
+        /// <summary>
+        /// What he texts you, in his own words.
+        ///
+        /// {0} is what you ordered and {1} is what it cost. He is not a support desk and he
+        /// does not write like one -- the lines are short, lower case and slightly harried,
+        /// because he is on a moped in traffic and has four more of these after yours.
+        /// </summary>
+        private static readonly string[] SaidComing =
+        {
+            "on my way with your {0}. give me a few minutes",
+            "got your {0}. traffic's bad but i'm coming",
+            "picked up your {0}, ${1} paid. see you shortly",
+            "hi it's your LUber driver. {0} is with me, on my way",
+            "your {0} is in the box. ten minutes maybe less",
+            "just left with the {0}. stay where you are if you can",
+            "on the road with your {0}. don't move about too much please"
+        };
+
+        private static readonly string[] SaidHere =
+        {
+            "i'm outside. can you see me",
+            "here now. the moped with the box",
+            "i'm here boss. come out when you're ready",
+            "pulled up. i've got it in my hand",
+            "outside. i can't stop long",
+            "i'm at you. wave if you see me"
+        };
+
+        private static readonly string[] SaidDone =
+        {
+            "there you go. enjoy it",
+            "that's you. five stars if you don't mind",
+            "done. tell your friends about LUber",
+            "all yours. i'm off to the next one",
+            "enjoy boss. have a good night",
+            "that's yours. any problem, don't message me, message the app"
+        };
+
+        private static readonly string[] SaidNoRoom =
+        {
+            "you've got nowhere to put it. i've sent the ${1} back",
+            "your pockets are full mate. money's going back, sorry",
+            "can't hand it over, you're carrying too much. ${1} refunded"
         };
 
         private const string GiveDict = "mp_common";
@@ -138,6 +253,34 @@ namespace Hoodrich.Locations
         private Vehicle _bike;
         private Ped _rider;
         private Prop _bag;
+
+        /// <summary>What he came in, which decides the paint and the helmet.</summary>
+        private Wheels _ride;
+
+        /// <summary>His name this order, the key his photograph is filed under, and when he texts.</summary>
+        private string _driver = "";
+        private string _faceKey = "";
+        private int _saysAt;
+
+        /// <summary>
+        /// His photograph, or nothing yet.
+        ///
+        /// FILED PER MODEL RATHER THAN PER ORDER. The headshot factory caches by key and never
+        /// re-photographs one it already has, so a fresh key every delivery would fill the
+        /// table with pictures of the same two men. The NAME changes every order; the face
+        /// only has to match the ped that turned up, and there are two of those.
+        /// </summary>
+        private string Face
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_faceKey)) return null;
+
+                UI.Headshots.WantAs(_faceKey, _faceKey.Substring(6));
+
+                return UI.Headshots.Txd(_faceKey);
+            }
+        }
         private Blip _blip;
 
         private string _id = "";
@@ -206,14 +349,23 @@ namespace Hoodrich.Locations
             _paid = price;
             What = Pantry.NameOf(id);
 
+            // BEFORE ANYTHING CAN TEXT YOU. Says refuses to send from a man with no name, so
+            // this has to happen above the first line rather than beside it.
+            Named();
+
             Ride(player.Position);
             Mark();
             Begin(FoodState.Coming);
 
-            Notify.Card(Luber.Face, "LUber", "on the way",
-                        What + " is coming. $" + price + ", rider's on his way.");
+            // A BEAT BEFORE HE TEXTS, and it is doing two jobs. A driver who has this second
+            // to read the order and answer is a driver; one who answers on the same frame you
+            // pressed the button is a vending machine. And his photograph is rendered by the
+            // headshot factory a frame or two after it is asked for -- so a message sent on
+            // this frame would go out wearing the default silhouette, which is the LS Customs
+            // badge on this build, which is how a taxi firm ended up signing for burgers.
+            _saysAt = Game.GameTime + SayGapMs;
 
-            Log.Info("LUber: " + What + " ordered for $" + price + ".");
+            Log.Info("LUber: " + What + " ordered for $" + price + ", driving it: " + _driver + ".");
 
             return null;
         }
@@ -244,6 +396,13 @@ namespace Hoodrich.Locations
             try
             {
                 var now = Game.GameTime;
+
+                // He has read the order and got back to you. See SayGapMs.
+                if (_saysAt != 0 && now >= _saysAt)
+                {
+                    _saysAt = 0;
+                    Says(SaidComing);
+                }
 
                 if (player == null || !player.Exists() || !player.IsAlive)
                 {
@@ -323,6 +482,9 @@ namespace Hoodrich.Locations
 
             Carry();
             Begin(FoodState.Walking);
+
+            Says(SaidHere);
+            Aloud(Greets[_rng.Next(Greets.Length)]);
         }
 
         /// <summary>Walking it over, and following you while he does it.</summary>
@@ -414,18 +576,18 @@ namespace Hoodrich.Locations
 
                 if (Refund != null) Refund(_paid);
 
-                Notify.Card(Luber.Face, "LUber", "no room",
-                            "He brought it. You've nowhere to put it. $" + _paid + " back.");
+                Says(SaidNoRoom);
             }
             else
             {
                 Log.Info("LUber: " + name + " delivered.");
 
-                Notify.Card(Luber.Face, "LUber", "delivered",
-                            name + ", in your pocket. Enjoy.");
+                Says(SaidDone);
 
                 if (Arrived != null) Arrived(name);
             }
+
+            Aloud(Byes[_rng.Next(Byes.Length)]);
 
             // He does not hang about either way.
             Leave();
@@ -459,9 +621,15 @@ namespace Hoodrich.Locations
         {
             try
             {
-                foreach (var name in Bikes)
+                // ONE PICKED AT RANDOM, then the rest of the list in order behind it as the
+                // fallback for an install that has not got it. See Rides.
+                var first = _rng.Next(Rides.Length);
+
+                for (var i = 0; i < Rides.Length; i++)
                 {
-                    var model = new Model(name);
+                    var pick = Rides[(first + i) % Rides.Length];
+
+                    var model = new Model(pick.Model);
                     if (!model.IsValid || !model.IsInCdImage || !model.Request(2000)) continue;
 
                     _bike = World.CreateVehicle(model, at);
@@ -469,7 +637,9 @@ namespace Hoodrich.Locations
 
                     if (_bike == null || !_bike.Exists()) continue;
 
-                    Log.Info("LUber: a " + name + " went out with it.");
+                    _ride = pick;
+
+                    Log.Info("LUber: a " + pick.Model + " went out with it.");
                     break;
                 }
 
@@ -482,12 +652,20 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _bike.Handle, true, true, false);
                 Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, _bike.Handle, 0f);
 
-                // THE FLEET'S WHITE, the same as the cars. Written as a custom colour rather
-                // than a paint index for the reason Luber.Make gives: the index table has
-                // several whites in it and one of them is nearly grey.
-                Function.Call(Hash.SET_VEHICLE_MOD_KIT, _bike.Handle, 0);
-                Function.Call(Hash.SET_VEHICLE_CUSTOM_PRIMARY_COLOUR, _bike.Handle, 255, 255, 255);
-                Function.Call(Hash.SET_VEHICLE_CUSTOM_SECONDARY_COLOUR, _bike.Handle, 255, 255, 255);
+                // ONLY THE ONE THAT IS MEANT TO BE WHITE. Everything used to be painted, on
+                // the reasoning that a delivery fleet is a fleet -- which is exactly the idea
+                // that has gone. A stock Asbo painted white is not a stock Asbo, and a Pizza
+                // Boy painted white is a Pizza Boy with its own livery taken off it.
+                //
+                // Written as a custom colour rather than a paint index for the reason
+                // Luber.Make gives: the index table has several whites in it and one of them
+                // is nearly grey.
+                if (_ride != null && _ride.White)
+                {
+                    Function.Call(Hash.SET_VEHICLE_MOD_KIT, _bike.Handle, 0);
+                    Function.Call(Hash.SET_VEHICLE_CUSTOM_PRIMARY_COLOUR, _bike.Handle, 255, 255, 255);
+                    Function.Call(Hash.SET_VEHICLE_CUSTOM_SECONDARY_COLOUR, _bike.Handle, 255, 255, 255);
+                }
 
                 return Rider();
             }
@@ -512,7 +690,18 @@ namespace Hoodrich.Locations
                     made = World.CreatePed(model, _bike.Position);
                     model.MarkAsNoLongerNeeded();
 
-                    if (made != null && made.Exists()) break;
+                    if (made != null && made.Exists())
+                    {
+                        // WHICHEVER ONE THE INSTALL ACTUALLY HAD. The photograph is of the man
+                        // who turned up, not of the man at the top of the list -- on a build
+                        // missing the first two that is a postman, and the thread should show
+                        // a postman rather than somebody who is not there.
+                        _faceKey = "luber_" + name;
+
+                        UI.Headshots.WantAs(_faceKey, name);
+                        break;
+                    }
+
                     made = null;
                 }
 
@@ -536,9 +725,10 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_DRIVER_ABILITY, _rider.Handle, 1.0f);
                 Function.Call(Hash.SET_DRIVER_AGGRESSIVENESS, _rider.Handle, 0.4f);
 
-                // AND A HELMET, because the game gives a moped rider one only sometimes and a
-                // uniform with a helmet reads as a job.
-                Function.Call(Hash.SET_PED_HELMET, _rider.Handle, true);
+                // AND A HELMET IF HE IS ON TWO WHEELS, because the game gives a moped rider
+                // one only sometimes and a man in a helmet reads as working. A man wearing one
+                // in the driver's seat of a saloon reads as something else entirely.
+                Function.Call(Hash.SET_PED_HELMET, _rider.Handle, _ride != null && _ride.Bike);
 
                 return true;
             }
@@ -707,6 +897,80 @@ namespace Hoodrich.Locations
             _reaimAt = 0;
         }
 
+        /// <summary>How long after the order he gets round to answering.</summary>
+        private const int SayGapMs = 2200;
+
+        /// <summary>
+        /// One of his lines, as a text from him.
+        ///
+        /// A TEXT AND NOT A CARD, which is the whole change. The card said LUBER at the top
+        /// with a company badge beside it and went nowhere -- it appeared, it faded, and there
+        /// was no record of it. This goes in the phone under his name, so the delivery is a
+        /// thread you can go back and read like every other conversation in the game, and the
+        /// next order from the same man carries on down the same one.
+        ///
+        /// His picture is asked for rather than assumed. If the factory has not finished
+        /// rendering it, Notify falls back to the silhouette for that one message and the next
+        /// has it -- which is why the first line waits a couple of seconds. See SayGapMs.
+        /// </summary>
+        private void Says(string[] lines)
+        {
+            if (lines == null || lines.Length == 0) return;
+            if (string.IsNullOrEmpty(_driver)) return;
+
+            var line = lines[_rng.Next(lines.Length)];
+
+            var body = line.Replace("{0}", string.IsNullOrEmpty(What) ? "food" : What)
+                           .Replace("{1}", _paid.ToString());
+
+            Notify.Text(Face, _driver, "LUber", body);
+        }
+
+        /// <summary>
+        /// Out loud, in the voice his model came with.
+        ///
+        /// NOT A VOICE NAME OF OURS. PLAY_PED_AMBIENT_SPEECH_NATIVE uses the ped's OWN voice,
+        /// and the ped is one of the game's two Indian models -- so the accent is the one
+        /// Rockstar recorded for him and there is no table of voice names to get wrong. Force
+        /// a voice by name and you are guessing at a string that may not be in the build; ask
+        /// the ped and he answers in whatever he has.
+        ///
+        /// The line is stopped first. He is a street ped with a full ambient set and he will
+        /// happily be halfway through complaining about traffic when he pulls up.
+        /// </summary>
+        private void Aloud(string line)
+        {
+            if (_rider == null || !_rider.Exists() || !_rider.IsAlive) return;
+
+            try
+            {
+                Function.Call(Hash.STOP_CURRENT_PLAYING_AMBIENT_SPEECH, _rider.Handle);
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, _rider.Handle, line,
+                              "SPEECH_PARAMS_FORCE");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("LUber rider had nothing to say: " + ex.Message);
+            }
+        }
+
+        /// <summary>What he says walking up, and what he says going.</summary>
+        private static readonly string[] Greets =
+        {
+            "GENERIC_HI", "GENERIC_HOWS_IT_GOING", "GENERIC_WHATS_UP"
+        };
+
+        private static readonly string[] Byes =
+        {
+            "GENERIC_BYE", "GENERIC_THANKS"
+        };
+
+        /// <summary>A different man every order. See Firsts.</summary>
+        private void Named()
+        {
+            _driver = Firsts[_rng.Next(Firsts.Length)] + " " + Lasts[_rng.Next(Lasts.Length)];
+        }
+
         private void Mark()
         {
             try
@@ -719,7 +983,10 @@ namespace Hoodrich.Locations
                 _blip.Sprite = BlipSprite.Store;
                 _blip.Color = BlipColor.Blue;
                 _blip.Scale = 0.7f;
-                _blip.Name = "LUber";
+                // HIS NAME, NOT THE FIRM'S. The thread in the phone is from a man, and the
+                // dot on the map is that same man on his way -- "LUber" on both would be the
+                // company texting you and the company driving.
+                _blip.Name = string.IsNullOrEmpty(_driver) ? "LUber" : _driver;
             }
             catch (Exception ex)
             {
@@ -743,6 +1010,16 @@ namespace Hoodrich.Locations
             _bike = null;
             _id = "";
             _paid = 0;
+
+            // HIS NAME GOES, HIS PHOTOGRAPH STAYS. The thread in the phone keeps whatever he
+            // already said and keeps his face on it -- the picture is filed by ped model and
+            // is worth having for the next one. What must not survive is the pending text: an
+            // order cancelled in the two seconds before he answers must not have him cheerily
+            // announce it is on its way.
+            _driver = "";
+            _faceKey = "";
+            _saysAt = 0;
+            _ride = null;
         }
 
         /// <summary>
