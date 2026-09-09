@@ -51,6 +51,19 @@ car's class on a chip after its name, the way out where it is on every
 other panel -- and the boot's panel stands on the bottom of the screen,
 where the car is not.
 
+HIS BUFFALO IS THE STX NOW. The white Buffalo S on his drive is a story car
+with a story plate and nothing in this mod put it there, so it cannot simply
+be spawned as something else. It is swapped instead, for the same Bravado
+Buffalo eight years on, when you walk up to it or get into it -- in front of
+you rather than while you are indoors, and it happens again on its own if the
+game ever puts the old one back.
+
+The plate, both colours, the pearl, the wheel colour and the dirt on it all
+come across, and you keep the seat you were getting into. Only his: the test
+is the plate the game gives it, so a Buffalo S somebody else is driving is
+left alone. An install without the newer car keeps the old one and says so
+once in the log.
+
 LAMAR WATCHED A SHOW ABOUT ELK. A new job, second to last on his list, and it
 is the game's own hunting minigame with Ballas instead of animals.
 

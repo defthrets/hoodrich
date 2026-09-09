@@ -580,6 +580,9 @@ namespace Hoodrich
         /// <summary>The boot of every car he owns. See Locations.Boot.</summary>
         private Locations.Boot _boot;
 
+        /// <summary>His own car, brought up to date. See Locations.Buffalo.</summary>
+        private readonly Locations.Buffalo _buffalo = new Locations.Buffalo();
+
         /// <summary>Who is on the floor and what was on them. See Economy.Bodies.</summary>
         private readonly Economy.Bodies _bodies = new Economy.Bodies();
         private Locations.Search _search;
@@ -2295,6 +2298,8 @@ namespace Hoodrich
                 _bodies.Sets = _gangs;
                 _bodies.Pay = notes => { if (notes > 0) UI.Cash.Give(notes); };
 
+                _buffalo.Busy = () => _war != null && _war.IsRunning;
+
                 _search = new Locations.Search(_bodies)
                 {
                     Busy = () => _phone.IsOpen || (_boot != null && _boot.IsOpen),
@@ -3527,6 +3532,7 @@ namespace Hoodrich
                     _wardrobe.Update();
                     _boot?.Update();
                     _search?.Update(Game.Player.Character);
+                    _buffalo.Update(Game.Player.Character);
                     _scenes.Update();
 
                     // The gun art sweep and its probe. Both stop dead once they are finished,
