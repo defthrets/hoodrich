@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Native;
@@ -51,10 +51,23 @@ namespace Hoodrich.UI
         /// <summary>Set by Main: how long one stays up.</summary>
         public Func<int> Seconds;
 
+        /// <summary>
+        /// Set by Main: whether this body has been gone through.
+        ///
+        /// THE MARK IS A DIRECTION, NOT A TROPHY. It exists to get you back to a body you
+        /// cannot see from six feet away -- so the moment you have been through his pockets it
+        /// has done its job and the only thing it can do after that is take up room on a
+        /// minimap next to the one you have not searched yet. See Economy.Bodies.Done.
+        /// </summary>
+        public Func<Ped, bool> Looted;
+
         private sealed class Stone
         {
             public Blip Mark;
             public int Until;
+
+            /// <summary>Who is under it, so the mark can go when he has been searched.</summary>
+            public Ped Who;
         }
 
         private readonly List<Stone> _stones = new List<Stone>();
@@ -140,7 +153,7 @@ namespace Hoodrich.UI
 
                 mark.Name = "Body";
 
-                _stones.Add(new Stone { Mark = mark, Until = now + lasts * 1000 });
+                _stones.Add(new Stone { Mark = mark, Until = now + lasts * 1000, Who = who });
             }
             catch (Exception ex)
             {
@@ -154,9 +167,27 @@ namespace Hoodrich.UI
             {
                 var stone = _stones[i];
 
-                if (stone.Mark != null && stone.Mark.Exists() && now < stone.Until) continue;
+                if (stone.Mark == null || !stone.Mark.Exists() || now >= stone.Until)
+                {
+                    Take(i);
+                    continue;
+                }
 
-                Take(i);
+                // GONE THROUGH, SO GONE. Asked of the body rather than of a flag set when the
+                // loot screen closed -- somebody who opens the pockets, takes the gun and
+                // leaves the sandwich has not finished with him, and the mark is what gets him
+                // back. Done answers true when there is nothing left on him.
+                if (Looted == null) continue;
+                if (stone.Who == null || !stone.Who.Exists()) continue;
+
+                try
+                {
+                    if (Looted(stone.Who)) Take(i);
+                }
+                catch
+                {
+                    // It goes on its own clock instead.
+                }
             }
 
             if (_marked.Count == 0) return;

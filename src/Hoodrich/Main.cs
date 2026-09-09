@@ -896,6 +896,9 @@ namespace Hoodrich
                 _graves.On = () => _cfg != null && _cfg.KillMarks;
                 _graves.Seconds = () => _cfg == null ? 50 : _cfg.KillMarkSeconds;
 
+                // The headstone goes the moment his pockets are empty. See UI.Graves.Looted.
+                _graves.Looted = who => _bodies != null && _bodies.Done(who);
+
                 // The pegs live in the save, so the rail needs it. Without this every peg row
                 // is a beep -- which is exactly what the screen does when it has no state, on
                 // purpose, rather than throwing at somebody stood at a wardrobe.

@@ -1,4 +1,4 @@
-﻿# Blip sprites
+# Blip sprites
 
 Reference: <https://docs.fivem.net/docs/game-references/blips/>
 
@@ -14,7 +14,7 @@ what it is and `496` does not.
 
 | id | name | where |
 |---|---|---|
-| 855 | `radar_ped_gang_leader` | Lamar, the fixer -- `Fixer.cs` |
+| 140 | `radar_weed` | Lamar, the fixer -- `Fixer.cs`. His own, so he is not drawn as one more gang leader |
 | 556 | `radar_supplies` | Stretch at the counter -- `Armourer.cs` |
 | 811 | `radar_van_keys` | a car you own -- `OwnedCars.cs` |
 | 810 | `radar_vehicle_deluxo` | Hao and his lot -- `Hao.cs` |
@@ -38,7 +38,7 @@ The rest of that table moves faster than this file does -- read
 | 774 | `radar_sub_periscope` | inside the heat bar -- `PostUp.cs` |
 | 835 | `radar_community_series` | inside the reputation bar |
 | 855 | `radar_ped_gang_leader` | gang leaders by default -- `GangLeaders.cs` |
-| 946 | `radar_four20` | Gerald, per-leader override in `leaders.json` |
+| 514 | `radar_drugs` | Gerald, per-leader override in `leaders.json`. Was 946 `radar_four20`; the leaf is Lamar's now |
 | 58 | `radar_crim_wanted` | Oxycodone, everywhere it is drawn -- `Icons.cs` |
 | -- | `BlipSprite.Weed` | drug markers |
 | 497 | `radar_production_crack` | the pill press garage -- `Settings.cs` |

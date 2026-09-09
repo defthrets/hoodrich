@@ -1,4 +1,4 @@
-﻿{
+{
   "_comment": [
     "Where each gang leader holds court, and what he says.",
     "",
@@ -51,8 +51,9 @@
       ],
       "z": 34.029,
 
-      "_sprite": "946 radar_four20. It was 51 radar_crim_drugs, which is the mark the map puts on a dealer -- honest about the trade and useless for finding HIM, because the mod already draws that one wherever there is product. This one is his. See BLIPS.md.",
-      "sprite": 946
+      "_sprite": "514 radar_drugs, the bag. His third and picked by looking at the art rather than the name, which is how every blip in this pair is chosen now.",
+      "_sprite2": "It was 51 radar_crim_drugs -- the mark the map puts on a dealer, honest about the trade and useless for finding HIM, because the mod already draws that one wherever there is product. Then 946 radar_four20, which is the leaf, and the leaf is now Lamar's: see Fixer.cs. Two men one street apart wearing the same mark is the thing a per-leader sprite exists to prevent.",
+      "sprite": 514
     }
   ],
   "later": [

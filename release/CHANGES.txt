@@ -87,10 +87,17 @@ this game, let alone from a car. Every other thing in this mod worth coming back
 to has a mark on it while that is true, and a corpse with a gun on it is the
 same kind of thing.
 
-It expires, which is most of the design. Fifty seconds, in the ini. A permanent
-mark per kill is a map that fills up and never empties; the point of this one is
-"that just happened, over there", and that stops being useful about as fast as
-the body stops being interesting.
+IT GOES THE MOMENT YOU HAVE BEEN THROUGH HIS POCKETS, which is the whole point
+of it -- the mark is a direction, not a trophy. It gets you back to a body you
+cannot see from six feet away, and once there is nothing left on him the only
+thing it can do is sit on the minimap next to the one you have not searched yet.
+Asked of the body rather than of the loot screen closing: somebody who takes the
+gun and leaves the sandwich has not finished with him.
+
+Otherwise it expires on its own. Fifty seconds, in the ini. A permanent mark per
+kill is a map that fills up and never empties; the point of this one is "that
+just happened, over there", and that stops being useful about as fast as the
+body stops being interesting.
 
 Only your own, and running somebody over counts -- the game names the car as the
 killer and a man under your wheels is still a man you killed. A shootout between

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using Control = GTA.Control;
 using GTA;
@@ -37,13 +37,22 @@ namespace Hoodrich.Missions
         private const int UpdateIntervalMs = 700;
 
         /// <summary>
-        /// radar_ped_gang_leader, which is what he actually is now.
+        /// radar_weed, the leaf. HIS OWN, WHICH IS THE POINT.
         ///
-        /// It was radar_lester -- a favour-broker on a phone -- with a comment above it calling
-        /// it a skull, which it also was not. He is the one you run with and the one who hands
-        /// out the work, and there is a sprite in the game for exactly that.
+        /// It has been three things. radar_lester -- a favour-broker on a phone -- with a
+        /// comment above it calling it a skull, which it also was not. Then 855,
+        /// radar_ped_gang_leader, on the reasoning that he is the one who hands out the work
+        /// and there is a sprite for exactly that. True, and it is also the sprite
+        /// GangLeaders.cs gives every OTHER leader on the map by default, so the one marker the
+        /// player is meant to be able to pick out of a crowd was drawn identically to a dozen
+        /// he has no business walking up to.
+        ///
+        /// The leaf separates him from all of them and says what the work is at the same time,
+        /// which no ped sprite was ever going to. Picked by looking at the art: the names in
+        /// that reference describe nothing, which is a lesson this pair of mods has now learned
+        /// on the cafes, the vending machines and the liquor stores as well.
         /// </summary>
-        private const int Sprite = 855;
+        private const int Sprite = 140;
 
         private static readonly string[] Models =
         {
