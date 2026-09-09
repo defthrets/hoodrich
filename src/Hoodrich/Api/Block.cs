@@ -31,7 +31,7 @@ namespace Hoodrich.Api
         /// The contract version. Bumped when a signature here changes in a way that breaks.
         /// Read by the caller BEFORE anything else.
         /// </summary>
-        public static int ApiVersion => 1;
+        public static int ApiVersion => 2;
 
         /// <summary>Hoodrich's own version string, for the other side's log.</summary>
         public static string Version
@@ -40,16 +40,25 @@ namespace Hoodrich.Api
         }
 
         private static Locations.Takeover _takeover;
+        private static Func<bool> _war;
 
-        /// <summary>Called by Main once the takeover exists. Not for outside use.</summary>
-        internal static void Wire(Locations.Takeover takeover)
+        /// <summary>
+        /// Called by Main once these exist. Not for outside use.
+        ///
+        /// THE WAR COMES THROUGH AS A QUESTION RATHER THAN AN OBJECT, because Main builds these
+        /// in an order this file should not have to know, and a reference taken a moment too
+        /// early is a null that never fixes itself.
+        /// </summary>
+        internal static void Wire(Locations.Takeover takeover, Func<bool> war)
         {
             _takeover = takeover;
+            _war = war;
         }
 
         internal static void Unwire()
         {
             _takeover = null;
+            _war = null;
         }
 
         /// <summary>Whether Hoodrich is here AND has finished starting up.</summary>
@@ -58,6 +67,24 @@ namespace Hoodrich.Api
             get
             {
                 try { return _takeover != null; }
+                catch { return false; }
+            }
+        }
+
+        /// <summary>
+        /// Whether a gang war is being fought right now.
+        ///
+        /// THE OTHER THING ON THIS BLOCK THAT POLICE RUIN. A war is a set-piece fight between
+        /// two gangs that the player is in the middle of; a patrol car arriving, a wanted level
+        /// climbing off the gunfire, and officers opening up on everybody is three separate
+        /// systems answering an event that is not theirs. Five0 Patrol asks this so it can take
+        /// its police out of it entirely until the fight is over.
+        /// </summary>
+        public static bool WarRunning
+        {
+            get
+            {
+                try { return _war != null && _war(); }
                 catch { return false; }
             }
         }

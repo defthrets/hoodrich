@@ -1899,7 +1899,7 @@ namespace Hoodrich
 
                 // SO THE POLICE MOD CAN KEEP OFF IT. A takeover ends with blue lights; a patrol
                 // car in the first hour is that ending arriving in the middle. See Api.Block.
-                Api.Block.Wire(_takeover);
+                Api.Block.Wire(_takeover, () => _war != null && _war.IsRunning);
 
                 // THE AMBIENT PATROL LIVES IN PRECINCT 88 NOW.
                 //
