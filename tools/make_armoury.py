@@ -46,16 +46,23 @@ WORD_GAP = 0.16
 RULE = 0.115
 RULE_GAP = 0.135
 
-# THE STENCIL CUTS.
+# THE STENCIL BRIDGES.
 #
-# Bahnschrift is not a stencil face, so the bridges are cut afterwards: thin bands taken
-# straight across the word at fixed heights, which is what an army stencil does and why every
-# letter breaks at the same two lines. Cutting per letter would be more faithful to a foundry
-# stencil and less faithful to a crate, and a crate is what this is.
+# Bahnschrift is not a stencil face, so the cuts are made afterwards -- and they are made PER
+# LETTER, down the middle of each glyph, not as bands across the whole word. That is the
+# difference between a stencil and a font with lines through it: the bridge is a gap in the
+# letterform, so it lands where the letter has ink and does nothing where it has not.
 #
-# As a share of the cap height: where the middle of each band sits, and how thick it is.
-SLITS = (0.34, 0.66)
-SLIT = 0.075
+# SHORT CUTS AT THE TOP AND THE BOTTOM, not one down the whole letter. A full-height cut
+# reads as a letter sawn in half -- it takes the apex out of the A, the join out of the M and
+# the stem out of the Y, none of which a stencil does. A stencil bridges where a counter would
+# otherwise fall out, and on this word that is the top and bottom of the round letters: the
+# two O's, the D, the R's bowl. The same two nicks land harmlessly on the open letters, which
+# is exactly what happens on a real stencil sheet.
+#
+# As a share of the cap height: how wide each cut is, and how far into the letter it reaches.
+BRIDGE = 0.055
+BRIDGE_IN = 0.26
 
 # Air round the whole thing so nothing is clipped when the game scales it.
 PAD = 0.04
@@ -131,12 +138,17 @@ def main():
     x = pad
     y = pad - capTop
 
+    # Where each glyph's bridge goes: down its own middle.
+    cuts = []
+
     for i, ch in enumerate(WORDS):
         if ch == " ":
             x += widths[i]
             continue
 
         d.text((x, y), ch, font=font, fill=(255, 255, 255, 255))
+
+        cuts.append(x + widths[i] * 0.5)
 
         x += widths[i]
 
@@ -147,11 +159,13 @@ def main():
     # reference read as a sign, and it is the one part that is not letterforms.
     # CUT BEFORE THE RULE GOES ON, so the rule underneath stays whole -- a stencil breaks
     # the letters and not the line they stand on.
-    for at in SLITS:
-        mid = pad + cap * at
-        half = cap * SLIT * 0.5
+    bridge = cap * BRIDGE * 0.5
 
-        d.rectangle([0, mid - half, width, mid + half], fill=(0, 0, 0, 0))
+    reach = cap * BRIDGE_IN
+
+    for at in cuts:
+        d.rectangle([at - bridge, pad - 1, at + bridge, pad + reach], fill=(0, 0, 0, 0))
+        d.rectangle([at - bridge, pad + cap - reach, at + bridge, pad + cap], fill=(0, 0, 0, 0))
 
     top = pad + cap + ruleGap
 
