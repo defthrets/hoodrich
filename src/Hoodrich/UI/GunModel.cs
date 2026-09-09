@@ -36,8 +36,23 @@ namespace Hoodrich.UI
     /// </summary>
     internal sealed class GunModel
     {
-        /// <summary>How far in front of the camera it floats. Near enough to read, far enough not to clip the lens.</summary>
-        private const float Depth = 1.35f;
+        /// <summary>
+        /// How far in front of the camera it floats, and how much bigger it is made to
+        /// compensate.
+        ///
+        /// IT WAS BLURRED, AND MOVING IT IS THE ONLY FIX. The game applies depth of field to
+        /// the near field of the gameplay camera and a gun a metre and a third away is well
+        /// inside it -- so it came out soft while the shop behind it was sharp. There is no
+        /// flag to turn that off for one object; the gameplay camera's focus is not ours to
+        /// set. What can be done is stand further back, which is out past the blur.
+        ///
+        /// AND THEN IT IS TINY, because apparent size is distance. CREATE_WEAPON_OBJECT takes
+        /// a scale, so the object is made bigger by the same factor it was moved away by --
+        /// three point two over one point three five is a shade under two and a half -- and it
+        /// fills the window exactly as it did, in focus.
+        /// </summary>
+        private const float Depth = 3.2f;
+        private const float Blow = 2.4f;
 
         /// <summary>Degrees a second. Slow enough to read the silhouette, quick enough to be alive.</summary>
         private const float Spin = 34f;
@@ -55,6 +70,17 @@ namespace Hoodrich.UI
         /// </summary>
         private const float BackSet = 1.15f;
         private const float BackOver = 1.06f;
+
+        /// <summary>
+        /// Every weapon object this has created, so that losing track of one is survivable.
+        ///
+        /// THE FIELD IS NOT ENOUGH ON ITS OWN. _object is one handle, and anything that
+        /// overwrites it without deleting first -- a throw halfway through Show, a path nobody
+        /// thought of -- strands a rifle in the air with nothing left pointing at it. A list of
+        /// everything ever made is swept on every clear, so the worst case is a gun that hangs
+        /// there until the next time the counter is used rather than until the game is closed.
+        /// </summary>
+        private readonly List<int> _made = new List<int>();
 
         private int _object;
         private uint _weapon;
@@ -92,9 +118,12 @@ namespace Hoodrich.UI
                 // Ammo nought and the world model shown: this is a thing to look at, not a
                 // pickup somebody can run over.
                 _object = Function.Call<int>(Hash.CREATE_WEAPON_OBJECT, weapon, 0,
-                                             at.X, at.Y, at.Z, true, 1.0f, 0);
+                                             at.X, at.Y, at.Z, true, Blow, 0);
 
                 if (_object == 0) return;
+
+                // EVERY ONE EVER MADE, so none of them can be lost. See Clear.
+                _made.Add(_object);
 
                 _weapon = weapon;
                 _fitted = key;
@@ -270,6 +299,8 @@ namespace Hoodrich.UI
 
         public void Clear()
         {
+            Sweep();
+
             if (_object == 0) return;
 
             try
@@ -308,10 +339,41 @@ namespace Hoodrich.UI
                 // Nothing further to try.
             }
 
+            _made.Remove(_object);
+
             _object = 0;
             _weapon = 0;
             _fitted = "";
             _lastAt = 0;
+
+            // And anything the line above did not account for.
+            Sweep();
+        }
+
+        /// <summary>Anything ever made that is still standing there, taken down.</summary>
+        private void Sweep()
+        {
+            for (var i = _made.Count - 1; i >= 0; i--)
+            {
+                var handle = _made[i];
+
+                if (handle != 0 && handle == _object) continue;
+
+                _made.RemoveAt(i);
+
+                try
+                {
+                    var thing = Entity.FromHandle(handle);
+                    if (thing == null || !thing.Exists()) continue;
+
+                    thing.IsPersistent = false;
+                    thing.Delete();
+                }
+                catch
+                {
+                    // Next sweep, or the game's own clean-up.
+                }
+            }
         }
 
         private static string Key(List<uint> parts)
