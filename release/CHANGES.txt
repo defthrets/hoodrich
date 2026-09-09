@@ -1,6 +1,32 @@
 ﻿0.7.1 -- unreleased
 
 
+THE LUBER DRIVER WILL NOT STOP TEXTING YOU.
+
+One message at the order and one at the door is a tracking page with a face on
+it. What makes it a person is the two minutes in the middle where he is having a
+bad time in traffic and telling you about it. So he sends updates on the way:
+sir i am lost, help. Sir i have spilt your drink, only a little bit. Sir a
+seagull has taken some of it, i chased him off. Sir do you have a dog, i am
+asking for a reason.
+
+Between none and three of them per delivery, rolled per order -- every run
+carrying the same three updates is a script, and a driver who says nothing on one
+and four things on the next is a driver. They stop the moment he is off the
+moped, because "i am lost" landing after "i am outside" reads as a bug.
+
+AND HE ASKS FOR HIS TIP once he has gone, most times but not every time. Sir my
+rating is 3.1, you can fix this. That one arrives after the order is over and
+everything about it has been thrown away, so it carries its own copy of his name
+and his photograph and lands at the bottom of the thread you were just having
+with him.
+
+His dot on the map is not a house any more. It was BlipSprite.Store, which draws
+a building -- so the map showed a shop moving down the freeway towards you. It is
+now the shape of whatever he is actually driving, a scooter or a saloon, which is
+the one thing you want off that dot when it pulls up.
+
+
 THE ONLINE BODIES ARE BACK ON THE WARDROBE RAIL, AND WITH THEM THE ONLINE
 CLOTHES.
 

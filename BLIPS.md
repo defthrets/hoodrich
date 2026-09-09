@@ -1,4 +1,4 @@
-# Blip sprites
+﻿# Blip sprites
 
 Reference: <https://docs.fivem.net/docs/game-references/blips/>
 
@@ -30,6 +30,9 @@ what it is and `496` does not.
 | -- | `BlipSprite.Safehouse` | the stash house |
 | -- | `BlipSprite.Friend` | homies |
 | 596 | `radar_nhp_wp2` | Tao Cheng on his way -- `Delivery.cs` |
+| 225 | `radar_gang_vehicle` | a LUber driver bringing food in a car -- `LuberFood.cs` |
+| 226 | `radar_gang_vehicle_bikers` | the same driver on the scooter -- `LuberFood.cs` |
+| 362 | `radar_mask` | the mask shop on Vespucci Beach -- `MaskShop.cs` |
 | -- | `BlipSprite.Standard` | anything unclassified |
 
 ## Drugs and production

@@ -201,10 +201,68 @@ namespace Hoodrich.Locations
             "on the road with your {0}. don't move about too much please"
         };
 
+        /// <summary>
+        /// The running commentary.
+        ///
+        /// A DELIVERY IS A CONVERSATION, NOT A RECEIPT. One message at the order and one at the
+        /// door is a tracking page with a face on it; what makes it a person is the two minutes
+        /// in the middle where he is having a bad time in traffic and telling you about it.
+        ///
+        /// A FEW OF THEM AT MOST, and sometimes none at all. Every order coming with the same
+        /// three updates is a script; a driver who says nothing on one run and four things on
+        /// the next is a driver. See ChatMost.
+        /// </summary>
+        private static readonly string[] SaidEnRoute =
+        {
+            "sir i am lost. help",
+            "sir the map is telling me to drive into the sea",
+            "sir i have spilt your drink. only a little bit",
+            "sir there is a man doing donuts in the road. i am waiting",
+            "sir which house is yours. they all look the same",
+            "sir i went the wrong way at the lights. one moment",
+            "sir do not worry the bag is fine",
+            "sir the traffic here is unbelievable",
+            "sir a seagull has taken some of it. i chased him off",
+            "sir there is a police roadblock. going around",
+            "sir do you have a dog. i am asking for a reason",
+            "sir i have your order. i also have a flat tyre",
+            "sir five minutes. maybe six",
+            "sir your food is safe. i am not",
+            "sir somebody is shooting. i will wait here a moment",
+            "sir the box fell off. i caught it",
+            "sir please stay still. you keep moving",
+            "sir i can see the beach. is that near you",
+            "sir a man has asked me for a lift. i said no sir",
+            "sir the moped only does 30. i am sorry",
+            "sir i am behind a bus. i am always behind a bus",
+            "sir this hill is too much for the moped. walking a bit",
+            "sir there is a helicopter following me. is that for you",
+            "sir do not read the reviews of this restaurant",
+            "sir i have taken a shortcut. it was not a shortcut"
+        };
+
+        /// <summary>And the ask, once he is gone.</summary>
+        private static readonly string[] SaidTip =
+        {
+            "sir tip please",
+            "sir a small tip would be nice. no pressure sir",
+            "sir my rating is 3.1. you can fix this",
+            "sir five stars and a tip and i am a happy man",
+            "sir i drove very fast for you",
+            "sir the app takes most of it. just so you know",
+            "sir tip please. i will not ask again. probably",
+            "sir if the drink was short that was the wind",
+            "sir please do not mention the seagull in the review",
+            "sir it was a pleasure. tip"
+        };
+
         private static readonly string[] SaidHere =
         {
+            "ok sir i am here",
             "i'm outside. can you see me",
             "here now. the moped with the box",
+            "sir i am outside. i can see a bin and a wall",
+            "here sir. please come out",
             "i'm here boss. come out when you're ready",
             "pulled up. i've got it in my hand",
             "outside. i can't stop long",
@@ -258,6 +316,15 @@ namespace Hoodrich.Locations
 
         /// <summary>What he came in, which decides the paint and the helmet.</summary>
         private Wheels _ride;
+
+        /// <summary>When he next has something to say on the way, and how many he has left.</summary>
+        private int _chatAt;
+        private int _chatLeft;
+
+        /// <summary>When he asks for his tip, and who to send it as once the order is cleaned up.</summary>
+        private int _tipAt;
+        private string _tipWho = "";
+        private string _tipFace = "";
 
         /// <summary>His name this order, the key his photograph is filed under, and when he texts.</summary>
         private string _driver = "";
@@ -367,6 +434,10 @@ namespace Hoodrich.Locations
             // badge on this build, which is how a taxi firm ended up signing for burgers.
             _saysAt = Game.GameTime + SayGapMs;
 
+            // NONE, ONE, TWO OR THREE. Rolled per order, so some deliveries arrive in silence.
+            _chatAt = 0;
+            _chatLeft = _rng.Next(ChatMost + 1);
+
             Log.Info("LUber: " + What + " ordered for $" + price + ", driving it: " + _driver + ".");
 
             return null;
@@ -393,6 +464,15 @@ namespace Hoodrich.Locations
 
         public void Update(Ped player)
         {
+            // HE TEXTS AFTER HE HAS GONE, which is why this is above the line that gives up on
+            // an order that is over. Everything about the delivery has been cleaned up by then --
+            // his name and his photograph included -- so the tip carries its own copy of both.
+            if (_tipAt != 0 && Game.GameTime >= _tipAt)
+            {
+                _tipAt = 0;
+                Tip();
+            }
+
             if (State == FoodState.None) return;
 
             try
@@ -416,6 +496,24 @@ namespace Hoodrich.Locations
                 {
                     _saysAt = 0;
                     Says(SaidComing);
+
+                    // The first update is measured from the moment he answered rather than from
+                    // the order, so a slow one does not stack two texts on top of each other.
+                    _chatAt = now + ChatMinMs + _rng.Next(ChatSpanMs);
+                }
+
+                // AND THEN HE KEEPS TALKING, up to a point. Only while he is still on the road:
+                // once he is off the moped and walking at you the next thing he says is that he
+                // is outside, and an "i am lost" arriving after that reads as a bug.
+                if (_chatAt != 0 && now >= _chatAt && State == FoodState.Coming)
+                {
+                    _chatAt = now + ChatMinMs + _rng.Next(ChatSpanMs);
+
+                    if (_chatLeft > 0)
+                    {
+                        _chatLeft--;
+                        Says(SaidEnRoute);
+                    }
                 }
 
                 if (player == null || !player.Exists() || !player.IsAlive)
@@ -602,6 +700,16 @@ namespace Hoodrich.Locations
             }
 
             Aloud(Byes[_rng.Next(Byes.Length)]);
+
+            // NOT EVERY TIME. A man who asks for a tip on every single order is a running gag
+            // that stops being funny on the fourth delivery; one who asks most of the time is a
+            // man who needs the money.
+            if (_rng.Next(100) < TipChance)
+            {
+                _tipWho = _driver;
+                _tipFace = _faceKey;
+                _tipAt = Game.GameTime + TipMinMs + _rng.Next(TipSpanMs);
+            }
 
             // He does not hang about either way.
             Leave();
@@ -930,6 +1038,26 @@ namespace Hoodrich.Locations
         /// <summary>How long the first line waits for his photograph before going without it.</summary>
         private const int FaceWaitMs = 6000;
 
+        /// <summary>How many updates one delivery can carry, and how far apart they fall.</summary>
+        private const int ChatMost = 3;
+        private const int ChatMinMs = 14000;
+        private const int ChatSpanMs = 16000;
+
+        /// <summary>
+        /// What the dot looks like: 226 radar_gang_vehicle_bikers, 225 radar_gang_vehicle.
+        ///
+        /// Raw numbers rather than the enum because these two read as a motorbike and a car
+        /// outline whatever the FiveM list calls them, and the enum's names for them are about
+        /// a personal vehicle, which this is not. See BLIPS.md.
+        /// </summary>
+        private const int BikeBlip = 226;
+        private const int CarBlip = 225;
+
+        /// <summary>How long after he has gone before he asks, and how often he bothers.</summary>
+        private const int TipMinMs = 7000;
+        private const int TipSpanMs = 6000;
+        private const int TipChance = 70;
+
         /// <summary>
         /// One of his lines, as a text from him.
         ///
@@ -995,6 +1123,26 @@ namespace Hoodrich.Locations
             "GENERIC_BYE", "GENERIC_THANKS"
         };
 
+        /// <summary>
+        /// The ask, sent after everything about the order has been thrown away.
+        ///
+        /// It carries its own name and its own picture because by the time it lands there is no
+        /// order left to read either off -- Clean has been through and _driver is empty. Filed
+        /// under HIS name, so it lands at the bottom of the thread you have just been having
+        /// with him rather than opening a new one.
+        /// </summary>
+        private void Tip()
+        {
+            if (string.IsNullOrEmpty(_tipWho)) return;
+
+            var line = SaidTip[_rng.Next(SaidTip.Length)];
+
+            Notify.Text(UI.Headshots.Txd(_tipFace), _tipWho, "LUber", line, false, Badge);
+
+            _tipWho = "";
+            _tipFace = "";
+        }
+
         /// <summary>A different man every order. See Firsts.</summary>
         private void Named()
         {
@@ -1010,7 +1158,14 @@ namespace Hoodrich.Locations
                 _blip = _bike.AddBlip();
                 if (_blip == null || !_blip.Exists()) return;
 
-                _blip.Sprite = BlipSprite.Store;
+                // THE SHAPE OF WHAT IS COMING. It was BlipSprite.Store, which draws a HOUSE --
+                // so the map showed a shop moving down the freeway towards you. What a player
+                // wants off this dot is what to look for when it pulls up, and that is not one
+                // thing any more: the drivers use their own vehicles, so it is a scooter or it
+                // is a saloon. See Rides, and BLIPS.md for the numbers.
+                Function.Call(Hash.SET_BLIP_SPRITE, _blip.Handle,
+                              _ride != null && _ride.Bike ? BikeBlip : CarBlip);
+
                 _blip.Color = BlipColor.Blue;
                 _blip.Scale = 0.7f;
                 // HIS NAME, NOT THE FIRM'S. The thread in the phone is from a man, and the
@@ -1050,6 +1205,11 @@ namespace Hoodrich.Locations
             _faceKey = "";
             _saysAt = 0;
             _ride = null;
+
+            // The updates stop with the order. The TIP does not -- it is scheduled at handover
+            // and carries its own copy of who is asking, which is the whole point of it.
+            _chatAt = 0;
+            _chatLeft = 0;
         }
 
         /// <summary>
