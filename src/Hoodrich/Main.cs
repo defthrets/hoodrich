@@ -709,6 +709,10 @@ namespace Hoodrich
                 _kitchen = new Kitchen(() => { _state.SeenKitchen = true; OpenKitchen(); }, () => _cutting.IsBusy);
                 _kitchen.Worked = () => _state.SeenKitchen;
                 _postUp = new PostUp(_cfg, _state, _pricing) { Turf = _turf, Crew = _crew, Bust = _bust };
+
+                // Where the bag sits in a buyer's hand, from the ini. Static because it is one
+                // number for the whole corner rather than one per deal. See PostUp.BaggieSits.
+                PostUp.BaggieSits = new GTA.Math.Vector3(_cfg.BaggieX, _cfg.BaggieY, _cfg.BaggieZ);
                 _bust.Post = _postUp;
                 _leaders = new GangLeaders(_cfg, _gangs, _zoneMap, _crew, _state);
 

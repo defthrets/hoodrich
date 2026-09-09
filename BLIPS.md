@@ -1,4 +1,4 @@
-# Blip sprites
+﻿# Blip sprites
 
 Reference: <https://docs.fivem.net/docs/game-references/blips/>
 
@@ -22,6 +22,7 @@ what it is and `496` does not.
 | 885 | `radar_yankton` | a body you made, for fifty seconds -- `Graves.cs`. Grey (40) at half alpha; red said "fight here" about a fight that had finished |
 | 161 | `radar_mp_noise` | a LUber on its way to you -- `Luber.cs` |
 | 464 | `radar_spray_can` | tag spots -- `TagRun.cs` |
+| 276 | `radar_cash_lost` | somebody walking over to buy while you are posted up -- `PostUp.cs`. Green (2), three quarter scale, short range. On the PED rather than the spot: a customer's blip is about who, not where, so it should die with him |
 
 Set in Bare Minimum's `data/vendors.json` rather than here, because the shops are
 its feature and the groups are its table:

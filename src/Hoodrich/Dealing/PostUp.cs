@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using Control = GTA.Control;
@@ -887,6 +887,8 @@ namespace Hoodrich.Dealing
             _customer = pick;
             _served[pick.Handle] = Game.GameTime;
 
+            Mark(pick);
+
             // AND EVERYBODY ELSE LETS GO OF HIM. He may be one of the ring at a takeover or
             // one of the people at a party, and both of those are held to a mark by a pass
             // that would otherwise walk him back the moment he set off. See Serving.
@@ -1166,7 +1168,25 @@ namespace Hoodrich.Dealing
             "prop_meth_bag_01", "prop_drug_package_02", "prop_drug_package", "prop_cash_pile_01"
         };
 
-        private static readonly Vector3 BaggieSits = new Vector3(0.02f, 0.01f, 0.0f);
+        /// <summary>
+        /// Where the bag sits in a hand, from the ini.
+        ///
+        /// IT HANGS OFF SKEL_R_Hand, WHICH IS THE WRIST. The prop-helper bone PH_R_Hand is the
+        /// one that already sits where the fingers close -- Handset uses it and needs no offset
+        /// at all -- and this ritual has always used the skeleton bone instead, which is half a
+        /// hand further out. That is the whole reason there is an offset here to tune rather
+        /// than three zeroes.
+        ///
+        /// NOT SWITCHED TO THE HELPER, because the two are not the same amount of anything and
+        /// swapping the bone would move the bag by more than the nudge that was asked for. This
+        /// is the nudge: down, and in toward the body.
+        ///
+        /// FROM THE INI, because bone-local axes are not something anybody can reason about
+        /// from a text editor -- they are read off the bone, not off the world, and which way
+        /// is "down" depends on how the wrist is rotated at that moment in that animation. One
+        /// number changed and a reload beats a rebuild per guess. See [Dealing] in Hoodrich.ini.
+        /// </summary>
+        public static Vector3 BaggieSits = new Vector3(-0.010f, 0.010f, -0.025f);
         private static readonly Vector3 BaggieTurned = new Vector3(0f, 0f, 0f);
 
         /// <summary>Upper body, as a secondary task: 16 is upper body only, 32 is secondary.</summary>
@@ -3011,8 +3031,83 @@ namespace Hoodrich.Dealing
             }
         }
 
+        /// <summary>
+        /// The blip on somebody walking over to buy.
+        ///
+        /// WHY A STRANGER IN A CROWD NEEDS ONE. The corner picks a plausible customer out of
+        /// whoever is on the street and sends him to you -- and from where you are standing
+        /// that is one pedestrian out of nine walking in roughly your direction, which is what
+        /// pedestrians do. There was no way to tell the man who is coming to buy from the man
+        /// who is going to the shop, so the first you knew of a sale was somebody arriving.
+        ///
+        /// 276, radar_cash_lost: a dollar sign, which is what he is bringing. Short range, so
+        /// it is a thing on your minimap when you are stood on your corner rather than an
+        /// arrow on the map from three districts away.
+        ///
+        /// ON THE PED, NOT THE SPOT, which is the opposite of the choice the headstones make
+        /// -- and for the opposite reason. A body's blip is about WHERE, and the body is going
+        /// to be cleared; a customer's is about WHO, and he is walking. The blip dies with him
+        /// if he is cleared mid-approach, which is exactly right: there is nobody coming.
+        /// </summary>
+        private void Mark(Ped who)
+        {
+            Unmark();
+
+            if (who == null || !who.Exists()) return;
+
+            try
+            {
+                var mark = who.AddBlip();
+                if (mark == null || !mark.Exists()) return;
+
+                Function.Call(Hash.SET_BLIP_SPRITE, mark.Handle, CustomerBlip);
+                Function.Call(Hash.SET_BLIP_COLOUR, mark.Handle, CustomerBlipColour);
+                Function.Call(Hash.SET_BLIP_SCALE, mark.Handle, CustomerBlipScale);
+                Function.Call(Hash.SET_BLIP_AS_SHORT_RANGE, mark.Handle, true);
+
+                mark.Name = "Customer";
+
+                _customerBlip = mark;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not blip a customer: " + ex.Message);
+            }
+        }
+
+        /// <summary>And off again, whether the deal closed or he gave up.</summary>
+        private void Unmark()
+        {
+            if (_customerBlip == null) return;
+
+            try
+            {
+                if (_customerBlip.Exists()) _customerBlip.Delete();
+            }
+            catch
+            {
+                // It goes with the ped.
+            }
+
+            _customerBlip = null;
+        }
+
+        private Blip _customerBlip;
+
+        /// <summary>
+        /// 276 is radar_cash_lost -- a dollar sign. See BLIPS.md.
+        ///
+        /// 2 is green, which is the mod's money colour everywhere else, and three quarter
+        /// scale so it sits among the map's own furniture rather than over it.
+        /// </summary>
+        private const int CustomerBlip = 276;
+        private const int CustomerBlipColour = 2;
+        private const float CustomerBlipScale = 0.75f;
+
         private void ReleaseCustomer()
         {
+            Unmark();
+
             // First, whatever owns him has him back -- and its own settle pass is what walks
             // him to his mark and starts him on what he was doing before you called him over.
             Serving.Done(_customer);

@@ -185,6 +185,17 @@ namespace Hoodrich.Core
         public float PaintOpacity = 1f;
         public float PaintOpacityFar = 0.6f;
 
+        /// <summary>
+        /// Where the bag sits in a buyer's hand, from the [Dealing] section.
+        ///
+        /// Three floats in metres, in the HAND BONE'S own space rather than the world's, which
+        /// is why they are a setting: nobody can work out from a text editor which way is down
+        /// on a wrist that is halfway through a handshake. Nudge one, press Insert, look.
+        /// </summary>
+        public float BaggieX = -0.010f;
+        public float BaggieY = 0.010f;
+        public float BaggieZ = -0.025f;
+
         public float TagDotSize = 0.50f;
         public float BagRoll = 0f;
         public float BagYaw = 0f;
@@ -670,6 +681,10 @@ namespace Hoodrich.Core
             s.TagDotSpacing = Clamp(ini.GetFloat("Tags", "DotSpacing", s.TagDotSpacing),
                                     0.05f, 0.40f);
             s.TagDotSize = Clamp(ini.GetFloat("Tags", "DotSize", s.TagDotSize), 0.10f, 1.50f);
+
+            s.BaggieX = Clamp(ini.GetFloat("Dealing", "BaggieX", s.BaggieX), -0.3f, 0.3f);
+            s.BaggieY = Clamp(ini.GetFloat("Dealing", "BaggieY", s.BaggieY), -0.3f, 0.3f);
+            s.BaggieZ = Clamp(ini.GetFloat("Dealing", "BaggieZ", s.BaggieZ), -0.3f, 0.3f);
 
             // The paint engine's texture knobs. See PaintTexture.
             s.PaintTexture = ini.GetInt("Paint", "CanDecal", s.PaintTexture);

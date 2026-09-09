@@ -1,6 +1,30 @@
 ﻿0.7.1 -- unreleased
 
 
+SOMEBODY WALKING OVER TO BUY WEARS A BLIP.
+
+The corner picks a plausible customer off the street and sends him to you, and
+from where you are standing that is one pedestrian out of nine walking roughly
+your way -- which is what pedestrians do. There was no telling the man coming to
+buy from the man going to the shop, so the first you knew of a sale was somebody
+arriving in front of you.
+
+276, a dollar sign, green, short range: a thing on your minimap while you are
+stood on your corner rather than an arrow across the map. It is on the PED and
+not the spot, which is the opposite of what the headstones do and for the
+opposite reason -- a body's blip is about where, a customer's is about who. If
+he is cleared mid-approach it goes with him, which is right: nobody is coming.
+
+And the bag sits lower in his hand, and closer in to him.
+
+It hangs off the wrist bone rather than the prop helper the game puts held
+objects on, which is why it needs an offset at all -- the wrist is half a hand
+further out than where the fingers close. The nudge is now three numbers in the
+ini, because bone-local axes are not something anybody can reason about from a
+text editor: which way is "down" depends on how that wrist is rotated at that
+frame of that animation. Nudge one, reload, look.
+
+
 THE BIKES AT THE COURTS RIDE ROUND EACH OTHER NOW.
 
 A carload pulling up at a kerb is a carload pulling up at a kerb -- that is what
