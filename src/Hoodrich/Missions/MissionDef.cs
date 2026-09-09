@@ -36,7 +36,14 @@ namespace Hoodrich.Missions
         /// <summary>
         /// Going round rival blocks putting your set over theirs. Targets is how many walls.
         /// </summary>
-        Tags
+        Tags,
+
+        /// <summary>
+        /// The hunt: a rifle, a wind direction, tracks on the ground and three men who
+        /// leave if you are loud. Scripted end to end, the same as the bike ride, because
+        /// the shape of it is the job. See Missions.Hunt.
+        /// </summary>
+        Hunt
     }
 
     /// <summary>One job Lamar can put your way.</summary>

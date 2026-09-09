@@ -260,6 +260,7 @@ namespace Hoodrich.Missions
             switch (def.Kind)
             {
                 case MissionKind.BikeRide: return Icons.Health;
+                case MissionKind.Hunt: return Icons.FromFile("scales.png");
                 case MissionKind.DriveBy: return Icons.FromFile("car.png");
 
                 // The fire, now that there is one. It wore the garage icon on the grounds that

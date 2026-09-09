@@ -180,6 +180,33 @@
       ]
     },
     {
+      "id": "hunt_davis",
+      "kind": "Hunt",
+      "name": "We goin' huntin'.",
+      "brief": "Aight. So Trevor got me watchin' this show about elk. ELK, Frank. Man crouchin' in a bush for six hours breathin' through his nose, and when he finally get one everybody at home clappin'. And I'm sittin' there thinkin' -- that's it. That's the ENERGY we been missin'. We been rollin' up on these fools with four cars and a horn like we announcin' a parade.",
+      "done": "You SEEN that? Three of 'em and not one of 'em got a look at us. That's the elk thing, cuz. That's exactly it. Man on the show would've cried. I nearly did.",
+      "briefAgain": "Same thing as before. Rifle, quiet feet, wind in your face. Three of 'em and don't let none of 'em run.",
+      "doneAgain": "Three more and nobody heard nothin'. That's the way it's supposed to go every time and it never do.",
+      "targetGang": "ballas",
+      "zone": "DAVIS",
+      "x": 115.921,
+      "y": -1949.503,
+      "z": 20.698,
+      "targets": 3,
+      "homies": 0,
+      "escapeHeat": false,
+      "heatStars": 0,
+      "payMin": 2200,
+      "payMax": 3200,
+      "rep": 80,
+      "minRank": 3,
+      "briefMore": [
+        "Here's how it go. I'm comin' with you -- don't argue, I'm the one seen the show. You takin' a rifle, a proper one with the glass on it, and we goin' down Davis on FOOT. Not the car. The car is the horn. The car is the parade.",
+        "Three of 'em out there and they don't know nothin' yet. You gon' find where they walked -- they leave marks, cuz, everybody leave marks -- and you follow them marks til you got eyes on one. Then you get low, and you take your time, and you do it from a long way off.",
+        "And WATCH THE WIND. I'm serious. Man on the show said it forty times. Wind at your back and he smell you comin' before you seen him, and then he gone and he stay gone. You spook all three of 'em we goin' home with nothin' and I ain't never mentionin' this again as long as I live."
+      ]
+    },
+    {
       "id": "driveby_lamesa",
       "kind": "DriveBy",
       "name": "Spin they route in La Mesa.",

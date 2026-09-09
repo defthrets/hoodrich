@@ -207,6 +207,7 @@ namespace Hoodrich.Missions
         public bool ClerkKilled => _bike != null && _bike.KilledTheClerk;
 
         private readonly BikeRide _bike;
+        private readonly Hunt _hunt;
 
         /// <summary>
         /// The paint engine, on its way to the tag run.
@@ -272,6 +273,7 @@ namespace Hoodrich.Missions
             _gangs = gangs;
             _zones = zones;
             _bike = new BikeRide(crew, gangs);
+            _hunt = new Hunt(crew, gangs);
             _tags = new TagRun(gangs) { Crew = crew };
             _walls = TagRun.Load();
         }
@@ -279,7 +281,15 @@ namespace Hoodrich.Missions
         /// <summary>Set by Main, so the bike ride can borrow Lamar for the ride out.</summary>
         public Fixer Boss
         {
-            set { _bike.Boss = value; }
+            set
+            {
+                _bike.Boss = value;
+
+                // AND THE HUNT BORROWS HIM TOO. He walks the block with you on that one,
+                // which is the whole reason it is his job rather than a marker on a map.
+                var boss = value;
+                _hunt.Fixer = () => boss == null ? null : boss.Lend();
+            }
         }
 
         /// <summary>Set by Main and handed straight to the bike job for its courtyard exchange.</summary>
@@ -291,9 +301,12 @@ namespace Hoodrich.Missions
 
         public MissionState State { get; private set; } = MissionState.None;
 
-        public bool IsRunning => State != MissionState.None || _bike.IsRunning || _tags.IsRunning;
+        public bool IsRunning => State != MissionState.None || _bike.IsRunning || _tags.IsRunning
+                                 || _hunt.IsRunning;
 
         private bool OnBike => _bike.IsRunning;
+
+        private bool OnHunt => _hunt.IsRunning;
 
         private bool OnTags => _tags.IsRunning;
 
@@ -317,6 +330,7 @@ namespace Hoodrich.Missions
             get
             {
                 if (OnBike) return _bike.Objective;
+                if (OnHunt) return _hunt.Objective;
                 if (OnTags) return _tags.Objective;
 
                 switch (State)
@@ -424,6 +438,18 @@ namespace Hoodrich.Missions
                 _homiesLost = 0;
 
                 Log.Info("Mission " + def.Id + " started as a bike ride.");
+                return null;
+            }
+
+            if (def.Kind == MissionKind.Hunt)
+            {
+                var no = _hunt.Start(def);
+                if (no != null) return no;
+
+                _def = def;
+                _homiesLost = 0;
+
+                Log.Info("Mission " + def.Id + " started as a hunt.");
                 return null;
             }
 
@@ -1010,6 +1036,16 @@ namespace Hoodrich.Missions
                 _bike.Update();
 
                 var wentWrong = _bike.Failure;
+                if (!string.IsNullOrEmpty(wentWrong)) Fail(wentWrong);
+
+                return;
+            }
+
+            if (OnHunt)
+            {
+                _hunt.Update();
+
+                var wentWrong = _hunt.Failure;
                 if (!string.IsNullOrEmpty(wentWrong)) Fail(wentWrong);
 
                 return;
@@ -2940,6 +2976,7 @@ namespace Hoodrich.Missions
             switch (kind)
             {
                 case MissionKind.BikeRide: return "YouDidTheRide";
+                case MissionKind.Hunt: return "YouDidTheHunt";
                 case MissionKind.TorchJob: return "YouDidTheTorch";
                 case MissionKind.Tags: return "YouDidTheTags";
                 case MissionKind.Hit: return "YouDidTheHit";
@@ -3035,6 +3072,7 @@ namespace Hoodrich.Missions
         /// <summary>True when the player can hand the job in.</summary>
         public bool ReadyToCollect =>
             OnBike ? _bike.ReadyToCollect :
+            OnHunt ? _hunt.ReadyToCollect :
             OnTags ? _tags.ReadyToCollect :
             State == MissionState.Collect;
 
@@ -3403,6 +3441,7 @@ namespace Hoodrich.Missions
 
             _tags.Draw();
             _bike.Draw();
+            _hunt.Draw();
             DrawBay();
 
             // Centred at the top: it belongs to the job, not to the corner of the screen.
@@ -3583,6 +3622,7 @@ namespace Hoodrich.Missions
             switch (_def.Kind)
             {
                 case MissionKind.TorchJob: return "fire.png";
+                case MissionKind.Hunt: return "scales.png";
                 case MissionKind.DriveBy: return "car.png";
                 case MissionKind.Hit: return "guns.png";
                 default: return "people.png";
@@ -3604,6 +3644,7 @@ namespace Hoodrich.Missions
                 // Both of them know how far through they are; neither was ever asked, so the
                 // bar sat empty for the whole of two jobs.
                 if (OnBike) return Clamp01(_bike.Advance);
+                if (OnHunt) return Clamp01(_hunt.Advance);
                 if (OnTags) return Clamp01(_tags.Advance);
 
                 var player = Game.Player.Character;
