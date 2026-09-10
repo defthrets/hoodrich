@@ -387,19 +387,34 @@ namespace Hoodrich.Locations
                 var probe = _middle + new Vector3((float)Math.Cos(way) * far,
                                                   (float)Math.Sin(way) * far, 0f);
 
-                var node = new OutputArgument();
-                var head = new OutputArgument();
+                // THE MANAGED ONE, AND THIS IS WHY.
+                //
+                // This called GET_NTH_CLOSEST_VEHICLE_NODE_WITH_HEADING directly and it hard
+                // crashed the game the instant the first car set off. That native takes TEN
+                // arguments and the seventh is an int* the game writes a lane count into; nine
+                // were passed, with a literal nought where the pointer belongs. So the engine
+                // took nought as an address and wrote to it, which is not an exception a script
+                // can catch -- it is the process going down. The log's last line was "Car meet:
+                // on", which is exactly one line before this.
+                //
+                // GetNextPositionOnStreet is the wrapper for the same job with the argument
+                // list already correct. There is no version of this worth hand-rolling.
+                var at = World.GetNextPositionOnStreet(probe, true);
 
-                if (!Function.Call<bool>(Hash.GET_NTH_CLOSEST_VEHICLE_NODE_WITH_HEADING,
-                                         probe.X, probe.Y, probe.Z, 1, node, head, 0, 0, 0))
+                if (at == Vector3.Zero)
                 {
                     model.MarkAsNoLongerNeeded();
                     return null;
                 }
 
-                var at = node.GetResult<Vector3>();
+                // POINTED AT WHERE IT IS GOING. The wrapper hands back a place on a road and
+                // not which way the road runs, and a car facing across one does a three-point
+                // turn before it sets off. Facing the meet is right often enough, and the drive
+                // task turns it round where it is not.
+                var toward = _middle - at;
+                var face = (float)(Math.Atan2(toward.Y, toward.X) * 180.0 / Math.PI) - 90f;
 
-                var car = World.CreateVehicle(model, at, head.GetResult<float>());
+                var car = World.CreateVehicle(model, at, face);
                 model.MarkAsNoLongerNeeded();
 
                 if (car == null || !car.Exists()) return null;
