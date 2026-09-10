@@ -15,6 +15,9 @@ namespace Hoodrich.Locations
         public float Heading;
 
         public bool IsHopper => string.Equals(Role, "hop", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>Where everybody ends up. Nothing parks here. See CarMeet.Crowd.</summary>
+        public bool IsCrowd => string.Equals(Role, "crowd", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -94,7 +97,11 @@ namespace Hoodrich.Locations
             public bool Seated;
 
             public int HopAt;
-            public bool HopUp;
+            public int Hop;
+
+            /// <summary>Out of the car and on his way to the crowd. See Crowd.</summary>
+            public int OutAt;
+            public bool Walked;
         }
 
         private readonly List<MeetSpot> _spots = new List<MeetSpot>();
@@ -110,6 +117,9 @@ namespace Hoodrich.Locations
         private int _misses;
         private const int MostMisses = 4;
         private Vector3 _middle;
+
+        /// <summary>Where they all end up, or null if the file does not say. See Crowd.</summary>
+        private MeetSpot _crowd;
         private Blip _blip;
 
         /// <summary>Set by Main: the cars the set drives. See Takeover.</summary>
@@ -169,6 +179,12 @@ namespace Hoodrich.Locations
                     };
 
                     if (Math.Abs(spot.At.X) < 0.01f && Math.Abs(spot.At.Y) < 0.01f) continue;
+
+                    // THE CROWD SPOT IS NOT A SPACE AND NOTHING IS SENT TO IT. It is in the
+                    // same file because it is part of the same place -- somebody laying a meet
+                    // out wants the cars and the people in one list -- but a car driven to it
+                    // would park in the middle of everybody.
+                    if (spot.IsCrowd) { _crowd = spot; continue; }
 
                     _spots.Add(spot);
                 }
@@ -562,7 +578,7 @@ namespace Hoodrich.Locations
         {
             if (r.Car == null || !r.Car.Exists()) return;
 
-            if (r.Seated) { Hopping(r, now); return; }
+            if (r.Seated) { Hopping(r, now); Crowd(r, now); return; }
 
             var gap = r.Car.Position.DistanceTo(r.Spot.At);
 
@@ -644,12 +660,25 @@ namespace Hoodrich.Locations
                 // and it should still be square in that bay in ten minutes. The cost is that
                 // nobody can nudge it, and at a car meet that is not a cost.
                 Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, true);
-                Function.Call(Hash.FREEZE_ENTITY_POSITION, r.Car.Handle, true);
+
+                // EXCEPT THE ONE ON JUICE. Freezing is what keeps eleven parked cars square in
+                // their bays for ten minutes, and it is also, precisely, a car that cannot
+                // move -- so the hydraulics were being asked to bounce something nailed to the
+                // floor. It came, it was green, it had green neons and it sat there.
+                //
+                // It does not need freezing anyway: it is off on its own with nothing to be
+                // shunted into and nothing to shunt.
+                if (!r.Spot.IsHopper) Function.Call(Hash.FREEZE_ENTITY_POSITION, r.Car.Handle, true);
             }
             catch
             {
                 // It is where it is.
             }
+
+            // AND HE GETS OUT IN A MINUTE. Staggered off the arrival rather than all at
+            // once: twelve doors opening on the same frame is a cutscene, and twelve men
+            // wandering over one at a time as they pull in is a car meet filling up.
+            r.OutAt = Game.GameTime + OutAfterMs + _rng.Next(OutVaryMs);
 
             if (hauled) Log.Debug("Car meet: one was put in its space rather than driving in.");
         }
@@ -708,12 +737,19 @@ namespace Hoodrich.Locations
             if (!r.Spot.IsHopper) return;
             if (r.HopAt != 0 && now < r.HopAt) return;
 
-            r.HopUp = !r.HopUp;
             r.HopAt = now + HopMinMs + _rng.Next(HopVaryMs);
+
+            // MORE THAN UP AND DOWN. Two states alternating is a car doing press-ups; somebody
+            // actually on the switches works one corner, then the front, then drops the lot,
+            // and the pattern is the point of the whole car. Walked in order rather than
+            // picked at random, for the same reason the colours are -- random puts the same
+            // state twice in a row about as often as not, and twice in a row is a car that
+            // stopped.
+            r.Hop = (r.Hop + 1) % Hops.Length;
 
             try
             {
-                Function.Call(Hash.SET_HYDRAULIC_VEHICLE_STATE, r.Car.Handle, r.HopUp ? 1 : 0);
+                Function.Call(Hash.SET_HYDRAULIC_VEHICLE_STATE, r.Car.Handle, Hops[r.Hop]);
             }
             catch
             {
@@ -721,8 +757,104 @@ namespace Hoodrich.Locations
             }
         }
 
-        private const int HopMinMs = 700;
-        private const int HopVaryMs = 900;
+        private const int HopMinMs = 650;
+        private const int HopVaryMs = 800;
+
+        /// <summary>
+        /// The hydraulic poses, in the order they are worked through.
+        ///
+        /// Down, up, front, back, and the two sides -- the whole switch box rather than the two
+        /// ends of it. Nought comes round often so it keeps landing rather than hanging in the
+        /// air, which is what a lowrider does between moves.
+        /// </summary>
+        private static readonly int[] Hops = { 0, 2, 0, 3, 4, 0, 5, 6, 0, 2 };
+
+        // ---- everybody stood about -----------------------------------------------------------
+
+        /// <summary>
+        /// He gets out, walks over, and stands in it.
+        ///
+        /// THE CROWD IS ONE COORDINATE AND THEY ARRANGE THEMSELVES ROUND IT. Twelve marked
+        /// standing spots would be twelve more numbers to survey and would put everybody on a
+        /// grid; a ring worked out from one point puts them in a huddle facing inwards, which
+        /// is what a group of people talking is. Where in the ring is decided by which car he
+        /// drove, so two men never walk to the same patch of ground.
+        ///
+        /// FACING THE MIDDLE, which is the whole of making it read as a conversation. Nothing
+        /// here plays a talking animation at anybody in particular: a scenario in place, faced
+        /// inward, at a sensible distance, is what the game itself uses for a group stood
+        /// round outside a shop, and it holds up from the distance anybody watches this from.
+        ///
+        /// NOT THE ONE ON JUICE. Somebody has to be working the switches.
+        /// </summary>
+        private void Crowd(Runner r, int now)
+        {
+            if (_crowd == null) return;
+            if (r.Walked || r.Spot.IsHopper) return;
+            if (r.OutAt == 0 || now < r.OutAt) return;
+            if (r.Driver == null || !r.Driver.Exists() || !r.Driver.IsAlive) { r.Walked = true; return; }
+
+            r.Walked = true;
+
+            try
+            {
+                var which = _out.IndexOf(r);
+                if (which < 0) which = 0;
+
+                var many = Math.Max(1, _spots.Count - 1);
+                var round = (float)(which * Math.PI * 2.0 / many);
+
+                var stand = _crowd.At + new Vector3((float)Math.Cos(round) * CrowdRing,
+                                                    (float)Math.Sin(round) * CrowdRing, 0f);
+
+                // Facing the middle of it, which is what everybody in a huddle is doing.
+                var toward = _crowd.At - stand;
+                var face = (float)(Math.Atan2(toward.Y, toward.X) * 180.0 / Math.PI) - 90f;
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, false);
+                Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+
+                // OUT, THEN OVER, THEN STOOD. TASK_LEAVE_VEHICLE opens the door and steps him
+                // out properly; a warp out of a parked car is a man appearing beside it.
+                Function.Call(Hash.TASK_LEAVE_VEHICLE, r.Driver.Handle, r.Car.Handle, 0);
+
+                Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, r.Driver.Handle,
+                              stand.X, stand.Y, stand.Z, WalkPace, -1, face, 0.4f);
+
+                var doing = Standing[which % Standing.Length];
+
+                Function.Call(Hash.TASK_START_SCENARIO_AT_POSITION, r.Driver.Handle, doing,
+                              stand.X, stand.Y, stand.Z, face, 0, true, true);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not get a driver out: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// What they do while they are stood there.
+        ///
+        /// Every one of these is in the game's own scenario list on this machine. Mostly
+        /// talking, because that is what the group is -- with a couple of smokers and somebody
+        /// on their phone, because a dozen people all doing the identical thing is a chorus
+        /// line.
+        /// </summary>
+        private static readonly string[] Standing =
+        {
+            "WORLD_HUMAN_STAND_MOBILE", "WORLD_HUMAN_HANG_OUT_STREET",
+            "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_STAND_IMPATIENT",
+            "WORLD_HUMAN_HANG_OUT_STREET", "WORLD_HUMAN_DRINKING",
+            "WORLD_HUMAN_STAND_MOBILE", "WORLD_HUMAN_HANG_OUT_STREET"
+        };
+
+        /// <summary>How wide the huddle is, and how long after parking he gets out.</summary>
+        private const float CrowdRing = 2.1f;
+        private const int OutAfterMs = 4000;
+        private const int OutVaryMs = 5000;
+        private const float WalkPace = 1.2f;
 
         // ---- what they look like ---------------------------------------------------------------
 
@@ -747,8 +879,15 @@ namespace Hoodrich.Locations
 
                 Function.Call(Hash.SET_VEHICLE_MOD_KIT, h, 0);
 
-                var many = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, h, Suspension);
-                if (many > 0) Function.Call(Hash.SET_VEHICLE_MOD, h, Suspension, many - 1, false);
+                // NOT ON THE ONE WITH HYDRAULICS. On a Benny's lowrider the suspension slot
+                // IS the hydraulics, so fitting the lowest thing in it takes the juice off the
+                // car -- which is the second reason it did not bounce, and the one that would
+                // have survived unfreezing it.
+                if (!spot.IsHopper)
+                {
+                    var many = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, h, Suspension);
+                    if (many > 0) Function.Call(Hash.SET_VEHICLE_MOD, h, Suspension, many - 1, false);
+                }
 
                 // NO RACING TEAMS. A livery is somebody's sponsor and this is somebody's
                 // street. Both calls, because the older cars carry it as a livery and the

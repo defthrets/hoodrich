@@ -1,4 +1,4 @@
-{
+﻿{
   "_comment": [
     "THE CAR MEET. Where the cars park, and nothing else.",
     "",
@@ -14,6 +14,8 @@
     "",
     "ROLES.",
     "  park    an ordinary space. The car drives in, parks, and sits there.",
+    "  crowd   where everybody ends up. Nobody parks here -- the drivers get out, walk",
+    "          over and stand about talking. One spot; they arrange themselves round it.",
     "  hop     the one on juice. A lowrider, green, green neons, bouncing on hydraulics --",
     "          see Locations/CarMeet.cs. It is out on its own away from the row because",
     "          that is where the crowd stands, and because a car on hydraulics next to a",
@@ -37,6 +39,8 @@
     { "role": "park", "x": -223.442, "y": -1478.288, "z": 31.017, "heading": 49.815 },
     { "role": "park", "x": -231.708, "y": -1471.463, "z": 31.168, "heading": 50.697 },
 
-    { "role": "hop", "x": -212.883, "y": -1494.726, "z": 30.921, "heading": 91.206 }
+    { "role": "hop", "x": -212.883, "y": -1494.726, "z": 30.921, "heading": 91.206 },
+
+    { "role": "crowd", "x": -213.028, "y": -1503.232, "z": 30.972, "heading": 352.080 }
   ]
 }
