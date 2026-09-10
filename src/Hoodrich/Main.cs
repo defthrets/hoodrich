@@ -1959,6 +1959,11 @@ namespace Hoodrich
                 // car in the first hour is that ending arriving in the middle. See Api.Block.
                 Api.Block.Wire(_takeover, () => _war != null && _war.IsRunning);
 
+                // AND SO THE POLICE MOD KNOWS WHEN WE HAVE FINISHED WITH A BODY. It drags them
+                // out of sight on the same key we search them with, so it waits for us. See
+                // Api.Corpse.
+                Api.Corpse.Wire(_bodies);
+
                 // THE AMBIENT PATROL LIVES IN PRECINCT 88 NOW.
                 //
                 // It was this mod's fourth source of police -- the one that was not caused by

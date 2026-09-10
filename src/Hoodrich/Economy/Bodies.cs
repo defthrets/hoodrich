@@ -126,6 +126,20 @@ namespace Hoodrich.Economy
 
         private readonly Dictionary<int, Body> _known = new Dictionary<int, Body>();
 
+        /// <summary>
+        /// Everybody whose pockets have actually been opened, by handle.
+        ///
+        /// NOT THE SAME AS BEING ON THE BOOKS. _known holds anybody who has been LOOKED at --
+        /// it is built on demand by the scan, before you have knelt down -- and it holds them
+        /// whether or not you ever searched them. This is the narrower fact, and it is the one
+        /// another mod wants: see Api.Corpse, where Five0 Patrol waits for it before offering
+        /// to drag the body away.
+        ///
+        /// SWEPT WITH THE REST. The game reuses ped handles, so a set that is never cleared
+        /// eventually tells you a fresh corpse has already been searched. See Sweep.
+        /// </summary>
+        private readonly HashSet<int> _opened = new HashSet<int>();
+
         private int _sweptAt;
 
         /// <summary>Set by Main: the weapons, the drugs and the pockets they go into.</summary>
@@ -156,6 +170,20 @@ namespace Hoodrich.Economy
             _known[who.Handle] = body;
 
             return body;
+        }
+
+        /// <summary>Noted the moment his pockets are actually opened. See _opened.</summary>
+        public void Open(Ped who)
+        {
+            if (who == null || !who.Exists()) return;
+
+            _opened.Add(who.Handle);
+        }
+
+        /// <summary>Whether his pockets have been opened. By handle, for Api.Corpse.</summary>
+        public bool Opened(int handle)
+        {
+            return handle != 0 && _opened.Contains(handle);
         }
 
         /// <summary>Whether this one has already been gone through and emptied.</summary>
@@ -190,7 +218,10 @@ namespace Hoodrich.Economy
                 if (ped == null || !ped.Exists() || ped.IsAlive) gone.Add(pair.Key);
             }
 
-            foreach (var handle in gone) _known.Remove(handle);
+            // AND THE OPENED SET GOES WITH IT, for exactly the same reason the table does: a
+            // recycled handle would otherwise tell another mod that a fresh corpse had already
+            // been searched, and it would quietly skip its own prompt on every new body.
+            foreach (var handle in gone) { _known.Remove(handle); _opened.Remove(handle); }
 
             if (gone.Count > 0) Log.Debug("Bodies: forgot " + gone.Count + " that are no longer there.");
         }
@@ -198,6 +229,7 @@ namespace Hoodrich.Economy
         public void Forget()
         {
             _known.Clear();
+            _opened.Clear();
         }
 
         // ---- who he was ---------------------------------------------------------

@@ -392,6 +392,10 @@ namespace Hoodrich.Locations
             Log.Info("Search: " + body.Name + ", " + body.Affiliation + ", " +
                      body.Items.Count + " thing(s) on him.");
 
+            // AND ON THE BOOKS AS OPENED, which is a narrower fact than being known about and
+            // is the one another mod is waiting on. See Api.Corpse.
+            _bodies.Open(_at);
+
             _screen.Open(_bodies, body, _at);
         }
 
