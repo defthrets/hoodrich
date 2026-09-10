@@ -548,6 +548,46 @@ namespace Hoodrich.State
             return t;
         }
 
+        /// <summary>
+        /// Best times, by whatever the thing being timed calls itself.
+        ///
+        /// A DICTIONARY RATHER THAN FIELDS, because the things worth timing are not a list
+        /// anybody can finish. The range alone wants one per trial and per how many targets
+        /// are standing -- and how many are standing is whatever somebody put up this
+        /// afternoon, so it cannot be a field and could never have been one. A key is a
+        /// sentence the caller makes up; nothing here has to know what it means.
+        ///
+        /// Lower is better and nought means never done. Both of those are the caller's
+        /// business too -- this only keeps what it is handed.
+        /// </summary>
+        public readonly Dictionary<string, float> Bests =
+            new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+
+        public float BestFor(string key)
+        {
+            float had;
+            return !string.IsNullOrEmpty(key) && Bests.TryGetValue(key, out had) ? had : 0f;
+        }
+
+        public void SetBest(string key, float value)
+        {
+            if (string.IsNullOrEmpty(key) || value <= 0f) return;
+
+            Bests[key] = value;
+            Touch();
+        }
+
+        private Json BestsJson()
+        {
+            var obj = Json.Object();
+            foreach (var kv in Bests)
+            {
+                if (kv.Value <= 0f) continue;
+                obj.Set(kv.Key, kv.Value);
+            }
+            return obj;
+        }
+
         private Json TrunksJson()
         {
             var obj = Json.Object();
@@ -1194,7 +1234,8 @@ namespace Hoodrich.State
                 .Set("ownedCars", OwnedJson())
                 .Set("missionsOffered", OfferedJson())
                 .Set("stash", Stash.ToJson())
-                .Set("trunks", TrunksJson());
+                .Set("trunks", TrunksJson())
+                .Set("bests", BestsJson());
         }
 
         public void LoadFrom(Json doc)
@@ -1385,6 +1426,14 @@ namespace Hoodrich.State
 
                 // "inventory" is the 0.1.0 key; migrate it so old saves keep their product.
                 Stash.LoadFrom(doc.Has("stash") ? doc["stash"] : doc["inventory"]);
+
+                Bests.Clear();
+                var bests = doc["bests"];
+                foreach (var key in bests.Keys)
+                {
+                    var had = bests[key].AsFloat(0f);
+                    if (had > 0f) Bests[key] = had;
+                }
 
                 Trunks.Clear();
                 var trunks = doc["trunks"];

@@ -96,6 +96,12 @@ namespace Hoodrich
         private readonly OwnedCars _ownedCars;
         private readonly Fixer _fixer;
         private readonly Armourer _bigj;
+
+        /// <summary>
+        /// A shooting range wherever somebody has stood three targets up. See Locations.Range
+        /// -- it has no coordinate of its own and never needs one.
+        /// </summary>
+        private readonly Locations.Range _range = new Locations.Range();
         private readonly Hao _hao;
 
         /// <summary>
@@ -2347,6 +2353,8 @@ namespace Hoodrich
 
                 _bigjTalk = new ArmourerTalk(_bigj, _crew, _state);
 
+                _range.State = _state;
+
                 // The rack is a screen now. The conversation is still how you get to it -- you
                 // walk up to a man and he says something -- but what he shows you once you have
                 // asked is a laid-out stock list rather than five pages of dialogue choices.
@@ -3187,6 +3195,10 @@ namespace Hoodrich
                 // skips the actual drawing while a UI is up on its own.
                 _toasts.Draw();
 
+                // Under the toasts, over nothing. The range card sits where the hunt's does
+                // and only one of the two can be up.
+                _range.Draw();
+
                 // ABOVE THE AVAILABILITY GATE, and on purpose. A recording that paused whenever
                 // the mod stood down -- a phone opened, a cutscene, a mission flag left set by
                 // somebody else's script -- would come out as a file with holes in it that
@@ -3769,6 +3781,11 @@ namespace Hoodrich
                     _blockTalk.Update();
                     _bigj.Update();
                     _bigj.UpdatePrompt();
+
+                    // AFTER THE COUNTER, so the prompt to start a trial never lands on top of
+                    // the one to look at what Stretch is holding. Both are the context button
+                    // and the range is the one that can wait.
+                    _range.Update();
 
                     _hao.Update();
                     if (_ownedCars != null) _ownedCars.Update();
