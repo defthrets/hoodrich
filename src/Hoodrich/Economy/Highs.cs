@@ -73,6 +73,38 @@ namespace Hoodrich.Economy
             /// </summary>
             public bool Swell;
 
+            /// <summary>
+            /// Whether the screen effect lands on the FIRST one rather than waiting.
+            ///
+            /// THIS IS WHY ONE TAB DID NOTHING. Recombine holds the postfx back until the dose
+            /// reaches full -- deliberately, and right for six of the seven, because a screen
+            /// effect cannot be done by halves and handing somebody the whole thing for one
+            /// bump would leave the second bump with nowhere to go.
+            ///
+            /// Acid is the exception and it is the exception for a plain reason: the postfx IS
+            /// the drug. Everything else here has a walk or a speed or a damage number to
+            /// carry the first dose while the picture waits. This has a colour and nothing
+            /// else, so with it held back the first tab was a green tint and a man wondering
+            /// whether he had taken anything.
+            /// </summary>
+            public bool FxAtOnce;
+
+            /// <summary>
+            /// The second one's effect, and the colours it starts throwing.
+            ///
+            /// From the second dose the look stops being a filter and starts MOVING: the
+            /// timecycle is transitioned between these every few seconds instead of being set
+            /// once, so the world washes from one colour into the next and never settles. Fx2
+            /// goes over the top of it.
+            ///
+            /// TRANSITIONED, NOT SET. SET_TIMECYCLE_MODIFIER swaps instantly and a hard swap
+            /// every six seconds is a slideshow; SET_TRANSITION_TIMECYCLE_MODIFIER blends over
+            /// a few seconds, which is what makes it read as the room changing colour rather
+            /// than as the game changing setting.
+            /// </summary>
+            public string[] Riot = new string[0];
+            public string Fx2 = "";
+
             /// <summary>How he walks. "" leaves his own gait alone.</summary>
             public string Clipset = "";
 
@@ -704,7 +736,26 @@ namespace Hoodrich.Economy
                 // The sustained clown one rather than crack's blend-in. Both are the same
                 // family; this is the variant meant to be left running, which is the whole
                 // difference over seven minutes.
+                // THE FIRST TAB GETS THIS ONE, not the second. See Recipe.FxAtOnce.
                 Fx = "DrugsTrevorClownsFight",
+                FxAtOnce = true,
+
+                // AND THE SECOND TAB STARTS THROWING COLOUR. Every name below is in the
+                // machine's own timecycle list. The glasses_ family are full-screen colour
+                // washes -- they are what the game tints the world with when somebody puts
+                // coloured lenses on -- and blended one into the next every few seconds they
+                // are the moving colour a trip is made of. gas_huffin warps, flying_01 is the
+                // peyote green, and Barry1_Stoned is the one the game itself uses for being
+                // off your head, so the rotation keeps coming back to something that reads as
+                // a drug rather than as a disco.
+                Riot = new[]
+                {
+                    "glasses_pink", "DRUG_gas_huffin", "glasses_purple", "drug_flying_01",
+                    "glasses_orange", "Barry1_Stoned", "glasses_blue", "glasses_green",
+                    "glasses_yellow", "drug_flying_02"
+                },
+
+                Fx2 = "DrugsMichaelAliensFight",
 
                 // A drift, not a sway. Anything heavier reads as drunk and there is already a
                 // drunk drug.
@@ -1061,7 +1112,12 @@ namespace Hoodrich.Economy
                 sunny |= r.Sunny;
                 rage |= r.Rage;
 
-                if (p >= 1f && !string.IsNullOrEmpty(r.Fx)) fx = r.Fx;
+                // THE SECOND ONE'S EFFECT IF HE HAS HAD TWO, otherwise the first one's --
+                // and the first one's arrives immediately for anything that says so. See
+                // Recipe.FxAtOnce and Recipe.Fx2.
+                if (p >= 1f && !string.IsNullOrEmpty(r.Fx2)) fx = r.Fx2;
+                else if ((p >= 1f || r.FxAtOnce) && !string.IsNullOrEmpty(r.Fx)) fx = r.Fx;
+
                 if (p >= 1f && !string.IsNullOrEmpty(r.Clipset)) clipset = r.Clipset;
             }
 
@@ -1175,6 +1231,7 @@ namespace Hoodrich.Economy
             }
 
             if (_falling != 0) { Falling(); return; }
+
 
             if (_blackFrom != 0) { Blackout(); return; }
 
@@ -1556,6 +1613,8 @@ namespace Hoodrich.Economy
             if (_cycleOwner == null || !_cycleOwner.Swell) return;
             if (string.IsNullOrEmpty(_cycle)) return;
 
+            Rioting();
+
             var clock = Game.GameTime;
 
             var slow = Math.Sin(clock / SwellSlowMs * Math.PI * 2.0);
@@ -1567,11 +1626,89 @@ namespace Hoodrich.Economy
 
             var want = _cycleOwner.Strength * _cyclePower * ride;
 
+            // NOT WHILE HE IS IN THE SKY. On the ground the look is over a solid world and it
+            // can be pushed as far as it likes -- there is a street under it whatever colour
+            // it goes. Nine hundred metres up there is nothing but sky, and a full-strength
+            // wash over nothing is not a trip, it is fog: the picture goes white, he vanishes
+            // into it, and the one thing worth looking at is the thing you cannot see.
+            //
+            // So it is held back on the way down and the COLOUR does the work instead.
+            if (_falling != 0 && want > FallLook) want = FallLook;
+
             if (want < 0f) want = 0f;
 
             try { Function.Call(Hash.SET_TIMECYCLE_MODIFIER_STRENGTH, want); }
             catch { /* it stays where Recombine left it */ }
         }
+
+        /// <summary>
+        /// The colours, from the second one on.
+        ///
+        /// A LIST WALKED IN ORDER RATHER THAN PICKED AT RANDOM. Random would put two greens
+        /// next to each other about as often as not, and two greens in a row is where a trip
+        /// stops moving. Written in the order they should arrive and stepped through, so pink
+        /// is always followed by the warp and never by another pink.
+        ///
+        /// The transition time is most of the gap between changes, so one is still arriving
+        /// when the next is asked for and the world is never sat on a single colour.
+        ///
+        /// AND ONLY FROM THE SECOND. One tab is the postfx and the green; two is when the
+        /// room starts changing colour round him. That difference is the whole point of a
+        /// second one and it has to be visible from across the street.
+        /// </summary>
+        private void Rioting()
+        {
+            var r = _cycleOwner;
+
+            if (r.Riot.Length == 0) return;
+            if (_cyclePower < 1f) return;
+
+            var now = Game.GameTime;
+
+            // Quicker on the way down. Forty seconds of falling wants more than seven
+            // changes in it, and there is nothing else happening to look at.
+            var gap = _falling != 0 ? RiotFallMs : RiotEveryMs;
+
+            if (_riotAt != 0 && now - _riotAt < gap) return;
+
+            _riotAt = now;
+            _riotStep = (_riotStep + 1) % r.Riot.Length;
+
+            var name = r.Riot[_riotStep];
+
+            try
+            {
+                Function.Call(Hash.SET_TRANSITION_TIMECYCLE_MODIFIER, name,
+                              (_falling != 0 ? RiotFallBlendMs : RiotBlendMs) / 1000f);
+
+                // The strength call in Swelling acts on whatever is current, so the name has
+                // to be remembered here or the breath would go on riding the one before it.
+                _cycle = name;
+            }
+            catch
+            {
+                // It stays on the one it was on, which is still a trip.
+            }
+        }
+
+        private int _riotAt;
+        private int _riotStep;
+
+        /// <summary>How often the colour changes, and how long it takes to get there.</summary>
+        private const int RiotEveryMs = 5200;
+        private const float RiotBlendMs = 4200f;
+
+        /// <summary>The same, on the way down, where there is nothing else to watch.</summary>
+        private const int RiotFallMs = 2600;
+        private const float RiotFallBlendMs = 2200f;
+
+        /// <summary>
+        /// The most the look may be worth while he is in the air. See Swelling.
+        ///
+        /// Well under one, because there is no world up there for it to tint -- past about
+        /// two thirds a sky-only picture stops being a colour and becomes a white-out.
+        /// </summary>
+        private const float FallLook = 0.62f;
 
         /// <summary>The two breaths, and how far either of them moves it.</summary>
         private const double SwellSlowMs = 17000.0;
@@ -1760,6 +1897,16 @@ namespace Hoodrich.Economy
             var now = Game.GameTime;
             var since = now - _falling;
 
+            // THE TRIP DOES NOT STOP BECAUSE HE IS IN THE AIR, and it used to. This method
+            // returns out of the top of Update, so the whole per-tick upkeep of the look --
+            // the breath, the colours, the lot -- was skipped for the entire fall and what was
+            // left was one timecycle at full strength, held still, for forty seconds. Which is
+            // exactly what it looked like: a white fog with a man in it.
+            //
+            // It runs here as well, and harder. See FallLook.
+            Swelling();
+            Bare();
+
             // THE SAME HARD FLOOR THE BLACKOUT HAS, and for the same reason: the worst thing
             // this file can do to somebody is leave them stuck. Past the point where the
             // sequence could still be running, he goes back on the ground with his screen and
@@ -1794,6 +1941,8 @@ namespace Hoodrich.Economy
                     return;
 
                 case 2:
+                    Easing(me);
+
                     // Down until the ground is close, and then the screen goes first.
                     if (me.Position.Z - _fellFrom.Z > FallCutAt &&
                         now - _fallAt < FallMostMs) return;
@@ -1821,6 +1970,55 @@ namespace Hoodrich.Economy
             }
         }
 
+        /// <summary>
+        /// The last part of the way down, slowed.
+        ///
+        /// A REAL FALL FROM NINE HUNDRED METRES IS TWO SECONDS OF SPECTACLE AND FIFTEEN OF
+        /// WAITING, and then it is over before you have looked at anything. He arrives at
+        /// terminal velocity, which for a man is about fifty metres a second, and at fifty
+        /// metres a second the last three hundred are gone in six.
+        ///
+        /// So the top of it is a fall and the bottom of it is a float. Nothing happens for the
+        /// first six hundred metres -- he drops the way anybody drops -- and then the ceiling
+        /// on how fast he may descend comes down with him, until at the point the screen takes
+        /// him he is drifting at walking pace. That is where the colours are, that is where
+        /// the city is close enough to be a city rather than a map, and it is the part worth
+        /// spending the time on.
+        ///
+        /// ONLY THE DOWNWARD HALF IS TOUCHED. Whatever he is doing sideways is him steering,
+        /// and taking that off him would turn the one interactive thing about this into a
+        /// cutscene.
+        /// </summary>
+        private void Easing(Ped me)
+        {
+            try
+            {
+                var high = me.Position.Z - _fellFrom.Z;
+
+                if (high > FallEaseFrom) return;
+
+                var t = high / FallEaseFrom;
+                if (t < 0f) t = 0f;
+
+                var most = FallDrift + (FallTerminal - FallDrift) * t;
+
+                var v = me.Velocity;
+
+                if (v.Z >= -most) return;
+
+                me.Velocity = new Vector3(v.X, v.Y, -most);
+            }
+            catch
+            {
+                // He falls at whatever the game gives him.
+            }
+        }
+
+        /// <summary>Where the float starts, and the two speeds it runs between.</summary>
+        private const float FallEaseFrom = 320f;
+        private const float FallTerminal = 52f;
+        private const float FallDrift = 7.5f;
+
         /// <summary>Straight up, arms out.</summary>
         private void Up(Ped me)
         {
@@ -1831,11 +2029,7 @@ namespace Hoodrich.Economy
             {
                 Function.Call(Hash.CLEAR_PED_TASKS_IMMEDIATELY, me.Handle);
 
-                // NO PARACHUTE, and taken off him rather than assumed absent: a man who has
-                // been skydiving this session still has one, and one tap of it turns the whole
-                // thing into a jump.
-                Function.Call(Hash.REMOVE_WEAPON_FROM_PED, me.Handle,
-                              Function.Call<uint>(Hash.GET_HASH_KEY, "GADGET_PARACHUTE"));
+                Bare();
 
                 Function.Call(Hash.SET_ENTITY_INVINCIBLE, me.Handle, true);
                 Function.Call(Hash.SET_PED_CAN_RAGDOLL, me.Handle, false);
@@ -1854,6 +2048,41 @@ namespace Hoodrich.Economy
             {
                 Log.Debug("Could not put him in the sky: " + ex.Message);
                 Ground();
+            }
+        }
+
+        /// <summary>
+        /// Nothing on his back.
+        ///
+        /// TWO THINGS, AND TAKING THE WEAPON AWAY IS ONLY ONE OF THEM. The parachute is a
+        /// weapon and it is also a BAG -- component slot five, the same slot a rucksack goes
+        /// in -- and the two are set separately. Removing the weapon leaves the pack sitting
+        /// there on his shoulders, which is what the screenshot showed: a man plainly wearing
+        /// a parachute and falling to his death anyway.
+        ///
+        /// EVERY TICK OF THE FALL, not once at the top. TASK_SKY_DIVE is the game's own
+        /// skydive and the game's own skydive believes people have parachutes; it puts one
+        /// back. Asking every tick is two natives against a thing that costs the whole shot if
+        /// it wins once.
+        /// </summary>
+        private static void Bare()
+        {
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return;
+
+                Function.Call(Hash.REMOVE_WEAPON_FROM_PED, me.Handle,
+                              Function.Call<uint>(Hash.GET_HASH_KEY, "GADGET_PARACHUTE"));
+
+                Function.Call(Hash.SET_PLAYER_HAS_RESERVE_PARACHUTE, Game.Player.Handle, false);
+
+                // Slot 5 is the bag. Nought, nought is nothing on it.
+                Function.Call(Hash.SET_PED_COMPONENT_VARIATION, me.Handle, 5, 0, 0, 0);
+            }
+            catch
+            {
+                // He falls either way.
             }
         }
 
