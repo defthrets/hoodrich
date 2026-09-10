@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -1402,14 +1402,29 @@ namespace Hoodrich.Social
             if (chance < 1f && _rng.NextDouble() > chance) return;
 
             var post = Build(SetFor(kind, subject), subject, amount);
-            if (post == null) return;
 
-            post.AboutYou = true;
-            Add(post);
-            Notify(post);
+            // A POST OF YOURS IS NOT WHAT MAKES THE BLOCK TALK. React writes what everybody
+            // else says about the thing that happened, and it happened whether or not you had
+            // anything to say about it -- so a missing set of your own must not take their
+            // half with it.
+            //
+            // It did. SocialEvent.WastedBy resolves to a set called "WastedBy" that nobody
+            // ever wrote, so this returned before React and the ninety-two lines behind
+            // WastedShot, WastedMelee, WastedCar and WastedBlast had never once been seen.
+            // Those four are reachable from React and from nowhere else.
+            if (post != null)
+            {
+                post.AboutYou = true;
+                Add(post);
+                Notify(post);
+            }
 
             // Then everybody else's reaction to the same thing, seconds apart.
             React(kind, subject);
+
+            // FOLLOWERS STAY BEHIND THE POST. A gain is your own post doing numbers; no post
+            // of yours, no numbers.
+            if (post == null) return;
 
             var gained = FollowersFor(kind, amount);
             if (gained == 0) return;

@@ -4335,11 +4335,10 @@ namespace Hoodrich
 
                 if (Game.Player.Wanted.WantedLevel > 1) return;
 
-                if (!_capped)
-                {
-                    LawHold.Cap(1);
-                    _capped = true;
-                }
+                // ONLY LATCH IT IF IT WENT ON. Cap stands down while a hold is live, and
+                // this used to record the cap either way -- so a wall tagged during a gang war
+                // set the latch for a cap that was never applied, and never asked again.
+                if (!_capped && LawHold.Cap(1)) _capped = true;
 
                 if (Game.Player.Wanted.WantedLevel < 1)
             {

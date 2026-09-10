@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using GTA;
 using GTA.Native;
 
@@ -22,6 +22,44 @@ namespace Hoodrich.Core
         private static readonly HashSet<object> Holders = new HashSet<object>();
 
         private static int _wasMax = 5;
+
+        /// <summary>
+        /// Whether the ceiling above has been read yet.
+        ///
+        /// IT IS READ ONCE PER SESSION AND THEN NEVER AGAIN, because after the first time this
+        /// class touches the police every value GET_MAX_WANTED_LEVEL can return is one we put
+        /// there. This used to be "read it on the first hold", which is the same idea with one
+        /// case missing: a CAP is also one of ours, and a cap does not go through Hold.
+        ///
+        /// So tagging a wall in front of a cop capped the ceiling at one, a gang war an hour
+        /// later read that one as "what it was before", and put it back to one when the war
+        /// ended -- for the rest of the session, silently, with no way up. Guarding the hold
+        /// and not the cap is what made it a ratchet instead of a bug you would notice.
+        /// </summary>
+        private static bool _read;
+
+        /// <summary>
+        /// The ceiling as it was before this mod touched it, read at most once.
+        ///
+        /// Called at the top of both Hold and Cap -- the two doors into changing it -- so
+        /// whichever happens first is the one that gets to look.
+        /// </summary>
+        private static void Remember()
+        {
+            if (_read) return;
+            _read = true;
+
+            try
+            {
+                _wasMax = Function.Call<int>(Hash.GET_MAX_WANTED_LEVEL);
+                if (_wasMax <= 0) _wasMax = 5;
+            }
+            catch (System.Exception ex)
+            {
+                Log.Debug("Could not read the wanted ceiling: " + ex.Message);
+                _wasMax = 5;
+            }
+        }
 
         /// <summary>
         /// Whether anybody is currently holding the police off.
@@ -70,21 +108,11 @@ namespace Hoodrich.Core
 
             if (Bridge.Hold(who.GetType().Name)) return;
 
-            if (first)
-            {
-                try
-                {
-                    _wasMax = Function.Call<int>(Hash.GET_MAX_WANTED_LEVEL);
-                    if (_wasMax <= 0) _wasMax = 5;
+            // Before the ceiling below is written over. See Remember -- at most once a
+            // session, and a cap may well have got here first.
+            Remember();
 
-                    Log.Info("Law: off, held by " + who.GetType().Name + ".");
-                }
-                catch (System.Exception ex)
-                {
-                    Log.Debug("Could not read the wanted ceiling: " + ex.Message);
-                    _wasMax = 5;
-                }
-            }
+            if (first) Log.Info("Law: off, held by " + who.GetType().Name + ".");
 
             try
             {
@@ -118,13 +146,32 @@ namespace Hoodrich.Core
         ///
         /// A hold outranks a cap and simply wins: nothing is more capped than off.
         /// </summary>
-        public static void Cap(int stars)
+        /// <summary>
+        /// Returns whether the cap actually went on, so a caller does not record one that did not.
+        ///
+        /// It returned void and stood down silently during a hold -- and Main set its own
+        /// "capped" latch either way, so a cap asked for during a gang war was never applied,
+        /// never re-applied when the war ended, and never asked for again.
+        /// </summary>
+        public static bool Cap(int stars)
         {
-            if (Bridge.Cap(stars)) return;
-            if (Held) return;
+            if (Bridge.Cap(stars)) return true;
+            if (Held) return false;
 
-            try { Function.Call(Hash.SET_MAX_WANTED_LEVEL, stars < 0 ? 0 : stars); }
-            catch (System.Exception ex) { Log.Debug("Could not cap the law: " + ex.Message); }
+            // Before we write over it, exactly as Hold does. A cap is very often the first
+            // thing in a session to touch the ceiling at all.
+            Remember();
+
+            try
+            {
+                Function.Call(Hash.SET_MAX_WANTED_LEVEL, stars < 0 ? 0 : stars);
+                return true;
+            }
+            catch (System.Exception ex)
+            {
+                Log.Debug("Could not cap the law: " + ex.Message);
+                return false;
+            }
         }
 
         /// <summary>Back to whatever the ceiling was before anybody touched it.</summary>

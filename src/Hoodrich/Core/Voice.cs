@@ -206,6 +206,16 @@ namespace Hoodrich.Core
                 // still have a voice.
                 var key = string.IsNullOrEmpty(named) ? Key(speaker, line) : named;
 
+                // WHAT WAS ASKED FOR, KEPT SEPARATELY FROM WHAT ANSWERED.
+                //
+                // The fallback below can move `key` onto the hashed name, and this used to be
+                // the only record -- so the name the line asked under was never written down,
+                // the check above missed it again next time, and the recording played on every
+                // single utterance. Lamar's two greetings are exactly that case, so his whole
+                // introduction replayed every time you walked up to him, for the life of the
+                // save. See Kept, which now records both.
+                var asked = key;
+
                 // Once. The text stays on screen either way; only the performance is spent.
                 if (!Repeat && Heard != null && Heard(key)) return false;
 
@@ -254,7 +264,16 @@ namespace Hoodrich.Core
                 // mode; it has to be able to explain itself on the log people already have.
                 Log.Info("Voice: playing " + Path.GetFileName(path));
 
-                if (Start(path)) { Kept(key); return true; }
+                // BOTH NAMES. It was asked for under one and answered under the other, and
+                // either could be the one asked next time -- a node quoting the same words
+                // hashes to this file with no name at all. Recording one leaves the same hole
+                // in the other direction. Kept ignores a repeat, so this costs nothing.
+                if (Start(path))
+                {
+                    Kept(key);
+                    if (!string.Equals(asked, key, StringComparison.Ordinal)) Kept(asked);
+                    return true;
+                }
 
                 // THE SAME LINE IN THE OTHER FORMAT, if the pack happens to carry it.
                 //
@@ -268,7 +287,12 @@ namespace Hoodrich.Core
                 {
                     Log.Info("Voice: trying " + Path.GetFileName(other) + " instead.");
 
-                    if (Start(other)) { Kept(key); return true; }
+                    if (Start(other))
+                    {
+                        Kept(key);
+                        if (!string.Equals(asked, key, StringComparison.Ordinal)) Kept(asked);
+                        return true;
+                    }
                 }
 
                 return false;

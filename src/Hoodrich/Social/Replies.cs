@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using Hoodrich.Core;
@@ -113,19 +113,65 @@ namespace Hoodrich.Social
 
             var hay = ((subject ?? "") + " " + (body ?? "")).ToLowerInvariant();
 
-            foreach (var set in Sets)
+            // MOST SPECIFIC FIRST, NOT FIRST IN THE FILE. See Ordered.
+            foreach (var pair in Ordered())
             {
-                foreach (var word in set.When)
-                {
-                    if (string.IsNullOrEmpty(word)) continue;
-                    if (hay.IndexOf(word, StringComparison.Ordinal) < 0) continue;
+                if (hay.IndexOf(pair.Word, StringComparison.Ordinal) < 0) continue;
 
-                    back = set.Back;
-                    return set.Lines[Rng.Next(set.Lines.Length)];
-                }
+                back = pair.Set.Back;
+                return pair.Set.Lines[Rng.Next(pair.Set.Lines.Length)];
             }
 
             return _fallback[Rng.Next(_fallback.Length)];
+        }
+
+        /// <summary>One trigger word and the set it belongs to. See Ordered.</summary>
+        private sealed class Trigger
+        {
+            public string Word;
+            public Set Set;
+        }
+
+        private static Trigger[] _ordered;
+
+        /// <summary>
+        /// Every trigger word in the file, longest first, regardless of which set it came from.
+        ///
+        /// A SHORTER WORD IS A SUBSTRING OF A LONGER ONE, and matching in file order meant an
+        /// early set ate a later one whole: "war" answered every message about a warrant, and
+        /// "car" answered every message about Carson -- which is the takeover block, so none of
+        /// its lines could ever be reached. Nothing errored; the wrong set simply replied.
+        ///
+        /// Specificity settles it in both directions. "warrant" wins over "war" because it says
+        /// more, and "raid" still matches "raided" when nothing more specific is offered. File
+        /// order stops deciding anything, so adding a set can no longer kill one below it --
+        /// which matters for a file meant to be edited without a compiler.
+        ///
+        /// Lowercased here as well as in the haystack. Only one side was, so a word typed with
+        /// a capital could never match and said nothing about why. Every word shipped today is
+        /// lowercase, but the worked example in the doc above is written in caps.
+        /// </summary>
+        private static Trigger[] Ordered()
+        {
+            if (_ordered != null) return _ordered;
+
+            var all = new List<Trigger>();
+
+            foreach (var set in Sets)
+            {
+                if (set == null || set.When == null) continue;
+
+                foreach (var word in set.When)
+                {
+                    if (string.IsNullOrEmpty(word)) continue;
+                    all.Add(new Trigger { Word = word.ToLowerInvariant(), Set = set });
+                }
+            }
+
+            all.Sort((a, b) => b.Word.Length.CompareTo(a.Word.Length));
+
+            _ordered = all.ToArray();
+            return _ordered;
         }
 
         /// <summary>
