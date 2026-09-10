@@ -14,8 +14,13 @@ Two ways to get a list, and they answer different questions:
              with the speaker the screen actually used.
 
   --data     Walk the json and list what could be recorded before ever launching the game.
-             Misses everything written in the source -- the tryout, the docks, the mission
-             briefs -- because the speaker of those is only decided at runtime.
+
+  --source   The whole sentences written into the C# talk files, which is most of what the
+             people you stand in front of actually say.
+
+  --feed     The social posts. OFF BY DEFAULT, because a post is read on a phone screen and
+             nobody speaks it -- they were most of every list this ever printed and not one of
+             them was ever going to be recorded.
 
 Output is CSV: filename, speaker, text. Feed the text column to ElevenLabs and save each
 result as the filename column, into scripts\\Hoodrich\\voice.
@@ -151,12 +156,22 @@ def from_data(root):
     # Dealers say their own shop lines.
     doc = load("dealers.json")
     for d in (doc or {}).get("dealers", []):
-        for field in ("greeting", "buyLine", "sourceReply", "sourceTooSoon", "farewell",
-                      "numberLine", "openingText"):
-            add(d.get("name", ""), d.get(field))
-        for field in ("textCalled", "textLeaving", "textOutside"):
-            for line in d.get(field) or []:
-                add(d.get("name", ""), line)
+        # A DEALER CAN BE TWO PEOPLE. The docks entry carries an "afterCheng" block: who is
+        # stood there once the old man has been told about his son, sober and on time and a
+        # different name entirely. It is loaded through the same reader as the block above and
+        # every line in it is a line somebody says out loud -- and no list has ever included
+        # one of them, so his whole part has been invisible to whoever was recording.
+        for block in (d, d.get("afterCheng") or {}):
+            who = block.get("name") or d.get("name", "")
+            if not who:
+                continue
+
+            for field in ("greeting", "buyLine", "sourceReply", "sourceTooSoon", "farewell",
+                          "numberLine", "openingText"):
+                add(who, block.get(field))
+            for field in ("textCalled", "textLeaving", "textOutside"):
+                for line in block.get(field) or []:
+                    add(who, line)
 
         # And the shop line, which the source builds with the money on you and the room at the
         # house stapled to the end, so it names itself rather than hashing: <slug>_shop when
@@ -183,13 +198,45 @@ def from_data(root):
         for line in m.get("briefMore") or []:
             add("Lamar", line)
 
-    # And the feed, where the author's own name is on every voice.
-    doc = load("socials.json") or {}
+    return rows
+
+
+# ------------------------------------------------------------------- the feed
+#
+# NOBODY SPEAKS A POST. The feed is text on a phone screen and it is read, not heard, so its
+# thousands of lines are not work waiting to be done -- they were the bulk of every list this
+# tool has ever printed and none of it was ever going to be recorded.
+#
+# It is still listable, because the day somebody wants a voice reading the timeline out it is
+# one flag away. Off by default is the only part that changed.
+#
+# Half of them could not be recorded anyway: a post is written with {hood}, {street} and the
+# rest, filled in from wherever the player is standing when it goes up, and a key is a hash of
+# the FINISHED sentence -- so the same post names a different file in every neighbourhood.
+# That is the feature working, not a fault to fix.
+
+def from_feed(root):
+    rows, seen = [], set()
+
+    p = os.path.join(root, "data", "socials.json")
+    doc = json.load(io.open(p, encoding="utf-8-sig")) if os.path.exists(p) else {}
+
     who = {a.get("voice"): a.get("name") for a in doc.get("authors", []) if a.get("voice")}
+
     for voice, cats in (doc.get("voices") or {}).items():
+        speaker = who.get(voice, voice)
+
         for lines in (cats or {}).values():
             for line in lines or []:
-                add(who.get(voice, voice), line)
+                if not line or len(line) < 12 or line.count(" ") < 2:
+                    continue
+
+                name = key(speaker, line)
+                if name in seen:
+                    continue
+
+                seen.add(name)
+                rows.append((name + ".mp3", speaker, tidy(line)))
 
     return rows
 
@@ -291,14 +338,16 @@ def main():
     ap.add_argument("--data", action="store_true", help="list what the json holds")
     ap.add_argument("--source", action="store_true",
                     help="list the whole sentences written into the C#")
+    ap.add_argument("--feed", action="store_true",
+                    help="include the social posts, which are read rather than heard")
     ap.add_argument("--who", metavar="NAME", help="only this speaker")
     ap.add_argument("--need", nargs="?", const="", metavar="DIR",
                     help="only the ones not in the voice folder already")
     ap.add_argument("--root", default=HERE)
     args = ap.parse_args()
 
-    if args.log is None and not args.data and not args.source:
-        ap.error("pick --log, --data or --source")
+    if args.log is None and not args.data and not args.source and not args.feed:
+        ap.error("pick --log, --data, --source or --feed")
 
     rows = []
 
@@ -311,6 +360,9 @@ def main():
 
     if args.source:
         rows += from_source(args.root)
+
+    if args.feed:
+        rows += from_feed(args.root)
 
     # The same line can come out of two of those at once -- a mission brief is in the json and
     # in the log the moment it has been on screen once.
