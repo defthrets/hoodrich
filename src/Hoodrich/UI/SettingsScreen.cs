@@ -254,6 +254,16 @@ namespace Hoodrich.UI
         private int _place;
 
         /// <summary>The place row itself, so its list can be rebuilt when the group changes.</summary>
+        /// <summary>
+        /// Set by Main. Starts a car meet and hands back why not, or null.
+        ///
+        /// A FUNC RATHER THAN THE OBJECT, so this screen knows nothing about how a meet is
+        /// held -- the same way it knows nothing about how a door is written. A screen that
+        /// reaches into the thing it is a screen for is a screen that has to change every
+        /// time that thing does.
+        /// </summary>
+        public Func<string> Meet;
+
         private Opt _placeRow;
 
         /// <summary>The place the two door rows will write to.</summary>
@@ -752,6 +762,28 @@ namespace Hoodrich.UI
             // A DOOR IS TWO COORDINATES AND A NAME, and the coordinates can only honestly
             // come from somebody standing on them. Four rounds of guessing where a room was
             // is what these two rows exist to stop happening again.
+            Head("The block");
+
+            // ONE PRESS, BECAUSE A MEET IS A THING THAT HAPPENS RATHER THAN A SETTING. There
+            // is nothing to configure here -- where the cars park is twelve coordinates in
+            // data\carmeet.json, which is the file to edit if a space is in the wrong place,
+            // and what turns up is the set's own cars. All this row does is say "now".
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Action,
+                Label = "Call a car meet",
+                Note = "The set brings their cars down to Carson Ave and parks up",
+                Do = () =>
+                {
+                    if (Meet == null) return;
+
+                    var no = Meet();
+
+                    if (no != null) Notify.Problem(no);
+                    else Notify.Ticker("~g~word's out.~s~  they're on their way.");
+                }
+            });
+
             Head("Doors");
 
             // THE LIST IS NAMES, THE PRESSES ARE NUMBERS. Everywhere in the game with an

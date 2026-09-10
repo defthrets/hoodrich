@@ -799,6 +799,18 @@ namespace Hoodrich.Locations
         };
 
         /// <summary>
+        /// The same cars, for anything else that wants the set's cars.
+        ///
+        /// THE MEET DRIVES WHAT THE BLOCK DRIVES, and that is the whole reason this is here
+        /// rather than a second list somewhere else. A car meet full of cars nobody round here
+        /// owns is a car show; the same Sultans and Sentinels that line the kerb at a takeover
+        /// turning up on Carson Ave of an evening is THEIR meet. One list, two places, and it
+        /// cannot drift.
+        /// </summary>
+        public static string[] TheirCars => Parked;
+        public static string[] TheirLowriders => Lows;
+
+        /// <summary>
         /// Donks, parked up with the rest of them.
         ///
         /// Their own list rather than more names in Parked, because they are the cars people

@@ -102,6 +102,12 @@ namespace Hoodrich
         /// -- it has no coordinate of its own and never needs one.
         /// </summary>
         private readonly Locations.Range _range = new Locations.Range();
+
+        /// <summary>
+        /// The car meet. Twelve spaces on Carson Ave and the cars that drive to them.
+        /// See Locations.CarMeet -- every coordinate in it was stood on.
+        /// </summary>
+        private readonly Locations.CarMeet _carMeet = new Locations.CarMeet();
         private readonly Hao _hao;
 
         /// <summary>
@@ -2355,6 +2361,14 @@ namespace Hoodrich
 
                 _range.State = _state;
 
+                // THE MEET DRIVES WHAT THE BLOCK DRIVES. Handed the takeover's own lists
+                // rather than keeping a second copy -- see Takeover.TheirCars.
+                _carMeet.Cars = () => Locations.Takeover.TheirCars;
+                _carMeet.Lowriders = () => Locations.Takeover.TheirLowriders;
+                _carMeet.Load();
+
+                if (_settingsScreen != null) _settingsScreen.Meet = () => _carMeet.Start();
+
                 // The rack is a screen now. The conversation is still how you get to it -- you
                 // walk up to a man and he says something -- but what he shows you once you have
                 // asked is a laid-out stock list rather than five pages of dialogue choices.
@@ -3786,6 +3800,7 @@ namespace Hoodrich
                     // the one to look at what Stretch is holding. Both are the context button
                     // and the range is the one that can wait.
                     _range.Update();
+                    _carMeet.Update();
 
                     _hao.Update();
                     if (_ownedCars != null) _ownedCars.Update();

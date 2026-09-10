@@ -1,0 +1,42 @@
+{
+  "_comment": [
+    "THE CAR MEET. Where the cars park, and nothing else.",
+    "",
+    "EVERY NUMBER IN HERE WAS STOOD ON. Each spot is a coordinate and a heading read off",
+    "the screen while parked in it -- not measured off a map, not derived from anything.",
+    "That is the only way this mod has ever got a coordinate right, and a car park is",
+    "twelve of them in a row where being a metre out is the difference between a line of",
+    "cars and a pile-up.",
+    "",
+    "THE HEADING IS THE HALF THAT MATTERS. A spot with the right position and the wrong",
+    "heading is a car parked across two bays. They are written to three decimals for the",
+    "same reason: half a degree over eight metres of car is a nose sticking out.",
+    "",
+    "ROLES.",
+    "  park    an ordinary space. The car drives in, parks, and sits there.",
+    "  hop     the one on juice. A lowrider, green, green neons, bouncing on hydraulics --",
+    "          see Locations/CarMeet.cs. It is out on its own away from the row because",
+    "          that is where the crowd stands, and because a car on hydraulics next to a",
+    "          parked one is a car hitting a parked one.",
+    "",
+    "ADDING A SPOT is a line in here and nothing else. Park where you want it, read the",
+    "four numbers off the screen, and put them in. The meet fills as many spaces as it",
+    "finds and never spawns more cars than there are places to put them."
+  ],
+
+  "spots": [
+    { "role": "park", "x": -219.198, "y": -1491.977, "z": 30.916, "heading": 317.422 },
+    { "role": "park", "x": -222.382, "y": -1489.847, "z": 30.941, "heading": 323.101 },
+    { "role": "park", "x": -224.450, "y": -1487.730, "z": 30.958, "heading": 318.455 },
+    { "role": "park", "x": -226.920, "y": -1485.809, "z": 30.978, "heading": 316.895 },
+    { "role": "park", "x": -229.794, "y": -1483.485, "z": 31.006, "heading": 318.195 },
+    { "role": "park", "x": -232.465, "y": -1480.106, "z": 31.034, "heading": 342.843 },
+    { "role": "park", "x": -236.432, "y": -1476.953, "z": 31.069, "heading": 131.000 },
+    { "role": "park", "x": -240.015, "y": -1474.885, "z": 31.111, "heading": 139.145 },
+    { "role": "park", "x": -216.654, "y": -1484.104, "z": 30.899, "heading": 49.481 },
+    { "role": "park", "x": -223.442, "y": -1478.288, "z": 31.017, "heading": 49.815 },
+    { "role": "park", "x": -231.708, "y": -1471.463, "z": 31.168, "heading": 50.697 },
+
+    { "role": "hop", "x": -212.883, "y": -1494.726, "z": 30.921, "heading": 91.206 }
+  ]
+}
