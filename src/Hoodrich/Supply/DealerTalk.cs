@@ -192,10 +192,18 @@ namespace Hoodrich.Supply
                 }
             }
 
-            var node = Node((strength >= 0.999f
-                ? "Ain't got time to stand here. What you taking? Nothing here's been touched."
+            // HIS OWN WORDS WHERE HE HAS THEM. Empty falls back to the shared line, which is
+            // what all three said before any of it was recorded.
+            var whole = Def != null && !string.IsNullOrEmpty(Def.ShopLine)
+                ? Def.ShopLine
+                : "Ain't got time to stand here. What you taking? Nothing here's been touched.";
+
+            var cut = Def != null && !string.IsNullOrEmpty(Def.ShopCutLine)
+                ? Def.ShopCutLine
                 : "Ain't got time to stand here. What you taking? It's all stepped on already, " +
-                  Stash.Percent(strength) + " per cent.") + number + Standing());
+                  Stash.Percent(strength) + " per cent.";
+
+            var node = Node((strength >= 0.999f ? whole : cut) + number + Standing());
 
                 // NO HASH CAN REACH THIS ONE. What he says is fixed, but the money on you and
                 // the room at the house are stapled to the end of it and change every time -- so

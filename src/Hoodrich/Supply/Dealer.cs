@@ -434,6 +434,17 @@ namespace Hoodrich.Supply
         public string Greeting = "";
         public string BuyLine = "";
 
+        /// <summary>
+        /// What he says over the counter, and the version for stock that has been cut.
+        ///
+        /// Empty means the shared one, which is what every dealer used until somebody recorded
+        /// theirs. The file is named by TAG rather than by what is said -- see DealerTalk and
+        /// Voice.Named -- so these can differ per man for nothing, and they should: Tao opens
+        /// with "Ai-ya" and Hao does not.
+        /// </summary>
+        public string ShopLine = "";
+        public string ShopCutLine = "";
+
         /// <summary>Reply when the player asks where the product comes from, and it works.</summary>
         public string SourceReply = "";
 

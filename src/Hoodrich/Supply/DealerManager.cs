@@ -163,6 +163,8 @@ namespace Hoodrich.Supply
 
             def.Greeting = node["greeting"].AsString(def.Greeting);
             def.BuyLine = node["buyLine"].AsString(def.BuyLine);
+            def.ShopLine = node["shopLine"].AsString(def.ShopLine);
+            def.ShopCutLine = node["shopCutLine"].AsString(def.ShopCutLine);
             def.SourceReply = node["sourceReply"].AsString(def.SourceReply);
             def.SourceTooSoon = node["sourceTooSoon"].AsString(def.SourceTooSoon);
             def.Farewell = node["farewell"].AsString(def.Farewell);
