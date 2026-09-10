@@ -105,6 +105,10 @@ namespace Hoodrich.Locations
         private int _lastTick;
         private int _lastSend;
         private int _next;
+
+        /// <summary>How many goes this space has had, and how many it gets. See Sending.</summary>
+        private int _misses;
+        private const int MostMisses = 4;
         private Vector3 _middle;
         private Blip _blip;
 
@@ -199,6 +203,8 @@ namespace Hoodrich.Locations
             _on = true;
             _next = 0;
             _lastSend = 0;
+            _startedAt = Game.GameTime;
+            _misses = 0;
 
             Sweep(null);
 
@@ -207,6 +213,65 @@ namespace Hoodrich.Locations
             Log.Info("Car meet: on, " + _spots.Count + " space(s) to fill.");
             return null;
         }
+
+        /// <summary>
+        /// Time. Everybody unfrozen, handed back, and let go.
+        ///
+        /// NOT DELETED WHERE THEY STAND. Twelve cars vanishing out of a car park in front of
+        /// somebody is worse than twelve cars being there too long. They are unfrozen, the
+        /// handbrake comes off, the engine goes on and they are released to the game -- which
+        /// means the population manager owns them again and clears them the way it clears
+        /// anything else: once nobody is looking.
+        ///
+        /// The drivers are let go with them. They are sat in cars they own now, and a ped in a
+        /// car the game owns is a car that drives away, which is exactly how a meet should end.
+        /// </summary>
+        private void Over()
+        {
+            Log.Info("Car meet: time. " + _out.Count + " car(s) heading off.");
+
+            foreach (var r in _out)
+            {
+                try
+                {
+                    if (r.Car != null && r.Car.Exists())
+                    {
+                        Function.Call(Hash.FREEZE_ENTITY_POSITION, r.Car.Handle, false);
+                        Function.Call(Hash.SET_VEHICLE_HANDBRAKE, r.Car.Handle, false);
+                        Function.Call(Hash.SET_VEHICLE_ENGINE_ON, r.Car.Handle, true, true, true);
+                        Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, r.Car.Handle, false, true);
+
+                        r.Car.MarkAsNoLongerNeeded();
+                    }
+
+                    if (r.Driver != null && r.Driver.Exists())
+                    {
+                        Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, false);
+                        Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, r.Driver.Handle, false);
+                        Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+                        Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, r.Driver.Handle, false, true);
+
+                        r.Driver.MarkAsNoLongerNeeded();
+                    }
+                }
+                catch
+                {
+                    // It goes with the session either way.
+                }
+            }
+
+            _out.Clear();
+            _next = 0;
+            _on = false;
+
+            Unblip();
+        }
+
+        /// <summary>How long one lasts.</summary>
+        private const int RunMs = 600000;
+
+        /// <summary>When it was called. See Update.</summary>
+        private int _startedAt;
 
         public void Stop()
         {
@@ -255,6 +320,16 @@ namespace Hoodrich.Locations
                 // wherever the player actually is.
                 if (player.Position.DistanceTo(_middle) > ForgetAt) { Stop(); return; }
 
+                // TEN MINUTES AND THEY GO HOME. A meet with no end is a car park with twelve
+                // cars welded into it for the rest of the session -- twelve vehicles and twelve
+                // peds the game cannot have back, on a block that already runs a takeover and a
+                // set of rollers out of the same pool.
+                //
+                // THE LAST CAR IN GETS ITS TIME. The clock starts when the meet is called, and
+                // the twelfth car does not arrive until nearly a minute in, so the run is
+                // measured from the start and the ending is not a hard cut -- see Over.
+                if (now - _startedAt > RunMs) { Over(); return; }
+
                 Sending(player, now);
 
                 foreach (var r in _out) Driving(r, now);
@@ -274,7 +349,6 @@ namespace Hoodrich.Locations
             _lastSend = now;
 
             var spot = _spots[_next];
-            _next++;
 
             // AND AGAIN, FOR THIS ONE. The spaces were emptied when the meet was called, but
             // a car sets off from half a mile away and traffic parks in things. Clearing the
@@ -284,7 +358,27 @@ namespace Hoodrich.Locations
 
             var r = Send(player, spot, now);
 
-            if (r != null) _out.Add(r);
+            // A SPACE IS ONLY SPENT ON A CAR THAT ACTUALLY SET OFF. This moved on to the next
+            // spot whether or not anything had been made for this one, so twelve failed sends
+            // was twelve empty spaces and one car at the meet -- reported as exactly that. A
+            // send can fail for a reason that will not be true in three seconds: no road found
+            // out there, a model that would not stream, a full vehicle pool. So it keeps the
+            // space and tries again, and only gives up on it after several goes.
+            if (r == null)
+            {
+                _misses++;
+
+                if (_misses < MostMisses) return;
+
+                Log.Info("Car meet: gave up on one space after " + _misses + " tries.");
+            }
+            else
+            {
+                _out.Add(r);
+            }
+
+            _misses = 0;
+            _next++;
         }
 
         /// <summary>
@@ -399,11 +493,20 @@ namespace Hoodrich.Locations
                 //
                 // GetNextPositionOnStreet is the wrapper for the same job with the argument
                 // list already correct. There is no version of this worth hand-rolling.
+                // UNOCCUPIED FIRST, ANY ROAD SECOND. The unoccupied flag asks for a piece of
+                // road with nothing already on it, which is the right thing to want and is also
+                // a question a busy city answers with nothing rather often. Asked that way
+                // first because a car spawned on top of another car is a crash somebody sees;
+                // asked again without it, because no road at all is a space that stays empty.
                 var at = World.GetNextPositionOnStreet(probe, true);
+
+                if (at == Vector3.Zero) at = World.GetNextPositionOnStreet(probe, false);
 
                 if (at == Vector3.Zero)
                 {
                     model.MarkAsNoLongerNeeded();
+                    Log.Debug("Car meet: no road out at " + probe.X.ToString("0") + ", " +
+                              probe.Y.ToString("0") + ".");
                     return null;
                 }
 
@@ -516,7 +619,7 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, r.Car.Handle,
                               r.Spot.At.X, r.Spot.At.Y, r.Spot.At.Z, false, false, false);
 
-                Function.Call(Hash.SET_ENTITY_HEADING, r.Car.Handle, r.Spot.Heading);
+                Function.Call(Hash.SET_ENTITY_HEADING, r.Car.Handle, Facing(r));
                 Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, r.Car.Handle);
 
                 r.Car.Velocity = Vector3.Zero;
@@ -528,6 +631,20 @@ namespace Hoodrich.Locations
                 // He sits in it until there is somewhere for him to be. The peds who get out
                 // and stand about are the next piece of this and are not written yet.
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, r.Driver.Handle, true);
+
+                // AND IT DOES NOT GO ANYWHERE. THIS IS WHY THE FIRST ONE DROVE OFF.
+                //
+                // A driver whose tasks have just been cleared is a driver the game is free to
+                // hand a new one to, and the one it hands somebody sat behind a wheel is drive
+                // away. KEEP_TASK holds the nothing he was given -- but that on its own is a
+                // promise about tasks, not about the car, and a parked show car being shunted
+                // out of a row by traffic is the same problem wearing a different hat.
+                //
+                // FROZEN, WHICH FOR A PARKED CAR IS WHAT PARKED MEANS. It is square in a bay
+                // and it should still be square in that bay in ten minutes. The cost is that
+                // nobody can nudge it, and at a car meet that is not a cost.
+                Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, true);
+                Function.Call(Hash.FREEZE_ENTITY_POSITION, r.Car.Handle, true);
             }
             catch
             {
@@ -535,6 +652,42 @@ namespace Hoodrich.Locations
             }
 
             if (hauled) Log.Debug("Car meet: one was put in its space rather than driving in.");
+        }
+
+        /// <summary>
+        /// Which way round it ends up sitting.
+        ///
+        /// EITHER WAY DOWN THE BAY, whichever it is already nearest. The spot's heading came
+        /// off a car parked in it, so it is one of the two ways a car can sit there -- and a
+        /// car that has just driven in nose first was being spun a hundred and eighty degrees
+        /// on the spot to match it. That is the teleport: it drove in correctly and then
+        /// turned round without moving.
+        ///
+        /// A bay does not care which way you point. What it cares about is being square in
+        /// it, which is the part the snap is actually for. So the line is kept and the
+        /// direction along it is whichever the car already had -- reverse in and it stays
+        /// reversed, drive in and it stays nose first, and neither is ever spun.
+        /// </summary>
+        private static float Facing(Runner r)
+        {
+            var want = r.Spot.Heading;
+
+            try
+            {
+                var has = r.Car.Heading;
+
+                var off = Math.Abs(((want - has) % 360f + 540f) % 360f - 180f);
+
+                // More than a right angle away from the surveyed line means the other end of
+                // the same line is the near one.
+                if (off > 90f) return (want + 180f) % 360f;
+            }
+            catch
+            {
+                // Then the surveyed one, which is at least square in the bay.
+            }
+
+            return want;
         }
 
         // ---- the one on juice ---------------------------------------------------------------
