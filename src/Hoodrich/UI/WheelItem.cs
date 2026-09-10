@@ -71,6 +71,20 @@ namespace Hoodrich.UI
         /// <summary>Overrides the hover colour for this segment when set. Used by gang/turf pages.</summary>
         public Color? Tint = null;
 
+        /// <summary>
+        /// Whether this row's badge is something WAITING rather than something counted.
+        ///
+        /// Every tile on the phone carries a number and they are all the same grey, which is
+        /// right for nearly all of them: how many grams are bagged, how many followers, what
+        /// the gang is called. None of those are asking for anything. Unread messages are, and
+        /// a count that is asking looks exactly like a count that is not.
+        ///
+        /// So it is a flag rather than a colour. The screen decides what urgent LOOKS like --
+        /// see PhoneMenu.Tile -- and the page only has to know which of its rows is one, which
+        /// is the half a page actually knows.
+        /// </summary>
+        public bool Urgent;
+
         /// <summary>A disabled item still draws (so the wheel layout stays stable) but cannot be picked.</summary>
         public bool Enabled = true;
 
@@ -223,6 +237,19 @@ namespace Hoodrich.UI
         /// it is here and the phone lays it out at that shape. Game textures ignore it: theirs
         /// is resolved from the texture that actually won, further down.
         /// </summary>
+        /// <summary>
+        /// The row just added is one that is waiting on you. See WheelItem.Urgent.
+        ///
+        /// Fluent and after the fact, like WithIcon and WithMark, so nothing that builds a
+        /// page has to grow another argument -- and a row that is only sometimes urgent,
+        /// which is all of them, can say so on the line that works out whether it is.
+        /// </summary>
+        public WheelPage WhenWaiting(bool waiting)
+        {
+            if (Items.Count > 0) Items[Items.Count - 1].Urgent = waiting;
+            return this;
+        }
+
         public WheelPage WithIcon(Icon icon, float aspect = 1f)
         {
             if (Items.Count == 0 || !icon.IsSet) return this;

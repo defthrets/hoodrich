@@ -1947,9 +1947,38 @@ namespace Hoodrich.Phone
             {
                 var badge = item.Value.Length > 12 ? 0.185f : 0.21f;
 
+                // WAITING IS RED AND IT BREATHES; counted is grey like the rest of them.
+                //
+                // Every tile on here carries a number and they are all the same colour, which
+                // is right for nearly all of them -- grams bagged, followers, what the set is
+                // called. None of those want anything from you. Unread messages do, and until
+                // now they said so in exactly the same grey as the followers count.
+                //
+                // A SLOW SWELL, NOT A FLASH. Two and a half seconds a cycle and it never goes
+                // out: something blinking on a phone screen is an alarm and this is a message.
+                // It brightens and dims and you notice it from across the tile without it ever
+                // being the loudest thing on the page.
+                //
+                // RED EVEN WHEN THE CURSOR IS ON IT. This started the other way round -- the
+                // highlighted tile kept its green, on the reasoning that the cursor should not
+                // be argued with -- and it is wrong for one reason: the tile you are most
+                // likely to be stood on IS the one with messages waiting. So the whole feature
+                // would be invisible exactly when it mattered. The cursor still has the frame
+                // and the label, which is plenty to say where you are.
+                var mark = on ? Green : Palette.TextDim;
+
+                if (item.Urgent)
+                {
+                    var breath = 0.5f + 0.5f * (float)Math.Sin(
+                        (Game.GameTime % WaitingMs) / (float)WaitingMs * Math.PI * 2.0);
+
+                    mark = Color.FromArgb((int)(255f * (0.55f + 0.45f * breath)),
+                                          Palette.Danger.R, Palette.Danger.G, Palette.Danger.B);
+                }
+
                 Hud.Text(Hud.Fit(item.Value, w * 0.94f, badge, Hud.FontLabel),
                          x + w * 0.5f, badged, badge,
-                         Fade(on ? Green : Palette.TextDim, fade),
+                         Fade(mark, fade),
                          Hud.FontLabel, centre: true);
             }
 
@@ -1957,6 +1986,15 @@ namespace Hoodrich.Phone
                      x + w * 0.5f, named, 0.26f,
                      Fade(ink, fade), Hud.FontLabel, centre: true);
         }
+
+        /// <summary>
+        /// How long one breath of a waiting badge takes.
+        ///
+        /// Two and a half seconds. Fast enough to read as alive from the corner of your eye
+        /// and slow enough that it is never a blink -- a phone that flashes at you is an
+        /// alarm, and this is a text message.
+        /// </summary>
+        private const int WaitingMs = 2500;
 
         // ---- lists --------------------------------------------------------------
 

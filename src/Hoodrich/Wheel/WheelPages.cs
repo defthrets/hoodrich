@@ -1090,9 +1090,19 @@ namespace Hoodrich.Wheel
                 detail: Inbox.Unread > 0
                     ? Inbox.Unread == 1 ? "Somebody's texted you" : "You've got messages waiting"
                     : "Everything anybody has texted you, and a line back to your people",
-                value: Inbox.Unread > 0 ? Inbox.Unread + " new" : "",
+                // AND IT SAYS SOMETHING WHEN THERE IS NOTHING. An empty badge left this one
+                // tile blank in a grid where every other one carries a line, so "no messages"
+                // and "this tile has nothing to report" looked identical -- and there was no
+                // grey state for the red one to be a change FROM.
+                value: Inbox.Unread > 0 ? Inbox.Unread + " new" : "nothing new",
                 enabled: ShowMessages != null,
                 disabledReason: "Not wired up");
+
+            // AND IT SAYS SO IN RED. Every other badge on the home screen is a number about
+            // something you own; this one is a number about somebody waiting on you, and
+            // until now the two were the same grey. See WheelItem.Urgent.
+            page.WhenWaiting(Inbox.Unread > 0);
+
             page.WithIcon(Icons.FromFile("reply.png"));
 
             // Contacts sits on the RIGHT, two slots off Socials rather than next to it. The
