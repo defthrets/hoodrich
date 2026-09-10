@@ -18,6 +18,8 @@ Two ways to get a list, and they answer different questions:
   --source   The whole sentences written into the C# talk files, which is most of what the
              people you stand in front of actually say.
 
+  --texts    A courier's phone messages. OFF BY DEFAULT for the same reason the feed is: they
+             go through Notify.Text onto the phone and never past it. See from_data.
   --feed     The social posts. OFF BY DEFAULT, because a post is read on a phone screen and
              nobody speaks it -- they were most of every list this ever printed and not one of
              them was ever going to be recorded.
@@ -135,7 +137,7 @@ def from_log(path):
 # Every speaker here is known without running anything, which is what makes them listable up
 # front. The source-authored speeches are not, and that is what --log is for.
 
-def from_data(root):
+def from_data(root, texts=False):
     rows, seen = [], set()
 
     def add(speaker, text):
@@ -167,11 +169,24 @@ def from_data(root):
                 continue
 
             for field in ("greeting", "buyLine", "sourceReply", "sourceTooSoon", "farewell",
-                          "numberLine", "openingText"):
+                          "numberLine"):
                 add(who, block.get(field))
-            for field in ("textCalled", "textLeaving", "textOutside"):
-                for line in block.get(field) or []:
-                    add(who, line)
+
+            # NOBODY SPEAKS A TEXT. These four go through Dealer.SayCalled and its two
+            # neighbours into Notify.Text, which puts a message on the phone -- and Notify
+            # never calls Voice, so no recording of one has ever been played or ever could
+            # be. They sat on this list for months, sixteen of them for Hao alone, reading
+            # exactly like what they are: "im here!! come out come out" is not a
+            # performance.
+            #
+            # Listed on request rather than dropped, because somebody rewriting the courier's
+            # messages still wants to see them.
+            if texts:
+                add(who, block.get("openingText"))
+
+                for field in ("textCalled", "textLeaving", "textOutside"):
+                    for line in block.get(field) or []:
+                        add(who, line)
 
         # And the shop line, which the source builds with the money on you and the room at the
         # house stapled to the end, so it names itself rather than hashing: <slug>_shop when
@@ -399,6 +414,8 @@ def main():
     ap.add_argument("--data", action="store_true", help="list what the json holds")
     ap.add_argument("--source", action="store_true",
                     help="list the whole sentences written into the C#")
+    ap.add_argument("--texts", action="store_true",
+                    help="include a courier's phone messages, which are read rather than heard")
     ap.add_argument("--feed", action="store_true",
                     help="include the social posts, which are read rather than heard")
     ap.add_argument("--who", metavar="NAME", help="only this speaker")
@@ -417,7 +434,7 @@ def main():
         rows += from_log(path)
 
     if args.data:
-        rows += from_data(args.root)
+        rows += from_data(args.root, args.texts)
 
     if args.source:
         rows += from_source(args.root)
