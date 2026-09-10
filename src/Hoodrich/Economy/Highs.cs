@@ -57,6 +57,22 @@ namespace Hoodrich.Economy
             /// <summary>A screen effect to run underneath it, or "".</summary>
             public string Fx = "";
 
+            /// <summary>
+            /// Whether the look SWELLS rather than sitting at one strength.
+            ///
+            /// A timecycle held at a fixed strength is something you stop seeing after about a
+            /// minute -- your eye writes it off as the colour the game is today, which is the
+            /// exact opposite of what a trip should be doing to you. Six of the seven in here
+            /// last a couple of minutes and that is fine for them. Acid lasts seven, and for
+            /// seven minutes a fixed filter is wallpaper.
+            ///
+            /// So the strength rides on TWO periods that do not divide into each other -- see
+            /// Swelling. The point of two is that the pattern never repeats and there is never
+            /// a beat to it. A trip that pulsed to a rhythm would be a strobe, which is a
+            /// different thing and a much worse one to do to somebody.
+            /// </summary>
+            public bool Swell;
+
             /// <summary>How he walks. "" leaves his own gait alone.</summary>
             public string Clipset = "";
 
@@ -669,7 +685,21 @@ namespace Hoodrich.Economy
                 Drug = "lsd",
                 Doing = Pop,
                 Cycles = new[] { "drug_flying_01", "drug_flying_02", "drug_flying_base", "drug_wobbly" },
-                Strength = 0.9f,
+
+                // OVER ONE ON PURPOSE, WHICH NOTHING ELSE IN HERE IS.
+                //
+                // Every effect is scaled by the dose -- half on the first, the recipe's own on
+                // the second (see Live.Power) -- so a recipe written at 0.9 spends its whole
+                // first dose at 0.45, which for a drug whose entire character is the picture
+                // means the first tab did very little and looked like it had failed. At 1.7 the
+                // first one is properly out there and the second is at the ceiling, which is
+                // exactly the shape asked for: strong, then double.
+                //
+                // The game clamps a timecycle at one, so the number above it is not wasted --
+                // it is what makes the swell stay near the top instead of dipping out of the
+                // trip every few seconds.
+                Strength = 1.7f,
+                Swell = true,
 
                 // The sustained clown one rather than crack's blend-in. Both are the same
                 // family; this is the variant meant to be left running, which is the whole
@@ -921,8 +951,39 @@ namespace Hoodrich.Economy
 
             Recombine();
 
+            // THE THIRD TAB IS NOT A TICKER. Everything else in here announces itself in the
+            // corner because a drug you cannot feel yet needs to say it landed -- but the
+            // third one announces itself by putting him nine hundred metres up, and a line of
+            // text over the top of that is the mod explaining a joke it is still telling.
+            if (Sky(recipe, again)) return;
+
             Notify.Ticker("~g~" + what + "~s~ -- " + (again != null ? "again. " : "") + recipe.Line);
         }
+
+        /// <summary>
+        /// Three tabs and the floor goes.
+        ///
+        /// ONCE A TRIP, not once per dose past three. It is cleared when the acid finally
+        /// leaves him -- see Off -- so a session of taking one every ten minutes gets it once
+        /// each time he starts again, and a fourth tab on the way down does not do it twice.
+        /// </summary>
+        private bool Sky(Recipe recipe, Live again)
+        {
+            if (recipe == null || recipe.Drug != "lsd") return false;
+            if (again == null || again.Doses < SkyAt) return false;
+            if (_fellThisTrip) return false;
+
+            _fellThisTrip = true;
+
+            Fall();
+            return true;
+        }
+
+        /// <summary>How many tabs it takes.</summary>
+        private const int SkyAt = 3;
+
+        /// <summary>Whether it has already happened on this trip. See Sky.</summary>
+        private bool _fellThisTrip;
 
         /// <summary>How many things he can have in him before he goes over.</summary>
         private const int TooMany = 3;
@@ -1113,7 +1174,11 @@ namespace Hoodrich.Economy
                 if (_live.Count == 0 && !_coming && _blackFrom == 0) Sweep();
             }
 
+            if (_falling != 0) { Falling(); return; }
+
             if (_blackFrom != 0) { Blackout(); return; }
+
+            Swelling();
 
             if (_live.Count == 0 && !_coming) return;
 
@@ -1145,6 +1210,11 @@ namespace Hoodrich.Economy
                         went = true;
 
                         Log.Info("High: " + gone.Drug + " wore off. " + _live.Count + " left.");
+
+                        // AND THE SKY IS AVAILABLE AGAIN. See Sky -- once a trip, not once a
+                        // session. He can do the whole thing again this evening; he just
+                        // cannot do it twice off the same three tabs.
+                        if (gone.Drug == "lsd") _fellThisTrip = false;
 
                         if (_live.Count == 0) { Crash(gone); return; }
                     }
@@ -1470,6 +1540,44 @@ namespace Hoodrich.Economy
         /// that answers is the one it keeps, which is written to the log so a build where a
         /// name has been renamed says so rather than looking merely uneventful.
         /// </summary>
+        /// <summary>
+        /// The look, breathing, for anything whose recipe asks for it. See Recipe.Swell.
+        ///
+        /// TWO PERIODS THAT DO NOT DIVIDE INTO EACH OTHER, seventeen seconds and six point
+        /// seven. Added together they never repeat inside any run of this, so it never settles
+        /// into a pattern and there is never a beat you could tap along to. That last part is
+        /// not decoration: something pulsing on a countable rhythm is a strobe.
+        ///
+        /// It rides on top of whatever Recombine last worked out, so a second dose still
+        /// doubles it -- the swell is a shape, not a level.
+        /// </summary>
+        private void Swelling()
+        {
+            if (_cycleOwner == null || !_cycleOwner.Swell) return;
+            if (string.IsNullOrEmpty(_cycle)) return;
+
+            var clock = Game.GameTime;
+
+            var slow = Math.Sin(clock / SwellSlowMs * Math.PI * 2.0);
+            var fast = Math.Sin(clock / SwellFastMs * Math.PI * 2.0);
+
+            // Two thirds the slow one and a third the fast, so the long breath is the shape of
+            // it and the short one only ever unsettles it.
+            var ride = 1f + SwellDepth * (float)(slow * 0.66 + fast * 0.34);
+
+            var want = _cycleOwner.Strength * _cyclePower * ride;
+
+            if (want < 0f) want = 0f;
+
+            try { Function.Call(Hash.SET_TIMECYCLE_MODIFIER_STRENGTH, want); }
+            catch { /* it stays where Recombine left it */ }
+        }
+
+        /// <summary>The two breaths, and how far either of them moves it.</summary>
+        private const double SwellSlowMs = 17000.0;
+        private const double SwellFastMs = 6700.0;
+        private const float SwellDepth = 0.45f;
+
         private void Cycle(string[] names, float strength)
         {
             foreach (var name in names)
@@ -1614,6 +1722,300 @@ namespace Hoodrich.Economy
         /// that must not block -- so the fade, the move and the coming round are three moments
         /// on a clock, driven by Blackout below.
         /// </summary>
+        // ---- the third tab -------------------------------------------------------
+
+        /// <summary>
+        /// He is a very long way up and he was not a moment ago.
+        ///
+        /// FOUR MOMENTS, and they are the same four the blackout uses because they are the
+        /// only four a teleport can safely have: dark, moved, shown, and put back. The move
+        /// happens under a black screen because a teleport is a streaming request, and
+        /// arriving before the world does is how you come round inside a cloud.
+        ///
+        /// HE FLIES DOWN, HE DOES NOT TUMBLE. The first version ragdolled him and it was
+        /// wrong -- a man falling limp reads as a corpse, and what this is meant to be is the
+        /// long floating descent with his arms out. TASK_SKY_DIVE is the game's own free-fall,
+        /// the same one you are in after stepping out of a plane: he steers it, the camera
+        /// does the right thing on its own, and none of it is animation this mod had to build.
+        ///
+        /// AND HE CANNOT DIE OF IT. He has no parachute, so left alone this ends one way. The
+        /// screen goes before the ground arrives and he is put back exactly where he was
+        /// standing -- which is also the only ending that makes sense, because none of it
+        /// happened.
+        /// </summary>
+        private void Fall()
+        {
+            _falling = Game.GameTime;
+            _fallStage = 0;
+            _fellFrom = Vector3.Zero;
+
+            try { Function.Call(Hash.DO_SCREEN_FADE_OUT, FallFadeMs); }
+            catch { /* the rest still runs, it is just abrupt */ }
+
+            Log.Info("Three tabs. Taking him up.");
+        }
+
+        private void Falling()
+        {
+            var now = Game.GameTime;
+            var since = now - _falling;
+
+            // THE SAME HARD FLOOR THE BLACKOUT HAS, and for the same reason: the worst thing
+            // this file can do to somebody is leave them stuck. Past the point where the
+            // sequence could still be running, he goes back on the ground with his screen and
+            // his skin whatever any of it thought it was doing.
+            if (since > FallGiveUpMs)
+            {
+                Log.Warn("The fall ran long. Putting him back.");
+                Ground();
+                return;
+            }
+
+            var me = Game.Player.Character;
+            if (me == null || !me.Exists()) { Ground(); return; }
+
+            switch (_fallStage)
+            {
+                case 0:
+                    if (since < FallFadeMs) return;
+
+                    Up(me);
+                    _fallStage = 1;
+                    return;
+
+                case 1:
+                    // A beat under the black for the sky to stream, then the lights.
+                    if (now - _fallAt < FallHoldMs) return;
+
+                    try { Function.Call(Hash.DO_SCREEN_FADE_IN, FallFadeMs); }
+                    catch { }
+
+                    _fallStage = 2;
+                    return;
+
+                case 2:
+                    // Down until the ground is close, and then the screen goes first.
+                    if (me.Position.Z - _fellFrom.Z > FallCutAt &&
+                        now - _fallAt < FallMostMs) return;
+
+                    // SLOWLY, AND THE SONG PLAYS ALL THE WAY THROUGH IT. Three seconds rather
+                    // than the eight hundred milliseconds the way up got, and the radio is not
+                    // touched until the picture has already gone -- see Ground.
+                    //
+                    // That is also the only honest way to fade a radio out. There is no call
+                    // that ramps its volume: it is on or it is off. What CAN be ramped is the
+                    // picture, and a song still going while the world dims and then stopping
+                    // at black is what a fade sounds like from the inside.
+                    try { Function.Call(Hash.DO_SCREEN_FADE_OUT, FallOutMs); }
+                    catch { }
+
+                    _fallAt = now;
+                    _fallStage = 3;
+                    return;
+
+                default:
+                    if (now - _fallAt < FallOutMs + FallHoldMs) return;
+
+                    Ground();
+                    return;
+            }
+        }
+
+        /// <summary>Straight up, arms out.</summary>
+        private void Up(Ped me)
+        {
+            _fellFrom = me.Position;
+            _fallAt = Game.GameTime;
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS_IMMEDIATELY, me.Handle);
+
+                // NO PARACHUTE, and taken off him rather than assumed absent: a man who has
+                // been skydiving this session still has one, and one tap of it turns the whole
+                // thing into a jump.
+                Function.Call(Hash.REMOVE_WEAPON_FROM_PED, me.Handle,
+                              Function.Call<uint>(Hash.GET_HASH_KEY, "GADGET_PARACHUTE"));
+
+                Function.Call(Hash.SET_ENTITY_INVINCIBLE, me.Handle, true);
+                Function.Call(Hash.SET_PED_CAN_RAGDOLL, me.Handle, false);
+
+                Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, me.Handle,
+                              _fellFrom.X, _fellFrom.Y, _fellFrom.Z + FallHeight,
+                              false, false, false);
+
+                // The game's own free-fall. He steers it and the camera follows him properly,
+                // which is the whole reason for using it rather than throwing him.
+                Function.Call(Hash.TASK_SKY_DIVE, me.Handle, true);
+
+                Music();
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not put him in the sky: " + ex.Message);
+                Ground();
+            }
+        }
+
+        /// <summary>Back where he was standing, with everything given back.</summary>
+        private void Ground()
+        {
+            var me = Game.Player.Character;
+
+            try
+            {
+                if (me != null && me.Exists())
+                {
+                    Function.Call(Hash.CLEAR_PED_TASKS_IMMEDIATELY, me.Handle);
+
+                    if (_fellFrom != Vector3.Zero)
+                    {
+                        Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, me.Handle,
+                                      _fellFrom.X, _fellFrom.Y, _fellFrom.Z,
+                                      false, false, false);
+                    }
+
+                    Function.Call(Hash.SET_ENTITY_INVINCIBLE, me.Handle, false);
+                    Function.Call(Hash.SET_PED_CAN_RAGDOLL, me.Handle, true);
+                    Function.Call(Hash.SET_ENTITY_HEALTH, me.Handle,
+                                  Function.Call<int>(Hash.GET_ENTITY_MAX_HEALTH, me.Handle));
+                }
+            }
+            catch
+            {
+                // He is back either way.
+            }
+
+            Quiet();
+
+            try { Function.Call(Hash.DO_SCREEN_FADE_IN, FallFadeMs); }
+            catch { }
+
+            _falling = 0;
+            _fallStage = 0;
+            _fallAt = 0;
+
+            Log.Info("Back on the pavement.");
+        }
+
+        /// <summary>
+        /// Radio Mirror Park, out loud, while he comes down.
+        ///
+        /// THE RADIO IS SILENT ON FOOT and that is the whole problem to solve. A station set
+        /// while somebody is walking about plays to nobody -- the game only pipes it through a
+        /// car. The mobile radio is the switch that makes it audible anywhere, and it is the
+        /// same one the player has on their own phone.
+        ///
+        /// RADIO_16_SILVERLAKE is Mirror Park. That name is not a guess: the block already
+        /// runs on RADIO_09_HIPHOP_OLD elsewhere in this mod and the whole family is spelt the
+        /// same way.
+        ///
+        /// THE PARTICULAR SONG IS NOT SOMETHING THIS CAN PROMISE. A station can be named; a
+        /// TRACK is named in the audio metadata, which lives inside the archives, and there is
+        /// no list on this machine to check one against. So the station is switched for
+        /// certain and the track is left to the station -- and if somebody turns up with the
+        /// real internal name for it, [Highs] FallTrack plays it without a rebuild.
+        ///
+        /// What was here before this was a ladder of guessed MICHAEL3 music-event names. It
+        /// went because a named station that definitely plays beats nine names that might.
+        /// </summary>
+        private void Music()
+        {
+            _radioWas = "";
+            _phoneRadioWas = false;
+
+            try
+            {
+                var station = Settings.Read("Highs", "FallStation", MirrorPark).Trim();
+                if (station.Length == 0) return;
+
+                _radioWas = Function.Call<string>(Hash.GET_PLAYER_RADIO_STATION_NAME) ?? "";
+                _phoneRadioWas = Function.Call<bool>(Hash.IS_MOBILE_PHONE_RADIO_ACTIVE);
+
+                // Heard while walking. Both of these, because the flag is what lets it play at
+                // all outside a car and the state is what turns it on.
+                Function.Call(Hash.SET_AUDIO_FLAG, "MobileRadioInGame", true);
+                Function.Call(Hash.SET_MOBILE_PHONE_RADIO_STATE, true);
+                Function.Call(Hash.SET_AUDIO_FLAG, "AllowRadioDuringSwitch", true);
+
+                Function.Call(Hash.SET_RADIO_TO_STATION_NAME, station);
+
+                // Only if somebody has supplied one. An invented track name is a call that
+                // does nothing and reports nothing, which is the worst kind.
+                var track = Settings.Read("Highs", "FallTrack", "").Trim();
+
+                if (track.Length > 0)
+                {
+                    Function.Call(Hash.SET_RADIO_TRACK, station, track);
+                    Log.Info("Fall music: " + station + ", asked for " + track + ".");
+                }
+                else
+                {
+                    Log.Info("Fall music: " + station + ".");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not put the radio on: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// The radio back the way he had it.
+        ///
+        /// BOTH HALVES, and the station last. Leaving the mobile radio switched on would mean
+        /// music followed him round the street for the rest of the session -- a thing the mod
+        /// did that nobody could work out how to stop.
+        /// </summary>
+        private void Quiet()
+        {
+            try
+            {
+                if (!_phoneRadioWas)
+                {
+                    Function.Call(Hash.SET_MOBILE_PHONE_RADIO_STATE, false);
+                    Function.Call(Hash.SET_AUDIO_FLAG, "MobileRadioInGame", false);
+                }
+
+                Function.Call(Hash.SET_AUDIO_FLAG, "AllowRadioDuringSwitch", false);
+
+                if (!string.IsNullOrEmpty(_radioWas))
+                {
+                    Function.Call(Hash.SET_RADIO_TO_STATION_NAME, _radioWas);
+                }
+            }
+            catch
+            {
+                // It goes off with the next car he gets in either way.
+            }
+
+            _radioWas = "";
+            _phoneRadioWas = false;
+        }
+
+        /// <summary>Radio Mirror Park. See Music for why this name can be trusted.</summary>
+        private const string MirrorPark = "RADIO_16_SILVERLAKE";
+
+        private string _radioWas = "";
+        private bool _phoneRadioWas;
+
+        /// <summary>How far up, and the clock the whole thing runs on.</summary>
+        private const float FallHeight = 900f;
+        private const float FallCutAt = 55f;
+
+        private const int FallFadeMs = 800;
+
+        /// <summary>The way back down. Long, because the song is going out with it.</summary>
+        private const int FallOutMs = 3000;
+        private const int FallHoldMs = 900;
+        private const int FallMostMs = 45000;
+        private const int FallGiveUpMs = 80000;
+
+        private int _falling;
+        private int _fallStage;
+        private int _fallAt;
+        private Vector3 _fellFrom;
+
         private void Overdo()
         {
             Log.Info("Overdose: " + _live.Count + " at once. Out cold.");
