@@ -811,6 +811,17 @@ namespace Hoodrich.Locations
         public static string[] TheirLowriders => Lows;
 
         /// <summary>
+        /// The neighbourhood, and what it does while it watches.
+        ///
+        /// BOTH LISTS COST SOMEBODY A NIGHT TO GET RIGHT and neither should be typed twice.
+        /// Faces is Chamberlain Hills rather than the game's ambient population; Watching is
+        /// the idles that do NOT lean, which matters anywhere there is nothing to lean on --
+        /// a junction, or a car park. See the notes on both.
+        /// </summary>
+        public static string[] TheirFaces => Faces;
+        public static string[] TheirIdles => Watching;
+
+        /// <summary>
         /// Donks, parked up with the rest of them.
         ///
         /// Their own list rather than more names in Parked, because they are the cars people

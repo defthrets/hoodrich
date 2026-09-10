@@ -2364,6 +2364,8 @@ namespace Hoodrich
                 // THE MEET DRIVES WHAT THE BLOCK DRIVES. Handed the takeover's own lists
                 // rather than keeping a second copy -- see Takeover.TheirCars.
                 _carMeet.Cars = () => Locations.Takeover.TheirCars;
+                _carMeet.Faces = () => Locations.Takeover.TheirFaces;
+                _carMeet.Idles = () => Locations.Takeover.TheirIdles;
                 _carMeet.Load();
 
                 // WHAT NOT TO DELETE OUT OF A PARKING SPACE. See CarMeet.Sweep -- ambient
