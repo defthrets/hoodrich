@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using GTA;
 
@@ -29,7 +29,7 @@ namespace Hoodrich.UI
     internal static class Splash
     {
         /// <summary>How long the whole thing lasts, and how much of that is the fades.</summary>
-        private const int ShowMs = 3400;
+        private const int ShowMs = 4000;
         private const int FadeInMs = 420;
         private const int FadeOutMs = 800;
 
@@ -70,11 +70,7 @@ namespace Hoodrich.UI
 
                 _startedAt = Game.GameTime;
                 _slot = ClaimRow();
-                if (Seal.Folder == null)
-                {
-                    try { Seal.Folder = Core.Paths.Icons; }
-                    catch { /* the seal simply will not draw; the text still will */ }
-                }
+                if (Seal.Folder == null) Seal.Folder = FindIcons();
             }
 
             var age = Game.GameTime - _startedAt;
@@ -92,6 +88,67 @@ namespace Hoodrich.UI
 
             var text = Core.Build.Name + "  " + Core.Build.Version;
             Text(text, markCx - ToX(MarkHeight) * 0.5f - 0.008f, y, a);
+        }
+
+
+        /// <summary>
+        /// Where the two seal files are, worked out rather than told.
+        ///
+        /// THIS IS THE LINE THAT STOPPED THIS BEING A DROP-IN FILE. Every copy of it read the
+        /// host mod's own Core.Paths.Icons, which is a class half the mods in the set do not
+        /// have -- so a file whose entire purpose is to be identical everywhere could not be
+        /// copied anywhere without being edited first, which is how six copies of it drifted.
+        ///
+        /// It asks the assembly where it is instead. A mod deployed as scripts\Thing.dll keeps
+        /// its data in scripts\Thing\, which is the convention every mod in the set already
+        /// follows, so its own name is the only thing this needs to know and the assembly
+        /// carries that.
+        ///
+        /// AND IT WILL BORROW. A small mod that ships no art at all -- no data folder, nothing
+        /// to deploy -- would otherwise draw a name with no mark beside it. So the last resort
+        /// is any sibling's copy: one seal in the scripts folder serves everything in it, and
+        /// the tiny mods get the mark without five repos growing a data folder to hold one
+        /// picture they all share.
+        /// </summary>
+        private static string FindIcons()
+        {
+            try
+            {
+                var dll = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                if (string.IsNullOrEmpty(dll)) return null;
+
+                var scripts = System.IO.Path.GetDirectoryName(dll);
+                if (string.IsNullOrEmpty(scripts)) return null;
+
+                var mine = System.IO.Path.GetFileNameWithoutExtension(dll);
+
+                var tries = new[]
+                {
+                    System.IO.Path.Combine(System.IO.Path.Combine(scripts, mine), "icons"),
+                    System.IO.Path.Combine(System.IO.Path.Combine(scripts, mine), "data\\icons"),
+                    System.IO.Path.Combine(System.IO.Path.Combine(scripts, "spitmux"), "icons"),
+                    System.IO.Path.Combine(scripts, "icons")
+                };
+
+                foreach (var where in tries)
+                {
+                    if (System.IO.File.Exists(System.IO.Path.Combine(where, "seal-face.png"))) return where;
+                }
+
+                // Somebody else's, then.
+                foreach (var dir in System.IO.Directory.GetDirectories(scripts))
+                {
+                    var where = System.IO.Path.Combine(dir, "icons");
+
+                    if (System.IO.File.Exists(System.IO.Path.Combine(where, "seal-face.png"))) return where;
+                }
+            }
+            catch
+            {
+                // The name still draws without it.
+            }
+
+            return null;
         }
 
         /// <summary>In over the first moments, out over the last, full in between.</summary>

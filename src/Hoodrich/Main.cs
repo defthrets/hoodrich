@@ -4058,8 +4058,26 @@ namespace Hoodrich
         /// The one message whose entire job is to prove the mod loaded cannot be the message
         /// that looks like a crash. So it says the key, the way the standalone's does.
         /// </summary>
+
+        /// <summary>
+        /// Whether the old load ticker still fires. It does not -- see the note in the
+        /// greeting. Static readonly rather than const so flipping it back does not make
+        /// everything after the guard unreachable code.
+        /// </summary>
+        private static readonly bool TickerGreeting = false;
+
         private void Hello()
         {
+            // THE SEAL SAYS IT NOW. See UI.Splash -- a row in the bottom corner with the
+            // mark, the name and the version on it, the same row every mod in the set draws
+            // and stacked so six of them do not land on top of each other.
+            //
+            // This ticker said the same thing in a different shape, and six mods each posting
+            // their own over the same three seconds was a wall of text nobody read to the
+            // bottom of. The log line is untouched: which key a mod is on is a real question
+            // and the log is where the answer belongs.
+            if (!TickerGreeting) return;
+
             if (_saidHello) return;
             if (Game.GameTime < 6000) return;
 
