@@ -1225,7 +1225,7 @@ namespace Hoodrich.Missions
         /// <summary>Who serves in a shop the game did not staff.</summary>
         private static readonly string[] ClerkModels =
         {
-            "mp_m_shopkeep_01", "s_m_y_shop_mask", "a_m_m_indian_01", "a_m_y_business_01"
+            "s_m_y_shop_mask", "a_m_m_indian_01", "a_m_y_business_01", "s_m_m_ammucountry"
         };
 
         /// <summary>

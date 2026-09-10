@@ -116,7 +116,10 @@ namespace Hoodrich.Locations
 
             // And the heavies behind him, for an install without the story model. He is a
             // Families man in a Families courtyard either way.
-            "g_m_y_famca_01", "mp_m_famdd_01", "g_m_y_famfor_01",
+            // NO ONLINE MODELS. mp_m_famdd_01 was in here as a Families body and it is an
+            // Online one -- see the note on Five0 Patrol's MpFaces. They do not suit the
+            // street, and a fallback nobody looks at is exactly where one hides.
+            "g_m_y_famca_01", "g_m_y_famfor_01",
             "a_m_m_soucent_01", "a_m_m_soucent_02", "g_m_y_famdnf_01"
         };
 
