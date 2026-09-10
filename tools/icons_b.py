@@ -373,27 +373,40 @@ def acid():
     """
     img, d = canvas()
 
-    x0, y0, x1, y1 = 112, 112, 400, 400
+    x0, y0, x1, y1 = 92, 92, 420, 420
 
     rect(d, x0, y0, x1, y1)
 
-    # THE PERFORATIONS: six to a side, each disc's radius exactly half the spacing, so
-    # neighbours meet and the edge is one unbroken scallop. Centred ON the edge, so half of
-    # each bulges out and the other half lands on paper already there.
+    # THE PERFORATIONS ARE CUT OUT OF THE SQUARE, not stuck onto it.
     #
-    # The corners stay square. A real stamp tears BETWEEN the holes, not through them, and a
-    # bump sitting on a corner reads as a flower.
-    n = 6
+    # They were additive: a smaller square with half-discs added along each edge. That gives
+    # the same wavy outline and it is the wrong way round, and you can see which it is --
+    # added bumps read as something built UP, a row of studs or a cog, where a stamp is
+    # something TORN. What is left after a tear is paper with bites out of it, and the eye
+    # knows the difference even when it could not tell you what it is looking at.
+    #
+    # So the square is solid and the holes are punched through the edge of it. The body grew
+    # to match, because a bite removes what a bump added and the tile has to stay the same
+    # size on the shelf.
+    #
+    # RADIUS EXACTLY HALF THE SPACING. Neighbouring holes then just touch, and the paper
+    # between two of them comes to a point ON the edge line -- which is what a perforation
+    # tears like. Any smaller and there is a flat between each pair, and a flat with notches
+    # in it is a stamp somebody has drawn from memory.
+    #
+    # The corners stay solid. A real stamp tears BETWEEN the holes, so the corner is the one
+    # place with paper on both sides of it and it is always square.
+    n = 7
     step = (x1 - x0) / float(n)
     r = step * 0.5
 
     for i in range(n):
         at = x0 + step * (i + 0.5)
 
-        disc(d, at, y0, r)
-        disc(d, at, y1, r)
-        disc(d, x0, at, r)
-        disc(d, x1, at, r)
+        disc(d, at, y0, r, CLEAR)
+        disc(d, at, y1, r, CLEAR)
+        disc(d, x0, at, r, CLEAR)
+        disc(d, x1, at, r, CLEAR)
 
     # The print, punched through, and the face drawn back into it.
     disc(d, 256, 256, 82, CLEAR)
