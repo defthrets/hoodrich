@@ -61,13 +61,19 @@ namespace Hoodrich.Locations
         /// <summary>Near enough to the meet to stop driving and start parking.</summary>
         private const float ParkFrom = 26f;
 
-        /// <summary>Near enough, and slow enough, to be sat down on the exact spot.</summary>
-        private const float SeatWithin = 4.5f;
-        private const float SeatSpeed = 1.6f;
-
-        /// <summary>How long one car is given before it is simply put where it was going.</summary>
-        private const int DriveGiveUpMs = 150000;
-        private const int ParkGiveUpMs = 22000;
+        /// <summary>
+        /// Near enough, and slow enough, to be squared up on the exact spot.
+        ///
+        /// A METRE, NOT FOUR AND A HALF. At four and a half the correction was a car visibly
+        /// jumping the last stride into its bay; at one it is the difference between a car
+        /// that parked well and a car that parked perfectly, and nobody can see it happen.
+        ///
+        /// It only ever runs on a car that has ALREADY STOPPED in its own space. There is no
+        /// distance at which this fires on a moving car and no clock that makes it fire on a
+        /// car that never arrived -- see Driving.
+        /// </summary>
+        private const float SeatWithin = 1.0f;
+        private const float SeatSpeed = 0.6f;
 
         /// <summary>Nothing is done to a car more often than this.</summary>
         private const int TickMs = 400;
@@ -78,9 +84,21 @@ namespace Hoodrich.Locations
         /// <summary>How far the player has to be for the meet to keep itself alive.</summary>
         private const float ForgetAt = 700f;
 
-        /// <summary>Driving style: obey the lights, use the indicators, be a normal car.</summary>
-        private const int RoadStyle = 786603;
-        private const float RoadSpeed = 17f;
+        /// <summary>
+        /// How they drive here.
+        ///
+        /// AVOID THINGS, STOP FOR NOTHING. 4|8|16|32 is go round cars, empty cars, people and
+        /// objects, and that is the whole of it: no stop-before-vehicles, no stop-before-peds,
+        /// no stopping at lights. The same set the takeover cars come in on, and for the same
+        /// reason it was changed there -- a car obeying every light between here and half a
+        /// mile out does not arrive, it queues, and what that looks like from the meet is
+        /// eleven empty bays.
+        ///
+        /// They still go ROUND everything, which is the part that matters: this is a car in a
+        /// hurry, not a car with its eyes shut.
+        /// </summary>
+        private const int RoadStyle = 4 | 8 | 16 | 32;
+        private const float RoadSpeed = 24f;
 
         /// <summary>How many of the twelve get neons.</summary>
         private const int NeonChance = 70;
@@ -605,15 +623,25 @@ namespace Hoodrich.Locations
                 return;
             }
 
-            // NEAR ENOUGH AND STOPPED, or it has had long enough. Either way it goes on the
-            // spot exactly -- see the note on the class about the last half-metre.
+            // NEAR ENOUGH AND STOPPED, AND NOTHING ELSE.
+            //
+            // THERE WAS A GIVE-UP HERE AND IT WAS THE THING THAT LOOKED LIKE TELEPORTING. Past
+            // twenty-two seconds of parking, or two and a half minutes of driving, the car was
+            // simply put on its space from wherever it had got to -- which on a bad run is
+            // most of the way down the street, in front of somebody stood watching them
+            // arrive. The whole point of this feature is the arriving.
+            //
+            // So there is no clock on it any more. A car that cannot reach its space drives
+            // around trying to, for as long as the meet lasts, and if it never gets there then
+            // that bay stays empty -- which is a car that could not find a parking spot, and
+            // is a thing that happens.
+            //
+            // What is left is not a teleport. It is under a metre, done while the car is
+            // already stopped in its bay, and it is what squares eleven cars into a row.
             var slow = false;
             try { slow = r.Car.Speed < SeatSpeed; } catch { slow = true; }
 
-            var close = gap < SeatWithin && slow;
-            var late = r.Parking ? now - r.ParkFrom > ParkGiveUpMs : now - r.SentAt > DriveGiveUpMs;
-
-            if (close || late) Seat(r, late && !close);
+            if (gap < SeatWithin && slow) Seat(r);
         }
 
         /// <summary>
@@ -624,7 +652,7 @@ namespace Hoodrich.Locations
         /// visible thumps. The spot's Z came off a car that was parked in it, so it is already
         /// the right height.
         /// </summary>
-        private void Seat(Runner r, bool hauled)
+        private void Seat(Runner r)
         {
             r.Seated = true;
 
@@ -680,7 +708,6 @@ namespace Hoodrich.Locations
             // wandering over one at a time as they pull in is a car meet filling up.
             r.OutAt = Game.GameTime + OutAfterMs + _rng.Next(OutVaryMs);
 
-            if (hauled) Log.Debug("Car meet: one was put in its space rather than driving in.");
         }
 
         /// <summary>
@@ -971,16 +998,53 @@ namespace Hoodrich.Locations
             130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 145
         };
 
+        /// <summary>
+        /// A car nobody at this meet is already in.
+        ///
+        /// FOUR OF THE SAME CAR IS NOT A CAR MEET. This picked at random out of forty-odd
+        /// names, and random over twelve draws gives a repeat far more often than people
+        /// expect -- four the same in a row of twelve is an ordinary outcome of it, and it was
+        /// exactly the outcome. Nobody turns up to a meet to look at four of the same Camry.
+        ///
+        /// So what is already parked is walked past. The list is deep enough that this never
+        /// runs out -- forty names against twelve spaces -- but if it ever did, a repeat beats
+        /// an empty bay, and the last few tries stop caring.
+        /// </summary>
         private Model Pick(string[] names)
         {
-            for (var tries = 0; tries < 12; tries++)
+            for (var tries = 0; tries < 24; tries++)
             {
-                var model = new Model(names[_rng.Next(names.Length)]);
+                var name = names[_rng.Next(names.Length)];
+
+                // The last few goes take anything, so a short list cannot leave a space empty.
+                if (tries < 18 && Already(name)) continue;
+
+                var model = new Model(name);
 
                 if (model.IsValid && model.IsInCdImage && model.Request(1500)) return model;
             }
 
             return new Model(0);
+        }
+
+        /// <summary>Whether one of these is already at the meet, or on its way to it.</summary>
+        private bool Already(string name)
+        {
+            var hash = Function.Call<int>(Hash.GET_HASH_KEY, name);
+
+            foreach (var r in _out)
+            {
+                try
+                {
+                    if (r.Car != null && r.Car.Exists() && r.Car.Model.Hash == hash) return true;
+                }
+                catch
+                {
+                    // A car that cannot be asked is not a match.
+                }
+            }
+
+            return false;
         }
 
         /// <summary>Somebody to drive it. Anybody; they are in the car and not the point.</summary>
