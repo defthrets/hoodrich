@@ -251,19 +251,54 @@ def from_feed(root):
 # one of them is written down; the game keys those by tag instead (see Voiced/Voice.Named), so
 # a half-sentence lifted out of one would name a file nothing ever asks for.
 
+# WHICH NAME EACH FILE BUILDS ITS NODES WITH.
+#
+# Every one of these has a Node() helper that stamps the same speaker on everything it makes,
+# so the file IS the speaker -- except DealerTalk, where the node is built with whichever
+# dealer you walked up to, and both of them can reach most of it. Two names there, and a line
+# from that file wants a recording under each.
+#
+# PortRun writes its speaker out in the call, so it is listed with none and answers for
+# itself below.
+
 SPEECH = [
-    (r"src\Hoodrich\Missions\FixerTalk.cs", "Lamar"),
+    (r"src\Hoodrich\Gangs\LeaderTalk.cs",       ["Gerald"]),
+    (r"src\Hoodrich\Locations\ArmourerTalk.cs", ["Stretch"]),
+    (r"src\Hoodrich\Locations\HaoTalk.cs",      ["Hao"]),
+    (r"src\Hoodrich\Missions\FixerTalk.cs",     ["Lamar"]),
+    (r"src\Hoodrich\Missions\BikeRide.cs",      ["Lamar"]),
+    (r"src\Hoodrich\Missions\Hunt.cs",          ["Lamar"]),
+    (r"src\Hoodrich\Missions\TagRun.cs",        ["Lamar"]),
+    (r"src\Hoodrich\Missions\PortRun.cs",       []),
+    (r"src\Hoodrich\Supply\DealerTalk.cs",      ["Tao Cheng", "Gerald"]),
+    (r"src\Hoodrich\Supply\Stoop.cs",           []),
 ]
 
-CALL = re.compile(r'(?:Node|Nothing)\(\s*((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+)', re.S)
-ASSIGN = re.compile(r'line\s*=\s*((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+);', re.S)
+CALL = re.compile(r'\b(?:Node|Nothing)\(\s*(?:[A-Za-z_][\w.]*\s*,\s*){0,2}((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+)', re.S)
+ASSIGN = re.compile(r'\bline\s*=\s*((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+);', re.S)
+EXPLICIT = re.compile(r'new DialogueNode\(\s*"([^"]+)"\s*,\s*((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+)', re.S)
 PIECE = re.compile(r'"((?:[^"\\]|\\.)*)"')
 
 
 def from_source(root):
     rows, seen = [], set()
 
-    for rel, speaker in SPEECH:
+    def add(speaker, line):
+        if not speaker or len(line) < 12 or line.count(" ") < 2:
+            return
+
+        name = key(speaker, line)
+        if name in seen:
+            return
+
+        seen.add(name)
+        rows.append((name + ".mp3", speaker, tidy(line)))
+
+    def joined(blob):
+        return "".join(p.replace('\\"', '"').replace("\\\\", "\\")
+                       for p in PIECE.findall(blob))
+
+    for rel, speakers in SPEECH:
         path = os.path.join(root, rel)
         if not os.path.exists(path):
             continue
@@ -274,27 +309,26 @@ def from_source(root):
         body = "\n".join(l for l in text.split("\n")
                          if not l.strip().startswith("//"))
 
+        def whole(m, group):
+            """False when the literal runs on into a variable and is only half a sentence."""
+            if m.group(group).rstrip().endswith("+"):
+                return False
+            return not body[m.end():].lstrip().startswith("+")
+
+        # A node that names its own speaker answers for itself, whatever the file is.
+        for m in EXPLICIT.finditer(body):
+            if whole(m, 2):
+                add(m.group(1), joined(m.group(2)))
+
         for rx in (CALL, ASSIGN):
             for m in rx.finditer(body):
-                blob = m.group(1)
-
-                if blob.rstrip().endswith("+"):
-                    continue
-                if body[m.end():].lstrip().startswith("+"):
+                if not whole(m, 1):
                     continue
 
-                line = "".join(p.replace('\\"', '"').replace("\\\\", "\\")
-                               for p in PIECE.findall(blob))
+                line = joined(m.group(1))
 
-                if len(line) < 12 or line.count(" ") < 2:
-                    continue
-
-                name = key(speaker, line)
-                if name in seen:
-                    continue
-
-                seen.add(name)
-                rows.append((name + ".mp3", speaker, tidy(line)))
+                for who in speakers:
+                    add(who, line)
 
     return rows
 
