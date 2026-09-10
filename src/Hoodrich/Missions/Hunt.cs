@@ -33,8 +33,9 @@ namespace Hoodrich.Missions
     /// THE HUNT.
     ///
     /// The game already has a hunting minigame and it is the best thing in it: a rifle, a set
-    /// of tracks on the ground, a wind direction, and an animal that leaves if you are loud or
-    /// upwind. This is that, with Lamar in the passenger seat and Ballas instead of elk.
+    /// of tracks on the ground, something that gives you away, and an animal that leaves if
+    /// you are loud or careless. This is that, with Lamar in the passenger seat, Ballas instead
+    /// of elk, and lookouts on the corners instead of the wind.
     ///
     /// EVERY PIECE OF IT IS THE MINIGAME'S PIECE, in the same order:
     ///
@@ -46,10 +47,21 @@ namespace Hoodrich.Missions
     ///   is now, oldest faintest, and they are only drawn when you are close enough to be
     ///   reading the ground. Follow them and they lead to him.
     ///
-    ///   THE WIND. The game has a wind direction and it is the whole reason the minigame is a
-    ///   game. Come at him with it in your face and he hears nothing; come at him with it at
-    ///   your back and he notices at twice the distance. There is an arrow on the card saying
-    ///   which way it is going, and it is the same arrow the hunting HUD has.
+    ///   THE LOOKOUTS. What the wind was, and better, because you can see it coming.
+    ///
+    ///   The wind was the minigame's own rule and it did not survive the move: an elk in a
+    ///   valley smells you, and a man on a corner in Davis does not care which way the air is
+    ///   going. What he cares about is who is stood on the next block watching him.
+    ///
+    ///   So there are other Ballas out there who are NOT the job. They are not hunting you and
+    ///   they will not shoot at you. They are looking, and if one of them gets a clear look for
+    ///   long enough he gets his phone out -- and once that call goes through, one of the three
+    ///   walks off, because somebody just told him. That is the same lesson the wind taught,
+    ///   said in a language this place speaks: get seen and you lose one.
+    ///
+    ///   And it is answerable, which the wind never was. Drop the lookout before he finishes
+    ///   dialling and the call does not happen -- but a shot is a shot, and everybody within
+    ///   earshot looks up.
     ///
     ///   THE STEALTH. Crouched is quiet, walking is not much worse, sprinting is a man
     ///   arriving. Line of sight matters more than anything else. It all feeds one number per
@@ -84,9 +96,28 @@ namespace Hoodrich.Missions
         private const int PrintCount = 14;
         private const float PrintStride = 1.5f;
 
-        /// <summary>How far he can see you when you are downwind of him, and how much worse it gets upwind.</summary>
+        /// <summary>How far one of them can see you.</summary>
         private const float SeeRange = 42f;
-        private const float UpwindPenalty = 2.0f;
+
+        /// <summary>
+        /// The lookouts: how many, how far they can see, how long a look takes and how long
+        /// the call takes once he has started making it.
+        ///
+        /// FURTHER THAN THE QUARRY CAN SEE, ON PURPOSE. A lookout is doing nothing else. The
+        /// three you are here for are stood about smoking and are not expecting anybody; the
+        /// man on the corner is the reason the other three feel safe enough to do that.
+        ///
+        /// SpotSeconds is a LOOK, not a glance -- three seconds of clear line of sight, which
+        /// is long enough to cross a gap between two walls without paying for it and far too
+        /// short to stand in the open. And a look he has half-finished drains away again at
+        /// the same rate as the quarry's, so breaking line of sight is a real answer.
+        ///
+        /// CallMs is the window you have to do something about it.
+        /// </summary>
+        private const int Eyes = 3;
+        private const float EyeRange = 65f;
+        private const float SpotSeconds = 3.0f;
+        private const int CallMs = 4200;
 
         /// <summary>What fills his suspicion per second, at the worst of it.</summary>
         private const float SeenPerSecond = 0.55f;
@@ -139,12 +170,50 @@ namespace Hoodrich.Missions
             public int BleedFrom;
             public Vector3 LastBlood;
 
-            /// <summary>When his tracks were last laid down, so they are not laid every frame.</summary>
+            /// <summary>
+            /// Every print he left, and which of them are on the ground yet.
+            ///
+            /// WORKED OUT ONCE AND STAMPED AS YOU REACH THEM. This used to be re-derived
+            /// every four seconds from where he was standing at the time, and only while the
+            /// player was within twenty-six metres OF THE MAN -- which is the one distance at
+            /// which nobody needs tracks, because you are looking straight at him. Out at the
+            /// range you actually pick a trail up, nothing was ever drawn at all. Reported as
+            /// there being no footprints, and there were not.
+            ///
+            /// So the trail is a fixed list of places, made when he is, and each one goes down
+            /// the first time YOU are near enough to be reading that piece of ground. They do
+            /// not stack, they do not move, and they are there before you can see him.
+            /// </summary>
+            public Vector3[] Trail;
+            public bool[] Laid;
+
+            /// <summary>When the trail was last looked over, so it is not walked every frame.</summary>
             public int PrintedAt;
 
             /// <summary>Coming to look because Lamar shouted. See Call.</summary>
             public int LookingUntil;
         }
+
+        /// <summary>
+        /// One man on a corner who is not the job.
+        ///
+        /// He never fights and he is never worth points. All he does is look, and then tell
+        /// somebody. See Watching.
+        /// </summary>
+        private sealed class Lookout
+        {
+            public Ped Man;
+            public Blip Mark;
+
+            /// <summary>Nought to one, filling while he has a clear look at you.</summary>
+            public float Spot;
+
+            /// <summary>When he started dialling, and whether it went through.</summary>
+            public int CallingFrom;
+            public bool Called;
+        }
+
+        private readonly List<Lookout> _eyes = new List<Lookout>();
 
         private readonly Affiliation _crew;
         private readonly GangRegistry _gangs;
@@ -379,7 +448,6 @@ namespace Hoodrich.Missions
         {
             var crouched = Crouching(player);
             var sprinting = player.IsSprinting;
-            var wind = Wind();
 
             var anyBleeding = false;
 
@@ -410,11 +478,13 @@ namespace Hoodrich.Missions
                     continue;
                 }
 
-                Watch(q, player, crouched, sprinting, wind, now);
+                Watch(q, player, crouched, sprinting, now);
                 Prints(q, player, now);
             }
 
             Phase = anyBleeding ? HuntPhase.Bleeding : HuntPhase.Tracking;
+
+            Watching(player, crouched, now);
 
             Called(player, now);
 
@@ -437,13 +507,14 @@ namespace Hoodrich.Missions
         /// <summary>
         /// One man, deciding whether he has noticed you.
         ///
-        /// FOUR THINGS FEED IT and they are the four the minigame uses: how close, whether he
-        /// can see you, which way the wind is going, and how much noise you are making. The
-        /// wind is the interesting one -- it doubles his range when it is at your back, which
-        /// is the entire reason you circle round in the hunting mission instead of walking
-        /// straight at the thing.
+        /// THREE THINGS FEED IT: how close you are, whether he has a clear line to you, and
+        /// how much noise you are making. There was a fourth and it was the wind, and it has
+        /// gone -- see the note on the class. The lookouts are what replaced it, and they are
+        /// their own thing rather than a modifier on this one, because a man being TOLD you are
+        /// out here is not the same as a man noticing you himself and should not be maths on
+        /// the same number.
         /// </summary>
-        private void Watch(Quarry q, Ped player, bool crouched, bool sprinting, Vector3 wind, int now)
+        private void Watch(Quarry q, Ped player, bool crouched, bool sprinting, int now)
         {
             var to = player.Position - q.Man.Position;
             var gap = to.Length();
@@ -457,20 +528,7 @@ namespace Hoodrich.Missions
             var dt = Game.LastFrameTime;
             if (dt <= 0f || dt > 0.25f) dt = 1f / 60f;
 
-            // UPWIND OF HIM IS THE MISTAKE. The wind blows from him to you means your noise
-            // goes away from him; the other way round and he has you at twice the distance.
-            var carried = 1f;
-
-            if (gap > 0.5f)
-            {
-                var toward = new Vector3(to.X / gap, to.Y / gap, 0f);
-                var with = toward.X * wind.X + toward.Y * wind.Y;
-
-                // Positive: the wind is going from him toward you, which is in your favour.
-                carried = with > 0f ? 1f : 1f + (UpwindPenalty - 1f) * Math.Min(1f, -with);
-            }
-
-            var reach = SeeRange * carried;
+            var reach = SeeRange;
 
             var rising = 0f;
 
@@ -496,7 +554,8 @@ namespace Hoodrich.Missions
                 if (crouched) rising *= CrouchQuiet;
             }
 
-            // A SHOT IS A SHOT. Everybody within earshot looks up, wherever the wind is.
+            // A SHOT IS A SHOT. Everybody within earshot looks up, and no amount of being
+            // careful up to that point counts for anything.
             if (_shotAt != 0 && now - _shotAt < 400) rising += ShotSpike;
 
             q.Suspicion += (rising - CalmPerSecond) * dt;
@@ -506,6 +565,202 @@ namespace Hoodrich.Missions
             if (q.Suspicion < 1f) return;
 
             Gone(q);
+        }
+
+        // ---- the lookouts ----------------------------------------------------------------
+
+        /// <summary>
+        /// Men on the corners who are not the job, put out at the same time as it is.
+        ///
+        /// Placed on the far side of the field from where you came in, so the first thing you
+        /// do is not walk into one -- and blipped, because a rule you cannot see coming is not
+        /// a rule, it is a punishment. That was the wind's real problem: an arrow on a card is
+        /// not the same as knowing where the danger is stood.
+        /// </summary>
+        private void Post(Ped player)
+        {
+            for (var i = 0; i < Eyes; i++)
+            {
+                var at = Somewhere(player.Position);
+                if (at == Vector3.Zero) continue;
+
+                var man = Make(at);
+                if (man == null) continue;
+
+                var eye = new Lookout { Man = man };
+
+                try
+                {
+                    Function.Call(Hash.SET_PED_SEEING_RANGE, man.Handle, EyeRange);
+
+                    eye.Mark = man.AddBlip();
+
+                    if (eye.Mark != null && eye.Mark.Exists())
+                    {
+                        eye.Mark.Sprite = (BlipSprite)1;
+                        eye.Mark.Color = BlipColor.Purple;
+                        eye.Mark.Scale = 0.6f;
+                        eye.Mark.Name = "Lookout";
+                        eye.Mark.IsShortRange = true;
+                    }
+                }
+                catch
+                {
+                    // He still watches.
+                }
+
+                _eyes.Add(eye);
+            }
+
+            if (_eyes.Count > 0) Log.Info("Hunt: " + _eyes.Count + " lookout(s) on the corners.");
+        }
+
+        /// <summary>
+        /// The lookouts, looking.
+        ///
+        /// A CLEAR LINE FOR THREE SECONDS, then the phone. Not proximity -- you can walk past
+        /// one at ten metres with a wall between you and he never knows. What he needs is to
+        /// actually see you, and what you need is for him not to.
+        ///
+        /// Crouching helps here the same as it does everywhere else, and it is the same number,
+        /// because there is one idea in this job about being careful and it should not mean
+        /// two different things depending on who is looking at you.
+        ///
+        /// ONCE HE IS DIALLING, ONLY A BULLET STOPS IT. Breaking line of sight after he has
+        /// the phone out is too late -- he has already decided, and the whole point of the call
+        /// is that it reaches somebody who is not here. So there is a window, and there is one
+        /// thing you can do in it, and that thing is loud.
+        /// </summary>
+        private void Watching(Ped player, bool crouched, int now)
+        {
+            var dt = Game.LastFrameTime;
+            if (dt <= 0f || dt > 0.25f) dt = 1f / 60f;
+
+            foreach (var eye in _eyes)
+            {
+                if (eye.Called) continue;
+
+                if (eye.Man == null || !eye.Man.Exists() || !eye.Man.IsAlive)
+                {
+                    // Dropped mid-call. The call goes with him.
+                    eye.Called = true;
+                    Strip(eye);
+                    continue;
+                }
+
+                if (eye.CallingFrom != 0)
+                {
+                    if (now - eye.CallingFrom >= CallMs) Told(eye);
+                    continue;
+                }
+
+                var gap = eye.Man.Position.DistanceTo(player.Position);
+
+                var looking = false;
+
+                if (gap < EyeRange)
+                {
+                    try
+                    {
+                        looking = Function.Call<bool>(Hash.HAS_ENTITY_CLEAR_LOS_TO_ENTITY,
+                                                      eye.Man.Handle, player.Handle, 17);
+                    }
+                    catch
+                    {
+                        looking = gap < EyeRange * 0.4f;
+                    }
+                }
+
+                if (looking)
+                {
+                    var rate = 1f / SpotSeconds;
+                    if (crouched) rate *= CrouchQuiet;
+
+                    eye.Spot += rate * dt;
+                }
+                else
+                {
+                    eye.Spot -= CalmPerSecond * dt;
+                }
+
+                if (eye.Spot < 0f) eye.Spot = 0f;
+                if (eye.Spot < 1f) continue;
+
+                Dial(eye, now);
+            }
+        }
+
+        /// <summary>Phone out. Four seconds, and then somebody knows.</summary>
+        private void Dial(Lookout eye, int now)
+        {
+            eye.CallingFrom = now;
+            eye.Spot = 1f;
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, eye.Man.Handle);
+                Function.Call(Hash.TASK_USE_MOBILE_PHONE_TIMED, eye.Man.Handle, CallMs + 1500);
+            }
+            catch
+            {
+                // The clock runs either way.
+            }
+
+            if (eye.Mark != null && eye.Mark.Exists()) eye.Mark.Color = BlipColor.Red;
+
+            Say("somebody's on the phone. shut him up");
+            Log.Info("Hunt: a lookout is making the call.");
+        }
+
+        /// <summary>
+        /// The call went through, and the nearest one to him walks off.
+        ///
+        /// NEAREST TO THE LOOKOUT, not to you. He rang the man he can see, and the man he can
+        /// see is the one who leaves -- which means where you get spotted decides which of the
+        /// three you lose, and that is worth knowing before you cross a road.
+        /// </summary>
+        private void Told(Lookout eye)
+        {
+            eye.Called = true;
+
+            Quarry nearest = null;
+            var best = float.MaxValue;
+
+            foreach (var q in _out)
+            {
+                if (q.Down || q.Spooked) continue;
+                if (q.Man == null || !q.Man.Exists()) continue;
+
+                var gap = q.Man.Position.DistanceTo(eye.Man.Position);
+
+                if (gap >= best) continue;
+
+                best = gap;
+                nearest = q;
+            }
+
+            Strip(eye);
+
+            if (nearest == null) return;
+
+            Gone(nearest);
+            Say("that's one gone. somebody told him");
+            Log.Info("Hunt: the call landed and one of them walked.");
+        }
+
+        /// <summary>A lookout who has finished being one.</summary>
+        private void Strip(Lookout eye)
+        {
+            try
+            {
+                if (eye.Mark != null && eye.Mark.Exists()) eye.Mark.Delete();
+            }
+            catch
+            {
+                // It goes with the mission.
+            }
+
+            eye.Mark = null;
         }
 
         /// <summary>He has had enough and he is off. That one is not coming back.</summary>
@@ -568,7 +823,12 @@ namespace Hoodrich.Missions
 
             if (q.LastBlood == Vector3.Zero || q.Man.Position.DistanceTo(q.LastBlood) > 1.6f)
             {
-                Spot(q.Man.Position, 0.55f, 0.06f, 0.05f, 0.34f);
+                // ALONG HIS OWN HEADING. A print in advance knows where the next one is; a
+                // drop of blood is left behind a man who is still running, so the only
+                // direction there is to point it is the way he is facing.
+                Spot(q.Man.Position, q.Man.ForwardVector, 0.55f, 0.06f, 0.05f,
+                     PrintSize * 1.5f, q.LastBlood == Vector3.Zero);
+
                 q.LastBlood = q.Man.Position;
             }
 
@@ -674,17 +934,66 @@ namespace Hoodrich.Missions
                 var man = Make(at);
                 if (man == null) continue;
 
-                _out.Add(new Quarry
+                var from = at + (Vector3.RandomXY() * (PrintCount * PrintStride));
+
+                var q = new Quarry
                 {
                     Man = man,
-                    CameFrom = at + (Vector3.RandomXY() * (PrintCount * PrintStride)),
+                    CameFrom = from,
                     Suspicion = 0f
-                });
+                };
+
+                Walked(q, from, at);
+
+                _out.Add(q);
             }
 
             if (_out.Count == 0) Failure = "there was nobody out there.";
             else Log.Info("Hunt: " + _out.Count + " of them on the ground.");
+
+            Post(player);
         }
+
+        /// <summary>
+        /// Where he walked, as a list of places a foot went.
+        ///
+        /// LEFT AND RIGHT, NOT A LINE OF DOTS. Each print steps a hand's width off the middle
+        /// of the path and the side alternates, which is the difference between a trail and a
+        /// dotted line -- and it is the thing that makes a print readable as a print at all
+        /// once it is only a few inches across on the ground.
+        /// </summary>
+        private static void Walked(Quarry q, Vector3 from, Vector3 to)
+        {
+            var run = to - from;
+            var far = run.Length();
+
+            if (far < 1f)
+            {
+                q.Trail = new Vector3[0];
+                q.Laid = new bool[0];
+                return;
+            }
+
+            var step = new Vector3(run.X / far, run.Y / far, run.Z / far);
+            var side = new Vector3(-step.Y, step.X, 0f);
+
+            var many = (int)(far / PrintStride);
+            if (many > PrintCount * 3) many = PrintCount * 3;
+            if (many < 2) many = 2;
+
+            q.Trail = new Vector3[many];
+            q.Laid = new bool[many];
+
+            for (var i = 0; i < many; i++)
+            {
+                var t = i / (float)(many - 1);
+
+                q.Trail[i] = from + run * t + side * (i % 2 == 0 ? PrintSide : -PrintSide);
+            }
+        }
+
+        /// <summary>How far a foot lands off the middle of the path. See Walked.</summary>
+        private const float PrintSide = 0.16f;
 
         private Vector3 Somewhere(Vector3 from)
         {
@@ -775,49 +1084,91 @@ namespace Hoodrich.Missions
         /// </summary>
         private void Prints(Quarry q, Ped player, int now)
         {
-            if (now - q.PrintedAt < 4000) return;
-
-            var here = q.Man.Position;
-
-            if (player.Position.DistanceTo(here) > PrintRange) return;
+            if (q.Trail == null || q.Trail.Length == 0) return;
+            if (now - q.PrintedAt < 400) return;
 
             q.PrintedAt = now;
 
-            var from = q.CameFrom;
-            var to = here;
+            var me = player.Position;
 
-            for (var i = 0; i < PrintCount; i++)
+            for (var i = 0; i < q.Trail.Length; i++)
             {
-                var t = i / (float)(PrintCount - 1);
+                if (q.Laid[i]) continue;
 
-                var at = from + (to - from) * t;
+                var at = q.Trail[i];
+
+                // NEAR THE PRINT, not near the man. This is the whole repair -- see the note
+                // on Quarry.Trail. You read the ground where you are stood, and the far end of
+                // a trail is a piece of ground like any other.
+                if (me.DistanceTo(at) > PrintRange) continue;
+
+                q.Laid[i] = true;
 
                 // Oldest faintest, which is what tracking is: the fresh ones are the ones
                 // pointing at him.
-                var age = 0.25f + 0.75f * t;
+                var age = 0.30f + 0.70f * (i / (float)Math.Max(1, q.Trail.Length - 1));
 
-                Spot(at, 0.28f * age, 0.26f * age, 0.24f * age, 0.22f);
+                var step = i + 1 < q.Trail.Length
+                    ? q.Trail[i + 1] - at
+                    : at - q.Trail[Math.Max(0, i - 1)];
+
+                Spot(at, step, 0.30f * age, 0.27f * age, 0.24f * age, PrintSize, i % 2 == 0);
             }
         }
 
-        /// <summary>One mark on the ground, dropped straight down onto whatever is under it.</summary>
-        private static void Spot(Vector3 at, float r, float g, float b, float size)
+        /// <summary>
+        /// One print on the ground, pointing the way he was walking.
+        ///
+        /// TYPE 2040, WHICH IS A FOOTPRINT. It was 1023, which is not -- decals are picked out
+        /// of decals.dat by number and that number is not one of the ones that resolves to the
+        /// fxdecal_footprints sheet, so every call went through and nothing appeared. 2040 and
+        /// 2140 are the two BLOOD TRANSFER soles off that sheet, which is where the game's own
+        /// bloody footprints come from; they are two different treads, so alternating them
+        /// stops a trail being one stamp repeated. The colour is ours either way -- the art is
+        /// a greyscale mask and takes whatever tint it is handed.
+        ///
+        /// AND THE LAST THREE FLAGS ARE ALL FALSE. The first of them was true, which is the
+        /// other half of why nothing was ever drawn.
+        ///
+        /// The side vector is what turns it: across the direction of travel, so the toe points
+        /// the way he went. A trail you can read the direction of is a trail; one you cannot is
+        /// a line of smudges.
+        /// </summary>
+        private static void Spot(Vector3 at, Vector3 step, float r, float g, float b,
+                                 float size, bool left)
         {
+            var flat = new Vector3(step.X, step.Y, 0f);
+
+            if (flat.Length() < 0.001f) flat = new Vector3(1f, 0f, 0f);
+            else flat.Normalize();
+
+            var side = new Vector3(-flat.Y, flat.X, 0f);
+
             try
             {
-                Function.Call(Hash.ADD_DECAL, 1023,
-                              at.X, at.Y, at.Z + 0.2f,
+                Function.Call(Hash.ADD_DECAL, left ? PrintDecal : PrintDecalAlt,
+                              at.X, at.Y, at.Z + 0.15f,
                               0f, 0f, -1f,
-                              1f, 0f, 0f,
-                              size, size,
+                              side.X, side.Y, 0f,
+                              size, size * 1.6f,
                               r, g, b, 0.9f,
-                              600000f, true, false, false);
+                              600000f, false, false, false);
             }
             catch
             {
                 // No tracks, then. The blips still lead him there.
             }
         }
+
+        /// <summary>
+        /// The two soles, and how big a print is.
+        ///
+        /// Both sit under BLOOD TRANSFER in decals.dat and both point at the same footprint
+        /// sheet. Taller than it is wide, because a foot is.
+        /// </summary>
+        private const int PrintDecal = 2040;
+        private const int PrintDecalAlt = 2140;
+        private const float PrintSize = 0.17f;
 
         // ---- Lamar ---------------------------------------------------------------------
 
@@ -889,12 +1240,14 @@ namespace Hoodrich.Missions
         // ---- the card -------------------------------------------------------------------
 
         /// <summary>
-        /// The hunting card: how many are left, which way the wind is going, and how close
-        /// the nearest one is to hearing you.
+        /// The hunting card: how many are left, whether anybody is looking at you, and how
+        /// close the nearest one is to hearing you.
         ///
-        /// THE WIND ARROW IS THE WHOLE HUD. It is the one thing the minigame puts on screen
-        /// that you cannot work out by looking at the world, and without it the wind rule is
-        /// a rule nobody can play around.
+        /// THE LOOKOUT READOUT IS WHAT THE WIND ARROW WAS. Both exist for the same reason -- a
+        /// rule you cannot see the state of is a rule you cannot play around -- and this one
+        /// has the advantage of being about something that is actually on the map. The word
+        /// goes amber while somebody has a look going and red once the phone is out, which is
+        /// the only warning there is that you have about four seconds to do something.
         /// </summary>
         public void Draw()
         {
@@ -917,16 +1270,28 @@ namespace Hoodrich.Missions
             Hud.TextRight(Down + " / " + Many, left + w - 0.010f, top + 0.004f, 0.34f,
                           Palette.Text, Hud.FontLabel);
 
-            // ---- the wind ----
-            var wind = Wind();
+            // ---- who is looking ----
+            var watched = 0f;
+            var dialling = false;
+            var eyes = 0;
 
-            var cx = x + 0.014f;
-            var cy = top + 0.038f;
+            foreach (var eye in _eyes)
+            {
+                if (eye.Called) continue;
+                if (eye.Man == null || !eye.Man.Exists() || !eye.Man.IsAlive) continue;
 
-            Arrow(cx, cy, wind);
+                eyes++;
 
-            Hud.Text("WIND", x + 0.030f, top + 0.030f, 0.22f,
-                     Palette.Alpha(Palette.TextDim, 190), Hud.FontLabel, centre: false);
+                if (eye.CallingFrom != 0) dialling = true;
+                if (eye.Spot > watched) watched = eye.Spot;
+            }
+
+            var eyeInk = dialling ? Palette.Danger
+                       : watched > 0.35f ? Palette.Warn
+                       : Palette.Alpha(Palette.TextDim, 190);
+
+            Hud.Text(dialling ? "ON THE PHONE" : eyes > 0 ? "EYES  " + eyes : "NO EYES",
+                     x, top + 0.030f, 0.22f, eyeInk, Hud.FontLabel, centre: false);
 
             // ---- how close the nearest one is to hearing you ----
             var worst = 0f;
@@ -937,7 +1302,7 @@ namespace Hoodrich.Missions
                 if (q.Suspicion > worst) worst = q.Suspicion;
             }
 
-            var barX = x + 0.058f;
+            var barX = x + 0.062f;
             var barW = w - 0.068f - 0.010f;
 
             Hud.RectFrom(barX, top + 0.034f, barW, 0.0075f,
@@ -954,50 +1319,6 @@ namespace Hoodrich.Missions
             {
                 Hud.Text(_said, left + w * 0.5f, top + 0.046f, 0.24f,
                          Palette.Alpha(Palette.TextDim, 210), Hud.FontBody);
-            }
-        }
-
-        /// <summary>The wind, as an arrow. Four rectangles and no sprite.</summary>
-        private static void Arrow(float cx, float cy, Vector3 wind)
-        {
-            var len = 0.016f;
-
-            var dx = Hud.ToX(len) * wind.X;
-            var dy = len * wind.Y;
-
-            // The game's Y is north and the screen's is down, so it is flipped.
-            var ex = cx + dx;
-            var ey = cy - dy;
-
-            var steps = 6;
-
-            for (var i = 0; i <= steps; i++)
-            {
-                var t = i / (float)steps;
-
-                Hud.RectFrom(cx + (ex - cx) * t - 0.0008f, cy + (ey - cy) * t - 0.0014f,
-                             0.0016f, 0.0028f, Palette.Text);
-            }
-
-            Hud.RectFrom(ex - 0.0022f, ey - 0.0022f, 0.0044f, 0.0044f, Palette.Brand);
-        }
-
-        /// <summary>Which way the wind is going, flat and normalised.</summary>
-        private static Vector3 Wind()
-        {
-            try
-            {
-                var w = Function.Call<Vector3>(Hash.GET_WIND_DIRECTION);
-
-                var flat = new Vector3(w.X, w.Y, 0f);
-
-                if (flat.Length() < 0.01f) return new Vector3(1f, 0f, 0f);
-
-                return Vector3.Normalize(flat);
-            }
-            catch
-            {
-                return new Vector3(1f, 0f, 0f);
             }
         }
 
@@ -1032,6 +1353,26 @@ namespace Hoodrich.Missions
             }
 
             _out.Clear();
+
+            foreach (var eye in _eyes)
+            {
+                try
+                {
+                    if (eye.Mark != null && eye.Mark.Exists()) eye.Mark.Delete();
+
+                    if (eye.Man != null && eye.Man.Exists())
+                    {
+                        Function.Call(Hash.SET_PED_KEEP_TASK, eye.Man.Handle, false);
+                        eye.Man.MarkAsNoLongerNeeded();
+                    }
+                }
+                catch
+                {
+                    // The game takes them back.
+                }
+            }
+
+            _eyes.Clear();
 
             try
             {
