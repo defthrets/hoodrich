@@ -272,7 +272,7 @@ SPEECH = [
     (r"src\Hoodrich\Gangs\LeaderTalk.cs",       ["Gerald"]),
     (r"src\Hoodrich\Locations\ArmourerTalk.cs", ["Stretch"]),
     (r"src\Hoodrich\Locations\HaoTalk.cs",      ["Hao"]),
-    (r"src\Hoodrich\Locations\VernonTalk.cs",   ["Vernon"], {"Bar": "OG Vee", "Land": "OG Vee"}),
+    (r"src\Hoodrich\Locations\VernonTalk.cs",   ["Vernon"], {"Verse": "OG Vee"}),
     (r"src\Hoodrich\Missions\FixerTalk.cs",     ["Lamar"]),
     (r"src\Hoodrich\Missions\BikeRide.cs",      ["Lamar"]),
     (r"src\Hoodrich\Missions\Hunt.cs",          ["Lamar"]),

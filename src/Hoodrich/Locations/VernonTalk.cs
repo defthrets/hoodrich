@@ -81,27 +81,28 @@ namespace Hoodrich.Locations
         private const string Stage = "OG Vee";
 
         /// <summary>
-        /// One bar, which plays and goes to the next one on its own. See DialogueNode.Beat.
+        /// A whole verse, in one go, under his other name.
         ///
-        /// A BAR IS A FILE. He is recorded in a different voice from the talking by somebody
-        /// who cannot cut audio, so a verse cannot be one recording with four lines in it --
-        /// it has to be four recordings, and four recordings means four nodes.
-        /// </summary>
-        private static DialogueNode Bar(string line, Func<DialogueNode> next)
-        {
-            return new DialogueNode(Stage, line).Beat(next);
-        }
-
-        /// <summary>
-        /// The last bar of a verse, which is where your answers come back.
+        /// ONE TAKE. The bars were four nodes and four files for a while, and four recordings
+        /// played back to back is not a verse -- the sound device closes and opens between
+        /// each one, and those gaps land in the middle of the flow. A rap is performed in one
+        /// breath or it is four sentences.
         ///
-        /// Encore without a Runs: it plays every time like the rest of the verse, and then it
-        /// waits, because the end of a verse is the one moment in it where you have something
-        /// to say.
+        /// The split that MATTERS is still here, and it is the voice rather than the bars: the
+        /// run-up is Vernon and this is OG Vee, so the two are two files under two names and
+        /// the folder still says which take belongs to which.
+        ///
+        /// Encore with no Runs: it plays every time, like anything anybody would ask to hear
+        /// again, and then it waits -- the end of a verse is the one moment in it where you
+        /// have something to say.
+        ///
+        /// The line breaks are for the panel, not the recording. Voice.Tidy flattens them
+        /// before it hashes, so the file is named off the words alone and the screen still
+        /// lays them out as four lines of a verse.
         /// </summary>
-        private static DialogueNode Land(string line)
+        private static DialogueNode Verse(string lines)
         {
-            return new DialogueNode(Stage, line) { Encore = true };
+            return new DialogueNode(Stage, lines) { Encore = true };
         }
 
         public DialogueNode Root()
@@ -207,24 +208,20 @@ namespace Hoodrich.Locations
         /// </summary>
         private DialogueNode Bars()
         {
-            // The run-up is him, not the record. Same voice as the rest of the talking, and it
-            // carries straight into the first bar rather than waiting to be answered -- nobody
-            // presses a button between "check it" and the verse.
+            // The run-up is him, not the record. Same voice as the rest of the talking, and
+            // it carries straight into the verse rather than waiting to be answered -- nobody
+            // presses a button between "check it" and the verse itself.
             return Node("Aight. Aight aight. Hold up, hold -- okay. Check it. Check it:")
                        .Beat(() => VerseOne());
         }
 
         private DialogueNode VerseOne()
         {
-            return Bar("It's OG Vee and I'm here to say,",
-                   () => Bar("I move that white in a major way.",
-                   () => Bar("My daddy sold lamps -- but I sell the light,",
-                   () => LandOne())));
-        }
-
-        private DialogueNode LandOne()
-        {
-            var node = Land("ceilin' fan money, but the fan is white.");
+            var node = Verse(
+                "It's OG Vee and I'm here to say,\n" +
+                "I move that white in a major way.\n" +
+                "My daddy sold lamps -- but I sell the light,\n" +
+                "ceilin' fan money, but the fan is white.");
 
             node.Say("...That's it?", () => Bars2());
             node.Say("Run that back.", () => Bars2(), "There is more");
@@ -241,15 +238,11 @@ namespace Hoodrich.Locations
 
         private DialogueNode VerseTwo()
         {
-            return Bar("V-E-E, that's the letter I be,",
-                   () => Bar("Leroy's Electrical, that's my legacy.",
-                   () => Bar("I got amps, I got volts, I got watts, I got stock --",
-                   () => LandTwo())));
-        }
-
-        private DialogueNode LandTwo()
-        {
-            var node = Land("you need a fluorescent? ...I got a fluorescent. In stock.");
+            var node = Verse(
+                "V-E-E, that's the letter I be,\n" +
+                "Leroy's Electrical, that's my legacy.\n" +
+                "I got amps, I got volts, I got watts, I got stock --\n" +
+                "you need a fluorescent? ...I got a fluorescent. In stock.");
 
             node.Say("That last part needs work.", () => Critics());
             node.Say("That's cold, actually.", () => Proud());
@@ -382,15 +375,11 @@ namespace Hoodrich.Locations
 
         private DialogueNode VerseThree()
         {
-            return Bar("They said Vee can't rap -- now Vee got a plug,",
-                   () => Bar("basement full of powder underneath a light bulb.",
-                   () => Bar("I ain't sayin' no names 'cause my name on the deed --",
-                   () => LandThree())));
-        }
-
-        private DialogueNode LandThree()
-        {
-            var node = Land("Leroy's Electrical: we supply the need.");
+            var node = Verse(
+                "They said Vee can't rap -- now Vee got a plug,\n" +
+                "basement full of powder underneath a light bulb.\n" +
+                "I ain't sayin' no names 'cause my name on the deed --\n" +
+                "Leroy's Electrical: we supply the need.");
 
             node.Say("That's an album.", () => Album());
             node.Leave("Aight, Vee.");
