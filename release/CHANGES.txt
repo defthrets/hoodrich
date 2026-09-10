@@ -1,6 +1,22 @@
 ﻿0.7.1 -- unreleased
 
 
+GERALD SPEAKS THE SECOND PACKAGE AGAIN.
+
+A voice file is named after a hash of the exact line it says, so changing a
+syllable of a spoken line silently unnames its own audio. That line was reworded
+when the drug went back to being Ecstasy, and the reword cost it its recording:
+he mouthed the whole speech in silence and the log said "nothing for
+gerald_c10d6edb" without anybody being in a position to see it.
+
+Back to what was actually recorded, down to the percs. He is a man on a stairwell
+using the word people use; the product is called Ecstasy on the shelf and in the
+pocket, and the row under him still says so.
+
+It was the only line the rename silenced -- the log names every line with no
+recording, and the only other one on that list has never had one.
+
+
 HIS OWN SET DOES NOT TURN ON HIM WHEN HE FIRES A SHOT.
 
 Fire a round on the street and the whole block went red. The pass that is

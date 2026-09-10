@@ -1293,9 +1293,24 @@ namespace Hoodrich.Gangs
             // He NAMES it. "Twenty pills" is what they are counted in and not what they are:
             // he is handing you ecstasy and the whole point of a second package is that it is
             // a different product from the first, which a generic word erases.
+            // THE WORDS ARE THE RECORDING'S, NOT THE PRODUCT'S.
+            //
+            // A voice file is named after a hash of the exact line -- see Core.Voice -- so
+            // changing a syllable of a spoken line silently unnames its own audio. This line
+            // was reworded when the drug went back to being Ecstasy, and the reword cost it
+            // gerald_63f8e666.wav: the log said "nothing for gerald_c10d6edb" and he mouthed
+            // the whole speech in silence.
+            //
+            // So it is back to what was actually recorded, down to the percs. He is a man on a
+            // stairwell using the word people use; the product is called Ecstasy on the shelf
+            // and in the pocket, and the row under this one still calls it that. Somebody
+            // saying "percs" about pills is not the mod contradicting itself.
+            //
+            // ANY EDIT TO THIS STRING SILENCES IT AGAIN. If it has to change, the recording
+            // changes with it or it does not change.
             var node = Node(def, gang,
                 "Aight, you been out there once and you came back. Second one's different -- " +
-                FrontGrams.ToString("0") + " rolls. Straight out the bag, they don't " +
+                FrontGrams.ToString("0") + " percs. Oxycodone, straight out the bag, they don't " +
                 "need nothin' doin' to 'em same as the bars. All of it gone, then you see me, " +
                 "and after that we talk about where it comes from.");
 
