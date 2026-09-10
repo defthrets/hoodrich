@@ -1,6 +1,31 @@
 ﻿0.7.1 -- unreleased
 
 
+A BURNOUT FOR FIVE SECONDS, THEN STRAIGHT INTO A DONUT.
+
+They were doing the burnout and then doing it some more. A donut is a burnout
+that TURNS, and both halves have to be true at once: the rears spinning, which
+is the smoke and the noise and the marks on the road, and the fronts free,
+because they are what it pivots about.
+
+SET_VEHICLE_BURNOUT is only the first half. It holds the front brakes while it
+spins the rears -- a standing burnout exactly, and a donut not at all, because a
+car whose front wheels are clamped cannot be steered anywhere. Full lock arrived
+at a car that could only sit there and smoke. It had been switched on for the
+spin on the reasoning that a stationary donut wants the car held on the spot,
+and it does hold it on the spot, completely, including the part where it goes
+round.
+
+The arrival is unchanged and is the bit that was already right: he brakes onto
+his mark, holds a standing burnout for five seconds with the front brakes on,
+and then the brakes come off, the grip drops and the wheel goes to full lock in
+the same breath. A car that has been sitting there smoking hooks up and starts
+going round, which is what it looks like when somebody does it.
+
+The smoke does not come from the native anyway -- a wheel spinning on two fifths
+of its grip smokes on its own.
+
+
 THE TAKEOVER SAYS WHAT ITS HEAVIEST TICK COST.
 
 Twenty subsystems on one 700ms clock is the obvious suspect for a stutter -- so

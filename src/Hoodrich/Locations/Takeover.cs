@@ -5455,7 +5455,7 @@ namespace Hoodrich.Locations
                         // anywhere -- and Still puts it back the moment he is in again.
                         Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
                         Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
-                        Slick(r.Car, false);
+                        Slick(r.Car, true);
 
                         Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle,
                                       r.Car.Handle, Circle.X, Circle.Y, Circle.Z,
@@ -5546,7 +5546,11 @@ namespace Hoodrich.Locations
 
                 Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
 
-                Slick(r.Car, false);
+                // THE SAME RIG THE SPIN USES, so nothing about the car changes between the
+                // brake, the smoke and the lock. See Still: the grip comes DOWN, which is what
+                // lets the back come round when the wheel goes over. It was left up here on the
+                // same wrong reasoning that put burnout mode on.
+                Slick(r.Car, true);
                 Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
             }
             catch
@@ -5617,26 +5621,29 @@ namespace Hoodrich.Locations
 
         /// <summary>
         /// THE CAR SET UP TO SPIN ON ITS OWN CENTRE RATHER THAN TO TRAVEL, which is the whole
-        /// difference between what this was and what it is.
+        /// difference between a car that smokes and a car that goes round.
         ///
-        /// It used to be burnout mode OFF and the grip cut to two fifths, which is a DRIFT
-        /// rig: the back steps out, the front washes wide with it, and the car describes a big
-        /// circle across the junction while it does. That is a lovely thing on an empty road
-        /// and it is not what happens in the middle of a takeover -- the whole event is sixty
-        /// people stood in a ring round a car that stays inside it.
+        /// A DONUT IS A BURNOUT THAT TURNS, and both halves have to be true at once. The rears
+        /// have to be spinning -- that is the smoke, the noise and the marks on the road -- and
+        /// the fronts have to be free, because they are what it pivots about. Take either away
+        /// and you have the other thing.
         ///
-        /// Two changes and they are opposites of what was there:
+        /// SET_VEHICLE_BURNOUT IS THE OTHER THING. It holds the front brakes while it spins the
+        /// rears, which is a standing burnout exactly and a donut not at all: a car whose front
+        /// wheels are clamped cannot be steered anywhere, so full lock arrives at a car that can
+        /// only sit there and smoke. It was switched on here for a while on the reasoning that a
+        /// stationary donut wants the car held on the spot -- and it does hold it on the spot,
+        /// completely, including the part where it goes round. Five seconds of smoke followed by
+        /// more smoke.
         ///
-        /// BURNOUT MODE ON, HELD. It holds the front brakes and spins the rears, which is
-        /// exactly what a driver does with his left foot to hold a car on the spot. It used to
-        /// be turned OFF explicitly here, and the comment said it was "the opposite of what is
-        /// wanted" -- true of a travelling donut, and the reason this looked like one.
+        /// So the rig is the one that turns: burnout mode OFF, the grip cut to two fifths, and
+        /// drift tyres on. The back steps out under the lock and the front has something to
+        /// pivot on. It is where the smoke comes from too -- a wheel spinning on reduced grip
+        /// smokes on its own, which is why the burnout native was never needed for the look.
         ///
-        /// GRIP LEFT ALONE. Reduced grip is what let the front end wash out, and the front end
-        /// washing out is the travelling. With the fronts gripping and the rears spinning
-        /// under full lock the car pivots about its front axle: the back swings round, the
-        /// nose stays, and it goes nowhere. Drift tyres stay on -- they loosen the REAR, which
-        /// is what is meant to be loose, and they are where the smoke comes from.
+        /// IT TRAVELS A LITTLE AND THAT IS THE PRICE. Nothing is holding it, so a donut wanders
+        /// off its mark over a minute or two. StageLeash hauls it back. Being pulled home now
+        /// and then is a cheaper thing to watch than a car that never turned.
         ///
         /// One method rather than three copies, because Show, Lock and the return from a
         /// correction all have to agree about this or the car changes character mid-spin.
@@ -5647,9 +5654,24 @@ namespace Hoodrich.Locations
 
             try
             {
-                Slick(car, false);
+                // BURNOUT MODE OFF. IT WAS ON AND THAT IS WHY THEY WERE NOT TURNING.
+                //
+                // The native holds the FRONT BRAKES while it spins the rears. That is precisely
+                // what a standing burnout is and precisely what a donut is not: a car whose
+                // front wheels are clamped cannot be steered anywhere, so full lock arrived at
+                // a car that could only sit there and smoke. It was put on here on the
+                // reasoning that a stationary donut wants the car held on the spot -- and it
+                // does hold it on the spot, completely, including the part where it goes round.
+                //
+                // The rig that turns a car is the one this file had before: the rears loose and
+                // the fronts free. Reduced grip lets the back step out, drift tyres loosen it
+                // further, and the steering lock then has something to pivot about. Nothing
+                // holds it, so it does travel a little -- which is what StageLeash is for, and
+                // hauling one back every so often is a cheaper price than not going round.
+                Function.Call(Hash.SET_VEHICLE_BURNOUT, car.Handle, false);
+
+                Slick(car, true);
                 Function.Call(Hash.SET_DRIFT_TYRES, car.Handle, true);
-                Function.Call(Hash.SET_VEHICLE_BURNOUT, car.Handle, true);
             }
             catch
             {
@@ -5671,14 +5693,16 @@ namespace Hoodrich.Locations
         /// <summary>
         /// The show on a marker: full lock and the throttle, re-issued before it runs out.
         ///
-        /// BURNOUT MODE ON, GRIP LEFT ALONE. See Still -- both of those are the reverse of
-        /// what stood here, and between them they are the difference between a car spinning on
-        /// its own centre and a car drifting a circle across the junction.
+        /// THE HANDOVER OUT OF THE STANDING BURNOUT, AND IT IS ONE MOVE. Smoke has him held on
+        /// the front brakes with the rears going; this takes the brakes off, drops the grip and
+        /// puts the wheel on full lock in the same breath. What the crowd sees is a car that
+        /// has been sitting there smoking suddenly hook up and start going round, which is
+        /// exactly what it looks like when somebody does it.
         ///
-        /// It also means the five seconds of standing burnout the car arrives on does not have
-        /// to be undone: Smoke holds it still with the rears going and this adds the lock to
-        /// it, so the change the crowd sees is the wheel going over, not the car being
-        /// re-rigged underneath.
+        /// BURNOUT MODE MUST COME OFF HERE AND IT DID NOT. It was left on, on the reasoning
+        /// that a stationary donut wants the car pinned -- and a car with its front wheels
+        /// clamped is pinned all right, including against turning. Five seconds of smoke
+        /// followed by more smoke. See Still.
         /// </summary>
         private void Show(Runner r, int now)
         {
