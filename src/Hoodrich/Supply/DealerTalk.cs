@@ -166,9 +166,21 @@ namespace Hoodrich.Supply
         private DialogueNode Node(string line) =>
             new DialogueNode(Name, line) { SpeakerColour = Palette.Cash, Farewell = Bye };
 
+        /// <summary>
+        /// His words where he has them, the shared ones where he does not. See DealerDef.
+        /// </summary>
+        private string His(string mine, string shared)
+        {
+            return string.IsNullOrEmpty(mine) ? shared : mine;
+        }
+
         public DialogueNode Root()
         {
-            if (House == null) return Node("Come back when you got somewhere to put it.");
+            if (House == null)
+            {
+                return Node(His(Def == null ? "" : Def.NoRoomLine,
+                                "Come back when you got somewhere to put it."));
+            }
 
             // He says it before you ask, because it is the thing that decides everything you
             // can do with the weight afterwards. Pure cuts three ways and gets you three times
@@ -541,7 +553,8 @@ namespace Hoodrich.Supply
         {
             if (House.FreeSpace < grams - 0.5f)
             {
-                return Node("You got nowhere to put it. Sort that out first.");
+                return Node(His(Def == null ? "" : Def.NoSpaceLine,
+                                "You got nowhere to put it. Sort that out first."));
             }
 
             UI.Cash.Take(cost);
@@ -585,7 +598,8 @@ namespace Hoodrich.Supply
                 Log.Info("Bought " + grams.ToString("0") + "g " + product.Id + " off " + Name +
                          " for $" + cost + ", hand to hand.");
 
-                var got = Node("Don't stand there holding it. Go on.");
+                var got = Node(His(Def == null ? "" : Def.HandOverLine,
+                                   "Don't stand there holding it. Go on."));
                 got.Leave("Aight.");
                 return got;
             }
@@ -605,7 +619,8 @@ namespace Hoodrich.Supply
             Log.Info("Bought " + grams.ToString("0") + "g " + product.Id + " off " + Name +
                      " for $" + cost + "; he is walking it in.");
 
-            var node = Node("Stand aside. I'll put it inside for you.");
+            var node = Node(His(Def == null ? "" : Def.WalkItInLine,
+                                "Stand aside. I'll put it inside for you."));
             node.Leave("Go on then.");
             return node;
         }

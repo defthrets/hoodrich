@@ -445,6 +445,22 @@ namespace Hoodrich.Supply
         public string ShopLine = "";
         public string ShopCutLine = "";
 
+        /// <summary>
+        /// The four things he says about your stash room, in his own words.
+        ///
+        /// NoRoom is turning you away for having nowhere to put it; NoSpace is the same answer
+        /// mid-sale, once he knows how much you are asking for. HandOver is a hand-to-hand and
+        /// WalkItIn is him carrying it inside for you.
+        ///
+        /// Empty means the shared sentence, which is what all of them said before any of it
+        /// was voiced. Unlike the counter line these are named after their own WORDS, so a
+        /// dealer with his own recording must have his own text -- there is no third option.
+        /// </summary>
+        public string NoRoomLine = "";
+        public string NoSpaceLine = "";
+        public string HandOverLine = "";
+        public string WalkItInLine = "";
+
         /// <summary>Reply when the player asks where the product comes from, and it works.</summary>
         public string SourceReply = "";
 
