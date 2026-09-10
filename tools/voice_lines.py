@@ -295,8 +295,16 @@ def from_source(root):
         rows.append((name + ".mp3", speaker, tidy(line)))
 
     def joined(blob):
-        return "".join(p.replace('\\"', '"').replace("\\\\", "\\")
-                       for p in PIECE.findall(blob))
+        # \n IS A LINE BREAK, NOT TWO CHARACTERS. Voice.Tidy flattens whitespace before it
+        # hashes, so a paragraph break in a speech becomes one space -- and a key built from
+        # a literal backslash-n instead is a key the game will never ask for. Every long
+        # speech in this mod has paragraph breaks in it.
+        out = []
+        for p in PIECE.findall(blob):
+            out.append(p.replace('\\"', '"')
+                        .replace("\\n", "\n").replace("\\r", "\r").replace("\\t", "\t")
+                        .replace("\\\\", "\\"))
+        return "".join(out)
 
     for rel, speakers in SPEECH:
         path = os.path.join(root, rel)
@@ -408,7 +416,32 @@ def main():
 
     if args.need is not None:
         have = recorded(args.need or find_voice(args.root))
-        rows = [r for r in rows if os.path.splitext(r[0])[0].lower() not in have]
+
+        # A LINE TWO PEOPLE CAN SAY IS ONE LINE. DealerTalk builds its nodes with whichever
+        # dealer you walked up to, so every sentence in it comes out under both names -- but
+        # most of them sit behind a branch only one of the two can reach, and there is no way
+        # to tell which from the text.
+        #
+        # The recordings already know. If one of the names has a take of a line, that is who
+        # says it, and the other name is not missing anything. What is left over is the lines
+        # nobody has recorded under any name, which are the ones actually worth looking at.
+        byhash = {}
+        for r in rows:
+            byhash.setdefault(os.path.splitext(r[0])[0].rsplit("_", 1)[-1], []).append(r)
+
+        keep = []
+        for r in rows:
+            me = os.path.splitext(r[0])[0].lower()
+            if me in have:
+                continue
+
+            kin = byhash[me.rsplit("_", 1)[-1]]
+            if any(os.path.splitext(o[0])[0].lower() in have for o in kin if o is not r):
+                continue
+
+            keep.append(r)
+
+        rows = keep
 
     rows.sort(key=lambda r: (r[1].lower(), r[2]))
 
