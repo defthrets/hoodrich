@@ -2396,6 +2396,12 @@ namespace Hoodrich
 
                 _buffalo.Busy = () => _war != null && _war.IsRunning;
 
+                // So the circle never clears a car he paid for. See Takeover.Yours.
+                if (_takeover != null)
+                {
+                    _takeover.Owned = car => _ownedCars != null && _ownedCars.Which(car) != null;
+                }
+
                 // LAST IN THE QUEUE, and told what it needs to know rather than given the
                 // whole mod. Which gang somebody is in is the one thing the greeting cannot
                 // work out for itself, and it is a line Affiliation already owns.

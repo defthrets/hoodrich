@@ -1162,6 +1162,61 @@ namespace Hoodrich.Locations
         private int _nextWord;
 
         private const int TickMs = 700;
+
+        /// <summary>
+        /// How many ticks the work is spread over. See the note in the Running case.
+        ///
+        /// THREE. Two barely moves the peak and four pushes the slowest subsystem out to nearly
+        /// three seconds, which starts to be visible in the parking. At three, the heaviest
+        /// frame does a third of what it did and nothing waits longer than 2.1 seconds for its
+        /// turn to look at its own clock.
+        /// </summary>
+        private const int Slices = 3;
+        private int _slice;
+
+        /// <summary>
+        /// How long the heaviest tick has taken, said out loud when it gets worse.
+        ///
+        /// SO THAT "IT LAGS" BECOMES A NUMBER. This tick is twenty subsystems on one clock and
+        /// the honest position is that nobody knows which of them costs anything -- the
+        /// stagger above is reasoning about where the cost MUST be, not a measurement of where
+        /// it IS. A stopwatch and one log line per new peak settles it, and names the slice
+        /// that did it so the next look starts in the right place.
+        ///
+        /// NEW PEAKS ONLY, exactly like the draw budget line. A threshold logged every time it
+        /// is crossed is a log file made of one message; a peak that only rises is a short
+        /// list of the worst frames of the night.
+        ///
+        /// The stopwatch itself is nothing -- one allocation and two reads on a tick that runs
+        /// less than twice a second.
+        /// </summary>
+        private void Spent(System.Diagnostics.Stopwatch clock, int slice)
+        {
+            try
+            {
+                clock.Stop();
+
+                var ms = clock.Elapsed.TotalMilliseconds;
+
+                if (ms < SpentFloor || ms <= _worstTick + SpentStep) return;
+
+                _worstTick = ms;
+
+                Log.Info("Takeover: slice " + slice + " took " + ms.ToString("0.0") +
+                         " ms (new peak). " + _crowd.Count + " in the crowd, " +
+                         _parked.Count + " parked, " + _running.Count + " going round.");
+            }
+            catch
+            {
+                // A missing measurement is not worth a broken takeover.
+            }
+        }
+
+        /// <summary>Below this nobody cares, and a peak has to beat the last by this to be news.</summary>
+        private const double SpentFloor = 8d;
+        private const double SpentStep = 2d;
+
+        private double _worstTick;
         private int _startedAt;
 
         private const int WordMinMs = 55000;
@@ -1328,26 +1383,63 @@ namespace Hoodrich.Locations
                         if (near > LetGo) { Pack(); return; }
                         if (OwnedCars.NowMinutes() >= _endsAt) { Blues(); return; }
 
+                        // ONE FRAME IN EVERY TEN WAS DOING ALL OF THIS, AND THAT IS THE
+                        // LAG SPIKE.
+                        //
+                        // The whole takeover runs on one 700ms clock, so nine frames out of ten
+                        // it costs nothing at all and the tenth does twenty subsystems back to
+                        // back: forty cars talked down, sixty people looked at, the parking, the
+                        // pushing, the chatter, the fireworks, the helicopter. Every one of them
+                        // is cheap on its own and the pile of them lands in a single frame,
+                        // which is a stutter you can set your watch by rather than a mod that
+                        // is slow.
+                        //
+                        // So the beat is the same and the work is spread across it. Three
+                        // things stay on every tick because they are the ones a delay is
+                        // visible in -- the traffic, the cars going round, and the crowd being
+                        // held to its ring. Everything else takes a turn.
+                        //
+                        // NOTHING IS RUN LESS OFTEN THAN IT NEEDS TO BE. Each of these already
+                        // carries its own clock -- a firework every so many seconds, a shout
+                        // every so many -- and all this changes is which tick it gets to ask.
+                        // The slowest anything is now asked is once every 2.1 seconds, against
+                        // internal gaps measured in tens of seconds.
+                        var clock = System.Diagnostics.Stopwatch.StartNew();
+
                         Calm();
-                        Fright(now);
-                        Arriving(now);
-                        TopUp(now);
-                        Filling(now);
-                        Wave(now);
-                        Walking();
-                        Parking(now);
-                        Sweep(now);
-                        Shove(now);
                         Keep(now);
                         Working(now);
-                        Chatter(now);
-                        Racket(now);
-                        Chopper(now);
-                        Flares(now);
-                        Unarm(now);
-                        Firework(now);
-                        Hype(now);
-                        Blasting(now);
+
+                        _slice = (_slice + 1) % Slices;
+
+                        if (_slice == 0)
+                        {
+                            Arriving(now);
+                            TopUp(now);
+                            Filling(now);
+                            Parking(now);
+                            Chatter(now);
+                            Flares(now);
+                        }
+                        else if (_slice == 1)
+                        {
+                            Sweep(now);
+                            Shove(now);
+                            Wave(now);
+                            Walking();
+                            Racket(now);
+                            Firework(now);
+                        }
+                        else
+                        {
+                            Fright(now);
+                            Chopper(now);
+                            Unarm(now);
+                            Hype(now);
+                            Blasting(now);
+                        }
+
+                        Spent(clock, _slice);
                         Crowding(now);
                         Rushes(now);
                         Riders(now);
@@ -1908,22 +2000,42 @@ namespace Hoodrich.Locations
                     var driver = car.Driver;
 
                     // A CAR LEFT IN THE CIRCLE with nobody alive at the wheel -- the driver
-                    // pulled out of it by the crowd, or dead -- is in the way of the show and
-                    // nobody is coming back for it. The same window as a driven one, then it
-                    // goes.
-                    if ((driver == null || !driver.Exists() || !driver.IsAlive)
-                        && !Ours(car) && !LawCar(car))
+                    // pulled out of it by the crowd, dead, bailed out and run off, or simply
+                    // parked there before any of this started -- is in the way of the show and
+                    // nobody is coming back for it.
+                    if (driver == null || !driver.Exists() || !driver.IsAlive)
                     {
                         var gap = car.Position.DistanceTo(Middle);
 
-                        // ONE LEFT IN THE CIRCLE GOES, whoever left it there and however it
-                        // came to be empty -- the driver dragged out of it, dead, or simply
-                        // parked there before any of this started. The circle is the one piece
-                        // of ground with nothing on it.
-                        if (gap < ClearAt) { Vanish(car, null); continue; }
+                        // OURS COUNTS TOO, AND THAT IS THE FIX. The test used to be "not one of
+                        // ours and not the law", and the first half of that was leaving cars
+                        // exactly where the rule was meant to stop them being.
+                        //
+                        // Everything the takeover parks is Ours -- the whole ring of
+                        // spectators, the drivers waiting their turn, the ghosts. A spectator
+                        // nudged onto the tarmac by somebody's donut, or a performer whose
+                        // driver was shot out of it, is an empty car sat in the middle of the
+                        // circle that nothing would ever touch again, because the one thing
+                        // that clears the circle was told to leave our own alone.
+                        //
+                        // In there, empty, it is in the way whoever put it there. Vanish takes
+                        // it off the lists it is on as well as off the ground -- see there.
+                        // The law is still spared: a patrol car parked in the middle of a
+                        // takeover is the police having arrived, which is a different scene.
+                        if (gap < ClearAt && !LawCar(car) && !Yours(car, player))
+                        {
+                            Vanish(car, null);
+                            continue;
+                        }
 
-                        // Further out it is somebody's car on a street, which is all it is.
-                        if (gap < MobAt) { Stray(car); continue; }
+                        // FURTHER OUT, ONLY A STRANGER'S. Past the circle an empty car is a
+                        // car on a street, and one of ours out there is a spectator parked at
+                        // a kerb doing exactly what it was sent to do.
+                        if (gap < MobAt && !Ours(car) && !LawCar(car) && !Yours(car, player))
+                        {
+                            Stray(car);
+                            continue;
+                        }
                     }
 
                     if (driver == null || !driver.Exists() || !driver.IsAlive) continue;
@@ -2205,6 +2317,44 @@ namespace Hoodrich.Locations
         private int _nextSweep;
 
         /// <summary>One of ours, asked of a car rather than a driver.</summary>
+        /// <summary>
+        /// Whether that is the PLAYER'S car, which nothing here may touch.
+        ///
+        /// THE ONE THING WORSE THAN A STRANGER DRIVING THROUGH THE TAKEOVER IS YOUR OWN CAR
+        /// DISAPPEARING, and this file has said so in a comment for a long time while only
+        /// guarding the case where he is sitting in it. That was enough while the circle only
+        /// removed cars with somebody at the wheel. It stopped being enough the moment an EMPTY
+        /// car in the circle started going, because a man who drives to his own takeover, parks
+        /// on the tarmac and gets out to watch has made exactly that car.
+        ///
+        /// THREE TESTS, CHEAPEST FIRST. The one he is sitting in; the one he last got out of,
+        /// which is the case above and costs nothing; and finally the register of cars he
+        /// actually owns, which is a plate read and is only reached for a car that is neither
+        /// of the first two.
+        /// </summary>
+        private bool Yours(Vehicle car, Ped player)
+        {
+            if (car == null || !car.Exists() || player == null || !player.Exists()) return false;
+
+            try
+            {
+                var seat = player.CurrentVehicle;
+                if (seat != null && seat.Exists() && seat.Handle == car.Handle) return true;
+
+                var last = player.LastVehicle;
+                if (last != null && last.Exists() && last.Handle == car.Handle) return true;
+            }
+            catch
+            {
+                // Fall through to the register.
+            }
+
+            return Owned != null && Owned(car);
+        }
+
+        /// <summary>Set by Main: whether a car is one he has bought. See OwnedCars.Which.</summary>
+        public Func<Vehicle, bool> Owned;
+
         private bool Ours(Vehicle car)
         {
             foreach (var p in _parked)
@@ -2334,6 +2484,15 @@ namespace Hoodrich.Locations
                 // The crowd may be halfway through pushing this very car off the tarmac.
                 if (_shoving != null && _shoving.Exists() && _shoving.Handle == car.Handle) Unpush();
 
+                // AND IF IT WAS ONE OF OURS, IT IS NOT ANY MORE.
+                //
+                // This only ever took strangers' cars, so there was nothing of ours to tidy up
+                // after. Now that an empty car in the circle goes whoever parked it, a spectator
+                // or a performer can end up here -- and a list still holding a deleted car is a
+                // spot the takeover believes is occupied for the rest of the night. The kerb it
+                // was on stays empty and the marker it was on never gets another driver.
+                Forget(car.Handle);
+
                 if (driver != null && driver.Exists()) driver.Delete();
 
                 car.Delete();
@@ -2341,6 +2500,35 @@ namespace Hoodrich.Locations
             catch
             {
                 // Next tick. It is still in the circle and will be asked again.
+            }
+        }
+
+        /// <summary>
+        /// One of ours struck off whichever list had it, so its place can be filled again.
+        ///
+        /// BY HANDLE, AND EVERY LIST. A parked spectator, a performer, a ghost -- each of them
+        /// is a slot as well as a car, and the slot is what matters: a kerb this still thinks
+        /// is taken is a kerb that stays empty, and a marker it still thinks has a driver never
+        /// gets another one. The car is already gone by the time anybody notices either.
+        /// </summary>
+        private void Forget(int handle)
+        {
+            for (var i = _parked.Count - 1; i >= 0; i--)
+            {
+                var p = _parked[i];
+                if (p != null && p.Car != null && p.Car.Exists() && p.Car.Handle == handle) _parked.RemoveAt(i);
+            }
+
+            for (var i = _running.Count - 1; i >= 0; i--)
+            {
+                var r = _running[i];
+                if (r != null && r.Car != null && r.Car.Exists() && r.Car.Handle == handle) _running.RemoveAt(i);
+            }
+
+            for (var i = _ghosts.Count - 1; i >= 0; i--)
+            {
+                var g = _ghosts[i];
+                if (g != null && g.Car != null && g.Car.Exists() && g.Car.Handle == handle) _ghosts.RemoveAt(i);
             }
         }
 
