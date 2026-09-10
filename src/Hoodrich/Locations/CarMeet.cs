@@ -120,6 +120,9 @@ namespace Hoodrich.Locations
             /// <summary>Out of the car and on his way to the crowd. See Crowd.</summary>
             public int OutAt;
             public bool Walked;
+
+            /// <summary>Which knot he ended up in once it broke up. See Split.</summary>
+            public int Group;
         }
 
         private readonly List<MeetSpot> _spots = new List<MeetSpot>();
@@ -142,7 +145,23 @@ namespace Hoodrich.Locations
 
         /// <summary>Set by Main: the cars the set drives. See Takeover.</summary>
         public Func<string[]> Cars;
-        public Func<string[]> Lowriders;
+
+        /// <summary>
+        /// The one on juice, and it is its OWN list rather than the takeover's.
+        ///
+        /// A VAN TURNED UP AND SAT THERE. The takeover's list is every Benny's body that
+        /// nominally has hydraulics, which includes a Moonbeam and a Minivan -- and a van at
+        /// the one spot in the meet whose entire job is to bounce is wrong twice over: it does
+        /// not read as a lowrider, and on this install it did not hop.
+        ///
+        /// Six classics instead, which is a shorter list and the right one. This spot is not
+        /// "a car with hydraulics", it is THE lowrider, and there is exactly one of it -- so
+        /// the list only has to be deep enough that it is not the same car every meet.
+        /// </summary>
+        private static readonly string[] Hoppers =
+        {
+            "voodoo", "buccaneer2", "chino2", "faction2", "sabregt2", "tornado5"
+        };
 
         public bool IsOn => _on;
         public int Parked
@@ -239,6 +258,8 @@ namespace Hoodrich.Locations
             _lastSend = 0;
             _startedAt = Game.GameTime;
             _misses = 0;
+            _split = false;
+            _pickFrom = _rng.Next(64);
 
             Sweep(null);
 
@@ -365,6 +386,10 @@ namespace Hoodrich.Locations
                 if (now - _startedAt > RunMs) { Over(); return; }
 
                 Sending(player, now);
+
+                // AND THEN IT BREAKS UP. See Split -- one crowd for the first stretch, then
+                // threes round the cars for the rest of it.
+                Split(now);
 
                 foreach (var r in _out) Driving(r, now);
             }
@@ -500,9 +525,7 @@ namespace Hoodrich.Locations
         {
             try
             {
-                var names = spot.IsHopper
-                    ? (Lowriders == null ? null : Lowriders())
-                    : (Cars == null ? null : Cars());
+                var names = spot.IsHopper ? Hoppers : (Cars == null ? null : Cars());
 
                 if (names == null || names.Length == 0) return null;
 
@@ -669,6 +692,18 @@ namespace Hoodrich.Locations
                 r.Car.Velocity = Vector3.Zero;
 
                 Function.Call(Hash.SET_VEHICLE_HANDBRAKE, r.Car.Handle, true);
+
+                // BONNET UP, WHICH IS THE ONLY REASON ANYBODY PARKS LIKE THIS. A row of closed
+                // cars is a car park; a row with the lids up is people showing each other
+                // things. Door four is the bonnet, opened loose so it sits rather than swings,
+                // and instantly because it happens while the car is still settling and nobody
+                // watches a bonnet rise on a car that has not stopped moving.
+                //
+                // Not the one on juice: its whole show is underneath it.
+                if (!r.Spot.IsHopper)
+                {
+                    Function.Call(Hash.SET_VEHICLE_DOOR_OPEN, r.Car.Handle, Bonnet, true, true);
+                }
                 Function.Call(Hash.SET_VEHICLE_ENGINE_ON, r.Car.Handle, r.Spot.IsHopper, true, true);
                 Function.Call(Hash.SET_VEHICLE_LIGHTS, r.Car.Handle, r.Spot.IsHopper ? 2 : 0);
 
@@ -862,6 +897,140 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
+        /// The crowd breaks into threes and goes to look at the cars.
+        ///
+        /// EVERYBODY IN ONE HUDDLE IS THE FIRST TEN MINUTES OF A MEET AND NOT THE WHOLE OF IT.
+        /// People arrive, they say hello in one lump, and then it thins out into knots of
+        /// three or four stood round whatever somebody has the lid up on. That second half is
+        /// most of what a car meet actually looks like, and a ring of twelve that never moves
+        /// is a photograph of the first two minutes.
+        ///
+        /// THREES, AND A CAR EACH RATHER THAN A CAR BETWEEN THEM ALL. The group picks one car
+        /// and stands across its nose, which is where you stand when the bonnet is up -- so
+        /// the bonnet being up is not decoration, it is the reason there is somewhere to
+        /// stand.
+        ///
+        /// ONCE. This runs on a clock and sets a flag; a meet does not re-shuffle itself every
+        /// few seconds, and people who have found a car to look at stay at it.
+        /// </summary>
+        private void Split(int now)
+        {
+            if (_split) return;
+            if (now - _startedAt < MingleMs) return;
+
+            _split = true;
+
+            // Only the ones who actually made it out and over. Anybody still driving, or the
+            // one working the switches, is left where he is.
+            var them = new List<Runner>();
+            foreach (var r in _out) if (r.Walked && !r.Spot.IsHopper) them.Add(r);
+
+            if (them.Count == 0) return;
+
+            // Shuffled, so the threes are not "whoever parked next to each other" -- which
+            // would put the same men together every meet and in the order they arrived.
+            for (var i = them.Count - 1; i > 0; i--)
+            {
+                var j = _rng.Next(i + 1);
+                var swap = them[i]; them[i] = them[j]; them[j] = swap;
+            }
+
+            var cars = new List<Runner>();
+            foreach (var r in _out) if (r.Seated && !r.Spot.IsHopper) cars.Add(r);
+
+            if (cars.Count == 0) return;
+
+            var group = 0;
+
+            for (var i = 0; i < them.Count; i += Threes)
+            {
+                // A DIFFERENT CAR EACH, walked round the list rather than drawn from it, so
+                // four groups never all pick the same one. The offset is random so it is not
+                // the same car every meet either.
+                var pick = cars[(group + _pickFrom) % cars.Count];
+
+                for (var n = 0; n < Threes && i + n < them.Count; n++)
+                {
+                    Round(them[i + n], pick, n);
+                }
+
+                group++;
+            }
+
+            Log.Info("Car meet: broke into " + group + " group(s) round the cars.");
+        }
+
+        /// <summary>
+        /// One man, stood at the front of one car.
+        ///
+        /// ACROSS THE NOSE, NOT ROUND THE WHOLE THING. Three abreast a hand's width apart,
+        /// facing back at the engine, which is the shape people actually make when there is
+        /// something to look at under a lid. Standing round the car would be standing round a
+        /// car, and there is nothing to see from the back of one.
+        /// </summary>
+        private void Round(Runner who, Runner car, int place)
+        {
+            if (who.Driver == null || !who.Driver.Exists() || !who.Driver.IsAlive) return;
+            if (car.Car == null || !car.Car.Exists()) return;
+
+            try
+            {
+                var nose = car.Car.Position + car.Car.ForwardVector * NoseGap;
+                var side = car.Car.RightVector * ((place - 1) * Abreast);
+
+                var stand = nose + side;
+
+                var toward = car.Car.Position - stand;
+                var face = (float)(Math.Atan2(toward.Y, toward.X) * 180.0 / Math.PI) - 90f;
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, who.Driver.Handle, false);
+                Function.Call(Hash.CLEAR_PED_TASKS, who.Driver.Handle);
+
+                Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, who.Driver.Handle,
+                              stand.X, stand.Y, stand.Z, WalkPace, -1, face, 0.3f);
+
+                var doing = Looking[(place + who.Group) % Looking.Length];
+
+                Function.Call(Hash.TASK_START_SCENARIO_AT_POSITION, who.Driver.Handle, doing,
+                              stand.X, stand.Y, stand.Z, face, 0, true, true);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, who.Driver.Handle, true);
+
+                who.Group++;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not stand somebody at a car: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// What they do stood at the nose of a car. Every name off the machine's own list.
+        ///
+        /// WORLD_HUMAN_VEHICLE_MECHANIC is the one scenario in the game of somebody leaning
+        /// INTO an engine bay, and one man doing that with two beside him talking is the exact
+        /// picture this is after. Checked against the machine's own list, like the rest.
+        /// </summary>
+        private static readonly string[] Looking =
+        {
+            "WORLD_HUMAN_HANG_OUT_STREET", "WORLD_HUMAN_VEHICLE_MECHANIC",
+            "WORLD_HUMAN_STAND_MOBILE", "WORLD_HUMAN_SMOKING",
+            "WORLD_HUMAN_HANG_OUT_STREET", "WORLD_HUMAN_STAND_IMPATIENT"
+        };
+
+        /// <summary>How long everybody stays in one crowd before it thins out.</summary>
+        private const int MingleMs = 170000;
+
+        /// <summary>How many to a group, how far off the nose they stand, and how far apart.</summary>
+        private const int Threes = 3;
+        private const float NoseGap = 2.3f;
+        private const float Abreast = 0.85f;
+
+        /// <summary>Whether it has already broken up, and where the car-picking starts.</summary>
+        private bool _split;
+        private int _pickFrom;
+
+        /// <summary>
         /// What they do while they are stood there.
         ///
         /// Every one of these is in the game's own scenario list on this machine. Mostly
@@ -972,6 +1141,9 @@ namespace Hoodrich.Locations
                 // Not every body takes them.
             }
         }
+
+        /// <summary>Door four is the bonnet. Nothing else in this file opens a door.</summary>
+        private const int Bonnet = 4;
 
         /// <summary>The mod slots. 15 is suspension, 48 the livery the newer cars use.</summary>
         private const int Suspension = 15;
