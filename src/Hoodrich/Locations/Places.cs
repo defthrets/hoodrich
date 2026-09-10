@@ -278,7 +278,8 @@ namespace Hoodrich.Locations
             // out, which is the only way this mod has ever got one right -- these two rows are
             // how they got there and are how to move it.
             P("LeroysElectrical", "Leroy's Electrical", "", 51,
-              "The black door with the NO TRESPASSING sign, round the back off Strawberry Ave."),
+              "Strawberry Ave, the black door with the NO TRESPASSING sign. Comes out in the " +
+              "Torture room in Banning -- the same room as the entry below, under a shop name."),
             P("GunRange", "Ammu-Nation range", "", 110,
               "Inside the shops that have one: Cypress Flats, Little Seoul, Vinewood, " +
               "Sandy Shores, Paleto Bay. Stand at the counter, facing the range door."),
@@ -451,8 +452,17 @@ namespace Hoodrich.Locations
               "The one from the FIB job."),
             P("Kiflom", "Epsilon storage room", "", 40,
               "Rockford Hills."),
+            // BANNING, NOT SANDY SHORES. This said "under the sheriff's building" and that is
+            // a different room in a different mission -- somebody has now stood in this one
+            // and read the coordinates off the screen, and they are on Dutch London St in
+            // Banning, which is where By the Book actually happens. A hint nobody has checked
+            // loses to a coordinate somebody measured, every time.
+            //
+            // No Ipl, and that is worth stating because it was doubted: it is a STORY mission
+            // room, already in the map, with no way in rather than nothing there. See the note
+            // at the top of this file for what that distinction means.
             P("Torture", "Torture room", "", 40,
-              "Under the sheriff's building, Sandy Shores."),
+              "The warehouse floor off Dutch London St, Banning."),
             P("MazeArena", "Maze Bank Arena stands", "", 40,
               "Little Seoul."),
             P("FameOrShame", "Fame or Shame studio",
