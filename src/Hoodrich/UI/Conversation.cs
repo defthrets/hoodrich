@@ -118,6 +118,42 @@ namespace Hoodrich.UI
         public Color SpeakerColour = Palette.Text;
 
         /// <summary>
+        /// Where this line goes on its own, or null for a line that waits to be answered.
+        ///
+        /// A PERFORMANCE IS NOT A CONVERSATION. Everything in this mod up to now has been a man
+        /// asking you something, so every node has carried a list of things to say back -- and
+        /// that is precisely wrong for four bars of a verse, where the only honest option
+        /// between one line and the next is nothing at all.
+        ///
+        /// So a beat has no choices, plays, and hands over to the next one. The last line of a
+        /// verse is a normal node again, which is where your answers come back -- so the shape
+        /// on screen is: he starts, he goes, and you get to react to how it ended.
+        ///
+        /// Only honoured on a node with NO choices. A node that has both is a mistake, and the
+        /// choices are the half worth keeping.
+        /// </summary>
+        public Func<DialogueNode> Runs;
+
+        /// <summary>
+        /// Play this line every time rather than once ever.
+        ///
+        /// Say spends a recording the first time it is heard and leaves the words on screen
+        /// after that, which is right for a man answering the same question twice and wrong for
+        /// a verse. "Run that back" is a row on this screen; a verse that only ever plays once
+        /// per save would make it a lie, and the whole point of somebody recording a rapping
+        /// voice is that it gets performed.
+        /// </summary>
+        public bool Encore;
+
+        /// <summary>
+        /// How long this beat stays up when nothing plays, or 0 to work it out from the words.
+        ///
+        /// Only reached when the recording is missing. With audio the line lasts exactly as
+        /// long as the audio does.
+        /// </summary>
+        public int HoldMs { get; set; }
+
+        /// <summary>
         /// The texture dictionary of the speaker's photograph, or empty to work it out.
         ///
         /// An override rather than the usual way. Almost every node in the mod already says
@@ -251,6 +287,19 @@ namespace Hoodrich.UI
                 Enabled = enabled,
                 DisabledReason = blocked
             });
+            return this;
+        }
+
+        /// <summary>
+        /// Makes this one beat of a performance: it plays out loud and moves on by itself.
+        ///
+        /// Encore comes with it, because the only thing built this way is a verse and a verse
+        /// that plays once per save is not worth recording twice over.
+        /// </summary>
+        public DialogueNode Beat(Func<DialogueNode> next)
+        {
+            Runs = next;
+            Encore = true;
             return this;
         }
 
@@ -562,7 +611,29 @@ namespace Hoodrich.UI
             // And say it out loud, if somebody recorded this one. Say() stops whatever was
             // talking before it, so arrowing down a list does not stack voices on top of each
             // other -- every node either replaces the last line or leaves the screen quiet.
-            Core.Voice.Say(node.Speaker, node.Line, node.VoiceKey);
+            //
+            // A PERFORMANCE GOES THROUGH CUE INSTEAD. See DialogueNode.Encore: Say spends a
+            // line the first time it is heard, which is right for an answer and wrong for a
+            // verse the screen is currently offering to run back for you. Cue is the same
+            // channel with the once-only rule left off, and the key is the one Say would have
+            // worked out, so the file is named exactly as every other line in the pack is.
+            if (node.Encore)
+            {
+                Core.Voice.Cue(string.IsNullOrEmpty(node.VoiceKey)
+                                   ? Core.Voice.Key(node.Speaker, node.Line)
+                                   : node.VoiceKey);
+
+                // And he does not grunt over himself. The reply was queued by whichever
+                // choice started the performance, and it would land on the first bar.
+                _replyAt = 0;
+            }
+            else
+            {
+                Core.Voice.Say(node.Speaker, node.Line, node.VoiceKey);
+            }
+
+            // A fresh beat has not heard anything yet. See TickBeat.
+            _beatHeardAt = 0;
 
             // THE CAMERA. Over his shoulder on the first line of a talk with somebody who is
             // stood there (a phone call has no Speaker), and the other shoulder on each line
@@ -689,10 +760,123 @@ namespace Hoodrich.UI
 
             if (Game.GameTime - _openedAt < OpenGraceMs) return;
 
+            // A beat carries itself. See TickBeat.
+            if (IsBeat) { TickBeat(); return; }
+
             if (Pressed(Control.PhoneUp)) Move(-1);
             else if (Pressed(Control.PhoneDown)) Move(1);
             else if (Pressed(Control.PhoneCancel)) { Hud.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET"); Close(); }
             else if (Pressed(Control.PhoneSelect)) Commit();
+        }
+
+        /// <summary>
+        /// Whether the page up is one that turns itself.
+        ///
+        /// BOTH CONDITIONS, and the choices are the one that wins. A node with somewhere to go
+        /// AND something to ask is a mistake somebody made building it, and running it as a
+        /// beat would eat the question -- so it is run as a question and the beat is what gets
+        /// dropped.
+        /// </summary>
+        private bool IsBeat => _node != null && _node.Runs != null && _node.Choices.Count == 0;
+
+        /// <summary>When this beat last heard its recording still going. See TickBeat.</summary>
+        private int _beatHeardAt;
+
+        /// <summary>
+        /// Long enough for the sound device to have opened the file before it is asked whether
+        /// it is playing. MCI answers "not playing" for a moment while it gets going, and
+        /// without this every bar would be skipped in the frame it went up.
+        /// </summary>
+        private const int BeatOpenMs = 350;
+
+        /// <summary>The breath after a line lands, before the next one starts.</summary>
+        private const int BeatTailMs = 220;
+
+        /// <summary>
+        /// How long an unrecorded beat stays up: a floor, a bit per word, and a ceiling.
+        ///
+        /// Only ever reached when the file is missing, so this is what the verse looks like
+        /// while somebody is still recording it -- readable, rather than four lines flashing
+        /// past in half a second.
+        /// </summary>
+        private const int BeatFloorMs = 900;
+        private const int BeatPerWordMs = 260;
+        private const int BeatCeilingMs = 6000;
+
+        /// <summary>
+        /// One beat, which moves on when its line has finished rather than when you press
+        /// something.
+        ///
+        /// THE RECORDING IS THE CLOCK. A bar lasts exactly as long as the bar does, so a verse
+        /// comes out at the pace it was performed at rather than at a pace guessed here -- and
+        /// when there is no recording yet it falls back to how long the words take to read.
+        ///
+        /// Two ways out by hand, because being trapped inside somebody else's verse is funny
+        /// once. Select pushes past a line; back leaves the whole conversation.
+        /// </summary>
+        private void TickBeat()
+        {
+            if (Pressed(Control.PhoneCancel))
+            {
+                Hud.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                Close();
+                return;
+            }
+
+            var on = Game.GameTime - _nodeAt;
+            if (on < BeatOpenMs) return;
+
+            if (Pressed(Control.PhoneSelect)) { Step(); return; }
+
+            if (Core.Voice.Talking)
+            {
+                _beatHeardAt = Game.GameTime;
+                return;
+            }
+
+            // It was said out loud, so the beat was as long as the saying of it.
+            if (_beatHeardAt > 0)
+            {
+                if (Game.GameTime - _beatHeardAt < BeatTailMs) return;
+
+                Step();
+                return;
+            }
+
+            if (on < Reading(_node)) return;
+
+            Step();
+        }
+
+        /// <summary>How long a line with no recording is left on screen.</summary>
+        private static int Reading(DialogueNode node)
+        {
+            if (node.HoldMs > 0) return node.HoldMs;
+
+            var words = 1;
+            foreach (var c in node.Line) if (c == ' ') words++;
+
+            var read = BeatFloorMs + words * BeatPerWordMs;
+            return read > BeatCeilingMs ? BeatCeilingMs : read;
+        }
+
+        /// <summary>On to whatever this beat hands over to, or out if it hands over nothing.</summary>
+        private void Step()
+        {
+            DialogueNode to = null;
+
+            try
+            {
+                if (_node.Runs != null) to = _node.Runs();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("A beat threw on its way to the next one; ending the conversation.", ex);
+            }
+
+            if (to == null) { Close(); return; }
+
+            Open(to, Subject);
         }
 
         /// <summary>

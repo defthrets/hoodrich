@@ -261,11 +261,18 @@ def from_feed(root):
 # PortRun writes its speaker out in the call, so it is listed with none and answers for
 # itself below.
 
+# A FILE MAY BUILD ITS LINES UNDER MORE THAN ONE NAME.
+#
+# VernonTalk is the first: Node() stamps "Vernon" on everything he says and Bar()/Land() stamp
+# "OG Vee" on everything he raps, because the two are recorded in different voices by somebody
+# who cannot cut audio -- so the file name has to be the thing that says which voice a take
+# wants. A third element on a row is that map: helper name to the speaker it stamps.
+
 SPEECH = [
     (r"src\Hoodrich\Gangs\LeaderTalk.cs",       ["Gerald"]),
     (r"src\Hoodrich\Locations\ArmourerTalk.cs", ["Stretch"]),
     (r"src\Hoodrich\Locations\HaoTalk.cs",      ["Hao"]),
-    (r"src\Hoodrich\Locations\VernonTalk.cs",   ["Vernon"]),
+    (r"src\Hoodrich\Locations\VernonTalk.cs",   ["Vernon"], {"Bar": "OG Vee", "Land": "OG Vee"}),
     (r"src\Hoodrich\Missions\FixerTalk.cs",     ["Lamar"]),
     (r"src\Hoodrich\Missions\BikeRide.cs",      ["Lamar"]),
     (r"src\Hoodrich\Missions\Hunt.cs",          ["Lamar"]),
@@ -307,7 +314,10 @@ def from_source(root):
                         .replace("\\\\", "\\"))
         return "".join(out)
 
-    for rel, speakers in SPEECH:
+    for row in SPEECH:
+        rel, speakers = row[0], row[1]
+        helpers = row[2] if len(row) > 2 else {}
+
         path = os.path.join(root, rel)
         if not os.path.exists(path):
             continue
@@ -338,6 +348,14 @@ def from_source(root):
 
                 for who in speakers:
                     add(who, line)
+
+        # And the helpers that stamp a different name. See SPEECH.
+        for helper, who in helpers.items():
+            rx = re.compile(r"\b" + helper + r'\(\s*((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+)', re.S)
+
+            for m in rx.finditer(body):
+                if whole(m, 1):
+                    add(who, joined(m.group(1)))
 
     return rows
 
