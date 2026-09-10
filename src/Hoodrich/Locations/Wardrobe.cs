@@ -137,12 +137,32 @@ namespace Hoodrich.Locations
         };
 
         /// <summary>
-        /// How he holds a gun. Two, because the game has two and inventing a third would be
-        /// a name that quietly does nothing.
+        /// How he holds a gun.
+        ///
+        /// THESE ARE THE GAME'S OWN NAMES OUT OF weaponanimations.meta, and that file is
+        /// inside the archives, so unlike every animation and scenario in this mod they cannot
+        /// be checked against a list on this machine. What CAN be relied on is the failure:
+        /// SET_WEAPON_ANIMATION_OVERRIDE takes a hash, an unknown hash is not an error, and a
+        /// name the install does not have simply leaves him shooting the way the game shoots.
+        /// So a name that turns out not to exist costs a menu row that does nothing, and never
+        /// a broken animation.
+        ///
+        /// SIDEWAYS IS "Ganged". "Gang" was already here and it is the gangster stance --
+        /// shoulders, stride, where he holds it -- but the pistol stays upright in it, which is
+        /// not what anybody means when they say they want to hold it like the men on the
+        /// corner. Ganged is the turned wrist.
+        ///
+        /// And Ganged2h is the same idea for anything he needs both hands for, which is a
+        /// different animation set and therefore a different row rather than a modifier on
+        /// this one -- picking "sideways" and having it do nothing because you were holding a
+        /// rifle is the sort of thing nobody reports, they just decide the setting is broken.
         /// </summary>
-        public static readonly string[] Shoots = { "", "Gang" };
+        public static readonly string[] Shoots = { "", "Gang", "Ganged", "Ganged2h" };
 
-        public static readonly string[] ShootNames = { "HIS OWN", "GANG" };
+        public static readonly string[] ShootNames =
+        {
+            "HIS OWN", "GANGSTER", "SIDEWAYS", "SIDEWAYS, TWO HANDS"
+        };
 
         /// <summary>
         /// Puts the walk and the gun hold on him.
@@ -152,6 +172,9 @@ namespace Hoodrich.Locations
         /// rest of the session. Requested here and put on when it has landed -- the caller
         /// runs this on a timer, so "not yet" is answered by asking again.
         /// </summary>
+        /// <summary>The last gun hold that went on, so only a change is logged.</summary>
+        private static string _carrying = "";
+
         /// <returns>False while it is still streaming, so the caller knows to come back.</returns>
         public static bool Carry(PlayerState state)
         {
@@ -186,8 +209,23 @@ namespace Hoodrich.Locations
 
                 var shoot = state.Shoot >= 0 && state.Shoot < Shoots.Length ? Shoots[state.Shoot] : "";
 
+                var style = shoot.Length == 0 ? "Default" : shoot;
+
                 Function.Call(Hash.SET_WEAPON_ANIMATION_OVERRIDE, me.Handle,
-                              Function.Call<int>(Hash.GET_HASH_KEY, shoot.Length == 0 ? "Default" : shoot));
+                              Function.Call<int>(Hash.GET_HASH_KEY, style));
+
+                // ON THE EDGE, so this is a string compare a tick and not a log file.
+                //
+                // Worth a line at all because there is no way to ASK the game whether it took
+                // -- see the note on Shoots. If one of these ever turns out not to exist on an
+                // install, "he picked SIDEWAYS and nothing happened" and "he never picked
+                // anything" look identical from the outside, and one line saying which name
+                // went on is the difference between a guess and a report.
+                if (style != _carrying)
+                {
+                    Log.Info("Carrying a gun " + style + " from now on.");
+                    _carrying = style;
+                }
             }
             catch (Exception ex)
             {
