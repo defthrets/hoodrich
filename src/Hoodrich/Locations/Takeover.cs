@@ -205,27 +205,6 @@ namespace Hoodrich.Locations
             return at;
         }
 
-        /// <summary>
-        /// How far a performer may travel off its place before it is sent back.
-        ///
-        /// THE ONLY THING THAT INTERRUPTS A SHOW. It used to be interrupted for reaching the
-        /// people as well, and before that for drifting a few metres, and each time the
-        /// result was the same: a performer braking, gathering itself and re-driving its
-        /// own mark, so the show was mostly cars stopping. A donut that travels is a donut,
-        /// and a donut that reaches the crowd is the crowd's problem.
-        ///
-        /// SEVEN, DOWN FROM TWELVE BY WAY OF TEN, AND EACH STEP HAS BEEN THE SAME ARGUMENT.
-        /// Twelve was generous to the loops themselves -- on tyres with two fifths of their
-        /// grip they went wide, and the point was not to interrupt one. There are no wide
-        /// loops any more: the show is a car spinning on its own centre with the front planted
-        /// (see Show), and a car doing that sweeps two and a half metres. Anything past seven
-        /// is not a wide donut, it is a car that has got away from its driver, and hauling it
-        /// back is what he would do.
-        ///
-        /// It still has to be wider than StageArrived or a car would be sent back to a spot it
-        /// is already standing on, for ever.
-        /// </summary>
-        private const float StageLeash = 7f;
 
         /// <summary>
         /// How long a performer tries to reach its marker before waiting where it is.
@@ -1042,6 +1021,13 @@ namespace Hoodrich.Locations
             /// </summary>
             public int WideAt;
             public bool Wide;
+
+            /// <summary>Driving back to the middle mid-show, and when he set off. See Home.</summary>
+            public bool Going;
+            public int GoneAt;
+
+            /// <summary>Since when he has not moved while supposedly spinning. See Wedged.</summary>
+            public int Still;
 
             /// <summary>
             /// When the standing burnout begins, or nought if it is not owed one.
@@ -4487,53 +4473,23 @@ namespace Hoodrich.Locations
                             // He waits where he stopped.
                         }
                     }
-                    else if (r.Car.Position.DistanceTo(bay) > (r.Wide ? WideLeash : StageLeash))
+                    else if (r.Going)
                     {
-                        // IT HAS SLID OFF ITS MARK, and only that. It used to be interrupted
-                        // for reaching the people too -- brake, gather itself, sit until the
-                        // hold noticed it had stopped, drive back, start again -- and on a
-                        // ring of fifty that was a show made of stops. Nothing stops it now.
-                        // Anybody in the way is hit; getting out of it is the crowd's job.
-                        // This is the one case left, a car that has travelled clean off its
-                        // place.
-                        //
-                        // STRAIGHT BACK, STILL SIDEWAYS. No brake first, and the route is
-                        // issued here rather than left for the hold, which only asks after
-                        // a car has sat still for four seconds. On the tyres it has: this is
-                        // a correction inside his go, not the end of it. AtStage is dropped
-                        // and the clock restarted, which hands it to the arrival branch
-                        // above -- onto the mark, and the show again.
-                        try
+                        // ON HIS WAY BACK IN. Nothing else happens to him until he is either
+                        // there or has been trying long enough that here is as good as there.
+                        if (r.Car.Position.DistanceTo(Circle) < BackWhen ||
+                            now - r.GoneAt > BackGiveUpMs)
                         {
-                            Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+                            r.Going = false;
+                            r.Still = 0;
 
-                            // OFF THE BRAKES FIRST. Burnout mode holds the front wheels, and a
-                            // car whose front wheels are held does not drive back to anything
-                            // -- it sits where it is grinding, and the arrival branch it was
-                            // just handed to waits for it forever.
-                            Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
-
-                            Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle,
-                                          r.Car.Handle, bay.X, bay.Y, bay.Z,
-                                          12f, 0, r.Car.Model.Hash, RushStyle, 3f, true);
+                            // STRAIGHT BACK INTO THE LOCK, NOT BACK TO THE BRAKE. He is already
+                            // moving and already sideways; standing him up to do the five
+                            // seconds of smoke again is the stop-start this whole branch exists
+                            // to get rid of. The brake and the burnout are an ARRIVAL, and he
+                            // arrived a minute ago.
+                            Show(r, now);
                         }
-                        catch
-                        {
-                            // The hold asks again in a few seconds.
-                        }
-
-                        r.AtStage = false;
-                        r.Sent = now;
-                        r.Stuck = 0;
-                        r.NextAction = 0;
-                        r.Burn = 0;
-
-                        // HE STARTS THE MINUTE AGAIN. Hauled back onto his mark he goes through
-                        // the whole thing from the top -- brake, smoke, donut -- and opening
-                        // straight back out into the wide one on arrival would skip the two
-                        // parts everybody is stood there to watch.
-                        r.WideAt = 0;
-                        r.Wide = false;
                     }
                     else if (r.Burn != 0)
                     {
@@ -4541,6 +4497,17 @@ namespace Hoodrich.Locations
                         // asked for once and run exactly as long as they were asked for, so
                         // there is nothing to do here but wait for the clock.
                         if (now >= r.Burn) Smoke(r, now);
+                    }
+                    else if (r.Car.Position.DistanceTo(Circle) > (r.Wide ? WideRoam : Roam))
+                    {
+                        // TOO FAR OUT. Back to the middle -- see Home.
+                        Home(r, now);
+                    }
+                    else if (Wedged(r, now))
+                    {
+                        // OR HE CANNOT MOVE. Same answer: a route to the middle is also the
+                        // thing that gets a car off whatever it is caught on.
+                        Home(r, now);
                     }
                     else
                     {
@@ -5564,6 +5531,8 @@ namespace Hoodrich.Locations
             // everybody is stood there to watch.
             r.WideAt = 0;
             r.Wide = false;
+            r.Going = false;
+            r.Still = 0;
 
             try
             {
@@ -5670,7 +5639,7 @@ namespace Hoodrich.Locations
         /// smokes on its own, which is why the burnout native was never needed for the look.
         ///
         /// IT TRAVELS A LITTLE AND THAT IS THE PRICE. Nothing is holding it, so a donut wanders
-        /// off its mark over a minute or two. StageLeash hauls it back. Being pulled home now
+        /// across the tarmac over a minute or two. Roam brings it back to the middle. Being
         /// and then is a cheaper thing to watch than a car that never turned.
         ///
         /// One method rather than three copies, because Show, Lock and the return from a
@@ -5694,7 +5663,7 @@ namespace Hoodrich.Locations
                 // The rig that turns a car is the one this file had before: the rears loose and
                 // the fronts free. Reduced grip lets the back step out, drift tyres loosen it
                 // further, and the steering lock then has something to pivot about. Nothing
-                // holds it, so it does travel a little -- which is what StageLeash is for, and
+                // holds it, so it does travel a little -- which is what Roam is for, and
                 // hauling one back every so often is a cheaper price than not going round.
                 Function.Call(Hash.SET_VEHICLE_BURNOUT, car.Handle, false);
 
@@ -5755,6 +5724,92 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
+        /// Back to the middle, and then straight on with it.
+        ///
+        /// TWO THINGS END A DONUT AND NEITHER OF THEM IS A MARKER. He goes back when he has
+        /// travelled too far from the CENTRE, or when he has stopped being able to move at
+        /// all. That is the whole list, and it is the whole list on purpose: the version before
+        /// this measured him against his own marker instead, and a car that had settled fifteen
+        /// metres short of a marker it could not reach was over the seven-metre leash the
+        /// instant it started -- so it was hauled back, arrived short again, started again, and
+        /// was hauled back again. One might start and stop instantly, and the middle stayed
+        /// empty, which is exactly how it was reported.
+        ///
+        /// THE MARKER IS NOT WHERE THE SHOW IS. It is where he was SENT. Once he is spinning,
+        /// the only place that matters is the middle of the circle everybody is stood round,
+        /// and the only question is whether he is still near enough to it.
+        ///
+        /// OFF THE BRAKES FIRST. Burnout mode holds the front wheels and a car whose front
+        /// wheels are held does not drive anywhere -- it sits there grinding while whatever
+        /// sent it waits forever.
+        /// </summary>
+        private void Home(Runner r, int now)
+        {
+            r.Going = true;
+            r.GoneAt = now;
+            r.Still = 0;
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+                Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
+
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle,
+                              r.Car.Handle, Circle.X, Circle.Y, Circle.Z,
+                              12f, 0, r.Car.Model.Hash, RushStyle, 3f, true);
+            }
+            catch
+            {
+                // He is asked again in a few seconds.
+            }
+        }
+
+        /// <summary>
+        /// Whether he has stopped being able to move.
+        ///
+        /// A CAR GOING ROUND IS NEVER STILL. A donut is nothing but movement, so a performer
+        /// reading nearly zero for several seconds is caught on something -- a kerb, a bollard,
+        /// another car, the wall of people. Waiting a few seconds rather than acting on one
+        /// reading is what stops the moment between two temp actions being mistaken for it.
+        /// </summary>
+        private static bool Wedged(Runner r, int now)
+        {
+            try
+            {
+                if (r.Car.Speed > SpinningSpeed) { r.Still = 0; return false; }
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (r.Still == 0) { r.Still = now; return false; }
+
+            if (now - r.Still < WedgedMs) return false;
+
+            r.Still = 0;
+            return true;
+        }
+
+        /// <summary>
+        /// How far from the MIDDLE he may get, before and after he lets it run wide.
+        ///
+        /// BOTH MEASURED FROM THE CIRCLE, not from his marker. The ring of people stands at
+        /// about nineteen metres, so fifteen is the most anybody can be given without a car
+        /// arriving in the front row.
+        /// </summary>
+        private const float Roam = 11f;
+        private const float WideRoam = 15f;
+
+        /// <summary>Near enough to the middle to pick the lock back up, and the most it is given.</summary>
+        private const float BackWhen = 6f;
+        private const int BackGiveUpMs = 12000;
+
+        /// <summary>Below this he is not going round, and this long says he is stuck.</summary>
+        private const float SpinningSpeed = 1.2f;
+        private const int WedgedMs = 3500;
+
+        /// <summary>
         /// THE BRAKE COMES OFF AND THE SAME DONUT TURNS INTO A BIG ONE.
         ///
         /// A minute is a long time to watch one car turning on one spot, and it is also longer
@@ -5769,18 +5824,15 @@ namespace Hoodrich.Locations
         /// with a rear brake dragging cannot travel out of anything. It is a native that costs
         /// nothing on a car that has none on.
         ///
-        /// And the leash, which is the real one. StageLeash is seven metres and it is what has
-        /// been hauling him back onto his mark every time the donut wandered -- so the thing
-        /// stopping him going anywhere was never the car, it was this file. Past a minute he
-        /// gets the whole circle, and a donut that is allowed to travel travels: the back keeps
-        /// stepping out, the front washes wide with it, and it describes a proper arc across
-        /// the junction instead of a ring round a marker.
+        /// And the room he is allowed. Roam is eleven metres from the middle; past the minute
+        /// it becomes WideRoam at fifteen, which is most of the way to the crowd. A donut that
+        /// is given room travels: the back keeps stepping out, the front washes wide with it,
+        /// and it draws a proper arc across the tarmac instead of a ring round one spot.
         ///
-        /// HE IS STILL ON A LEASH, JUST A LONG ONE. WideLeash is most of the way to the crowd,
-        /// so a car that gets genuinely away from its driver is still brought back rather than
-        /// driven into the ring of people. And coming back starts the whole sequence again from
-        /// the brake, which is the right answer: what everybody is stood there for is the part
-        /// where he plants it and lights them up.
+        /// HE IS STILL FETCHED HOME, just from further out. A car that gets genuinely away
+        /// from its driver is brought back to the middle rather than driven into the ring of
+        /// people -- and coming back picks the lock straight up again rather than standing him
+        /// up for another five seconds of smoke. See Home.
         /// </summary>
         private void Wider(Runner r)
         {
@@ -5805,17 +5857,12 @@ namespace Hoodrich.Locations
         /// donut is the thing you remember and the wide one is what it turns into, rather than
         /// the other way round.
         ///
-        /// ELEVEN METRES, AND THE NUMBER IS DECIDED BY THE CROWD RATHER THAN BY TASTE. The
-        /// leash is measured from his PITCH, and the pitch is seven metres off the middle -- so
-        /// a leash of eleven lets him reach eighteen metres from the centre at the very worst,
-        /// and the ring of people stands at nineteen. Twenty-two was the first number written
-        /// here and it would have put a car three metres INTO them.
-        ///
-        /// It is still half again what he had. Combined with the handbrake coming off, the
-        /// difference between a ring round a marker and an arc across the tarmac.
+        /// A MINUTE, WHICH IS ALREADY A LONG TIME TO WATCH ONE CAR. Long enough that the tight
+        /// donut is the thing you remember and the wide one is what it turns into, rather than
+        /// the other way round. How far he may then get is Roam and WideRoam, both measured
+        /// from the middle -- see there.
         /// </summary>
         private const int DonutMs = 60000;
-        private const float WideLeash = 11f;
 
         /// <summary>
         /// A performer, performing, does not stop for anybody. The driver's reactions are
