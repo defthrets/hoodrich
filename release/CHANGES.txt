@@ -1,6 +1,18 @@
 ﻿0.7.1 -- unreleased
 
 
+THE BODY'S CARD SAYS AFRICAN AMERICAN.
+
+Every other line on that card is written the way an official one would write it
+-- a date in full, a height in feet and inches, an affiliation or None -- and the
+ethnicity was the one field written the way a witness statement would. The rest
+of the list was already in that register: Hispanic, Middle Eastern, South Asian.
+
+One constant rather than five string literals, because it appears in the model
+table and in the fallback roll, and a rename that catches one and not the other
+is a card that says two things about the same man on two different days.
+
+
 THE ONLINE PEDESTRIANS STOP LOSING THEIR LEGS.  [Five0 Patrol]
 
 SET_PED_RANDOM_COMPONENT_VARIATION picks an index per clothing slot out of what

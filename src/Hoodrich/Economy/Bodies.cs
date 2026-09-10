@@ -421,11 +421,11 @@ namespace Hoodrich.Economy
 
         private static readonly string[][] Looks =
         {
-            new[] { "balla", "Black" },
-            new[] { "famca", "Black" },
-            new[] { "famdnf", "Black" },
-            new[] { "famfor", "Black" },
-            new[] { "afri", "Black" },
+            new[] { "balla", Black },
+            new[] { "famca", Black },
+            new[] { "famdnf", Black },
+            new[] { "famfor", Black },
+            new[] { "afri", Black },
             new[] { "mexgoon", "Hispanic" },
             new[] { "mexgang", "Hispanic" },
             new[] { "mexlabor", "Hispanic" },
@@ -439,9 +439,24 @@ namespace Hoodrich.Economy
             new[] { "indian", "South Asian" }
         };
 
+        /// <summary>
+        /// What the card calls it, in one place.
+        ///
+        /// IT SAID "BLACK", WHICH IS NOT WHAT A CARD SAYS. Every other line on that card is
+        /// written the way an official one would write it -- a date in full, a height in feet
+        /// and inches, an affiliation or None -- and the ethnicity was the one field written
+        /// the way a witness statement would. The rest of the list is already in that register:
+        /// Hispanic, Middle Eastern, South Asian.
+        ///
+        /// A constant rather than five string literals, because it appears in the model table
+        /// and in the fallback roll, and a rename that catches one and not the other is a card
+        /// that says two things about the same man on two different days.
+        /// </summary>
+        private const string Black = "African American";
+
         private static readonly string[] Anybody =
         {
-            "White", "Black", "Hispanic", "Asian", "Mixed", "Middle Eastern"
+            "White", Black, "Hispanic", "Asian", "Mixed", "Middle Eastern"
         };
 
         /// <summary>
