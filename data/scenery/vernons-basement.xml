@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="ISO-8859-1"?>
 <SpoonerPlacements>
-	<Note>absorbs: vernonsbasement</Note>
+	<Note>absorbs: vernonsbasement, vernonnew</Note>
 	<AudioFile volume="400" />
 	<ClearDatabase>false</ClearDatabase>
 	<ClearWorld>0</ClearWorld>
@@ -13,9 +13,9 @@
 	<TimecycleModifier strength="1"></TimecycleModifier>
 	<StartTaskSequencesOnLoad>true</StartTaskSequencesOnLoad>
 	<ReferenceCoords>
-		<X>141.614746</X>
-		<Y>-2201.42578</Y>
-		<Z>3.68802309</Z>
+		<X>144.584</X>
+		<Y>-2201.26636</Y>
+		<Z>3.68802333</Z>
 	</ReferenceCoords>
 	<Placement>
 		<ModelHash>0xe143b9b2</ModelHash>
@@ -490,6 +490,142 @@
 			<Pitch>0</Pitch>
 			<Roll>-0</Roll>
 			<Yaw>-162.813431</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x4de6a409</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_microwave_1</HashName>
+		<InitialHandle>158021</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>141.662537</X>
+			<Y>-2203.96411</Y>
+			<Z>3.68802309</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>163.855362</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x8cbdafdb</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>sf_prop_sf_mic_rec_01a</HashName>
+		<InitialHandle>139334</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>143.279755</X>
+			<Y>-2199.71143</Y>
+			<Z>3.69639015</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>88.9021606</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x3b22a27f</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>ba_prop_battle_dj_deck_01a</HashName>
+		<InitialHandle>519498</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>144.071777</X>
+			<Y>-2198.97583</Y>
+			<Z>4.09023046</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>-0.630872667</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x62b31e8f</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>ba_prop_club_laptop_dj_02</HashName>
+		<InitialHandle>484174</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>143.525696</X>
+			<Y>-2199.28809</Y>
+			<Z>3.6887095</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>50.0712624</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>

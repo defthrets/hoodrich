@@ -18,7 +18,7 @@ wins over one of the same name in Menyoo's folder.
 
 WHAT SHIPS WITH THE MOD
 -----------------------
-Nine scenes are in this folder already, 213 placements between them:
+Nine scenes are in this folder already, 217 placements between them:
 
   the-block.xml     Ten of the set stood around Chamberlain and Grove, most of
                     them holding a rifle, plus the fences at Lamar's.
@@ -58,7 +58,10 @@ Nine scenes are in this folder already, 213 placements between them:
                     ammonia and acetone, a stack and two wrapped packages, a
                     brick of money, a barrel -- and off to the side the things
                     that say a man lives down here as well, a bong, a bottle,
-                    pruned bud and a bag of it.
+                    pruned bud and a bag of it, and a microwave.
+                    And the booth in the corner: decks, a laptop and a mic on
+                    a stand. He tells you about that booth the first time you
+                    meet him, so it had better be there.
 
 They came out of the spooner and were copied in here, so they no longer need
 Menyoo installed. If you still have the originals in menyooStuff\Spooner under
