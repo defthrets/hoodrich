@@ -3205,6 +3205,17 @@ namespace Hoodrich
                 // the reply is on a clock and should land whatever else is going on.
                 _messages.Pending();
 
+                // THE ART DOES NOT SURVIVE EVERY BLACK SCREEN. See Hud.Forget: our own
+                // pictures are numbers in a list ScriptHookV keeps, and that list is emptied
+                // out from under us -- a cutscene, a fast travel, a death, anything that takes
+                // the screen away long enough. The numbers stay valid-looking and draw nothing,
+                // so the mod runs on with no corners, no wordmark and no icons until the game
+                // is restarted.
+                //
+                // On the way BACK, not on the way out: while it is black there is nothing to
+                // draw and the list may not have been emptied yet.
+                WatchTheFade();
+
                 var available = IsPlayable();
 
                 // EVERY FRAME, PLAYABLE OR NOT. The muffler shop lives behind a fade at each
@@ -4747,6 +4758,31 @@ namespace Hoodrich
             }
 
             return false;
+        }
+
+        /// <summary>Whether the screen was black last time we looked. See WatchTheFade.</summary>
+        private bool _wasBlack;
+
+        /// <summary>
+        /// Re-make our own pictures when the screen comes back from black.
+        ///
+        /// The falling edge only. IS_SCREEN_FADED_OUT is true for the whole of a blackout, and
+        /// clearing the cache every frame of one would be a few dozen texture loads a frame.
+        /// </summary>
+        private void WatchTheFade()
+        {
+            try
+            {
+                var black = Function.Call<bool>(Hash.IS_SCREEN_FADED_OUT);
+
+                if (_wasBlack && !black) UI.Draw.Forget();
+
+                _wasBlack = black;
+            }
+            catch
+            {
+                // Not worth a line in the log every frame.
+            }
         }
 
         /// <summary>What last made the mod stand down, for the log.</summary>

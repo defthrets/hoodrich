@@ -553,6 +553,40 @@ namespace Hoodrich.UI
             new Dictionary<string, GTA.UI.CustomSprite>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
+        /// Throw away every loaded picture, so the next draw of each one makes it again.
+        ///
+        /// WHY ANYTHING WOULD WANT THAT. These are not textures the game streams; they are
+        /// handed to ScriptHookV's own loader, which keeps them in a list of its own and hands
+        /// back a number. A CustomSprite is that number and nothing else. If the list is ever
+        /// emptied underneath us -- and the SDK says outright that it clears itself when the
+        /// game reloads its scripts -- every number we are still holding points at a slot that
+        /// is not there any more, and drawing one does nothing at all. Not an error, not an
+        /// exception: the call goes through and no pixels arrive.
+        ///
+        /// That is exactly what it looks like from the outside. Every panel loses its rounded
+        /// corners, the wordmark goes, the little pictures beside the choices go, and the
+        /// arrow in the key hint goes -- while every rectangle and every letter on the same
+        /// panel, which are ordinary natives, carry on perfectly. Reported as the dialogue
+        /// glitching, and it survives until the game is restarted because nothing ever asks
+        /// for those files again once they are in this dictionary.
+        ///
+        /// Emptying it is the whole repair: the numbers go, and the next panel that wants a
+        /// corner asks the loader for one and gets a live one back. A few dozen loads, once,
+        /// at a moment the screen is black anyway.
+        /// </summary>
+        public static void Forget()
+        {
+            if (Icons.Count == 0) return;
+
+            var had = Icons.Count;
+
+            Icons.Clear();
+
+            Log.Info("Icons: let go of " + had + " picture(s) after a fade; " +
+                     "they will be made again as they are wanted.");
+        }
+
+        /// <summary>
         /// The height of the space ScaledDraw draws into. Fixed, and not the screen's.
         ///
         /// GTA.UI.Screen.Height is this same 720 -- a constant in the assembly, not a
@@ -1086,10 +1120,21 @@ namespace Hoodrich.UI
         {
             var rX = ToX(r);
 
-            return File("corner_tl.png", left + rX * 0.5f, top + r * 0.5f, rX, r, 0f, c)
-                   && File("corner_tr.png", left + w - rX * 0.5f, top + r * 0.5f, rX, r, 0f, c)
-                   && File("corner_bl.png", left + rX * 0.5f, top + h - r * 0.5f, rX, r, 0f, c)
-                   && File("corner_br.png", left + w - rX * 0.5f, top + h - r * 0.5f, rX, r, 0f, c);
+            // FOUR CALLS, NOT A SHORT CIRCUIT. This was one && chain, and && stops at the
+            // first false -- so a machine missing corner_tl.png drew NO corners at all and
+            // then the band fallback painted all four, while a machine that lost the third one
+            // drew two sprites, skipped the rest, and had the fallback paint over the two that
+            // had already landed. Two coats of a translucent body colour is a darker corner.
+            //
+            // Every corner is asked for on its own and the answers are collected, so the
+            // fallback below only runs when the sprites genuinely are not available, and it
+            // runs for all four or none.
+            var tl = File("corner_tl.png", left + rX * 0.5f, top + r * 0.5f, rX, r, 0f, c);
+            var tr = File("corner_tr.png", left + w - rX * 0.5f, top + r * 0.5f, rX, r, 0f, c);
+            var bl = File("corner_bl.png", left + rX * 0.5f, top + h - r * 0.5f, rX, r, 0f, c);
+            var br = File("corner_br.png", left + w - rX * 0.5f, top + h - r * 0.5f, rX, r, 0f, c);
+
+            return tl && tr && bl && br;
         }
 
         /// <summary>

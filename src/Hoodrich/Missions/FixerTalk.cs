@@ -379,13 +379,19 @@ namespace Hoodrich.Missions
             // The tag run really is one man: two dudes on bikes with cans is a whole story for
             // the laws and one is a kid, which is the brief's own reasoning. The bike ride is
             // him and you, no crew -- that is the entire point of it.
+            //
+            // HOMIES IS NOT THE SAME QUESTION AS ALONE, and the hunt is where that showed. It
+            // brings no crew, so it read as a solo job and he signed it off with "you go by
+            // yourself, remember" -- four lines after telling you he is coming with you and
+            // not to argue about it. Homies means the two dudes who ride in the back; LAMAR
+            // is a separate fact about the job, and the jobs he comes on have to say so.
             string line;
 
             if (def.Homies > 0)
             {
                 line = "Good. Take the homies, they know where they going.";
             }
-            else if (def.Kind == MissionKind.BikeRide)
+            else if (def.Kind == MissionKind.BikeRide || def.Kind == MissionKind.Hunt)
             {
                 line = "Good. Just me and you on this one. No crew, no convoy, none of that.";
             }

@@ -170,12 +170,18 @@ def from_data(root):
                 rows.append((name + ".mp3", d.get("name", ""), text))
 
     # Lamar owns the mission list outright.
+    #
+    # "Lamar", NOT "Lamar Davis". The key is built from whatever string the screen was handed
+    # as the speaker, and that comes from Fixer.Name, which is the bare first name. This said
+    # Lamar Davis for a long time, so every mission row it printed was named lamar_davis_...
+    # and not one of them was ever a file the game asked for. A recording made from this list
+    # would have sat in the folder in silence.
     doc = load("missions.json")
     for m in (doc or {}).get("missions", []):
         for field in ("brief", "done", "briefAgain", "doneAgain"):
-            add("Lamar Davis", m.get(field))
+            add("Lamar", m.get(field))
         for line in m.get("briefMore") or []:
-            add("Lamar Davis", line)
+            add("Lamar", line)
 
     # And the feed, where the author's own name is on every voice.
     doc = load("socials.json") or {}
@@ -188,6 +194,93 @@ def from_data(root):
     return rows
 
 
+# --------------------------------------------------------------- the source
+#
+# A conversation written in C# is still a fixed sentence -- FixerTalk hands Node() a literal
+# and the screen says it word for word. Those are as recordable as anything in the json and
+# --data used to miss every one of them.
+#
+# ONLY THE ONES THAT ARE WHOLE. "Gimme like " + minutes + " minutes" is three pieces and only
+# one of them is written down; the game keys those by tag instead (see Voiced/Voice.Named), so
+# a half-sentence lifted out of one would name a file nothing ever asks for.
+
+SPEECH = [
+    (r"src\Hoodrich\Missions\FixerTalk.cs", "Lamar"),
+]
+
+CALL = re.compile(r'(?:Node|Nothing)\(\s*((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+)', re.S)
+ASSIGN = re.compile(r'line\s*=\s*((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+);', re.S)
+PIECE = re.compile(r'"((?:[^"\\]|\\.)*)"')
+
+
+def from_source(root):
+    rows, seen = [], set()
+
+    for rel, speaker in SPEECH:
+        path = os.path.join(root, rel)
+        if not os.path.exists(path):
+            continue
+
+        text = io.open(path, encoding="utf-8-sig").read()
+
+        # Comment lines are prose about the code, and there is a great deal of it.
+        body = "\n".join(l for l in text.split("\n")
+                         if not l.strip().startswith("//"))
+
+        for rx in (CALL, ASSIGN):
+            for m in rx.finditer(body):
+                blob = m.group(1)
+
+                if blob.rstrip().endswith("+"):
+                    continue
+                if body[m.end():].lstrip().startswith("+"):
+                    continue
+
+                line = "".join(p.replace('\\"', '"').replace("\\\\", "\\")
+                               for p in PIECE.findall(blob))
+
+                if len(line) < 12 or line.count(" ") < 2:
+                    continue
+
+                name = key(speaker, line)
+                if name in seen:
+                    continue
+
+                seen.add(name)
+                rows.append((name + ".mp3", speaker, tidy(line)))
+
+    return rows
+
+
+# ------------------------------------------------------------------ the have
+#
+# Which of these are already sat in the voice folder. The answer is what somebody actually
+# wants from this: not "here is everything", but "here is what is left".
+
+def recorded(folder):
+    have = set()
+
+    if folder and os.path.isdir(folder):
+        for f in os.listdir(folder):
+            stem, ext = os.path.splitext(f)
+            if ext.lower() in (".wav", ".mp3"):
+                have.add(stem.lower())
+
+    return have
+
+
+def find_voice(root):
+    tries = glob.glob(r"C:\Program Files (x86)\Steam\steamapps\common\Grand Theft Auto V*"
+                      r"\scripts\Hoodrich\voice")
+    tries += [os.path.join(os.path.expanduser("~"), "Documents", "Hoodrich", "voice")]
+
+    for p in tries:
+        if os.path.isdir(p):
+            return p
+
+    return ""
+
+
 # ----------------------------------------------------------------------- cli
 
 def main():
@@ -196,12 +289,16 @@ def main():
     ap.add_argument("--log", nargs="?", const="", metavar="PATH",
                     help="read misses out of Hoodrich.log")
     ap.add_argument("--data", action="store_true", help="list what the json holds")
+    ap.add_argument("--source", action="store_true",
+                    help="list the whole sentences written into the C#")
     ap.add_argument("--who", metavar="NAME", help="only this speaker")
+    ap.add_argument("--need", nargs="?", const="", metavar="DIR",
+                    help="only the ones not in the voice folder already")
     ap.add_argument("--root", default=HERE)
     args = ap.parse_args()
 
-    if args.log is None and not args.data:
-        ap.error("pick --log or --data")
+    if args.log is None and not args.data and not args.source:
+        ap.error("pick --log, --data or --source")
 
     rows = []
 
@@ -212,9 +309,22 @@ def main():
     if args.data:
         rows += from_data(args.root)
 
+    if args.source:
+        rows += from_source(args.root)
+
+    # The same line can come out of two of those at once -- a mission brief is in the json and
+    # in the log the moment it has been on screen once.
+    rows = list({r[0]: r for r in rows}.values())
+
     if args.who:
         want = args.who.lower()
         rows = [r for r in rows if want in r[1].lower()]
+
+    if args.need is not None:
+        have = recorded(args.need or find_voice(args.root))
+        rows = [r for r in rows if os.path.splitext(r[0])[0].lower() not in have]
+
+    rows.sort(key=lambda r: (r[1].lower(), r[2]))
 
     out = csv.writer(sys.stdout, lineterminator="\n")
     out.writerow(("filename", "speaker", "text"))
