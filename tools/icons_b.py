@@ -408,6 +408,33 @@ def acid():
         disc(d, x0, at, r, CLEAR)
         disc(d, x1, at, r, CLEAR)
 
+    # THE PRINTED BORDER: a thin line inset from the torn edge.
+    #
+    # Punched as a groove rather than drawn as a stroke, because the body is solid white and
+    # a white line on white paper is nothing. Cut, then the inside given back -- two
+    # rectangles, and the gap between them IS the line.
+    #
+    # It sits well inside the deepest bite, so a hole and the border never meet. A perforation
+    # that breaks the frame reads as damage, and this stamp is meant to look printed.
+    rect(d, 124, 124, 388, 388, CLEAR)
+    rect(d, 131, 131, 381, 381)
+
+    # AND THE SPECKS. Every stamp ever printed has something in the margin -- a guilloche, a
+    # denomination, a row of dots -- and it is there for the same reason it is here: a plain
+    # white field inside a decorative edge looks unfinished.
+    #
+    # Small and few. This is the last thing that survives the downsample and the first thing
+    # that turns to grit if there is too much of it; eight dots read as deliberate at 128 and
+    # disappear cleanly at 32, which is exactly the right way for detail to fail.
+    for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):
+        disc(d, 152 + dx * 208, 152 + dy * 208, 7, CLEAR)
+
+    for at in (256,):
+        disc(d, at, 146, 6, CLEAR)
+        disc(d, at, 366, 6, CLEAR)
+        disc(d, 146, at, 6, CLEAR)
+        disc(d, 366, at, 6, CLEAR)
+
     # The print, punched through, and the face drawn back into it.
     disc(d, 256, 256, 82, CLEAR)
 
