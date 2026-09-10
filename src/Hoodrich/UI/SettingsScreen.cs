@@ -549,6 +549,26 @@ namespace Hoodrich.UI
             Slide("Crews at once", "Block", "WalkerCrews",
                   () => c.WalkerCrews, v => c.WalkerCrews = (int)v, 0f, 5f, 1f, "0");
 
+            // ONE PRESS, BECAUSE A MEET IS A THING THAT HAPPENS RATHER THAN A SETTING. There
+            // is nothing to configure here -- where the cars park is twelve coordinates in
+            // data\carmeet.json, which is the file to edit if a space is in the wrong place,
+            // and what turns up is the set's own cars. All this row does is say "now".
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Action,
+                Label = "Call a car meet",
+                Note = "The set brings their cars down to Carson Ave and parks up",
+                Do = () =>
+                {
+                    if (Meet == null) return;
+
+                    var no = Meet();
+
+                    if (no != null) Notify.Problem(no);
+                    else Notify.Ticker("~g~word's out.~s~  they're on their way.");
+                }
+            });
+
             Head("The takeover");
             Tick("It happens", "Block", "TakeoverEnabled",
                  () => c.TakeoverEnabled, v => c.TakeoverEnabled = v,
@@ -762,28 +782,6 @@ namespace Hoodrich.UI
             // A DOOR IS TWO COORDINATES AND A NAME, and the coordinates can only honestly
             // come from somebody standing on them. Four rounds of guessing where a room was
             // is what these two rows exist to stop happening again.
-            Head("The block");
-
-            // ONE PRESS, BECAUSE A MEET IS A THING THAT HAPPENS RATHER THAN A SETTING. There
-            // is nothing to configure here -- where the cars park is twelve coordinates in
-            // data\carmeet.json, which is the file to edit if a space is in the wrong place,
-            // and what turns up is the set's own cars. All this row does is say "now".
-            _rows.Add(new Opt
-            {
-                Kind = OptKind.Action,
-                Label = "Call a car meet",
-                Note = "The set brings their cars down to Carson Ave and parks up",
-                Do = () =>
-                {
-                    if (Meet == null) return;
-
-                    var no = Meet();
-
-                    if (no != null) Notify.Problem(no);
-                    else Notify.Ticker("~g~word's out.~s~  they're on their way.");
-                }
-            });
-
             Head("Doors");
 
             // THE LIST IS NAMES, THE PRESSES ARE NUMBERS. Everywhere in the game with an

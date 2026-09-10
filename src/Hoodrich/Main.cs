@@ -2367,6 +2367,10 @@ namespace Hoodrich
                 _carMeet.Lowriders = () => Locations.Takeover.TheirLowriders;
                 _carMeet.Load();
 
+                // WHAT NOT TO DELETE OUT OF A PARKING SPACE. See CarMeet.Sweep -- ambient
+                // traffic goes, anything in the ledger stays.
+                _carMeet.Owned = car => _ownedCars != null && _ownedCars.Which(car) != null;
+
                 if (_settingsScreen != null) _settingsScreen.Meet = () => _carMeet.Start();
 
                 // The rack is a screen now. The conversation is still how you get to it -- you

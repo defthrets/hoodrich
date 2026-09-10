@@ -200,6 +200,8 @@ namespace Hoodrich.Locations
             _next = 0;
             _lastSend = 0;
 
+            Sweep(null);
+
             Blip();
 
             Log.Info("Car meet: on, " + _spots.Count + " space(s) to fill.");
@@ -274,10 +276,89 @@ namespace Hoodrich.Locations
             var spot = _spots[_next];
             _next++;
 
+            // AND AGAIN, FOR THIS ONE. The spaces were emptied when the meet was called, but
+            // a car sets off from half a mile away and traffic parks in things. Clearing the
+            // one space a car is actually on its way to, at the moment it sets off, costs one
+            // world query and is the difference between a meet and a shunt.
+            Sweep(spot);
+
             var r = Send(player, spot, now);
 
             if (r != null) _out.Add(r);
         }
+
+        /// <summary>
+        /// The spaces, emptied.
+        ///
+        /// TRAFFIC PARKS IN CAR PARKS. Twelve surveyed spaces on a public street are twelve
+        /// places the game will have put a parked Asea by the time anybody calls a meet, and
+        /// a meet car driving into one either shunts it out of the way or gives up trying and
+        /// sits in the road with its indicator on. Neither reads as a car meet.
+        ///
+        /// NOT YOURS, THOUGH, AND THAT IS THE WHOLE CARE IN HERE. A system that deletes cars
+        /// in an area is one keystroke away from deleting the car somebody spent an hour
+        /// building and parked outside their own house. What is spared: whatever the player is
+        /// sat in, whatever they were last sat in, and anything the ledger says they own. What
+        /// goes is ambient traffic, which the game made and will make again.
+        ///
+        /// Passed a spot it does one; passed nothing it does the lot.
+        /// </summary>
+        private void Sweep(MeetSpot only)
+        {
+            foreach (var spot in _spots)
+            {
+                if (only != null && only != spot) continue;
+
+                try
+                {
+                    foreach (var car in World.GetNearbyVehicles(spot.At, ClearRadius))
+                    {
+                        if (car == null || !car.Exists()) continue;
+                        if (Yours(car)) continue;
+
+                        car.MarkAsNoLongerNeeded();
+                        car.Delete();
+                    }
+                }
+                catch
+                {
+                    // A space that will not clear is a space a car parks badly in.
+                }
+            }
+        }
+
+        /// <summary>
+        /// Whether that car is one this mod has no business deleting.
+        ///
+        /// Three questions, cheapest first, and the ledger last because it is the only one
+        /// that walks a list.
+        /// </summary>
+        private bool Yours(Vehicle car)
+        {
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return false;
+
+                if (me.IsInVehicle() && me.CurrentVehicle == car) return true;
+
+                var last = me.LastVehicle;
+                if (last != null && last.Exists() && last == car) return true;
+
+                return Owned != null && Owned(car);
+            }
+            catch
+            {
+                // If it cannot be established that a car is disposable, it is not.
+                return true;
+            }
+        }
+
+        /// <summary>How much of a space is cleared. A car and a bit either side of it.</summary>
+        private const float ClearRadius = 3.6f;
+
+        /// <summary>Set by Main: whether the player owns that car. See Yours.</summary>
+        public Func<Vehicle, bool> Owned;
 
         /// <summary>
         /// One car, on a road, a long way off, pointed at its space.
