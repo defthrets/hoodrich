@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA.Native;
 
 namespace Hoodrich.UI
@@ -66,6 +66,34 @@ namespace Hoodrich.UI
 
         /// <summary>Drops whatever is showing, for a screen that wants the corner to itself.</summary>
         public static void Clear() => _wanted = null;
+
+        /// <summary>
+        /// Whether somebody has asked for the corner in the last moment or two.
+        ///
+        /// FOR THE ONE CALLER THAT HAS TO COME LAST. Forty things in this mod offer the context
+        /// key, and every one of them is somewhere specific -- a boot, a wardrobe, a counter,
+        /// a man with a job for you. Saying hello to a stranger is the opposite: it is offered
+        /// EVERYWHERE, to anybody, which makes it the only one that can be in the way of the
+        /// others rather than the other way round.
+        ///
+        /// So it asks first whether the corner is spoken for and stands down if it is. A shop
+        /// door you are stood in beats the pedestrian walking past it, every time.
+        ///
+        /// A SHORTER WINDOW THAN THE LATCH ITSELF. HoldMs is nine tenths of a second because
+        /// the slowest caller only renews every eight, and treating a nearly-expired request as
+        /// live would keep the greeting suppressed for most of a second after you walked away
+        /// from whatever asked. A quarter second is two frames of the slowest tick in the mod.
+        /// </summary>
+        public static bool Taken
+        {
+            get
+            {
+                return !string.IsNullOrEmpty(_wanted) &&
+                       GTA.Game.GameTime - _askedAt <= FreshMs;
+            }
+        }
+
+        private const int FreshMs = 250;
 
         private static void Issue(string message)
         {

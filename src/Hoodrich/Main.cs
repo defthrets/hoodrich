@@ -142,6 +142,31 @@ namespace Hoodrich
         private readonly MaskShop _maskShop;
 
         private readonly Graves _graves = new Graves();
+
+        /// <summary>Saying hello to whoever is in front of him. See Gangs.Greeting.</summary>
+        private readonly Gangs.Greeting _greeting = new Gangs.Greeting();
+
+        /// <summary>
+        /// Whether any of the mod's own full-screen panels is up.
+        ///
+        /// ONE LIST, BECAUSE THERE ARE NOW TWO CALLERS. The toasts hide behind a menu and the
+        /// street greeting stands down behind one, and those are the same question -- but they
+        /// were about to be two copies of a nineteen-screen expression, which is a list that
+        /// drifts the first time somebody adds a screen and updates one of them.
+        /// </summary>
+        private bool AnyScreenUp()
+        {
+            return _phone.IsOpen || _socialScreen.IsOpen || _messages.IsOpen ||
+                                   _stashScreen.IsOpen || _pocketScreen.IsOpen
+                                   || _settingsScreen.IsOpen
+                                   || _info.IsOpen || _talk.IsOpen || _cook.IsOpen
+                                   || _gunScreen.IsOpen || _carScreen.IsOpen || _plateScreen.IsOpen
+                                   || _modShop.IsOpen
+                                   || _graffiti.IsOpen || _ridePick.IsOpen || _wardrobeScreen.IsOpen
+                                   || (_maskScreen != null && _maskScreen.IsOpen)
+                                   || (_boot != null && _boot.IsOpen)
+                                   || (_search != null && _search.IsOpen);
+        }
         private bool _dressed;
         private bool _carrying;
         private int _dressedBody;
@@ -1994,16 +2019,7 @@ namespace Hoodrich
 
                     // Not over a full-screen UI. They keep queueing and keep ageing while it is
                     // up, so nothing is lost -- they are simply not drawn across a menu.
-                    Hidden = () => _phone.IsOpen || _socialScreen.IsOpen || _messages.IsOpen ||
-                                   _stashScreen.IsOpen || _pocketScreen.IsOpen
-                                   || _settingsScreen.IsOpen
-                                   || _info.IsOpen || _talk.IsOpen || _cook.IsOpen
-                                   || _gunScreen.IsOpen || _carScreen.IsOpen || _plateScreen.IsOpen
-                                   || _modShop.IsOpen
-                                   || _graffiti.IsOpen || _ridePick.IsOpen || _wardrobeScreen.IsOpen
-                                   || (_maskScreen != null && _maskScreen.IsOpen)
-                                   || (_boot != null && _boot.IsOpen)
-                                   || (_search != null && _search.IsOpen),
+                    Hidden = AnyScreenUp,
                 };
 
                 _social.Toasts = _toasts;
@@ -2379,6 +2395,20 @@ namespace Hoodrich
                 _bodies.Pay = notes => { if (notes > 0) UI.Cash.Give(notes); };
 
                 _buffalo.Busy = () => _war != null && _war.IsRunning;
+
+                // LAST IN THE QUEUE, and told what it needs to know rather than given the
+                // whole mod. Which gang somebody is in is the one thing the greeting cannot
+                // work out for itself, and it is a line Affiliation already owns.
+                _greeting.Gang = ped =>
+                {
+                    var g = _crew == null ? null : _crew.GangOf(ped);
+                    return g == null ? null : g.Id;
+                };
+
+                _greeting.Busy = () =>
+                    AnyScreenUp() ||
+                    (_postUp != null && _postUp.IsPosted) ||
+                    (_war != null && _war.IsRunning);
 
                 // A HIGH ENDING TAKES HIS WALK OFF WITH IT. Clearing a movement clipset clears
                 // whatever is on him, and the wardrobe's choice is one -- so the latch is
@@ -3644,6 +3674,12 @@ namespace Hoodrich
                     _buffalo.Update(Game.Player.Character);
                     _scenes.Update();
 
+                    // AFTER EVERY OTHER PROMPT, ON PURPOSE. It offers the context key anywhere
+                    // there is a person, so it has to be the last one to ask -- Help.Taken is
+                    // how it finds out whether a door or a counter already spoke for the
+                    // corner this tick. See Gangs.Greeting.
+                    _greeting.Update();
+
                     // The gun art sweep and its probe. Both stop dead once they are finished,
                     // so this is a branch and nothing else for the rest of the session -- and
                     // ticking it here rather than only at the counter means the probe can be
@@ -3805,6 +3841,9 @@ namespace Hoodrich
                 // spotlight below is. Anything that asked for it this tick, or recently
                 // enough, gets re-issued now -- see Help.
                 UI.Help.Tick();
+
+                // The beat between "hey" and "hey back". See Greeting.
+                _greeting.Tick();
 
                 // The button that closed a conversation stays off the trigger for a moment
                 // after the panel has gone -- see Conversation.TickQuiet.

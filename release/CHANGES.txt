@@ -1,6 +1,36 @@
 ﻿0.7.1 -- unreleased
 
 
+FRANKLIN CAN SAY HELLO TO ANYBODY, AND SAY MORE THAN HELLO TO ANYBODY TWICE.
+
+Walk up to a person, press the context key: he says hey, they say hey back,
+nobody stops walking. Press it on the same person again and it turns into a
+conversation -- they square up, he opens with whatever he actually makes of
+somebody like them, they answer, and it runs six lines before both of them say
+goodbye.
+
+NOT ONE WORD OF IT IS WRITTEN. Every line is a speech name out of the game's own
+banks, played on the ped's own voice through the game's own ambient speech
+system -- so it is lip-synced, it is in the right accent, and a Vagos, a cop and
+a stockbroker say three completely different things for nothing, because
+Rockstar already decided what each of them sounds like.
+
+AND FRANKLIN HAS A GREETING VOCABULARY NOBODY EVER HEARS. His voice carries a
+different hello for a Families member, a Balla, a Vago, a cop, a tramp, a
+junkie, a hippy, a hipster, a hillbilly, a big lad and a good-looking woman --
+eleven of them, in character, already on your disk, used by the story in a
+handful of scripted moments and never again. The whole of the work here was
+asking who is actually stood in front of you and picking the right one. Gang
+first, because a Balla in a hipster's shirt is a Balla; then the job, then the
+look; then a plain hey for everybody the game has nothing particular to say
+about, which is most people and is exactly right.
+
+It is the lowest-priority thing in the mod for that key. Forty other things
+offer it and every one of them is somewhere specific -- a boot, a counter, a
+wardrobe -- while this is offered anywhere there is a person. So it asks first
+whether the corner is already spoken for and stands down if it is.
+
+
 YOU STOP TRIPPING WHEN THE BARS WEAR OFF.
 
 The stumble is the game's own loose-balance flag, and it was switched on with the
