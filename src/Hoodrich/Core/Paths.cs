@@ -300,5 +300,17 @@ namespace Hoodrich.Core
                 Log.Error("Could not create directory " + path, ex);
             }
         }
-    }
+    
+        /// <summary>
+        /// The HUD art, beside the data rather than loose in scripts\.
+        ///
+        /// Read-only as far as this mod is concerned, so it hangs off Data and not Writable --
+        /// a player whose game folder is unwritable still has the icons, because the deploy put
+        /// them there.
+        ///
+        /// Named here because every other mod in the set names it, and UI.Splash is the same
+        /// file in all six -- it can only ask for the folder by one name.
+        /// </summary>
+        public static string Icons => Path.Combine(Data, "icons");
+}
 }

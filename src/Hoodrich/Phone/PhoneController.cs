@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Keys = System.Windows.Forms.Keys;
 using Control = GTA.Control;
 using GTA;
@@ -155,7 +155,10 @@ namespace Hoodrich.Phone
 
             LockControlsThisFrame();
             HoldItUp();
-            HandleInput();
+
+            // A key pressed at the boot screen would act on a page nobody can see yet --
+            // and the first page is Dealing, so the mis-press is not a harmless one.
+            if (!_menu.Booting) HandleInput();
 
             _menu.Render();
         }

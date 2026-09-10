@@ -639,6 +639,56 @@ namespace Hoodrich.Economy
                 Line = "not even tired. could go all night"
             },
 
+            // LSD. THE LONG ONE, AND THE ONLY ONE THAT DOES NOTHING TO YOUR BODY.
+            //
+            // Every other drug on this list is a set of numbers about what you can do -- hit
+            // harder, run faster, take less, walk worse. This one has none of them. No run
+            // multiplier, no damage either way, and NO CLIPSET: he walks exactly as he always
+            // walks. What changes is the picture, and only the picture, for a very long time.
+            //
+            // That is the whole character and it is why it is worth having alongside the other
+            // seven. Weed and the bars already do "you are worse at things"; the stimulants
+            // already do "you are better at things". Acid does neither, which leaves it free
+            // to be the one that is genuinely about looking at something.
+            //
+            // SEVEN MINUTES, the longest here by two. A trip that is over in the time it takes
+            // to drive across Davis is not a trip, and the low heat and the cheap tab are the
+            // trade for having to live in it -- see the notes on the drugs.json entry.
+            //
+            // NO COMEDOWN. Every other long one hands you a minute of being no use to
+            // anybody. The way off acid is a long flat glide, and the injured walk and the
+            // grey screen would say something quite wrong about it. DownMs stays at nought,
+            // the same as weed's.
+            //
+            // The flying family, all four verified in the machine's own timecycle list:
+            // flying_01 is the strongest of them, and the ladder underneath is for an install
+            // that is missing it. Held at nine tenths, which is further than anything else
+            // here goes -- the point of this one is that the world is not right.
+            new Recipe
+            {
+                Drug = "lsd",
+                Doing = Pop,
+                Cycles = new[] { "drug_flying_01", "drug_flying_02", "drug_flying_base", "drug_wobbly" },
+                Strength = 0.9f,
+
+                // The sustained clown one rather than crack's blend-in. Both are the same
+                // family; this is the variant meant to be left running, which is the whole
+                // difference over seven minutes.
+                Fx = "DrugsTrevorClownsFight",
+
+                // A drift, not a sway. Anything heavier reads as drunk and there is already a
+                // drunk drug.
+                Shake = 0.16f,
+
+                // The world slightly behind you. Not heroin's half speed -- you can still
+                // drive on this, you just should not.
+                Time = 0.90f,
+                Run = 1f,
+
+                Ms = 420000,
+                Line = "the road is breathing. give it a minute"
+            },
+
             // HEROIN. The trip. Half speed, trails, and you are not walking anywhere at any
             // pace -- the run multiplier goes DOWN, which nothing else here does.
             new Recipe

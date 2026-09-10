@@ -253,6 +253,14 @@
                 // one product on the wheel still falling back to a text glyph gets the art
                 // that was drawn for it in the first place.
                 case "xanax": return FromFile("xanax.png");
+
+                // A perforated sheet of blotter. Both names, because "acid" is what anybody
+                // would type and "lsd" is what the catalogue calls it -- the same rule
+                // Api.Drugs.IconOf follows, and the two have to agree or the wheel and
+                // whatever is reading us across the AppDomain show different pictures.
+                case "lsd":
+                case "acid": return FromFile("acid.png");
+
                 default: return new Icon();
             }
         }

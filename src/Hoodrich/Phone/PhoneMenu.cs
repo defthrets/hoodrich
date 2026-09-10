@@ -309,6 +309,26 @@ namespace Hoodrich.Phone
         private const int DropMs = 170;
 
         /// <summary>
+        /// The handset boots the FIRST time it comes out and never again.
+        ///
+        /// A phone boots when it is switched on, not every time it leaves a pocket -- and a
+        /// mod's phone gets opened a couple of hundred times in a session, so a boot screen on
+        /// every one of them is a toll booth between the player and the thing they wanted. Once
+        /// is a piece of character; every time is a tax.
+        ///
+        /// Not reset by Close, so putting it away and taking it out again does not re-boot it.
+        /// A script reload does, because that genuinely is the mod starting again.
+        /// </summary>
+        private bool _hasBooted;
+        private int _bootAt;
+        private const int BootMs = 1250;
+        private const int BootFadeMs = 260;
+
+        /// <summary>True while the boot screen is up, so nothing else draws or takes input.</summary>
+        public bool Booting => _hasBooted && _bootAt != 0 &&
+                               Game.GameTime - _bootAt < BootMs;
+
+        /// <summary>
         /// The glass wakes a beat AFTER the body arrives, and how long the waking takes. A
         /// phone taken out of a pocket is a dark object first and a lit one second; a handset
         /// that appears already glowing is a panel wearing a phone.
@@ -387,6 +407,13 @@ namespace Hoodrich.Phone
             _openedAt = Game.GameTime;
             _closedAt = 0;
             _pageAt = Game.GameTime;
+
+            if (!_hasBooted)
+            {
+                _hasBooted = true;
+                _bootAt = Game.GameTime;
+            }
+
             _pageDir = 0;
             _glide.Reset();
 
@@ -627,6 +654,12 @@ namespace Hoodrich.Phone
             var scrW = bodyW - bezX * 2f;
             var scrH = BodyH - Bezel * 2f;
 
+            if (Booting)
+            {
+                BootScreen(scrLeft, scrTop, scrW, scrH, screen);
+                return;
+            }
+
             StatusBar(scrLeft, scrTop, scrW, screen);
 
             if (InCall)
@@ -657,6 +690,37 @@ namespace Hoodrich.Phone
 
             // Last, so it rides over whatever it is pointing at.
             _glide.Draw(screen / 255f);
+        }
+
+        /// <summary>
+        /// The seal, turning, while the handset comes up for the first time.
+        ///
+        /// The band is driven rather than left free-running. Seal.Draw's own spin is the
+        /// website's 26 seconds a turn, which over a boot this short would move it about
+        /// sixteen degrees -- present in the code and invisible on screen. Here it takes a turn
+        /// and a half and decelerates into a stop, so the mark arrives at rest exactly as the
+        /// apps take over and the spin reads as the thing that was loading.
+        /// </summary>
+        private void BootScreen(float x, float y, float w, float h, int fade)
+        {
+            var age = Game.GameTime - _bootAt;
+            if (age < 0) return;
+
+            // Up out of the dark, and back down into the home screen rather than cutting.
+            float t;
+            if (age < BootFadeMs) t = age / (float)BootFadeMs;
+            else if (age > BootMs - BootFadeMs) t = (BootMs - age) / (float)BootFadeMs;
+            else t = 1f;
+
+            var a = (int)(fade * Math.Max(0f, Math.Min(1f, t)));
+            if (a <= 0) return;
+
+            // Eased out: fast away from the stop, slowing as it settles.
+            var p = age / (float)BootMs;
+            var eased = 1f - (1f - p) * (1f - p);
+
+            Seal.Draw(x + w * 0.5f, y + h * 0.44f, h * 0.38f,
+                      Color.FromArgb(a, 176, 236, 172), 540f * eased);
         }
 
         /// <summary>Nought to one over the drop, eased IN: it leaves quicker than it arrived.</summary>

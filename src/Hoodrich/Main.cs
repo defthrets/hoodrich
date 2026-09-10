@@ -3013,6 +3013,7 @@ namespace Hoodrich
                 Tick += OnTick;
                 Aborted += OnAborted;
 
+                UI.Seal.Folder = Paths.Icons;
                 Log.Info("Paths: data=" + Paths.Data + "  writable=" + Paths.Writable);
 
                 // Skulls left on the map by a build that no longer exists. See StaleBlips.
@@ -3107,6 +3108,10 @@ namespace Hoodrich
 
         private void OnTick(object sender, EventArgs e)
         {
+            // The set's mark, for a few seconds after load. Bows out on its own and
+            // costs a comparison thereafter; see UI.Splash.
+            UI.Splash.Render();
+
             // BEFORE THE ENABLED CHECK, and before Franklin. Somebody whose install is broken
             // is not necessarily playing as Franklin when they find out, and a report they can
             // only see by switching character is a report they will not see.

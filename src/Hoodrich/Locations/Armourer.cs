@@ -385,13 +385,26 @@ namespace Hoodrich.Locations
                     // Probed from just above the authored height and only believed if it agrees.
                     // The courtyard has a first-floor walkway over it, and a probe from high up
                     // finds that instead of the path.
+                    //
+                    // WITHIN A FOOT, NOT WITHIN THREE METRES. His yard is a raised concrete
+                    // slab with the estate's own terrain a metre underneath it, and a probe
+                    // that has not got the slab's collision yet answers with the terrain --
+                    // which is a metre down and well inside the three metres this used to
+                    // allow. So he was built a metre below his own floor, standing in the dirt
+                    // under the yard with the concrete over his head, and the only thing you
+                    // could see of him was the prompt: InReach measures the flat distance and
+                    // does not care how far down he is. Reported as him falling through the
+                    // floor after a sale, which is what it looks like from up here.
+                    //
+                    // The authored height is a surveyed one. A probe that disagrees with it by
+                    // more than a step is not correcting it, it is finding something else.
                     var spot = Spot;
 
                     try
                     {
                         if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, spot.Z + 1.5f),
                                                   out var groundZ, GetGroundHeightMode.Normal) &&
-                            groundZ > 0f && Math.Abs(groundZ - spot.Z) <= 3f)
+                            groundZ > 0f && Math.Abs(groundZ - spot.Z) <= ProbeTrust)
                         {
                             spot.Z = groundZ;
                         }
@@ -443,12 +456,29 @@ namespace Hoodrich.Locations
             Log.Warn("No model would load for the armourer.");
         }
 
+        /// <summary>
+        /// How far off the surveyed height a ground probe may be and still be believed, and
+        /// how far below his own floor he may end up before he is put back on it.
+        ///
+        /// A step is about 0.2 of a metre and a kerb rather less. Half of one is generous for
+        /// a spot somebody stood in and wrote down, and it is nowhere near the metre that the
+        /// slab-versus-terrain answer differs by.
+        /// </summary>
+        private const float ProbeTrust = 0.5f;
+        private const float SunkBy = 0.6f;
+
         /// <summary>Puts him back on his spot, facing the right way.</summary>
         private void Settle()
         {
             try
             {
-                if (_ped.Position.DistanceTo(Spot) > 2.5f)
+                // FLAT DISTANCE MISSED THE ONE THAT MATTERED. This asked how far he was from
+                // his spot in three dimensions and moved him past two and a half metres of it,
+                // which is right for a man who has wandered and useless for a man who is
+                // exactly where he should be and a metre down. Under his own floor is a metre,
+                // and a metre never reached the threshold -- so nothing ever put him back and
+                // he stayed under there for the session.
+                if (_ped.Position.DistanceTo(Spot) > 2.5f || Spot.Z - _ped.Position.Z > SunkBy)
                 {
                     _ped.Position = Spot;
                 }
