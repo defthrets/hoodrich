@@ -76,7 +76,17 @@ namespace Hoodrich.Locations
 
         private readonly PlayerState _state;
 
+        /// <summary>
+        /// 51 -- radar_crim_drugs, the razor and the line.
+        ///
+        /// The same mark the door beside him carries, because it is the same business. His
+        /// goes on the minimap as well: the door's is big-map only, which is right for a door
+        /// you have to know about, and wrong for the man you are actually going to see.
+        /// </summary>
+        private const int Sprite = 51;
+
         private Ped _ped;
+        private Blip _blip;
         private int _lastUpdate;
         private bool _held;
         private bool _talkHeld;
@@ -127,6 +137,8 @@ namespace Hoodrich.Locations
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return;
+
+            EnsureBlip();
 
             var away = player.Position.DistanceTo(Spot);
 
@@ -299,6 +311,41 @@ namespace Hoodrich.Locations
             Settle();
         }
 
+        // ---- map ---------------------------------------------------------------
+
+        /// <summary>
+        /// His mark on the wall, put up once and left alone.
+        ///
+        /// NAMED FOR WHAT YOU KNOW. Before you have met him it is the shop, because that is
+        /// all it is from the street; after, it is him, because by then the shop is the least
+        /// interesting thing about it.
+        /// </summary>
+        private void EnsureBlip()
+        {
+            if (_blip != null && _blip.Exists())
+            {
+                var should = Knows ? "OG Vee" : "Leroy's Electrical";
+                if (_blip.Name != should) _blip.Name = should;
+                return;
+            }
+
+            try
+            {
+                _blip = World.CreateBlip(Spot);
+                if (_blip == null || !_blip.Exists()) return;
+
+                Function.Call(Hash.SET_BLIP_SPRITE, _blip.Handle, Sprite);
+                _blip.Color = BlipColor.Green;
+                _blip.Scale = 0.8f;
+                _blip.IsShortRange = true;
+                _blip.Name = Knows ? "OG Vee" : "Leroy's Electrical";
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("No blip for Vernon: " + ex.Message);
+            }
+        }
+
         // ---- teardown ----------------------------------------------------------
 
         private void Despawn()
@@ -322,6 +369,14 @@ namespace Hoodrich.Locations
         public void RestoreWorld()
         {
             Despawn();
+
+            try
+            {
+                if (_blip != null && _blip.Exists()) _blip.Delete();
+            }
+            catch { /* teardown */ }
+
+            _blip = null;
         }
     }
 }

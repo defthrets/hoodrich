@@ -177,6 +177,8 @@ namespace Hoodrich.Supply
             try { def.Kind = (DealerKind)Enum.Parse(typeof(DealerKind), kind, true); }
             catch { Log.Warn("Unknown dealer kind '" + kind + "' on " + id + "."); }
 
+            def.DeliveryOnly = node["deliveryOnly"].AsBool(def.DeliveryOnly);
+
             ReplaceList(def.Models, node["models"]);
             ReplaceList(def.Drugs, node["drugs"]);
             ReplaceList(def.Rides, node["rides"]);
@@ -187,6 +189,7 @@ namespace Hoodrich.Supply
 
             ReplaceInts(def.RideMods, node["rideMods"]);
             ReplaceInts(def.RideToggles, node["rideToggles"]);
+            ReplaceInts(def.RideNeon, node["rideNeon"]);
             def.Plate = node["plate"].AsString(def.Plate);
             def.OpeningText = node["openingText"].AsString(def.OpeningText);
             def.Portrait = node["portrait"].AsString(FaceFor(def.Id));

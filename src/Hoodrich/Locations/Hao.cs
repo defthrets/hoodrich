@@ -734,6 +734,15 @@ namespace Hoodrich.Locations
         private static readonly int[] RideToggles = { 18, 17, 22 };
 
         /// <summary>
+        /// Orange under it, because the car is orange.
+        ///
+        /// The same three numbers are in dealers.json under rideNeon, for the copy of this car
+        /// that drives to you. Two cars, one look -- a Penumbra that only glows when it is
+        /// delivering is two different cars wearing the same plate.
+        /// </summary>
+        private static readonly int[] RideNeon = { 255, 110, 0 };
+
+        /// <summary>
         /// Puts his Penumbra where he parks it.
         ///
         /// Re-checked the same way the stock is, and for the same reason -- the game will tow or
@@ -791,6 +800,15 @@ namespace Hoodrich.Locations
                 {
                     Function.Call(Hash.TOGGLE_VEHICLE_MOD, h, slot, true);
                 }
+
+                // All four sides. See RideNeon.
+                for (var side = 0; side < 4; side++)
+                {
+                    Function.Call(Hash.SET_VEHICLE_NEON_ENABLED, h, side, true);
+                }
+
+                Function.Call(Hash.SET_VEHICLE_NEON_COLOUR, h,
+                              RideNeon[0], RideNeon[1], RideNeon[2]);
 
                 // 3 is locked to the player and nobody else, which is what they give it -- you
                 // can walk round it and you cannot take it, and it does not read as a car that

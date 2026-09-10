@@ -161,7 +161,20 @@ namespace Hoodrich.Supply
         /// The recording of his goodbye, which the screen plays on every way out of it: his
         /// farewell from dealers.json, under the name the rest of his pack uses.
         /// </summary>
-        private string Bye => Def == null || string.IsNullOrEmpty(Def.Farewell) ? "" : Voice.Key(Name, Def.Farewell);
+        /// <summary>
+        /// His goodbye, but only when you walked up to him.
+        ///
+        /// NOT ON A DELIVERY. Conversation.Close plays this on every way out of the screen,
+        /// and on a delivery the screen closes when you have finished BUYING -- so he said
+        /// goodbye and then carried a box up your path and into your house. Delivery cues it
+        /// instead, at the car door, which is where a goodbye goes.
+        ///
+        /// Face to face it is still right here: the screen closing is him finishing with you,
+        /// and there is nothing after it.
+        /// </summary>
+        private string Bye => Def == null || Who == null || string.IsNullOrEmpty(Def.Farewell)
+            ? ""
+            : Voice.Key(Name, Def.Farewell);
 
         private DialogueNode Node(string line) =>
             new DialogueNode(Name, line) { SpeakerColour = Palette.Cash, Farewell = Bye };
@@ -173,6 +186,34 @@ namespace Hoodrich.Supply
         {
             return string.IsNullOrEmpty(mine) ? shared : mine;
         }
+
+        /// <summary>
+        /// A line that says itself and hands on. See DialogueNode.Beat.
+        ///
+        /// No row under it, so nothing to press: it plays for as long as the recording lasts
+        /// and the next thing is up. That is the only reason a greeting can exist at all here
+        /// -- a page you have to click past to reach the stock would cost every player a
+        /// button every time to hear a line they have heard before.
+        /// </summary>
+        private DialogueNode Beat(string line, Func<DialogueNode> next)
+        {
+            return new DialogueNode(Name, line)
+            {
+                SpeakerColour = Palette.Cash,
+                Farewell = Bye
+            }.Beat(next);
+        }
+
+        /// <summary>
+        /// True while this is the first node of a NEW conversation. Set by Main, spent here.
+        ///
+        /// Root is re-entered constantly -- every "show me", every back-out of a sub-page --
+        /// and a man who says hello each time you return to his stock list is a jingle. There
+        /// is nothing on this class that can tell the two apart, so the caller says so.
+        /// </summary>
+        public void Fresh() { _opening = true; }
+
+        private bool _opening;
 
         public DialogueNode Root()
         {
@@ -187,22 +228,43 @@ namespace Hoodrich.Supply
             // the bags; half-strength cuts once and the second cut is powder nobody will buy.
             // Standing in a menu working out why the same money bought half as much product is
             // a fact the game had and did not mention.
-            var strength = Def == null ? 1f : Def.PurityNow;
-
-            // THE NUMBER, ONCE. Read and cleared here, so it is said in the conversation where
-            // you met him and never again -- a man who hands you his number every time you walk
-            // up is not a contact, he is a jingle.
-            var number = "";
-
-            if (Def != null && Def.JustMet)
+            // HELLO FIRST, AND HIS NUMBER IF YOU HAVE NOT MET. Both are beats, so neither
+            // costs a press -- see Beat. Only on the opening node of a conversation; Root is
+            // re-entered every time you back out of a sub-page.
+            if (_opening)
             {
-                Def.JustMet = false;
+                _opening = false;
 
-                if (!string.IsNullOrEmpty(Def.NumberLine))
+                var hello = Def == null ? "" : Def.Greeting;
+
+                // THE NUMBER, ONCE. Read and cleared here, so it is said in the conversation
+                // where you met him and never again -- a man who hands you his number every
+                // time you walk up is not a contact, he is a jingle.
+                var number = "";
+
+                if (Def != null && Def.JustMet)
                 {
-                    number = "\n\n" + Def.NumberLine;
+                    Def.JustMet = false;
+                    number = Def.NumberLine ?? "";
                 }
+
+                if (!string.IsNullOrEmpty(number))
+                {
+                    return string.IsNullOrEmpty(hello)
+                        ? Beat(number, Counter)
+                        : Beat(hello, () => Beat(number, Counter));
+                }
+
+                if (!string.IsNullOrEmpty(hello)) return Beat(hello, Counter);
             }
+
+            return Counter();
+        }
+
+        /// <summary>What he is holding and what it costs. The page you actually buy from.</summary>
+        private DialogueNode Counter()
+        {
+            var strength = Def == null ? 1f : Def.PurityNow;
 
             // HIS OWN WORDS WHERE HE HAS THEM. Empty falls back to the shared line, which is
             // what all three said before any of it was recorded.
@@ -215,7 +277,7 @@ namespace Hoodrich.Supply
                 : "Ain't got time to stand here. What you taking? It's all stepped on already, " +
                   Stash.Percent(strength) + " per cent.";
 
-            var node = Node((strength >= 0.999f ? whole : cut) + number + Standing());
+            var node = Node((strength >= 0.999f ? whole : cut) + Standing());
 
                 // NO HASH CAN REACH THIS ONE. What he says is fixed, but the money on you and
                 // the room at the house are stapled to the end of it and change every time -- so
@@ -273,6 +335,8 @@ namespace Hoodrich.Supply
             // happens to him all week.
             PutMeOnRow(node);
 
+            SourceRow(node);
+
             OldManRow(node);
 
             node.Leave("Not today.");
@@ -299,6 +363,34 @@ namespace Hoodrich.Supply
         }
 
         /// <summary>How many bricks, once you have said what.</summary>
+        /// <summary>
+        /// Where he gets it, for a man whose answer is only ever flavour.
+        ///
+        /// NOT FOR A GANG DEALER. Theirs is "Ask source" on the wheel, and that row is the
+        /// port sequence -- it counts packages, it refuses until Gerald is squared up, and it
+        /// unlocks the docks. A second way of asking the same question in a conversation would
+        /// make all of that optional, which is worse than the line going unsaid.
+        ///
+        /// So this is the other kind: a man with no port behind him, who just answers. Hao's
+        /// is "a guy, at a thing", which tells you nothing and tells you everything about him.
+        /// </summary>
+        private void SourceRow(DialogueNode node)
+        {
+            if (node == null || Def == null) return;
+            if (Def.IsGangDealer) return;
+            if (string.IsNullOrEmpty(Def.SourceReply)) return;
+
+            node.Say("Where you getting this?", () =>
+            {
+                var said = Node(Def.SourceReply);
+                said.Say("Fair enough.", Counter, "Back to what he's holding");
+                said.Leave();
+                return said;
+            }, "Ask him straight");
+
+            node.WithIcon(Icons.FromFile("eyes.png"));
+        }
+
         /// <summary>Only the man off the boat, and only while it is still news.</summary>
         private void OldManRow(DialogueNode node)
         {

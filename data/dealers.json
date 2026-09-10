@@ -227,10 +227,17 @@
         "somebody who was going out anyway. The whole character of this entry is that he is not a",
         "dealer, and the third product was quietly making him one.",
         "",
-        "PINNED RATHER THAN ZONED. He has coordinates and no zones, so he is found by standing",
-        "at his own lot -- where the mod already has a Hao and a Penumbra parked -- and never by",
-        "wandering into a neighbourhood. There is one of him and he is where he always is, so",
-        "nothing here spawns a second one.",
+        "DELIVERY ONLY, AND THAT IS THE WHOLE OF HOW HE WORKS. In person he is a car dealer --",
+        "his own lot, his own ped, his own conversation about motors, all in Locations/Hao.cs.",
+        "The pills are a phone number: you text him and he drives to you.",
+        "",
+        "It used to be coordinates alone, with a comment here swearing nothing spawned a second",
+        "one. It did. HasSpot was true, so a dealer ped went down on the pin on top of the Hao",
+        "already standing there -- two of him, in two different shirts, each rolling his own",
+        "model -- and walking onto a forecourt got you a drug menu.",
+        "",
+        "The coordinates below stay because they are still where he is. They just no longer mean",
+        "put a shop here.",
         "",
         "UNCUT, and for him it is not a business decision. He did not step on it because he was",
         "going to take it.",
@@ -240,6 +247,7 @@
         "the one parked outside."
       ],
       "id": "hao",
+      "deliveryOnly": true,
       "plate": "HAOFAST",
       "name": "Hao",
       "tag": "HAO",
@@ -331,7 +339,8 @@
         18,
         17,
         22
-      ]
+      ],
+      "rideNeon": [255, 110, 0]
     }
   ],
   "later": [

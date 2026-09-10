@@ -287,6 +287,14 @@ namespace Hoodrich.Supply
         public readonly List<int> RideToggles = new List<int>();
 
         /// <summary>
+        /// What colour the tubes under his car are, as r, g, b. Empty for no neon at all.
+        ///
+        /// Alongside rideMods and rideToggles because it is the same kind of fact: what his
+        /// car looks like, decided by whoever is looking at it rather than by a rebuild.
+        /// </summary>
+        public readonly List<int> RideNeon = new List<int>();
+
+        /// <summary>
         /// What it says on the back of his car.
         ///
         /// The same reasoning as the paint: two men turning up in identical black cars with
@@ -412,7 +420,29 @@ namespace Hoodrich.Supply
         public float SpotHeading;
 
         /// <summary>Whether anybody wrote his address down.</summary>
-        public bool HasSpot => Math.Abs(SpotX) > 0.01f || Math.Abs(SpotY) > 0.01f;
+        /// <summary>
+        /// He is reached by phone and never by walking up to him.
+        ///
+        /// FOR A MAN WHO IS SOMETHING ELSE IN PERSON. Hao is a car dealer you can stand in
+        /// front of, with his own lot, his own ped and his own conversation about motors --
+        /// and separately a number you ring at four in the morning. Without this the dealer
+        /// side put a SECOND Hao on the same pin, in whichever shirt it rolled, and offered a
+        /// drug menu to somebody stood on a forecourt.
+        ///
+        /// His coordinates stay, because they are still where he is. They just stop meaning
+        /// "put a shop here".
+        /// </summary>
+        public bool DeliveryOnly;
+
+        /// <summary>
+        /// Whether he stands somewhere you can walk up to.
+        ///
+        /// One gate for the lot: the spawn, the map pin and the live ped all hang off it, and
+        /// nothing on the delivery path reads it -- so a delivery-only dealer keeps his car,
+        /// his texts and his number, and simply is not standing anywhere.
+        /// </summary>
+        public bool HasSpot => !DeliveryOnly &&
+                               (Math.Abs(SpotX) > 0.01f || Math.Abs(SpotY) > 0.01f);
 
         /// <summary>What an order of this size actually arrives at. See UncutFromLots.</summary>
         public float PurityFor(DrugDef drug, float grams)

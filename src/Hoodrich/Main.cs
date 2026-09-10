@@ -2644,6 +2644,7 @@ namespace Hoodrich
                 _delivery.TalkBuilder = () =>
                 {
                     _juanTalk.Who = null;
+                    _juanTalk.Fresh();
                     return _juanTalk.Root();
                 };
 
@@ -2690,6 +2691,7 @@ namespace Hoodrich
                 _dealers.TalkBuilder = def =>
                 {
                     _juanTalk.Who = def;
+                    _juanTalk.Fresh();
                     return _juanTalk.Root();
                 };
 

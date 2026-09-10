@@ -932,6 +932,19 @@ namespace Hoodrich.Supply
             {
                 Function.Call(Hash.TOGGLE_VEHICLE_MOD, h, slot, true);
             }
+
+            // AND THE TUBES UNDER IT. All four sides or none -- three lit corners is a fault,
+            // not a look. See DealerDef.RideNeon.
+            if (def.RideNeon.Count >= 3)
+            {
+                for (var side = 0; side < 4; side++)
+                {
+                    Function.Call(Hash.SET_VEHICLE_NEON_ENABLED, h, side, true);
+                }
+
+                Function.Call(Hash.SET_VEHICLE_NEON_COLOUR, h,
+                              def.RideNeon[0], def.RideNeon[1], def.RideNeon[2]);
+            }
         }
 
         /// <summary>
@@ -1621,12 +1634,44 @@ namespace Hoodrich.Supply
                     Function.Call(Hash.TASK_ENTER_VEHICLE, _driver.Handle, _car.Handle,
                                   -1, -1, 1f, 1, 0);
 
+                    // AND HERE IS WHERE HE SAYS GOODBYE. The box is down, he has turned round,
+                    // and he is walking to his own car -- which is the moment somebody who has
+                    // just done you a favour actually says it. The screen played it the instant
+                    // you stopped buying, so he was waving you off and then letting himself
+                    // into your house. See DealerTalk.Bye, which no longer sets it on delivery
+                    // nodes at all.
+                    //
+                    // Cue rather than Say: it is an event, and a goodbye you only ever hear
+                    // from a man once is not a goodbye.
+                    SayGoodbye();
+
                     // Said again on the way out. Nothing has taken it off him, but the walk out
                     // is the longer of the two and the one where it is worth being certain.
                     Stagger(true);
                 }
             }
             catch { /* he will find his own way back */ }
+        }
+
+        /// <summary>
+        /// His recorded farewell, once, on his way to the car.
+        ///
+        /// Named the way the rest of his pack is -- slug of his name, hash of the sentence in
+        /// dealers.json -- so nothing has to be recorded twice for this to work. A dealer with
+        /// no farewell written down simply walks off, which is what he did before.
+        /// </summary>
+        private void SayGoodbye()
+        {
+            if (_def == null || string.IsNullOrEmpty(_def.Farewell)) return;
+
+            try
+            {
+                Core.Voice.Cue(Core.Voice.Key(_def.Name, _def.Farewell));
+            }
+            catch
+            {
+                // He is still leaving.
+            }
         }
 
         private void TickLeaving()
