@@ -784,8 +784,7 @@ namespace Hoodrich.Supply
                 }
 
                 _car.IsPersistent = true;
-                BlackOut(_car, _def != null ? _def.RidePaint : -1,
-                         _def == null ? "" : _def.Plate);
+                BlackOut(_car, _def, _def == null ? "" : _def.Plate);
 
                 var pedModel = ResolveDriverModel();
                 if (pedModel == null)
@@ -855,22 +854,34 @@ namespace Hoodrich.Supply
         /// still the anonymous car this always spawned and only a man who has been given a
         /// colour deviates from it.
         /// </summary>
-        private static void BlackOut(Vehicle car, int paint, string plate)
+        private static void BlackOut(Vehicle car, DealerDef def, string plate)
         {
+            var paint = def == null ? -1 : def.RidePaint;
+
             try
             {
                 var colour = paint >= 0 ? paint : BlackPaint;
 
                 Function.Call(Hash.SET_VEHICLE_MOD_KIT, car.Handle, 0);
 
-                Function.Call(Hash.SET_VEHICLE_COLOURS, car.Handle, colour, colour);
-                Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, car.Handle, colour, colour);
-                Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, car.Handle, LimoTint);
+                if (def != null && def.RideOwn)
+                {
+                    // HIS CAR, NOT A CAR. See DealerDef.RideOwn -- everything below this is
+                    // the anonymising a fleet car gets, and a man who is known for what he
+                    // drives should arrive in the thing people know him for.
+                    Own(car, def);
+                }
+                else
+                {
+                    Function.Call(Hash.SET_VEHICLE_COLOURS, car.Handle, colour, colour);
+                    Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, car.Handle, colour, colour);
+                    Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, car.Handle, LimoTint);
 
-                // Black wheels and trim, so nothing on it catches the light.
-                Function.Call(Hash.SET_VEHICLE_WHEEL_TYPE, car.Handle, 7);
-                Function.Call(Hash.SET_VEHICLE_MOD_COLOR_1, car.Handle, 0, 0, 0);
-                Function.Call(Hash.SET_VEHICLE_MOD_COLOR_2, car.Handle, 0, 0);
+                    // Black wheels and trim, so nothing on it catches the light.
+                    Function.Call(Hash.SET_VEHICLE_WHEEL_TYPE, car.Handle, 7);
+                    Function.Call(Hash.SET_VEHICLE_MOD_COLOR_1, car.Handle, 0, 0, 0);
+                    Function.Call(Hash.SET_VEHICLE_MOD_COLOR_2, car.Handle, 0, 0);
+                }
 
                 Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, car.Handle, 0f);
                 // HIS OWN PLATE WHERE HE HAS ONE. The fleet plate is what a car with nobody
@@ -884,6 +895,42 @@ namespace Hoodrich.Supply
             catch (Exception ex)
             {
                 Log.Debug("Could not paint the delivery car: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Somebody's own car, built the way they keep it.
+        ///
+        /// PRELOAD THEN SET, which is the order Rockstar's own car-building code uses and the
+        /// thing that stops a bonnet arriving a second late and popping onto the car while you
+        /// are stood looking at it.
+        /// </summary>
+        private static void Own(Vehicle car, DealerDef def)
+        {
+            var h = car.Handle;
+
+            var second = def.RideSecondary >= 0 ? def.RideSecondary : def.RidePaint;
+
+            Function.Call(Hash.SET_VEHICLE_COLOURS, h, def.RidePaint, second);
+
+            if (def.RidePearl >= 0)
+            {
+                Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, h, def.RidePearl, 0);
+            }
+
+            for (var i = 0; i + 1 < def.RideMods.Count; i += 2)
+            {
+                Function.Call(Hash.PRELOAD_VEHICLE_MOD, h, def.RideMods[i], def.RideMods[i + 1]);
+            }
+
+            for (var i = 0; i + 1 < def.RideMods.Count; i += 2)
+            {
+                Function.Call(Hash.SET_VEHICLE_MOD, h, def.RideMods[i], def.RideMods[i + 1], false);
+            }
+
+            foreach (var slot in def.RideToggles)
+            {
+                Function.Call(Hash.TOGGLE_VEHICLE_MOD, h, slot, true);
             }
         }
 

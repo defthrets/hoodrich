@@ -263,6 +263,30 @@ namespace Hoodrich.Supply
         public int RidePaint = -1;
 
         /// <summary>
+        /// The rest of the paint, and the parts, for a man who drives his OWN car to you.
+        ///
+        /// A DELIVERY CAR IS ANONYMOUS AND HIS CAR IS NOT. Everything that rolls up outside
+        /// your house gets the same treatment -- one colour over the whole thing, black
+        /// wheels, limo glass -- which is exactly right for a fleet car with nobody behind it
+        /// and exactly wrong for somebody who is known for what he drives. Hao's Penumbra is
+        /// orange over black with a carbon bonnet and a spoiler on it, and it is the second
+        /// thing anybody says about him.
+        ///
+        /// So a dealer can say the car is his. Secondary and pearl are painted properly, the
+        /// mod slots are set the way his own script sets them, and the anonymising is skipped.
+        /// Mods are a flat list read in pairs -- slot, index, slot, index -- because that is
+        /// how they come out of a spawner panel and out of Rockstar's own car-building code,
+        /// and pairing them up here is easier to check against the source than a shape nobody
+        /// else uses.
+        /// </summary>
+        public bool RideOwn;
+        public int RideSecondary = -1;
+        public int RidePearl = -1;
+
+        public readonly List<int> RideMods = new List<int>();
+        public readonly List<int> RideToggles = new List<int>();
+
+        /// <summary>
         /// What it says on the back of his car.
         ///
         /// The same reasoning as the paint: two men turning up in identical black cars with

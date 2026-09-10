@@ -175,6 +175,12 @@ namespace Hoodrich.Supply
             ReplaceList(def.Drugs, node["drugs"]);
             ReplaceList(def.Rides, node["rides"]);
             def.RidePaint = node["ridePaint"].AsInt(def.RidePaint);
+            def.RideOwn = node["rideOwn"].AsBool(def.RideOwn);
+            def.RideSecondary = node["rideSecondary"].AsInt(def.RideSecondary);
+            def.RidePearl = node["ridePearl"].AsInt(def.RidePearl);
+
+            ReplaceInts(def.RideMods, node["rideMods"]);
+            ReplaceInts(def.RideToggles, node["rideToggles"]);
             def.Plate = node["plate"].AsString(def.Plate);
             def.OpeningText = node["openingText"].AsString(def.OpeningText);
             def.Portrait = node["portrait"].AsString(FaceFor(def.Id));
@@ -278,6 +284,14 @@ namespace Hoodrich.Supply
             if (node.Kind != JsonKind.Array) return;
             target.Clear();
             foreach (var s in node.AsStringList()) target.Add(s);
+        }
+
+        /// <summary>The same, for the mod slots on somebody's own car. See DealerDef.RideOwn.</summary>
+        private static void ReplaceInts(List<int> target, Json node)
+        {
+            if (node.Kind != JsonKind.Array) return;
+            target.Clear();
+            for (var i = 0; i < node.Count; i++) target.Add(node[i].AsInt(-1));
         }
 
         /// <summary>

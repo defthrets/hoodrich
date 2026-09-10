@@ -665,6 +665,9 @@ namespace Hoodrich.Locations
         private static readonly Vector3 RideSpot = new Vector3(-33.923f, -1680.023f, 29.434f);
         private const float RideHeading = 313.928f;
 
+        /// <summary>What is on the back of it, here and on the one that turns up at your door.</summary>
+        private const string RidePlate = "HAOFAST";
+
         private Vehicle _ride;
 
         /// <summary>Set by Main. The ledger that keeps a bought car between sessions.</summary>
@@ -756,7 +759,14 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, h, 3);
                 Function.Call(Hash.ROLL_DOWN_WINDOW, h, 0);
 
-                Log.Info("Hao's Penumbra is on the lot.");
+                // THE SAME PLATE AS THE ONE THAT TURNS UP AT YOUR DOOR. He drives this car to
+                // a delivery -- the hao entry in dealers.json carries the same seven letters --
+                // and a car with a different plate on it is a different car, however identical
+                // it looks. It is the one detail that says the Penumbra outside your house is
+                // HIS Penumbra off the lot.
+                Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, h, RidePlate);
+
+                Log.Info("Hao's Penumbra is on the lot, plate " + RidePlate + ".");
             }
             catch (Exception ex)
             {
