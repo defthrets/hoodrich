@@ -947,6 +947,14 @@ namespace Hoodrich
                 _wardrobeScreen = new WardrobeScreen();
                 _wardrobe = new Wardrobe(_wardrobeScreen);
 
+                // THE BED AND THE CLOSET SHARE ABOUT A METRE OF THAT BEDROOM, and they share
+                // the context button in it. Nearest wins both the prompt and the press, so the
+                // two can no longer disagree -- which they did, in the worst possible way: the
+                // closet drew the prompt and the bed took the button, so "press E to change"
+                // slept six hours. See SleepSpot.Update and Wardrobe.Update.
+                _sleep.Nearer = () => _wardrobe != null && _wardrobe.Away < _sleep.Away;
+                _wardrobe.Nearer = () => _sleep != null && _sleep.Away < _wardrobe.Away;
+
                 // THE COUNTER ON VESPUCCI BEACH. It sells whatever the body he walked in with
                 // can wear, which is a handful on Franklin and the whole Online catalogue on a
                 // freemode one -- the shop counts the slot rather than holding a list of its
@@ -2437,6 +2445,20 @@ namespace Hoodrich
                 _carMeet.Owned = car => _ownedCars != null && _ownedCars.Which(car) != null;
 
                 if (_settingsScreen != null) _settingsScreen.Meet = () => _carMeet.Start();
+
+                // The key to Leroy's, until Vee has a job to hand out. See SettingsScreen.
+                if (_settingsScreen != null)
+                {
+                    _settingsScreen.VeeDone = () => _state != null && _state.HasDone(Locations.VernonTalk.JobId);
+
+                    _settingsScreen.SetVeeDone = on =>
+                    {
+                        if (_state == null) return;
+
+                        if (on) _state.MarkDone(Locations.VernonTalk.JobId);
+                        else _state.Undo(Locations.VernonTalk.JobId);
+                    };
+                }
 
                 // The rack is a screen now. The conversation is still how you get to it -- you
                 // walk up to a man and he says something -- but what he shows you once you have

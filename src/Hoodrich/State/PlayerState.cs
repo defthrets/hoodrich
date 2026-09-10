@@ -880,6 +880,26 @@ namespace Hoodrich.State
             Touch();
         }
 
+        /// <summary>
+        /// Takes one job back off the done list.
+        ///
+        /// The counterpart to MarkDone, and it exists for one reason: a switch that says "count
+        /// this as done" is only safe to press if it can be un-pressed. ForgetMissions is the
+        /// blunt version and throws the lot away.
+        /// </summary>
+        public void Undo(string missionId)
+        {
+            if (string.IsNullOrEmpty(missionId)) return;
+
+            for (var i = MissionsDone.Count - 1; i >= 0; i--)
+            {
+                if (!string.Equals(MissionsDone[i], missionId, StringComparison.OrdinalIgnoreCase)) continue;
+
+                MissionsDone.RemoveAt(i);
+                Touch();
+            }
+        }
+
         public void MarkDone(string missionId)
         {
             // The clock starts whether or not this one was new, because it is a breather

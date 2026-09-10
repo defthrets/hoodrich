@@ -264,6 +264,15 @@ namespace Hoodrich.UI
         /// </summary>
         public Func<string> Meet;
 
+        /// <summary>
+        /// Set by Main: whether Vee's job counts as done, and a way to say that it does.
+        ///
+        /// The basement door is locked behind that job and the job is not written yet, so
+        /// without this the room cannot be reached at all. See the row in Build.
+        /// </summary>
+        public Func<bool> VeeDone;
+        public Action<bool> SetVeeDone;
+
         private Opt _placeRow;
 
         /// <summary>The place the two door rows will write to.</summary>
@@ -566,6 +575,36 @@ namespace Hoodrich.UI
 
                     if (no != null) Notify.Problem(no);
                     else Notify.Ticker("~g~word's out.~s~  they're on their way.");
+                }
+            });
+
+            // THE DOOR VEE STANDS IN FRONT OF, until there is a job to earn it with.
+            //
+            // The lock is right -- he says out loud that nobody goes down there before they
+            // have done something for him -- and the job it waits on has not been written. A
+            // door with no key cut for it is not a gate, it is a wall. So this is the key, on
+            // a screen, rather than something quietly opened in code.
+            //
+            // A toggle, because being able to lock it again is what makes it safe to press.
+            // When the job exists it will mark itself done and this becomes the row that skips
+            // it, like every other unlock here.
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Action,
+                Label = VeeDone != null && VeeDone()
+                    ? "Lock Leroy's basement again"
+                    : "Count Vee's job as done",
+                Note = "Opens the door on Strawberry. The job it waits on is not written yet",
+                Do = () =>
+                {
+                    if (VeeDone == null || SetVeeDone == null) return;
+
+                    var open = !VeeDone();
+                    SetVeeDone(open);
+
+                    Notify.Ticker(open
+                        ? "~g~Vee walked you down.~s~  the door on Strawberry opens"
+                        : "~o~Locked again.~s~  Vee wants that job doing first");
                 }
             });
 

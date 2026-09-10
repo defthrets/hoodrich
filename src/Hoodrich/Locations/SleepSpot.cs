@@ -106,6 +106,17 @@ namespace Hoodrich.Locations
 
         public bool InReach => DistanceTo() <= UseRange;
 
+        /// <summary>
+        /// Set by Main: true when something closer than the bed wants the same button.
+        ///
+        /// The wardrobe is the only thing that does, and only in the metre of overlap between
+        /// them. Null-checked, so a bed with nothing beside it behaves exactly as before.
+        /// </summary>
+        public System.Func<bool> Nearer;
+
+        /// <summary>How far the player is from the bed, for whoever is arbitrating.</summary>
+        public float Away => DistanceTo();
+
         public void Update()
         {
             if (_sleeping || !InReach) return;
@@ -113,6 +124,17 @@ namespace Hoodrich.Locations
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return;
             if (player.IsInVehicle()) return;
+
+            // THE CLOSET IS TWO METRES AWAY AND REACHES AS FAR AS THIS DOES.
+            //
+            // Both are 1.6 m and their centres are 2.087 m apart, so about a metre of that
+            // bedroom is in reach of both. This ran first and took the button; the wardrobe
+            // ran two lines later and took the prompt. You read "press E to change", pressed
+            // E, and slept six hours.
+            //
+            // Whichever you are stood nearer to gets both. See Wardrobe.Update, which holds
+            // the same rule the other way round.
+            if (Nearer != null && Nearer()) return;
 
             Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to sleep.");
 

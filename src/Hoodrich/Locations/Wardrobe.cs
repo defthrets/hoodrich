@@ -31,6 +31,19 @@ namespace Hoodrich.Locations
             _screen = screen;
         }
 
+        /// <summary>Set by Main: true when the bed is closer than the closet is. See Update.</summary>
+        public System.Func<bool> Nearer;
+
+        /// <summary>How far the player is from the closet, for whoever is arbitrating.</summary>
+        public float Away
+        {
+            get
+            {
+                var me = Game.Player.Character;
+                return me == null || !me.Exists() ? float.MaxValue : me.Position.DistanceTo(Closet);
+            }
+        }
+
         public void Update()
         {
             if (_screen.IsOpen) return;
@@ -40,6 +53,10 @@ namespace Hoodrich.Locations
                 var me = Game.Player.Character;
                 if (me == null || !me.Exists() || !me.IsAlive || me.IsInVehicle()) return;
                 if (me.Position.DistanceTo(Closet) > UseRange) return;
+
+                // The other half of the rule in SleepSpot.Update -- the bed is two metres away
+                // and reaches this far, and one of them has to give way.
+                if (Nearer != null && Nearer()) return;
 
                 Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to change.");
 
