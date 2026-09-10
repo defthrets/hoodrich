@@ -1,6 +1,25 @@
 ﻿0.7.1 -- unreleased
 
 
+THE ONES CARRYING A BEER DRINK IT WHILE THEY WALK.
+
+Until now the only time a bottle in somebody's hand did anything was at a stop:
+the crew planted their feet, the ones with a beer took a pull, and they set off
+again. So a man carried a beer the whole length of Grove Street and only ever
+drank it standing still, which is not what anybody does with a beer -- you drink
+it as you go, and you stop for other reasons.
+
+The game already has the clips. amb@code_human_wander_drinking is what its own
+wandering drinkers use and it is authored for exactly this: a swig taken
+mid-stride with the walk carrying on underneath. All three idles in the male set
+are used, checked against the game's own dump rather than remembered.
+
+Rolled PER MAN, every fifteen to forty seconds, rather than per crew -- three
+lads with three beers drinking in unison is a dance number. Never while one of
+them is stood still, so it does not collide with the stop, and never in the first
+stretch after a bottle is handed out.
+
+
 THE BODY'S CARD SAYS AFRICAN AMERICAN.
 
 Every other line on that card is written the way an official one would write it

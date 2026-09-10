@@ -19,6 +19,9 @@ namespace Hoodrich.Gangs
 
         public bool HasBeer => Holding != null && Holding.Exists() && !Smoking;
         public bool HasSmoke => Holding != null && Holding.Exists() && Smoking;
+
+        /// <summary>When he next lifts the bottle without stopping. See Swigging.</summary>
+        public int NextSwig;
     }
 
     /// <summary>Three or four of them, going the same way.</summary>
@@ -260,6 +263,51 @@ namespace Hoodrich.Gangs
         };
 
         /// <summary>
+        /// AND THEY DRINK IT WHILE THEY ARE WALKING, WHICH IS THE OTHER HALF OF HAVING A BEER.
+        ///
+        /// The clips above are the STOP: he plants his feet and takes a pull, and until now
+        /// that was the only time the bottle in his hand did anything. So a man carried a beer
+        /// the entire length of Grove Street and only ever drank it standing still, which is
+        /// not what anybody does with a beer -- you drink it as you go and stop for other
+        /// reasons.
+        ///
+        /// The game has the clips for it. amb@code_human_wander_drinking is what its OWN
+        /// wandering drinkers use, and it is authored for exactly this: a swig taken mid-stride
+        /// with the walk carrying on underneath. Three idles in the male set, all three
+        /// checked against the game's dump rather than remembered.
+        ///
+        /// FLAG 49 IS THE WHOLE REASON IT WORKS: 1 to loop it, 16 to keep it to the upper
+        /// body, 32 to make it a SECONDARY task. Upper body means the legs are still the
+        /// walk's, secondary means it does not replace whatever task is moving him. Without
+        /// those two he stops dead in the road and mimes a drink, which is the stop again with
+        /// extra steps.
+        ///
+        /// FOUR SECONDS, NOT LOOPED FOREVER. A swig is a moment. The loop flag is in the mask
+        /// because the clip is shorter than the beat and would otherwise end on frame one; the
+        /// duration is what actually stops it.
+        /// </summary>
+        private static readonly string[][] Swigs =
+        {
+            new[] { "amb@code_human_wander_drinking@male@idle_a", "idle_a" },
+            new[] { "amb@code_human_wander_drinking@male@idle_a", "idle_b" },
+            new[] { "amb@code_human_wander_drinking@male@idle_a", "idle_c" }
+        };
+
+        /// <summary>Loop, upper body, secondary. See the note on Swigs.</summary>
+        private const int SwigFlags = 49;
+        private const int SwigMs = 4000;
+
+        /// <summary>
+        /// How often one of them lifts the bottle on the move.
+        ///
+        /// SELDOM, AND NEVER IN STEP. Every fifteen to forty seconds per man, rolled per man
+        /// rather than per crew, so three of them walking together do it at three different
+        /// moments -- four men drinking in unison is a dance number.
+        /// </summary>
+        private const int SwigGapMinMs = 15000;
+        private const int SwigGapMaxMs = 40000;
+
+        /// <summary>
         /// And the ones with a cigarette smoke it, for the same reason: the smoking scenario
         /// brings its own, and a man with one of ours in his hand would light a second.
         /// </summary>
@@ -390,6 +438,10 @@ namespace Hoodrich.Gangs
                 return false;
             }
 
+            // ONLY PAST THE PAUSE CHECK, so a man who is stopped is doing the standing drink
+            // and not both at once. Everything below this line is a crew that is on the move.
+            Swigging(crew, now);
+
             var here = crew.Lead.Position;
 
             if (crew.Target != Vector3.Zero && here.DistanceTo(crew.Target) < ArrivedRange)
@@ -436,6 +488,82 @@ namespace Hoodrich.Gangs
         private bool Puff(Ped man)
         {
             return Play(man, Smokes);
+        }
+
+        /// <summary>
+        /// Whoever is carrying a beer takes a pull from it without breaking stride.
+        ///
+        /// PER MAN, ON HIS OWN CLOCK. The crew is the thing that walks somewhere and stops
+        /// together; a drink is not a crew decision. Rolling it per man is what makes three
+        /// lads with three beers look like three lads rather than a formation.
+        ///
+        /// THE FIRST ONE IS NOT IMMEDIATE. A walker handed a bottle and told to drink from it
+        /// on the same tick reads as the reason he was given the bottle. The clock starts on
+        /// the first pass he is seen with one, so the first swig is somewhere down the street.
+        /// </summary>
+        private void Swigging(Crew crew, int now)
+        {
+            for (var i = 0; i < crew.Men.Count; i++)
+            {
+                var w = crew.Men[i];
+
+                if (w == null || w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) continue;
+                if (!w.HasBeer) continue;
+
+                if (w.NextSwig == 0)
+                {
+                    w.NextSwig = now + _rng.Next(SwigGapMinMs, SwigGapMaxMs);
+                    continue;
+                }
+
+                if (now < w.NextSwig) continue;
+
+                w.NextSwig = now + _rng.Next(SwigGapMinMs, SwigGapMaxMs);
+
+                // A MAN STOOD STILL IS NOT WALKING AND DRINKING. The crew can be past the
+                // pause check and this one still be caught on a bin, and the mid-stride clip
+                // on a stationary man is a lean with nothing under it.
+                try
+                {
+                    if (w.Man.Speed < WalkingPace) continue;
+                }
+                catch
+                {
+                    continue;
+                }
+
+                Swig(w.Man);
+            }
+        }
+
+        /// <summary>Below this he is not moving enough for a walking clip to read as one.</summary>
+        private const float WalkingPace = 0.7f;
+
+        /// <summary>One swig, over whatever he is doing with his legs.</summary>
+        private void Swig(Ped man)
+        {
+            var pick = _rng.Next(Swigs.Length);
+
+            for (var i = 0; i < Swigs.Length; i++)
+            {
+                var pair = Swigs[(pick + i) % Swigs.Length];
+
+                try
+                {
+                    Function.Call(Hash.REQUEST_ANIM_DICT, pair[0]);
+
+                    if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, pair[0])) continue;
+
+                    Function.Call(Hash.TASK_PLAY_ANIM, man.Handle, pair[0], pair[1],
+                                  4f, -4f, SwigMs, SwigFlags, 0f, false, 0, false);
+
+                    return;
+                }
+                catch
+                {
+                    // The next one, or none of them. He carries the bottle either way.
+                }
+            }
         }
 
         /// <summary>What he does with his hands, by what is in them; the rest stand about.</summary>
