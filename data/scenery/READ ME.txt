@@ -18,7 +18,7 @@ wins over one of the same name in Menyoo's folder.
 
 WHAT SHIPS WITH THE MOD
 -----------------------
-Seven scenes are in this folder already, 194 placements between them:
+Nine scenes are in this folder already, 213 placements between them:
 
   the-block.xml     Ten of the set stood around Chamberlain and Grove, most of
                     them holding a rifle, plus the fences at Lamar's.
@@ -50,6 +50,15 @@ Seven scenes are in this folder already, 194 placements between them:
                     scale, spoon, baking soda, powdered milk, cut, a bag of
                     powder and one of pills; weed dried, pruned, bagged and
                     piled; acetone, ammonia and acid on the floor beside it.
+  stretchguns.xml   The rack behind Stretch: the crates his stock comes out of.
+  vernons-basement.xml
+                    Vernon's, under Leroy's Electrical -- the warehouse floor
+                    the shop door comes out into. A small coke setup on the
+                    lower level: the table, the cooking rig, phosphorus,
+                    ammonia and acetone, a stack and two wrapped packages, a
+                    brick of money, a barrel -- and off to the side the things
+                    that say a man lives down here as well, a bong, a bottle,
+                    pruned bud and a bag of it.
 
 They came out of the spooner and were copied in here, so they no longer need
 Menyoo installed. If you still have the originals in menyooStuff\Spooner under
@@ -63,7 +72,7 @@ A shipped file can also name the saves it was made from, in its Note:
 
 and those files are skipped in menyooStuff\Spooner from then on, so a thing
 taken out of the shipped copy -- a sign, a model swapped for one with collision
--- does not come back from the original. Five of the files here name theirs.
+-- does not come back from the original. Seven of the files here name theirs.
 
 TAKING SOMETHING OUT
 --------------------
