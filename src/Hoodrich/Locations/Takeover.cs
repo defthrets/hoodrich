@@ -1163,25 +1163,16 @@ namespace Hoodrich.Locations
 
         private const int TickMs = 700;
 
-        /// <summary>
-        /// How many ticks the work is spread over. See the note in the Running case.
-        ///
-        /// THREE. Two barely moves the peak and four pushes the slowest subsystem out to nearly
-        /// three seconds, which starts to be visible in the parking. At three, the heaviest
-        /// frame does a third of what it did and nothing waits longer than 2.1 seconds for its
-        /// turn to look at its own clock.
-        /// </summary>
-        private const int Slices = 3;
-        private int _slice;
 
         /// <summary>
         /// How long the heaviest tick has taken, said out loud when it gets worse.
         ///
-        /// SO THAT "IT LAGS" BECOMES A NUMBER. This tick is twenty subsystems on one clock and
-        /// the honest position is that nobody knows which of them costs anything -- the
-        /// stagger above is reasoning about where the cost MUST be, not a measurement of where
-        /// it IS. A stopwatch and one log line per new peak settles it, and names the slice
-        /// that did it so the next look starts in the right place.
+        /// SO THAT "IT LAGS" BECOMES A NUMBER, WHICH IT DID NOT THE FIRST TIME IT WAS SAID.
+        /// This tick is twenty subsystems on one clock and it is the obvious suspect for a
+        /// stutter -- obvious enough that it was rebuilt to spread them out before anybody had
+        /// measured anything, and the stutter turned out to be a graphics setting. A stopwatch
+        /// and one line per new peak is what should have been reached for first, and is what
+        /// is left behind so that the next time the question comes up it has an answer.
         ///
         /// NEW PEAKS ONLY, exactly like the draw budget line. A threshold logged every time it
         /// is crossed is a log file made of one message; a peak that only rises is a short
@@ -1190,7 +1181,7 @@ namespace Hoodrich.Locations
         /// The stopwatch itself is nothing -- one allocation and two reads on a tick that runs
         /// less than twice a second.
         /// </summary>
-        private void Spent(System.Diagnostics.Stopwatch clock, int slice)
+        private void Spent(System.Diagnostics.Stopwatch clock)
         {
             try
             {
@@ -1202,7 +1193,7 @@ namespace Hoodrich.Locations
 
                 _worstTick = ms;
 
-                Log.Info("Takeover: slice " + slice + " took " + ms.ToString("0.0") +
+                Log.Info("Takeover: a tick took " + ms.ToString("0.0") +
                          " ms (new peak). " + _crowd.Count + " in the crowd, " +
                          _parked.Count + " parked, " + _running.Count + " going round.");
             }
@@ -1383,63 +1374,45 @@ namespace Hoodrich.Locations
                         if (near > LetGo) { Pack(); return; }
                         if (OwnedCars.NowMinutes() >= _endsAt) { Blues(); return; }
 
-                        // ONE FRAME IN EVERY TEN WAS DOING ALL OF THIS, AND THAT IS THE
-                        // LAG SPIKE.
+                        // MEASURED RATHER THAN ASSUMED. See Spent -- the log gets the
+                        // heaviest tick of the night and what was on the street at the time.
                         //
-                        // The whole takeover runs on one 700ms clock, so nine frames out of ten
-                        // it costs nothing at all and the tenth does twenty subsystems back to
-                        // back: forty cars talked down, sixty people looked at, the parking, the
-                        // pushing, the chatter, the fireworks, the helicopter. Every one of them
-                        // is cheap on its own and the pile of them lands in a single frame,
-                        // which is a stutter you can set your watch by rather than a mod that
-                        // is slow.
+                        // THE WORK IS NOT SPREAD ACROSS TICKS, AND THAT WAS TRIED. Twenty
+                        // subsystems on one 700ms clock does mean nine frames in ten cost
+                        // nothing and the tenth does all of it, which is a real shape for a
+                        // stutter to have -- so they were staggered over three ticks. Then the
+                        // stutter turned out to be a graphics setting and the stagger was a
+                        // change to working code that bought nothing and cost something: the
+                        // parking, which somebody asked to be quick, was suddenly asked
+                        // whether it had a spot only every 2.1 seconds.
                         //
-                        // So the beat is the same and the work is spread across it. Three
-                        // things stay on every tick because they are the ones a delay is
-                        // visible in -- the traffic, the cars going round, and the crowd being
-                        // held to its ring. Everything else takes a turn.
-                        //
-                        // NOTHING IS RUN LESS OFTEN THAN IT NEEDS TO BE. Each of these already
-                        // carries its own clock -- a firework every so many seconds, a shout
-                        // every so many -- and all this changes is which tick it gets to ask.
-                        // The slowest anything is now asked is once every 2.1 seconds, against
-                        // internal gaps measured in tens of seconds.
+                        // Left as it was. If the log below ever shows a tick worth worrying
+                        // about, the stagger is written up in the history and is ten minutes'
+                        // work -- but it is not worth having in advance of a number.
                         var clock = System.Diagnostics.Stopwatch.StartNew();
 
                         Calm();
+                        Fright(now);
+                        Arriving(now);
+                        TopUp(now);
+                        Filling(now);
+                        Wave(now);
+                        Walking();
+                        Parking(now);
+                        Sweep(now);
+                        Shove(now);
                         Keep(now);
                         Working(now);
+                        Chatter(now);
+                        Racket(now);
+                        Chopper(now);
+                        Flares(now);
+                        Unarm(now);
+                        Firework(now);
+                        Hype(now);
+                        Blasting(now);
 
-                        _slice = (_slice + 1) % Slices;
-
-                        if (_slice == 0)
-                        {
-                            Arriving(now);
-                            TopUp(now);
-                            Filling(now);
-                            Parking(now);
-                            Chatter(now);
-                            Flares(now);
-                        }
-                        else if (_slice == 1)
-                        {
-                            Sweep(now);
-                            Shove(now);
-                            Wave(now);
-                            Walking();
-                            Racket(now);
-                            Firework(now);
-                        }
-                        else
-                        {
-                            Fright(now);
-                            Chopper(now);
-                            Unarm(now);
-                            Hype(now);
-                            Blasting(now);
-                        }
-
-                        Spent(clock, _slice);
+                        Spent(clock);
                         Crowding(now);
                         Rushes(now);
                         Riders(now);

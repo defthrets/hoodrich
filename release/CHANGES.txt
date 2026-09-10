@@ -1,25 +1,18 @@
 ﻿0.7.1 -- unreleased
 
 
-THE TAKEOVER STOPS DOING EVERYTHING ON ONE FRAME.
+THE TAKEOVER SAYS WHAT ITS HEAVIEST TICK COST.
 
-The whole thing ran on a single 700ms clock, so nine frames out of ten it cost
-nothing at all and the tenth did twenty subsystems back to back: forty cars
-talked down, sixty people looked at, the parking, the pushing, the chatter, the
-fireworks, the helicopter. Every one of them is cheap on its own. The pile of
-them landing in one frame is a stutter you can set your watch by, which is not
-the same thing as a mod being slow.
+Twenty subsystems on one 700ms clock is the obvious suspect for a stutter -- so
+obvious that they were staggered across three ticks before anybody had measured
+anything, and then the stutter turned out to be a graphics setting. The stagger
+is out again: it bought nothing and cost something, since the parking was
+suddenly only asked whether it had a spot every two seconds.
 
-Same beat, work spread across it. Three things stay on every tick because a
-delay is visible in them -- the traffic, the cars going round, the crowd being
-held to its ring -- and the other seventeen take turns over three ticks. Nothing
-runs less often than it needs to: each already carries its own clock measured in
-tens of seconds, and all this changes is which tick it gets to ask.
-
-AND IT NOW TELLS YOU WHAT IT COST. The heaviest tick of the night goes in the
-log with the slice that did it and what was on the street at the time, on new
-peaks only. The stagger above is reasoning about where the cost must be, not a
-measurement of where it is; this is the measurement.
+What is left is the thing that should have been reached for first. The heaviest
+tick of the night goes in the log with the crowd, parked and running counts at
+the time, on new peaks only -- so the next time anybody wonders, there is a
+number rather than a theory.
 
 AN EMPTY CAR IN THE CIRCLE GOES, OURS OR NOT.
 
