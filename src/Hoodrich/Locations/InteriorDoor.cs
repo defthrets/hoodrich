@@ -161,6 +161,49 @@ namespace Hoodrich.Locations
         private Blip _blip;
         private bool _inside;
 
+        /// <summary>
+        /// Set by Main: true while this door will not open, and what to say instead.
+        ///
+        /// A DOOR THAT IS SHUT MUST STILL SAY SOMETHING. The mod already learned this once --
+        /// both of these rooms used to be hidden until you had joined the set, which in play
+        /// meant standing at a roller door with no prompt and no way to find out why, so the
+        /// gating was taken out entirely rather than made quieter.
+        ///
+        /// This is the third answer: the prompt still appears, at the same range, and it tells
+        /// you the reason. Leroy's basement is Vernon's basement, and Vernon says out loud that
+        /// he is not walking anybody down there before they have done something for him -- so
+        /// the locked door is a line of his script rather than a hole in the map.
+        ///
+        /// Null-checked, so every other door in the mod behaves exactly as it always has.
+        /// </summary>
+        public Func<bool> Shut;
+        public string ShutWhy = "";
+
+        /// <summary>
+        /// True when the player is stood in this doorway and it would actually open for him.
+        ///
+        /// For whoever else is standing near it. The context button is one button and Leroy's
+        /// has a man leaning on the wall beside it, so somebody has to give way -- and the
+        /// doorway is the smaller target, so the doorway wins while you are in it.
+        ///
+        /// A SHUT DOOR WANTS NOTHING. It has nothing to open, and taking the button off Vernon
+        /// while he is the reason it is shut would leave you at a locked door with the one man
+        /// who can unlock it stood there unaskable.
+        /// </summary>
+        public bool WantsTheButton
+        {
+            get
+            {
+                if (_busy || _inside) return false;
+                if (Shut != null && Shut()) return false;
+
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists() || player.IsInVehicle()) return false;
+
+                return player.Position.DistanceTo(Door) <= DoorRange;
+            }
+        }
+
 
         /// <summary>
         /// Standing about: hanging out, on a phone, and two of them talking.
@@ -277,6 +320,15 @@ namespace Hoodrich.Locations
             Ring(Door, player);
 
             if (player.Position.DistanceTo(Door) > DoorRange) return;
+
+            // Shut, and saying so. See Shut.
+            if (Shut != null && Shut())
+            {
+                Help.ShowThisFrame(string.IsNullOrEmpty(ShutWhy)
+                                       ? "The " + _spec.Name + " is locked."
+                                       : ShutWhy);
+                return;
+            }
 
             Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to go into the " + _spec.Name + ".");
 

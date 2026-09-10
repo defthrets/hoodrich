@@ -265,6 +265,7 @@ SPEECH = [
     (r"src\Hoodrich\Gangs\LeaderTalk.cs",       ["Gerald"]),
     (r"src\Hoodrich\Locations\ArmourerTalk.cs", ["Stretch"]),
     (r"src\Hoodrich\Locations\HaoTalk.cs",      ["Hao"]),
+    (r"src\Hoodrich\Locations\VernonTalk.cs",   ["Vernon"]),
     (r"src\Hoodrich\Missions\FixerTalk.cs",     ["Lamar"]),
     (r"src\Hoodrich\Missions\BikeRide.cs",      ["Lamar"]),
     (r"src\Hoodrich\Missions\Hunt.cs",          ["Lamar"]),

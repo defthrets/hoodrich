@@ -275,6 +275,16 @@ namespace Hoodrich.State
         public bool MetHao;
 
         /// <summary>
+        /// Whether Vernon has done his introduction, so he only does it once.
+        ///
+        /// Separate from his JOB being done, which is what the basement is locked behind.
+        /// Having met him is a script branch -- he does not tell you who his father was twice
+        /// -- and having done his job is progression. Rolling the two together would have him
+        /// re-introducing himself every time you walked past until the work was finished.
+        /// </summary>
+        public bool MetVernon;
+
+        /// <summary>
         /// Whether Lamar has rung about you signing on. Once ever, per save.
         ///
         /// Marked when the call is OVER rather than when it is armed, and set whether you
@@ -772,6 +782,7 @@ namespace Hoodrich.State
             PortYardVisits = 0;
             HomiesUnlocked = false;
             MetHao = false;
+            MetVernon = false;
             LamarCalled = false;
             SleptAtStashHouse = false;
             TriggerIsYours = false;
@@ -1209,6 +1220,7 @@ namespace Hoodrich.State
                 .Set("frontsDone", FrontsDone)
                 .Set("homiesUnlocked", HomiesUnlocked)
                 .Set("metHao", MetHao)
+                .Set("metVernon", MetVernon)
                 .Set("lamarCalled", LamarCalled)
                 .Set("sleptAtStashHouse", SleptAtStashHouse)
                 .Set("followers", Followers)
@@ -1269,6 +1281,7 @@ namespace Hoodrich.State
                 FrontsDone = Math.Max(0, doc["frontsDone"].AsInt(0));
                 HomiesUnlocked = doc["homiesUnlocked"].AsBool(false);
                 MetHao = doc["metHao"].AsBool(false);
+                MetVernon = doc["metVernon"].AsBool(false);
                 LamarCalled = doc["lamarCalled"].AsBool(false);
                 SleptAtStashHouse = doc["sleptAtStashHouse"].AsBool(false);
                 TriggerIsYours = doc["triggerIsYours"].AsBool(false);

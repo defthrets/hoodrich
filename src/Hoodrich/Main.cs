@@ -110,6 +110,9 @@ namespace Hoodrich
         private readonly Locations.CarMeet _carMeet = new Locations.CarMeet();
         private readonly Hao _hao;
 
+        /// <summary>The man on the wall at Leroy's, and the lock on its basement.</summary>
+        private readonly Vernon _vernon;
+
         /// <summary>
         /// The block, talking about itself, and the screen it is read on.
         ///
@@ -654,6 +657,10 @@ namespace Hoodrich
         private readonly Economy.Bodies _bodies = new Economy.Bodies();
         private Locations.Search _search;
         private HaoTalk _haoTalk;
+        private VernonTalk _vernonTalk;
+
+        /// <summary>Leroy's basement, kept because Vernon has to know about it.</summary>
+        private InteriorDoor _leroys;
         private CarScreen _carScreen;
         private PlateScreen _plateScreen;
         private ModShopScreen _modShop;
@@ -808,6 +815,10 @@ namespace Hoodrich
                 // Hao runs a second economy off the same map: metal instead of weight, with
                 // its own yard, its own money and eventually its own jobs.
                 _hao = new Hao(_state);
+
+                // And the man leaning on his father's shop door. He is not another supplier --
+                // see Vernon -- he is the reason the door beside him does anything.
+                _vernon = new Vernon(_state);
 
                 // A car you paid for outlives the session now. See OwnedCars.
                 _ownedCars = new OwnedCars(_state)
@@ -1049,6 +1060,23 @@ namespace Hoodrich
                 // The set's own places, and only once you are in the set. See InteriorDoor.
                 foreach (var spec in _cfg.Doors)
                 {
+                    // LEROY'S BASEMENT IS VERNON'S BASEMENT. He says out loud that nobody
+                    // walks down there before they have done something for him, so the door
+                    // agrees with him rather than quietly opening anyway. Every other door in
+                    // the file is untouched -- see InteriorDoor.Shut.
+                    if (string.Equals(spec.Section, "LeroysElectrical",
+                                      StringComparison.OrdinalIgnoreCase))
+                    {
+                        _leroys = new InteriorDoor(spec)
+                        {
+                            Shut = () => _state == null || !_state.HasDone(VernonTalk.JobId),
+                            ShutWhy = "Vee ain't walking you down there yet."
+                        };
+
+                        _doors.Add(_leroys);
+                        continue;
+                    }
+
                     // NO LONGER GATED ON BEING IN THE SET.
                     //
                     // Both rooms are behind Lamar's yard and were only offered once you had
@@ -2317,6 +2345,7 @@ namespace Hoodrich
                         (_fixer != null && _fixer.InReach) ||
                         (_bigj != null && _bigj.InReach) ||
                         (_hao != null && _hao.InReach) ||
+                        (_vernon != null && _vernon.InReach) ||
                         (_kitchen != null && _kitchen.InReach) ||
                         (_sleep != null && _sleep.InReach) ||
                         (_delivery != null && _delivery.IsActive) ||
@@ -2562,6 +2591,25 @@ namespace Hoodrich
                     var owned = _state.Owned.Find(o => string.Equals(o.Id, car.Id, StringComparison.OrdinalIgnoreCase));
                     if (owned != null && car.Live != null && car.Live.Exists()) _plateScreen.Open(car.Live, owned, car.Name);
                 };
+
+                // Vernon. The job is not written yet, and Job stays null until it is --
+                // the accept row says he is lining it up rather than pretending otherwise.
+                _vernonTalk = new VernonTalk(_state);
+
+                _vernon.Talk = _talk;
+                _vernon.TalkBuilder = () =>
+                {
+                    _talk.Title = "Leroy's Electrical";
+                    _talk.TheirVoice = VernonTalk.Voice;
+                    return _vernonTalk.Root();
+                };
+
+                // THE DOOR IS A STRIDE BEHIND HIS SHOULDER AND TAKES THE SAME BUTTON. Stood
+                // in the frame you mean the door; stood anywhere else you mean him -- and
+                // while the door is still locked it wants nothing, so he keeps the button and
+                // can be asked about it. See InteriorDoor.WantsTheButton.
+                _vernon.Suppressed = () => _leroys != null &&
+                                           (_leroys.IsInside || _leroys.WantsTheButton);
 
                 _hao.Talk = _talk;
                 _hao.Showroom = () => _carScreen.Open();
@@ -3645,6 +3693,7 @@ namespace Hoodrich
                         _fixer.ReleaseFromTalk();
                         _bigj.ReleaseFromTalk();
                         _hao.ReleaseFromTalk();
+                        _vernon.ReleaseFromTalk();
                     }
                     else
                     {
@@ -3838,6 +3887,11 @@ namespace Hoodrich
                     // and the range is the one that can wait.
                     _range.Update();
                     _carMeet.Update();
+
+                    // Before Hao only because they are both people to walk up to and this
+                    // one has a door behind him -- see Vernon.Suppressed.
+                    _vernon.Update();
+                    _vernon.UpdatePrompt();
 
                     _hao.Update();
                     if (_ownedCars != null) _ownedCars.Update();
@@ -5116,6 +5170,7 @@ namespace Hoodrich
             try { _fixer?.RestoreWorld(); } catch { /* teardown */ }
             try { _bigj?.RestoreWorld(); } catch { /* teardown */ }
             try { _hao?.RestoreWorld(); } catch { /* teardown */ }
+            try { _vernon?.RestoreWorld(); } catch { /* teardown */ }
             try { _ownedCars?.RestoreWorld(); } catch { /* teardown */ }
             try { _boot?.RestoreWorld(); } catch { /* teardown */ }
             try { _search?.RestoreWorld(); } catch { /* teardown */ }
