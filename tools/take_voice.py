@@ -85,15 +85,23 @@ def main():
     ap.add_argument("--into", default=os.path.join(ROOT, "data", "voice"))
     ap.add_argument("--since", type=float, default=0,
                     help="only files touched in the last N hours")
+    ap.add_argument("--who", metavar="NAME",
+                    help="whose voice these takes are, for the lines more than one person says")
     ap.add_argument("--dry", action="store_true", help="say what it would do and stop")
     ap.add_argument("--root", default=ROOT)
     args = ap.parse_args()
 
     # Every line the mod can say, from the same two readers the to-record list uses. The feed
     # is left out for the reason it is always left out -- see voice_lines.
+    # EVERY LINE THAT SHARES A SLUG, not the first of them.
+    #
+    # The dealers all say the same sentence over the counter and each wants it in his own
+    # voice, so one slug is three files. This was a setdefault holding one tuple, which meant
+    # two of the three were not in the table at all and the survivor was whichever the readers
+    # happened to yield first -- Hao's take placed as tao_cheng_shop, silently and plausibly.
     lines = {}
     for name, speaker, text in V.from_data(args.root) + V.from_source(args.root):
-        lines.setdefault(slugify(text), (os.path.splitext(name)[0], speaker, text))
+        lines.setdefault(slugify(text), []).append((os.path.splitext(name)[0], speaker, text))
 
     if not lines:
         sys.exit("no lines found -- is --root pointing at the repo?")
@@ -139,7 +147,22 @@ def main():
                                 "in the name" % len(found)))
             continue
 
-        hit = lines[found[0]]
+        # AND THEN WHOSE. The longest matching line may still be one several people say, and
+        # they each get their own file -- so the text is not enough to name it and guessing is
+        # the one outcome worth ruling out.
+        picks = lines[found[0]]
+
+        if args.who:
+            mine = [p for p in picks if p[1].lower() == args.who.lower()]
+            if mine:
+                picks = mine
+
+        if len(picks) > 1:
+            stuck.append((path, "%s all say this -- run it again with --who NAME"
+                                % ", ".join(sorted(p[1] for p in picks))))
+            continue
+
+        hit = picks[0]
 
         key, speaker, text = hit
         dest = os.path.join(args.into, key + ".wav")

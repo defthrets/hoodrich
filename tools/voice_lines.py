@@ -194,6 +194,17 @@ def from_data(root, texts=False):
         # the arithmetic out; the screen is already showing it. See DealerTalk.Node.
         for tag, text in (("shop", "Ain't got time to stand here. What you taking? Nothing here's been touched."),
                           ("shopcut", "Ain't got time to stand here. What you taking? It's all stepped on already.")):
+            # A DEALER WHO NEVER CUTS ANYTHING NEVER SAYS THE CUT LINE. DealerTalk picks
+            # between these two on PurityNow, and a dealer pinned at 1.0 can only ever come
+            # out of that comparison one way -- so the other file is one the game cannot ask
+            # for. Hao is that dealer: uncut is the whole of his pitch.
+            if tag == "shopcut":
+                try:
+                    if float(d.get("purity", 0) or 0) >= 0.999:
+                        continue
+                except (TypeError, ValueError):
+                    pass
+
             name = slug(d.get("name", "")) + "_" + tag
             if name not in seen:
                 seen.add(name)
