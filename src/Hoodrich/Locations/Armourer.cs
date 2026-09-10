@@ -19,6 +19,22 @@ namespace Hoodrich.Locations
         public readonly int Ammo;
         public readonly string Note;
 
+        /// <summary>
+        /// How much armour it puts on him, or nought for a gun.
+        ///
+        /// A VEST IS NOT A WEAPON AND THE COUNTER HAS TO KNOW IT. It has no weapon hash, so
+        /// every question the shelf asks about a gun -- do you own one, what does it hold, what
+        /// bolts onto it -- has to have a different answer rather than a wrong one. This field
+        /// is what the answers key off, and it is the only thing that separates the two kinds
+        /// of thing on his shelf.
+        /// </summary>
+        public readonly int Armour;
+
+        /// <summary>The prop shown on the crate for something that has no weapon model.</summary>
+        public readonly string Prop;
+
+        public bool IsVest => Armour > 0;
+
         public Piece(string name, string weapon, int price, int ammo, string note)
         {
             Name = name;
@@ -26,6 +42,18 @@ namespace Hoodrich.Locations
             Price = price;
             Ammo = ammo;
             Note = note;
+        }
+
+        /// <summary>A vest: no weapon, no rounds, no parts -- a number and a prop.</summary>
+        public Piece(string name, int armour, int price, string note, string prop)
+        {
+            Name = name;
+            Weapon = "";
+            Price = price;
+            Ammo = 0;
+            Note = note;
+            Armour = armour;
+            Prop = prop;
         }
 
         /// <summary>
@@ -242,6 +270,33 @@ namespace Hoodrich.Locations
             new Piece("Homing Launcher",   "WEAPON_HOMINGLAUNCHER",   28000,   10, "For the helicopter"),
             new Piece("Minigun",           "WEAPON_MINIGUN",          35000,  500, "If you can carry it"),
             new Piece("Railgun",           "WEAPON_RAILGUN",          45000,   20, "Do not ask him where"),
+        };
+
+        /// <summary>
+        /// And vests, which are the other half of what a man in a yard sells.
+        ///
+        /// AMMU-NATION SELLS THESE AND THAT IS THE POINT RATHER THAN THE OBJECTION. Everything
+        /// else on this shelf is here because the shop wants your licence and he does not, and
+        /// a vest is the one thing on their wall you least want your name against. He has them
+        /// for the same reason he has the guns.
+        ///
+        /// FIVE TIERS, THE GAME'S OWN NUMBERS. Armour in this engine is nought to a hundred and
+        /// the shop sells it in fifths, so these are fifths -- there is no sense inventing a
+        /// scale when the health bar already has one.
+        ///
+        /// PRICED WELL UNDER THE SHOP, like the rest of him. He is not cheaper because it is
+        /// worse; he is cheaper because there is no paperwork and no shopfront to pay for.
+        ///
+        /// prop_bodyarmour_02 is the vest the game itself puts on the ground as a pickup, so
+        /// the thing on the crate is the thing you are buying rather than a stand-in.
+        /// </summary>
+        public static readonly Piece[] Vests =
+        {
+            new Piece("Light Vest",      20,   150, "Takes the first one",          "prop_bodyarmour_02"),
+            new Piece("Standard Vest",   40,   350, "What most of them wear",       "prop_bodyarmour_02"),
+            new Piece("Heavy Vest",      60,   700, "Front and back plates",        "prop_bodyarmour_03"),
+            new Piece("Super Heavy",     80,  1400, "Heavy, and you feel it",       "prop_bodyarmour_04"),
+            new Piece("Full Plate",     100,  3000, "Everything he can get on you", "prop_bodyarmour_05"),
         };
 
         private readonly GangRegistry _gangs;

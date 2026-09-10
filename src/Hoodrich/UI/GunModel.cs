@@ -290,21 +290,45 @@ namespace Hoodrich.UI
         /// </summary>
         public void Show(uint weapon, List<uint> parts)
         {
-            var key = Key(parts);
+            Show(weapon, parts, null);
+        }
+
+        /// <summary>
+        /// The same, for a thing that is not a weapon.
+        ///
+        /// A VEST HAS NO WEAPON MODEL. GET_WEAPONTYPE_MODEL answers zero for anything that is
+        /// not a gun, and zero is how this file says "nothing to show" -- so armour on the
+        /// shelf would have been a crate with nothing on it. It has an ordinary prop instead,
+        /// the one the game drops on the ground as a pickup, and the only difference is which
+        /// call turns a name into a model.
+        ///
+        /// Everything after that is identical: the same spot on the crate, the same lie-flat
+        /// angles, the same turn, the same camera. A thing being shown to you across a counter
+        /// is a thing being shown to you across a counter.
+        /// </summary>
+        public void Show(uint weapon, List<uint> parts, string prop)
+        {
+            var key = Key(parts) + "|" + (prop ?? "");
 
             if (_object != 0 && weapon == _weapon && key == _fitted) return;
             if (_object == 0 && weapon == _want && key == _wantKey) return;
 
             Clear();
 
-            if (weapon == 0 || Bench == null) return;
+            if (Bench == null) return;
+            if (weapon == 0 && string.IsNullOrEmpty(prop)) return;
 
             // Wanted rather than made. Build does the making, once the model has arrived.
             _want = weapon;
             _wantParts = parts;
             _wantKey = key;
+            _wantProp = prop;
             _asked = 0;
         }
+
+        /// <summary>The prop wanted instead of a weapon, or null. See the second Show.</summary>
+        private string _wantProp;
+        private string _prop;
 
         /// <summary>
         /// Builds it once the game has the model, and gives up quietly if it never arrives.
@@ -315,7 +339,8 @@ namespace Hoodrich.UI
         /// </summary>
         private void Build()
         {
-            if (_object != 0 || _want == 0 || Bench == null) return;
+            if (_object != 0 || Bench == null) return;
+            if (_want == 0 && string.IsNullOrEmpty(_wantProp)) return;
 
             var now = Game.GameTime;
 
@@ -323,11 +348,15 @@ namespace Hoodrich.UI
 
             try
             {
-                var model = Function.Call<int>(Hash.GET_WEAPONTYPE_MODEL, _want);
+                // A NAME FOR A VEST, A WEAPON TYPE FOR A GUN. The only fork in this method.
+                var model = string.IsNullOrEmpty(_wantProp)
+                    ? Function.Call<int>(Hash.GET_WEAPONTYPE_MODEL, _want)
+                    : Function.Call<int>(Hash.GET_HASH_KEY, _wantProp);
 
                 if (model == 0)
                 {
                     _want = 0;
+                    _wantProp = null;
                     return;
                 }
 
@@ -366,8 +395,15 @@ namespace Hoodrich.UI
             {
                 var at = Where();
 
-                _object = Function.Call<int>(Hash.CREATE_WEAPON_OBJECT, weapon, 0,
-                                             at.X, at.Y, at.Z, true, 1.0f, 0);
+                // TWO WAYS TO MAKE ONE, AND THEY ARE DIFFERENT NATIVES. A gun is a weapon
+                // object -- CREATE_WEAPON_OBJECT, which is the only call that produces
+                // something you can then bolt a scope to. A vest is an ordinary prop and has to
+                // be made as one. Everything after this line treats them identically.
+                _object = string.IsNullOrEmpty(_wantProp)
+                    ? Function.Call<int>(Hash.CREATE_WEAPON_OBJECT, weapon, 0,
+                                         at.X, at.Y, at.Z, true, 1.0f, 0)
+                    : Function.Call<int>(Hash.CREATE_OBJECT_NO_OFFSET, model,
+                                         at.X, at.Y, at.Z, true, true, false);
 
                 // HANDED BACK EITHER WAY. A model asked for and never released is memory this
                 // mod is holding for the rest of the session.
@@ -376,6 +412,7 @@ namespace Hoodrich.UI
                 if (_object == 0)
                 {
                     _want = 0;
+                    _wantProp = null;
                     return;
                 }
 
@@ -384,8 +421,10 @@ namespace Hoodrich.UI
 
                 _weapon = weapon;
                 _fitted = key;
+                _prop = _wantProp;
 
                 _want = 0;
+                _wantProp = null;
                 _asked = 0;
 
                 Function.Call(Hash.SET_ENTITY_COLLISION, _object, false, false);
@@ -487,6 +526,8 @@ namespace Hoodrich.UI
             _want = 0;
             _wantParts = null;
             _wantKey = "";
+            _wantProp = null;
+            _prop = null;
             _asked = 0;
 
             Sweep();

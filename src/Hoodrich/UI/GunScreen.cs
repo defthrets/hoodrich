@@ -74,6 +74,11 @@ namespace Hoodrich.UI
             new Rack("BLADES",    Armourer.Melee,      154),
             new Rack("THROWN",    Armourer.Throwables, 152),
             new Rack("HEAVY",     Armourer.Heavy,      157),
+
+            // 175 is radar_gang_attack -- a shield, which is what a vest is. Last on the
+            // shelf because it is the thing you come back for rather than the thing you came
+            // for, and because a man walks past the guns to reach it either way.
+            new Rack("VESTS",     Armourer.Vests,      175),
         };
 
         private readonly PlayerState _state;
@@ -419,7 +424,19 @@ namespace Hoodrich.UI
         {
             try
             {
-                return Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, Game.Player.Character.Handle, piece.Hash, false);
+                var me = Game.Player.Character;
+
+                // A VEST IS NOT OWNED, IT IS WORN, AND WORN THROUGH. "Owned" on this shelf
+                // means the row says OWNED instead of a price and the button buys rounds
+                // rather than the thing -- neither of which is true of armour. What is true is
+                // that there is no point selling a man a forty when he already has sixty on,
+                // so that is what the row says instead: he has this much or more already.
+                //
+                // It goes back to a price the moment he takes a hit, which is exactly right --
+                // that IS when he wants another one.
+                if (piece.IsVest) return me != null && me.Exists() && me.Armor >= piece.Armour;
+
+                return Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, me.Handle, piece.Hash, false);
             }
             catch
             {
@@ -449,7 +466,15 @@ namespace Hoodrich.UI
             if (owned && !rounds)
             {
                 Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
-                Notify.Problem("you've already got one of them.");
+                Notify.Problem(piece.IsVest
+                    ? "you're wearing better than that already."
+                    : "you've already got one of them.");
+                return;
+            }
+
+            if (piece.IsVest)
+            {
+                Vest(player, piece, cost);
                 return;
             }
 
@@ -483,6 +508,42 @@ namespace Hoodrich.UI
             catch (Exception ex)
             {
                 Log.Error("Could not hand over " + piece.Weapon + ".", ex);
+                Notify.Problem("that one's not going anywhere. Pick something else.");
+            }
+        }
+
+        /// <summary>
+        /// One vest, paid for and put on.
+        ///
+        /// SET RATHER THAN ADDED. ADD_ARMOUR_TO_PED stacks on what he has, so buying a forty
+        /// twice would be eighty and buying the hundred five times would still be a hundred --
+        /// which makes the cheap one the sensible purchase every time and the expensive ones
+        /// pointless. Set to the tier: a vest IS that much armour, and you buy the one you
+        /// want to be wearing.
+        ///
+        /// The shelf will not sell you one you are already better than -- see Owns -- so this
+        /// only ever raises it.
+        /// </summary>
+        private void Vest(Ped player, Piece piece, int cost)
+        {
+            try
+            {
+                Function.Call(Hash.SET_PED_ARMOUR, player.Handle, piece.Armour);
+
+                Cash.Take(cost);
+                if (_state != null) _state.Touch();
+
+                Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                Notify.Ticker("~y~-$" + cost.ToString("N0") + "~s~  " + piece.Name +
+                              "  ~g~+" + piece.Armour + " armour~s~");
+
+                Log.Info("Bought a " + piece.Name + " off Stretch for $" + cost + ".");
+
+                OnBought?.Invoke(piece, false);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Could not hand over a vest.", ex);
                 Notify.Problem("that one's not going anywhere. Pick something else.");
             }
         }
@@ -608,7 +669,9 @@ namespace Hoodrich.UI
                 // A bare gun is still a gun.
             }
 
-            _model.Show(piece.Hash, parts);
+            // A vest is shown out of its own prop; a gun out of its weapon model. See
+            // GunModel.Show.
+            _model.Show(piece.Hash, parts, piece.Prop);
 
             // NOT GATED ON THERE BEING ONE YET. Turn is what drives the wait for a model that
             // is still streaming, so gating it on the object existing meant a gun that had not
@@ -947,7 +1010,19 @@ namespace Hoodrich.UI
         private static int Held(Rack rack)
         {
             var got = 0;
-            foreach (var piece in rack.Stock) if (Owns(piece)) got++;
+
+            foreach (var piece in rack.Stock)
+            {
+                // NOT COUNTED ON THE VEST SHELF. "Owned" there means you are already wearing
+                // that much or more, which is true of every tier below whatever you have on --
+                // so a man in a sixty would be told he HOLDS three vests, which is a sentence
+                // about nothing. The tally is a collection count and armour is not a
+                // collection.
+                if (piece.IsVest) return 0;
+
+                if (Owns(piece)) got++;
+            }
+
             return got;
         }
 
@@ -960,6 +1035,17 @@ namespace Hoodrich.UI
         /// </summary>
         private string BoxWords(Piece piece)
         {
+            // A vest has no rounds and saying so is telling somebody a thing about armour that
+            // nobody wondered. What they do want to know is how much of it there is, and
+            // whether they are already wearing more.
+            if (piece.IsVest)
+            {
+                var me = Game.Player.Character;
+                var on = me != null && me.Exists() ? (int)me.Armor : 0;
+
+                return piece.Armour + " ARMOUR  ·  WEARING " + on;
+            }
+
             if (piece.AmmoBox <= 0) return "NO ROUNDS FOR THAT ONE";
 
             // LotsNow is the number the lot index means, which is not the index.
@@ -972,7 +1058,7 @@ namespace Hoodrich.UI
         /// <summary>And what that lot costs, or nothing at all for a gun that takes none.</summary>
         private string BoxCost(Piece piece)
         {
-            if (piece.AmmoBox <= 0) return "";
+            if (piece.IsVest || piece.AmmoBox <= 0) return "";
 
             return "$" + (AmmoPrice(piece) * LotsNow).ToString("N0");
         }
