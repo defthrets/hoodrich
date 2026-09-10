@@ -50,6 +50,32 @@ def slugify(text):
     return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", text.lower())).strip("-")
 
 
+# Below this a name cannot identify anything; at or above the second, a name long enough to be
+# its own line is trusted even when it is the head of two of them.
+MIN_NAME = 12
+SURE_NAME = 24
+
+
+def candidates(slug, order):
+    """
+    Every line a take could be, and how sure we are, best kind first.
+
+    ONE IS THE START OF THE OTHER is the ordinary case: a take is named after the head of its
+    own sentence, cut off wherever the recorder cuts it off.
+
+    THE TAKE IS SOMEWHERE INSIDE THE LINE is the awkward one. Recorders drop leading
+    interjections -- "Ho --" off the front, one "ayy" out of four -- so the name begins a word
+    or two in and no prefix test will ever see it. The words are still there, just not at the
+    front, and finding them there is worth the second pass because the alternative is somebody
+    renaming files by hand against a list of hashes.
+    """
+    starts = [f for f in order if f.startswith(slug) or slug.startswith(f)]
+    if starts:
+        return starts, "head"
+
+    return [f for f in order if slug in f], "inside"
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -95,19 +121,25 @@ def main():
     for path in takes:
         slug = slugify(os.path.splitext(os.path.basename(path))[0])
 
-        if len(slug) < 24:
+        if len(slug) < MIN_NAME:
             stuck.append((path, "the name is too short to identify a line"))
             continue
 
-        hit = None
-        for full in order:
-            if full.startswith(slug) or slug.startswith(full):
-                hit = lines[full]
-                break
+        found, how = candidates(slug, order)
 
-        if hit is None:
-            stuck.append((path, "no line in the mod starts with these words"))
+        if not found:
+            stuck.append((path, "no line in the mod has these words in it"))
             continue
+
+        # ONE ANSWER, OR A LONG ENOUGH NAME TO TRUST THE LONGEST. order is sorted longest
+        # first, so the old behaviour is the second branch -- a full-length take whose head
+        # happens to open two lines lands on the longer of them, the way it always did.
+        if len(found) > 1 and not (how == "head" and len(slug) >= SURE_NAME):
+            stuck.append((path, "could be %d different lines -- put more of the sentence "
+                                "in the name" % len(found)))
+            continue
+
+        hit = lines[found[0]]
 
         key, speaker, text = hit
         dest = os.path.join(args.into, key + ".wav")
