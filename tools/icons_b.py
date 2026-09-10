@@ -412,11 +412,17 @@ def acid():
     # It OVERLAPS the smile rather than starting under it: two white shapes a pixel apart
     # become one grey smear at 32, and one that touches stays one shape all the way down.
     #
+    # AND ITS TOP STAYS INSIDE THE SMILE'S OWN LINE. It started at 276 and the stroke's upper
+    # edge at the bottom of the arc is 282, so four units of tongue stood ABOVE the mouth --
+    # which at this size is a tooth, or a crack in the lip, and either way is not what a
+    # tongue looks like. Starting at 286 puts the rounded top inside the fifteen-unit band
+    # the stroke occupies: still one shape, with nothing showing over the top of it.
+    #
     # AND IT FINISHES BEFORE THE PRINT DOES. The punched circle is 82 across, and a tongue
     # that reaches its edge merges with the white paper beyond it -- which makes the print
     # look broken rather than the tongue look long. Centred is the safest place for that as
     # well as the right one: straight down the middle is where the hole is deepest.
-    poly(d, rrect_pts(234, 276, 278, 322, 20))
+    poly(d, rrect_pts(234, 286, 278, 328, 21))
 
     save(img, "acid.png")
 
