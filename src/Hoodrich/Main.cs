@@ -558,6 +558,19 @@ namespace Hoodrich
             "anim@amb@nightclub@dancers@crowddance_facedj@hi_intensity", "hi_dance_facedj_09_v1_female^1"
         };
 
+        /// <summary>
+        /// DJ Pooh, and the same man again for a build that has not got the first one.
+        ///
+        /// ig_mjo is the name; the caption in the ped list is what says who it is, which is
+        /// the whole reason that file gets grepped instead of the name being typed from
+        /// memory. mjo_02 is the second outfit and the csb_ pair are the cutscene copies --
+        /// all four are him, so a missing one costs nothing.
+        /// </summary>
+        private static readonly string[] Pooh =
+        {
+            "ig_mjo", "ig_mjo_02", "csb_mjo", "csb_mjo_02"
+        };
+
         private static string[] Fam(int which)
         {
             var all = new[] { "g_m_y_famca_01", "g_m_y_famdnf_01", "g_m_y_famfor_01" };
@@ -1646,8 +1659,15 @@ namespace Hoodrich
                            "WORLD_HUMAN_DRINKING", Women, armed: false, party: true)
 
                     // On the decks. Facing the yard, which is the direction the music goes.
+                    //
+                    // AND IT IS DJ POOH BEHIND THEM. He was whoever the women list handed back,
+                    // which meant the man on the decks was a different person every time the
+                    // yard was built and was nobody in particular any of those times. The game
+                    // ships him -- ig_mjo, checked against PedList.xml on this machine rather
+                    // than remembered, because "the DJ Pooh model" is not a name anybody can
+                    // guess from the caption.
                     .Stand(new Vector3(-194.279f, -1723.069f, 32.664f), 148.079f,
-                           "WORLD_HUMAN_MUSICIAN", Women, armed: false, anim: Deejaying, party: true)
+                           "WORLD_HUMAN_MUSICIAN", Pooh, armed: false, anim: Deejaying, party: true)
 
                     // ---- the rest of the yard ------------------------------------------
                     //

@@ -559,7 +559,7 @@ namespace Hoodrich.Locations
 
         private void SpawnHim()
         {
-            foreach (var name in Models)
+            foreach (var name in Wearing())
             {
                 try
                 {
@@ -593,6 +593,45 @@ namespace Hoodrich.Locations
                     Log.Debug("Could not put Hao out: " + ex.Message);
                 }
             }
+        }
+
+        /// <summary>
+        /// The models in the order to try them TODAY.
+        ///
+        /// HE HAS TWO OUTFITS AND HE WAS ONLY EVER IN ONE OF THEM. The list is walked in order
+        /// and the first name that loads wins, so ig_hao_02 was first on Monday and first
+        /// every day after it. A man who stands on the same forecourt every day of the save in
+        /// the same clothes is furniture; the same man in the other jacket some mornings is
+        /// somebody who went home last night.
+        ///
+        /// BY THE DAY, NOT BY THE SPAWN. He is despawned and rebuilt every time you leave the
+        /// block and come back, which is several times an hour -- rolling per spawn would have
+        /// him changing his clothes while you drove round the corner for a coffee. Nights.Key
+        /// is the date with the small hours counted as the night before, so what he is wearing
+        /// holds all day and is settled before you get there.
+        ///
+        /// SEEDED BY HIS NAME AS WELL AS THE DAY, the same as everything else that rolls per
+        /// night, so he does not simply alternate. Two days the same happens, which is what
+        /// clothes do.
+        ///
+        /// The cutscene copies stay underneath as fallbacks. They are the same man and an
+        /// install missing one of the pair should still get a Hao.
+        /// </summary>
+        private static string[] Wearing()
+        {
+            var second = Core.Nights.On("hao-outfit", 50);
+
+            var first = second ? "ig_hao_02" : "ig_hao";
+            var other = second ? "ig_hao" : "ig_hao_02";
+
+            var order = new List<string> { first, other };
+
+            foreach (var name in Models)
+            {
+                if (name != first && name != other) order.Add(name);
+            }
+
+            return order.ToArray();
         }
 
         /// <summary>Standing about looking at his own cars, which is what he would be doing.</summary>
