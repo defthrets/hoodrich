@@ -180,6 +180,22 @@ namespace Hoodrich.Locations
         public string ShutWhy = "";
 
         /// <summary>
+        /// Set by Main: true when somebody stood beside this door should have the doorway to
+        /// themselves while it is shut.
+        ///
+        /// ONLY WHILE SHUT, and it takes the ring with it as well as the words. Help text is
+        /// last-writer-wins and the doors tick after the people do, so a refusal drawn here
+        /// lands on top of whatever the man beside it was saying -- which is how "Vee ain't
+        /// walking you down there yet" ended up covering "press E to talk to OG Vee" and made
+        /// a working NPC look like a locked door.
+        ///
+        /// A shut door with its owner stood next to it has nothing to add. He is the reason it
+        /// is shut and the only way it opens; the door speaking over him is the mod arguing
+        /// with itself. With nobody there it explains itself exactly as before.
+        /// </summary>
+        public Func<bool> Hush;
+
+        /// <summary>
         /// True when the player is stood in this doorway and it would actually open for him.
         ///
         /// For whoever else is standing near it. The context button is one button and Leroy's
@@ -317,12 +333,19 @@ namespace Hoodrich.Locations
             // On foot. Driving a car into a warehouse you reached by teleport leaves the car
             // where it was and you inside without it, which reads as a bug even when it is not.
             if (player.IsInVehicle()) return;
+
+            // Shut, with its owner stood in it. See Hush -- no ring and no refusal, because
+            // both of them land on top of him.
+            var shut = Shut != null && Shut();
+
+            if (shut && Hush != null && Hush()) return;
+
             Ring(Door, player);
 
             if (player.Position.DistanceTo(Door) > DoorRange) return;
 
             // Shut, and saying so. See Shut.
-            if (Shut != null && Shut())
+            if (shut)
             {
                 Help.ShowThisFrame(string.IsNullOrEmpty(ShutWhy)
                                        ? "The " + _spec.Name + " is locked."

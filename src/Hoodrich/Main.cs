@@ -1070,7 +1070,10 @@ namespace Hoodrich
                         _leroys = new InteriorDoor(spec)
                         {
                             Shut = () => _state == null || !_state.HasDone(VernonTalk.JobId),
-                            ShutWhy = "Vee ain't walking you down there yet."
+                            ShutWhy = "Vee ain't walking you down there yet.",
+
+                            // And it says nothing at all while he is stood in it. See Hush.
+                            Hush = () => _vernon != null && _vernon.InReach
                         };
 
                         _doors.Add(_leroys);
