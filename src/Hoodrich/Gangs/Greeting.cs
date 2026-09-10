@@ -17,18 +17,23 @@ namespace Hoodrich.Gangs
     /// because the game already decided what each of them sounds like. A mod cannot write
     /// dialogue this good and should not try.
     ///
-    /// FRANKLIN HAS A WHOLE GREETING VOCABULARY NOBODY EVER HEARS. His voice carries
-    /// GREET_GANG_FAMILIES_M, GREET_GANG_BALLAS_F, GREET_COP, GREET_BUM, GREET_JUNKIE,
-    /// GREET_HIPPY_M, GREET_HIPSTER_F, GREET_HILLBILLY_M, GREET_ATTRACTIVE_F, GREET_STRONG_M
-    /// and more -- lines the story only ever used in a handful of scripted moments. They are
-    /// sat in the audio the player already has, and the whole of the work here is picking the
-    /// right one for the person actually stood in front of you.
-    ///
     /// TWICE, AND THE SECOND TIME IS DIFFERENT. Press once and it is a nod in the street: he
-    /// says hello, they say hello, nobody stops walking. Press again on the same person and it
-    /// becomes a conversation -- they turn to face each other, he opens with whatever he
-    /// actually thinks of somebody like them, they answer back, and it runs four exchanges
-    /// before both of them say goodbye.
+    /// says hello, they say hello, nobody stops walking. Press again on the same person and
+    /// they stop and have a conversation.
+    ///
+    /// AND IT IS THEIR CONVERSATION, NOT HIS. CHAT_STATE and CHAT_RESP are the game's own
+    /// pavement chat -- the lines one pedestrian says to another when the pair of them stop,
+    /// and they are whole SENTENCES rather than noises, different for every voice in the game.
+    /// So a tramp tells you a tramp's story and a woman on Rockford Hills tells you hers, and
+    /// nothing here had to write either. He says hello, they talk, he says yeah, they talk
+    /// some more, and both of them say goodbye.
+    ///
+    /// NOBODY IS PROVOKED. Franklin's voice also carries a greeting for a Balla, a Vago, a
+    /// cop, a tramp, a junkie, a hippy and a hillbilly, and picking the right one for whoever
+    /// was stood there was the first version of this. It was a lovely thing that produced the
+    /// wrong scene: most of those lines are not greetings, they are what he makes of somebody
+    /// he has just clocked, and he delivers them like it. Opening with what you think of a
+    /// man's sort is starting something. See Opener.
     ///
     /// That split is the point. A greeting you can only do the long version of is a greeting
     /// you stop using, because most of the time you want to nod at somebody and keep walking.
@@ -119,10 +124,17 @@ namespace Hoodrich.Gangs
 
                 if (!second && them.Handle == _who && now < _restUntil) return;
 
-                Help.ShowThisFrame(second
-                    ? "Press ~INPUT_CONTEXT~ to talk to them."
-                    : "Press ~INPUT_CONTEXT~ to say something.");
-
+                // NO PROMPT. Every other context action in the mod is somewhere -- a boot, a
+                // counter, a door -- and a box in the corner is how you find out it is there.
+                // This one is everywhere there is a person, which is most of the time you are
+                // out of a car, so a prompt for it is a box on the screen permanently. It
+                // would stop being a hint about half an hour in and be furniture for the rest
+                // of the game.
+                //
+                // Help.Taken stays, and it is now doing the ONLY job it was doing that
+                // mattered: making sure this does not eat the key from under something that
+                // does have a prompt up. A shop door you are stood in beats the pedestrian
+                // walking past it, and now it does so silently.
                 if (!Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 0, (int)Control.Context)) return;
 
                 if (second) Start(me, them, now);
@@ -287,37 +299,55 @@ namespace Hoodrich.Gangs
                 switch (_stage)
                 {
                     case 0:
-                        // HIS OPENER, and the one line in this that is chosen rather than
-                        // generic. See Opener.
+                        // HE OPENS WITH HELLO AND NOTHING ELSE. See Opener.
                         Speak(me, Opener(_with));
                         _nextBeat = now + BeatMs;
                         break;
 
                     case 1:
-                        Speak(_with, "CHAT_RESP");
+                        // AND THEN THEY TALK. CHAT_STATE is the game's own "somebody telling
+                        // you a thing" -- it is the line one pedestrian says to another when
+                        // the pair of them stop on a pavement, and it is a whole sentence
+                        // rather than a noise. Every voice in the game has its own set, so the
+                        // story is theirs and not ours.
+                        Speak(_with, "CHAT_STATE");
                         Gesture(_with, "gesture_hello");
-                        _nextBeat = now + BeatMs;
+                        _nextBeat = now + TellMs;
                         break;
 
                     case 2:
+                        // He is listening, which on his voice is a short one.
                         Speak(me, "GENERIC_YES");
                         _nextBeat = now + BeatMs;
                         break;
 
                     case 3:
-                        Speak(_with, "CHAT_STATE");
+                        Speak(_with, "CHAT_RESP");
                         Gesture(_with, "gesture_hand_right");
-                        _nextBeat = now + BeatMs + 400;
+                        _nextBeat = now + TellMs;
                         break;
 
                     case 4:
-                        Speak(me, "GENERIC_BYE");
+                        Speak(me, "GENERIC_THANKS");
                         _nextBeat = now + BeatMs;
                         break;
 
                     case 5:
-                        Speak(_with, "GENERIC_BYE");
+                        // THE SECOND HALF OF THE STORY. Two CHAT_STATEs is how the game's own
+                        // street pairs do it -- they go back and forth several times, and one
+                        // exchange each is a greeting rather than a conversation.
+                        Speak(_with, "CHAT_STATE");
                         Gesture(_with, "gesture_nod_yes_soft");
+                        _nextBeat = now + TellMs;
+                        break;
+
+                    case 6:
+                        Speak(me, "GENERIC_BYE");
+                        _nextBeat = now + BeatMs;
+                        break;
+
+                    case 7:
+                        Speak(_with, "GENERIC_BYE");
                         _nextBeat = now + BeatMs;
                         break;
 
@@ -337,7 +367,16 @@ namespace Hoodrich.Gangs
 
         /// <summary>How far he can walk off before it is over, and how long a line is given.</summary>
         private const float Walkaway = 6f;
-        private const int BeatMs = 2100;
+        private const int BeatMs = 1500;
+
+        /// <summary>
+        /// And how long one of THEIR lines gets, which is longer.
+        ///
+        /// CHAT_STATE IS A SENTENCE AND GENERIC_YES IS A WORD. Giving both the same beat talks
+        /// over the half of this that is worth listening to -- their line is the story and his
+        /// is somebody going "yeah". Three and a half seconds is long enough for the longest of
+        /// them and short enough that a short one does not leave a hole.
+        private const int TellMs = 3500;
 
         /// <summary>Everybody let go of, whichever way it ended.</summary>
         private void Done()
@@ -363,21 +402,23 @@ namespace Hoodrich.Gangs
         // ---- what he makes of them ------------------------------------------------------
 
         /// <summary>
-        /// The line he opens with, chosen for who they actually are.
+        /// The line he opens with. Hello, and that is all it is.
         ///
-        /// THIS IS THE WHOLE FEATURE. Rockstar wrote Franklin a different greeting for a
-        /// Families member, a Balla, a Vago, a cop, a tramp, a junkie, a hippy, a hipster, a
-        /// hillbilly, a big lad and a good-looking woman -- eleven ways of saying hello, in
-        /// character, already recorded and already on the player's disk. All that was missing
-        /// was somebody asking who is stood there.
+        /// IT USED TO BE A WHOLE CHARACTER READ AND THAT WAS A MISTAKE. Franklin's voice
+        /// carries a different greeting for a Balla, a Vago, a cop, a tramp, a junkie, a
+        /// hippy, a hipster and a hillbilly -- eleven of them, in character, already recorded
+        /// -- and picking the right one for whoever is stood there was a lovely thing that
+        /// produced the wrong scene. Most of those lines are not greetings. They are what
+        /// Franklin says about somebody he has just clocked, and he says them like it. Walking
+        /// up to a man and opening with what you make of his sort is starting something.
         ///
-        /// GANG FIRST, BECAUSE IT OUTRANKS EVERYTHING. A Balla in a hipster's shirt is a Balla.
-        /// The relationship group is the game's own answer to that question and the mod already
-        /// reads it everywhere else.
+        /// ONE IS KEPT, AND IT IS THE ONLY WARM ONE IN THE SET. GREET_GANG_FAMILIES is him
+        /// greeting his OWN people, which is the one case where the line is friendlier than a
+        /// plain hello rather than sharper. Everybody else gets hello.
         ///
-        /// Then the job, then the look, and a plain hello for everybody the game has nothing
-        /// specific to say about -- which is most people, and is fine. A stranger on the street
-        /// getting "hey" is not a missing feature, it is what happens.
+        /// The rest are still in the game and still work. If they are ever wanted, they belong
+        /// somewhere that is about a reaction rather than somewhere that is about starting a
+        /// conversation -- and this is the second one.
         /// </summary>
         private string Opener(Ped them)
         {
@@ -385,61 +426,10 @@ namespace Hoodrich.Gangs
 
             var gang = Gang == null ? null : Gang(them);
 
-            if (!string.IsNullOrEmpty(gang))
-            {
-                switch (gang)
-                {
-                    case "families": return she ? "GREET_GANG_FAMILIES_F" : "GREET_GANG_FAMILIES_M";
-                    case "ballas": return she ? "GREET_GANG_BALLAS_F" : "GREET_GANG_BALLAS_M";
-                    case "vagos": return she ? "GREET_GANG_VAGOS_F" : "GREET_GANG_VAGOS_M";
-                }
-            }
-
-            var model = (Names.Of(them.Model.Hash) ?? "").ToLowerInvariant();
-
-            if (Cop(them, model)) return "GREET_COP";
-
-            if (Has(model, "tramp", "hobo", "bevhills_bum", "vagrant")) return "GREET_BUM";
-            if (Has(model, "methhead", "acult", "dopey", "junkie")) return "GREET_JUNKIE";
-            if (Has(model, "hippy", "hippie")) return she ? "GREET_HIPPY_F" : "GREET_HIPPY_M";
-            if (Has(model, "hipster", "downtown", "vinewood")) return she ? "GREET_HIPSTER_F" : "GREET_HIPSTER_M";
-            if (Has(model, "hillbilly", "rurmeth", "paparazzi", "trucker")) return "GREET_HILLBILLY_M";
-            if (Has(model, "muscl", "bouncer", "chemwork", "armoured")) return "GREET_STRONG_M";
-
-            // The good-looking one is only offered to the models the game itself dresses that
-            // way, rather than to every woman in the city, because Franklin saying it to a
-            // pensioner is a joke the mod would be making on his behalf.
-            if (she && Has(model, "beach", "bev", "vinewood", "fitness", "hotposh", "bikini")) return "GREET_ATTRACTIVE_F";
+            // His own set, and nobody else's. See the note above.
+            if (gang == "families") return she ? "GREET_GANG_FAMILIES_F" : "GREET_GANG_FAMILIES_M";
 
             return she ? "GENERIC_HI_FEMALE" : "GENERIC_HI_MALE";
-        }
-
-        private static bool Cop(Ped them, string model)
-        {
-            if (Has(model, "cop", "sheriff", "ranger", "swat", "prisguard", "fib", "hwaycop")) return true;
-
-            try
-            {
-                // The game's own answer, for anything the names miss: 6 is police, 27 army.
-                var kind = Function.Call<int>(Hash.GET_PED_TYPE, them.Handle);
-                return kind == 6 || kind == 27;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private static bool Has(string model, params string[] bits)
-        {
-            if (string.IsNullOrEmpty(model)) return false;
-
-            for (var i = 0; i < bits.Length; i++)
-            {
-                if (model.IndexOf(bits[i], StringComparison.Ordinal) >= 0) return true;
-            }
-
-            return false;
         }
 
         // ---- the plumbing ---------------------------------------------------------------

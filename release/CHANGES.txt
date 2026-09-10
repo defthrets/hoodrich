@@ -1,6 +1,25 @@
 ﻿0.7.1 -- unreleased
 
 
+THE ONLINE PEDESTRIANS STOP LOSING THEIR LEGS.  [Five0 Patrol]
+
+SET_PED_RANDOM_COMPONENT_VARIATION picks an index per clothing slot out of what
+the MODEL declares it has -- and an Online model in singleplayer declares
+drawables whose geometry lives in a DLC pack the streamer has not mounted for an
+ambient pedestrian. The index is perfectly legal and the mesh is simply not
+there, so the slot renders as nothing: a man from the waist up, walking down
+Strawberry.
+
+It looks like a spawn height or a collision problem and it is neither.
+
+The shipped default combination is the one every model guarantees, so it goes on
+first as the floor; then the random pass on top; then every slot is asked
+IS_PED_COMPONENT_VARIATION_VALID -- the native for exactly this question -- and
+put back to the default where the answer is no. Counting the drawables would not
+have caught it: the count is what the model declares, and a declared drawable
+whose asset is not mounted passes a count check and renders as a hole.
+
+
 FRANKLIN CAN SAY HELLO TO ANYBODY, AND SAY MORE THAN HELLO TO ANYBODY TWICE.
 
 Walk up to a person, press the context key: he says hey, they say hey back,
@@ -15,20 +34,26 @@ system -- so it is lip-synced, it is in the right accent, and a Vagos, a cop and
 a stockbroker say three completely different things for nothing, because
 Rockstar already decided what each of them sounds like.
 
-AND FRANKLIN HAS A GREETING VOCABULARY NOBODY EVER HEARS. His voice carries a
-different hello for a Families member, a Balla, a Vago, a cop, a tramp, a
-junkie, a hippy, a hipster, a hillbilly, a big lad and a good-looking woman --
-eleven of them, in character, already on your disk, used by the story in a
-handful of scripted moments and never again. The whole of the work here was
-asking who is actually stood in front of you and picking the right one. Gang
-first, because a Balla in a hipster's shirt is a Balla; then the job, then the
-look; then a plain hey for everybody the game has nothing particular to say
-about, which is most people and is exactly right.
+AND IT IS THEIR CONVERSATION RATHER THAN HIS. CHAT_STATE and CHAT_RESP are the
+game's own pavement chat -- what one pedestrian says to another when the pair of
+them stop -- and they are whole sentences, different for every voice in the
+game. So a tramp tells you a tramp's story and a woman on Rockford Hills tells
+you hers, and nothing here had to write either one. He says hello, they talk, he
+says yeah, they talk some more, and both of them say goodbye.
 
-It is the lowest-priority thing in the mod for that key. Forty other things
-offer it and every one of them is somewhere specific -- a boot, a counter, a
-wardrobe -- while this is offered anywhere there is a person. So it asks first
-whether the corner is already spoken for and stands down if it is.
+NOBODY IS PROVOKED. Franklin's voice also carries a greeting for a Balla, a
+Vago, a cop, a tramp, a junkie and a hillbilly, and picking the right one for
+whoever was stood there is a lovely thing that produces the wrong scene: most of
+those are not greetings, they are what he makes of somebody he has just clocked,
+and he delivers them like it. The one kept is his greeting to his own set, which
+is the only warm one among them.
+
+NO PROMPT EITHER. Every other context action in the mod is somewhere -- a boot,
+a counter, a door -- and a box in the corner is how you find out it is there.
+This one is anywhere there is a person, so a prompt for it would be a box on the
+screen permanently. It still stands down silently when something with a real
+prompt has spoken for the key: a shop door you are stood in beats the pedestrian
+walking past it.
 
 
 YOU STOP TRIPPING WHEN THE BARS WEAR OFF.
