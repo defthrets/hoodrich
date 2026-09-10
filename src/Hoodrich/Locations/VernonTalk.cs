@@ -365,9 +365,9 @@ namespace Hoodrich.Locations
         private DialogueNode Since()
         {
             var node = Node(
-                "Franklin! The man himself. Door's yours -- go on down, mind the third step, " +
-                "it's a whole situation. Tape's on the desk down there. Don't skip nothin', I " +
-                "sequenced it.");
+                "Franklin! The man himself. Nah, don't go down on your own -- I said I'd walk " +
+                "you down, so I'm walkin' you down. Mind that third step, it's a whole " +
+                "situation. And the tape's already on, so don't talk over the second half.");
 
             node.Say("Let me hear the new one.", () => NewBars(), "He has a new one");
             node.Leave();
