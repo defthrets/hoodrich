@@ -239,7 +239,7 @@ namespace Hoodrich.UI
                 _tookAll = false;
 
                 // Nothing left. One press of anything and it is over.
-                if (Pressed(Control.Jump) || Pressed(Control.FrontendAccept)) Close();
+                if (Pressed(Control.FrontendAccept)) Close();
                 return;
             }
 
@@ -261,7 +261,14 @@ namespace Hoodrich.UI
             // so it is the same button held -- nothing extra to learn and nothing extra to
             // reach for. The tap fires on RELEASE, because a tap that fired on the press would
             // take one and then take the lot a moment later while the finger was still down.
-            var take = Held(Control.FrontendAccept) || Held(Control.Context) || Held(Control.Jump);
+            // A, AND ONLY A. This read Context and Jump as well, and Context on a pad is
+            // DPAD RIGHT -- the same button four lines up moves the cursor right. So a
+            // direction both moved the selection and took what was under it, which is not a
+            // list you can choose from, it is a list that empties itself while you look at it.
+            //
+            // Jump went for the reason it went everywhere else on this screen: it is X, and
+            // taking a thing is A.
+            var take = Held(Control.FrontendAccept);
 
             if (take)
             {
@@ -287,6 +294,15 @@ namespace Hoodrich.UI
 
             if (brief && Game.GameTime >= _nextRepeat) One();
         }
+
+        /// <summary>
+        /// Whoever he ran with, as a colour. Green for the Families, purple for the Ballas,
+        /// yellow for the Vagos -- see Bodies.Tint, which reads it out of gangs.json.
+        ///
+        /// The mod's own green for a man who ran with nobody, which is not a fallback so much
+        /// as the honest answer: an unaffiliated body has no colours.
+        /// </summary>
+        private Color Mine => _body == null ? Palette.Brand : _body.Colour;
 
         /// <summary>When the take button went down, and whether the hold has already fired.</summary>
         private int _downSince;
@@ -509,7 +525,7 @@ namespace Hoodrich.UI
             // A RULE UNDER IT. One line does most of the work of making this read as a card
             // rather than as four labels next to a photograph: it separates the person from
             // the particulars, which is what the box on a real one is doing.
-            Theme.Rule(tx, y + 0.029f, room, arrive * 0.75f);
+            Theme.Rule(tx, y + 0.029f, room, arrive * 0.75f, Mine);
 
             // The four fields, two to a line, on the same grid so the labels line up.
             var half = room * 0.52f;
@@ -637,7 +653,7 @@ namespace Hoodrich.UI
 
             Hud.RectFrom(tx, ty, tw, th, Color.FromArgb((int)(26f * show), 255, 255, 255));
 
-            Theme.Plate(tx, ty, tw, th, lit * show);
+            Theme.Plate(tx, ty, tw, th, lit * show, Mine);
 
             var swell = picked ? 1f + PickGrow * grown : 1f;
             var cx = tx + tw / 2f;
@@ -688,7 +704,7 @@ namespace Hoodrich.UI
         /// <summary>The line under the grid: the chosen thing, said properly.</summary>
         private void Note(float x, float y, float wide, float arrive)
         {
-            Theme.Plate(x, y, wide, NoteH - 0.006f, 0.55f * arrive);
+            Theme.Plate(x, y, wide, NoteH - 0.006f, 0.55f * arrive, Mine);
 
             var tx = x + 0.010f;
 
@@ -752,7 +768,7 @@ namespace Hoodrich.UI
 
         private void Foot(float x, float right, float y, float arrive)
         {
-            Theme.Rule(x, y, right - x, arrive);
+            Theme.Rule(x, y, right - x, arrive, Mine);
 
             var ky = y + 0.011f;
 

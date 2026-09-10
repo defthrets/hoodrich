@@ -140,10 +140,23 @@ namespace Hoodrich.UI
         /// </summary>
         public static void Rule(float x, float y, float width, float arrive = 1f)
         {
+            Rule(x, y, width, arrive, Palette.BrandDeep);
+        }
+
+        /// <summary>
+        /// The same rule, in somebody else's colour.
+        ///
+        /// THE SHORT BRIGHT BIT AT THE START IS THE ONLY PART THAT TAKES IT. The hairline is
+        /// structure and stays the colour every rule in the mod is; the fourteen per cent of
+        /// it that is brand is the part saying whose card this is. A rule that changed colour
+        /// along its whole length would stop reading as a rule.
+        /// </summary>
+        public static void Rule(float x, float y, float width, float arrive, Color tint)
+        {
             Hud.RectFrom(x, y, width, 0.0012f, Palette.Alpha(Hairline, (int)(Hairline.A * arrive)));
 
             Hud.RectFrom(x, y - 0.0004f, width * 0.14f, 0.0020f,
-                         Palette.Alpha(Palette.BrandDeep, (int)(215f * arrive)));
+                         Palette.Alpha(tint, (int)(215f * arrive)));
         }
 
         /// <summary>
@@ -210,12 +223,27 @@ namespace Hoodrich.UI
         /// </summary>
         public static void Plate(float x, float y, float w, float h, float strength)
         {
+            Plate(x, y, w, h, strength, Palette.Brand);
+        }
+
+        /// <summary>
+        /// The same plate with its rail in somebody else's colour.
+        ///
+        /// THE RAIL, NOT THE GROUND. The dark behind a chosen row is the same dark on every
+        /// screen in this mod and changing it per gang would make one screen's rows a
+        /// different shade from every other screen's for no reason a player could name. What
+        /// carries the colour is the four-pixel rail down the left, which is the thing that
+        /// was already saying "this one" and can just as easily say "this one, and it is
+        /// theirs".
+        /// </summary>
+        public static void Plate(float x, float y, float w, float h, float strength, Color tint)
+        {
             if (strength <= 0.01f || w <= 0f || h <= 0f) return;
 
             Hud.RectFrom(x, y, w, h, Palette.Alpha(PlateBack, (int)(235f * strength)));
 
             var rail = Math.Min(Hud.ToX(RailW), w);
-            Hud.RectFrom(x, y, rail, h, Palette.Alpha(Palette.Brand, (int)(255f * strength)));
+            Hud.RectFrom(x, y, rail, h, Palette.Alpha(tint, (int)(255f * strength)));
         }
 
         private static readonly Color PlateBack = Color.FromArgb(255, 30, 48, 36);

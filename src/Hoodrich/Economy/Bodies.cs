@@ -71,6 +71,19 @@ namespace Hoodrich.Economy
         public string Affiliation = "";
 
         /// <summary>
+        /// The colour of whoever he ran with, or the mod's own where he ran with nobody.
+        ///
+        /// WORKED OUT WHEN THE BODY IS, NOT WHEN THE CARD IS DRAWN. The affiliation is a
+        /// NAME by the time anything sees it -- Set() resolves a relationship group to a
+        /// string and the group is gone -- so a screen asked to colour itself by it would
+        /// have to match that name back against the registry every frame, and match it by
+        /// text, which is the kind of lookup that works until somebody renames a set.
+        ///
+        /// One resolution, at the moment the only thing that knows the answer is holding it.
+        /// </summary>
+        public System.Drawing.Color Colour = Palette.Brand;
+
+        /// <summary>
         /// Whether the body is a woman, which the screen needs and the pronouns need.
         ///
         /// It was worked out and thrown away: the sex picked the first name and the height and
@@ -250,6 +263,7 @@ namespace Hoodrich.Economy
             body.Female = !male;
 
             body.Affiliation = Set(who, model);
+            body.Colour = Tint(body.Affiliation);
             body.Ethnicity = Race(model, ref seed);
             body.Name = Called(male, body.Ethnicity, ref seed);
             body.Born = Birthday(ref seed);
@@ -312,6 +326,32 @@ namespace Hoodrich.Economy
         /// against the registry, then the game's own ambient groups by name, and only then
         /// does it fall back to reading the model, which is a guess and is treated as one.
         /// </summary>
+        /// <summary>
+        /// A set's own colour, by the name Set just handed back.
+        ///
+        /// Green for the Families, purple for the Ballas, yellow for the Vagos -- every one of
+        /// them out of gangs.json rather than a table in here, so a set whose colour is changed
+        /// in the data changes on this card too and nobody has to remember there were two
+        /// places.
+        ///
+        /// Nobody, or a set the registry has never heard of, gets the mod's own green. That is
+        /// not a fallback so much as the honest answer: an unaffiliated body has no colours.
+        /// </summary>
+        private System.Drawing.Color Tint(string affiliation)
+        {
+            if (Sets == null || string.IsNullOrEmpty(affiliation)) return Palette.Brand;
+
+            foreach (var gang in Sets.All)
+            {
+                if (gang == null || string.IsNullOrEmpty(gang.Name)) continue;
+                if (!string.Equals(gang.Name, affiliation, StringComparison.OrdinalIgnoreCase)) continue;
+
+                return gang.Colour;
+            }
+
+            return Palette.Brand;
+        }
+
         private string Set(Ped who, string model)
         {
             try
