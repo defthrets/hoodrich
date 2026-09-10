@@ -1,6 +1,27 @@
 ﻿0.7.1 -- unreleased
 
 
+HIS OWN SET DOES NOT TURN ON HIM WHEN HE FIRES A SHOT.
+
+Fire a round on the street and the whole block went red. The pass that is
+supposed to stop that has been there a while and it was asking the wrong
+question: it read the TARGET of a ped's combat task and acted only when the
+answer was the player. That works on a man who has already picked you. It does
+nothing at all for a man who has just heard a round go off and is running at you
+with nothing resolved yet -- the question comes back zero and he is left exactly
+as he was. Which is how a street full of them stays angry after one shot: every
+one was aggro and not one answered the only question being asked.
+
+It asks IS_PED_IN_COMBAT as well now, which is the blunter question and the one
+that catches him halfway through deciding.
+
+The radius is ninety metres rather than forty, and the number is the gunshot's
+rather than a guess -- everybody between forty and earshot heard it and was
+already committed by the time they crossed into the old ring. And the pass runs
+eight times as often while the trigger is down, because a decision is much harder
+to undo than to prevent.
+
+
 STRETCH SELLS VESTS.
 
 Ammu-Nation sells these, and that is the point rather than the objection.

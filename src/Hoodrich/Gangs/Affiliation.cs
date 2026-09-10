@@ -126,7 +126,25 @@ namespace Hoodrich.Gangs
             if (_playerGroupHash == 0 || _gangs == null) return;
 
             var now = Game.GameTime;
-            if (now - _lastCalm < CalmIntervalMs) return;
+
+            // AND IT RUNS FASTER WHILE HE IS SHOOTING, because that is the moment it exists
+            // for. Nine hundred milliseconds is plenty for a quiet street and it is an age
+            // next to a round going off: a man who hears one in that window has decided
+            // before this pass has ever looked at him, and a decision is much harder to undo
+            // than to prevent. While the trigger is down it looks eight times as often.
+            var loud = false;
+
+            try
+            {
+                var him = Game.Player.Character;
+                loud = him != null && him.Exists() && (him.IsShooting || Game.Player.IsAiming);
+            }
+            catch
+            {
+                // The ordinary clock, then.
+            }
+
+            if (now - _lastCalm < (loud ? LoudIntervalMs : CalmIntervalMs)) return;
             _lastCalm = now;
 
             try
@@ -173,8 +191,35 @@ namespace Hoodrich.Gangs
                     // instant before they speak, and a line already playing is not cut by it.
                     Function.Call(Hash.BLOCK_ALL_SPEECH_FROM_PED, ped.Handle, true, false);
 
-                    var target = Function.Call<int>(Hash.GET_PED_TARGET_FROM_COMBAT_PED, ped.Handle, 0);
-                    if (target != player.Handle) continue;
+                    // TWO WAYS TO ASK, BECAUSE ONE OF THEM MISSES.
+                    //
+                    // This used to ask only GET_PED_TARGET_FROM_COMBAT_PED and act when the
+                    // answer was the player. That reads the target of a combat task that has
+                    // already picked one -- and a man who has just heard a round go off is
+                    // running at you with nothing resolved yet, so the question comes back
+                    // zero and he was left exactly as he was. Which is how a street full of
+                    // his own set stays angry after one shot: every one of them was aggro and
+                    // not one of them answered the only question being asked.
+                    //
+                    // IS_PED_IN_COMBAT is the other half and it is the blunter one: it says
+                    // whether this man is fighting that man, however far through deciding he
+                    // is. Either answer is enough.
+                    var fighting = false;
+
+                    try
+                    {
+                        fighting = Function.Call<bool>(Hash.IS_PED_IN_COMBAT, ped.Handle, player.Handle);
+                    }
+                    catch
+                    {
+                        // The target read below still gets its go.
+                    }
+
+                    if (!fighting)
+                    {
+                        var target = Function.Call<int>(Hash.GET_PED_TARGET_FROM_COMBAT_PED, ped.Handle, 0);
+                        if (target != player.Handle) continue;
+                    }
 
                     Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
                     Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, home.GroupHash);
@@ -318,8 +363,19 @@ namespace Hoodrich.Gangs
         /// <summary>Often enough to end a fight before it lands, cheap enough to run always.</summary>
         private const int CalmIntervalMs = 900;
 
+        /// <summary>And while he is firing or aiming. See CalmHome.</summary>
+        private const int LoudIntervalMs = 120;
+
         /// <summary>Only people close enough to be fighting him.</summary>
-        private const float CalmRadius = 40f;
+        /// NINETY, UP FROM FORTY, AND THE NUMBER IS THE GUNSHOT'S. What sets his own set on
+        /// him is a round going off, and a round is heard a great deal further than forty
+        /// metres -- so everybody between forty and earshot heard it, reacted to it, and was
+        /// already running before this pass had ever touched them. By the time they crossed
+        /// into the old radius they were committed.
+        ///
+        /// It is a relationship group check on a nearby-peds list, which is the cheapest kind
+        /// of pass there is, and it runs at 900ms.
+        private const float CalmRadius = 90f;
 
         private int _lastCalm;
 
