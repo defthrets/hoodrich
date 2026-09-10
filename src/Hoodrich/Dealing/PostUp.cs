@@ -1348,9 +1348,26 @@ namespace Hoodrich.Dealing
 
             // Short-changed on the amount means short-changed on the money: somebody who only
             // got half an eighth does not pay for an eighth.
-            var payout = deal != null && sold >= asked - 0.001f
-                ? _pricing.DealValue(product, deal, purity)
-                : _pricing.SaleValue(product, sold, purity);
+            //
+            // AND NEVER MORE THAN THE DEAL HE ASKED FOR, which is the half that was missing.
+            // A short fill falls through to SaleValue, which re-prices what you actually handed
+            // over off the ladder -- and the ladder is where the bulk discount lives. Weed's
+            // ounce is 28 g for $200 against $50 an eighth, so 27 g came out as seven eighths
+            // plus change: about $400 for a gram LESS product than the $200 the full ounce
+            // pays. Sitting on 27.9 g of packaged weed was worth double.
+            //
+            // The ladder still prices what he got -- that is what keeps a badly short fill
+            // honest, since 3.5 g against an ounce should pay an eighth and not a twelfth of an
+            // ounce -- but the deal he agreed to is the ceiling. There is now no amount you can
+            // hold back that pays better than filling the order.
+            var payout = _pricing.SaleValue(product, sold, purity);
+
+            if (deal != null)
+            {
+                var whole = _pricing.DealValue(product, deal, purity);
+
+                payout = sold >= asked - 0.001f ? whole : Math.Min(payout, whole);
+            }
             Cash.Give(payout);
 
             _sales++;

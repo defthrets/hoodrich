@@ -395,6 +395,23 @@ namespace Hoodrich.Locations
             Unblip();
         }
 
+        /// <summary>
+        /// Everything ours, handed back.
+        ///
+        /// THERE WAS NO WAY OUT OF A MEET EXCEPT WALKING AWAY FROM IT. Stop() is only reached
+        /// from the 700 m check in Update, so a script reload on site left twelve cars and
+        /// twelve drivers behind -- persistent, mission-flagged, and therefore never reclaimed.
+        /// Reload twice and there are two meets on the junction and twenty-four peds the game
+        /// cannot have back.
+        ///
+        /// Stop() was always the right cleanup; it just had no route from a teardown.
+        /// </summary>
+        public void RestoreWorld()
+        {
+            try { Stop(); }
+            catch { /* the session is ending either way */ }
+        }
+
         // ---- the tick -------------------------------------------------------------------
 
         public void Update()

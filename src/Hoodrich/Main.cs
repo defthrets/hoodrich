@@ -5146,6 +5146,13 @@ namespace Hoodrich
             try { _garage.RestoreWorld(); } catch { /* teardown */ }
             try { _gunScreen?.RestoreWorld(); } catch { /* teardown */ }
             try { _scenes?.RestoreWorld(); } catch { /* teardown */ }
+
+            // The meet holds more persistent entities than anything else in the mod, and had
+            // no teardown at all until the audit went looking for one.
+            try { _carMeet?.RestoreWorld(); } catch { /* teardown */ }
+
+            // The only other RestoreWorld in the tree this list was missing.
+            try { _blockTalk?.RestoreWorld(); } catch { /* teardown */ }
             try { _street?.Release(); } catch { /* teardown */ }
 
             // Before the decals come off, or the record is written after the thing it records
