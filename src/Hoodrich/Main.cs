@@ -571,6 +571,18 @@ namespace Hoodrich
             "ig_mjo", "ig_mjo_02", "csb_mjo", "csb_mjo_02"
         };
 
+        /// <summary>
+        /// Johnny Guns, on the door at Stretch's.
+        ///
+        /// ig_johnny_guns, checked against PedList.xml on this machine. He was one more
+        /// Families body out of the gang's own pool, which is right for the men on a corner
+        /// and wrong for the one man stood at a gun counter -- a shop with a face on the door
+        /// is a shop, and the same face every time is what makes it one.
+        ///
+        /// The cutscene copy behind it is the same man for a build missing the first.
+        /// </summary>
+        private static readonly string[] Guns = { "ig_johnny_guns", "csb_johnny_guns" };
+
         private static string[] Fam(int which)
         {
             var all = new[] { "g_m_y_famca_01", "g_m_y_famdnf_01", "g_m_y_famfor_01" };
@@ -1032,7 +1044,7 @@ namespace Hoodrich
                                             new Vector3(-129.187f, -1461.375f, 33.823f),
                                             225.844f, "Stretch")
                     .Stand(new Vector3(-128.394f, -1458.440f, 33.823f), 225.844f,
-                           "WORLD_HUMAN_GUARD_STAND");
+                           "WORLD_HUMAN_GUARD_STAND", Guns);
 
                 // The set's own places, and only once you are in the set. See InteriorDoor.
                 foreach (var spec in _cfg.Doors)

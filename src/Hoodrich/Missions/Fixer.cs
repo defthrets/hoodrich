@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using Control = GTA.Control;
 using GTA;
@@ -56,7 +56,11 @@ namespace Hoodrich.Missions
 
         private static readonly string[] Models =
         {
-            "ig_lamardavis", "cs_lamardavis", "ig_lamardavis_02", "g_m_y_famca_01"
+            // ORDERED PER DAY, not written in an order. See Wearing -- he has two outfits and
+            // the first name that loads wins, so a fixed list is Lamar in the same clothes
+            // every day of the save. The cutscene copy and the Families body stay underneath
+            // as fallbacks and are never reordered.
+            "ig_lamardavis", "ig_lamardavis_02", "cs_lamardavis", "g_m_y_famca_01"
         };
 
         private readonly Affiliation _crew;
@@ -445,6 +449,41 @@ namespace Hoodrich.Missions
             }
         }
 
+        /// <summary>
+        /// Which of his two he is in today.
+        ///
+        /// THE SAME THING HAO HAD. Models is walked in order and the first name that loads
+        /// wins, so ig_lamardavis was first on the first day of the save and first on every
+        /// day after it. He has a second outfit shipped with the game and it was never once
+        /// seen.
+        ///
+        /// BY THE DAY, NOT BY THE SPAWN. He is rebuilt every time you leave his corner and
+        /// come back, so rolling per spawn would change his clothes while you crossed the
+        /// road. Nights.Key is the date with the small hours counted as the night before, and
+        /// it is seeded by name as well, so two days the same happens -- which is what clothes
+        /// do, and is the difference between a man who dresses himself and a man on a rota.
+        ///
+        /// Only the two of HIM are reordered. The cutscene copy and the Families body behind
+        /// them are fallbacks for a build missing one, and a fallback that moves is a fallback
+        /// that sometimes goes first.
+        /// </summary>
+        private static string[] Wearing()
+        {
+            var second = Core.Nights.On("lamar-outfit", 50);
+
+            var first = second ? "ig_lamardavis_02" : "ig_lamardavis";
+            var other = second ? "ig_lamardavis" : "ig_lamardavis_02";
+
+            var order = new System.Collections.Generic.List<string> { first, other };
+
+            foreach (var name in Models)
+            {
+                if (name != first && name != other) order.Add(name);
+            }
+
+            return order.ToArray();
+        }
+
         private void Spawn()
         {
             var spot = Spot;
@@ -479,7 +518,7 @@ namespace Hoodrich.Missions
                 // Use the authored height, which is the one somebody stood on.
             }
 
-            foreach (var name in Models)
+            foreach (var name in Wearing())
             {
                 try
                 {
