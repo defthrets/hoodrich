@@ -1035,6 +1035,15 @@ namespace Hoodrich.Locations
             public bool Returning;
 
             /// <summary>
+            /// When he stops holding it on the spot and lets it run, and whether he has.
+            ///
+            /// A DONUT AND THEN A BIG ONE. See Wider -- the same lock and the same throttle,
+            /// with nothing holding him near his mark any more.
+            /// </summary>
+            public int WideAt;
+            public bool Wide;
+
+            /// <summary>
             /// When the standing burnout begins, or nought if it is not owed one.
             ///
             /// The whole arrival is three things in a row and this is the only one that needs
@@ -4478,7 +4487,7 @@ namespace Hoodrich.Locations
                             // He waits where he stopped.
                         }
                     }
-                    else if (r.Car.Position.DistanceTo(bay) > StageLeash)
+                    else if (r.Car.Position.DistanceTo(bay) > (r.Wide ? WideLeash : StageLeash))
                     {
                         // IT HAS SLID OFF ITS MARK, and only that. It used to be interrupted
                         // for reaching the people too -- brake, gather itself, sit until the
@@ -4518,6 +4527,13 @@ namespace Hoodrich.Locations
                         r.Stuck = 0;
                         r.NextAction = 0;
                         r.Burn = 0;
+
+                        // HE STARTS THE MINUTE AGAIN. Hauled back onto his mark he goes through
+                        // the whole thing from the top -- brake, smoke, donut -- and opening
+                        // straight back out into the wide one on arrival would skip the two
+                        // parts everybody is stood there to watch.
+                        r.WideAt = 0;
+                        r.Wide = false;
                     }
                     else if (r.Burn != 0)
                     {
@@ -4526,10 +4542,13 @@ namespace Hoodrich.Locations
                         // there is nothing to do here but wait for the clock.
                         if (now >= r.Burn) Smoke(r, now);
                     }
-                    else if (now >= r.NextAction)
+                    else
                     {
+                        // A MINUTE ON THE SPOT AND THEN HE LETS IT RUN. See Wider.
+                        if (!r.Wide && r.WideAt != 0 && now >= r.WideAt) Wider(r);
+
                         // A temp action expires; the show is topped up before it does.
-                        Show(r, now);
+                        if (now >= r.NextAction) Show(r, now);
                     }
 
                     continue;
@@ -5537,6 +5556,15 @@ namespace Hoodrich.Locations
             r.Burn = now + SettleMs;
             r.NextAction = now + SettleMs + BurnMs;
 
+            // AND THE MINUTE STARTS AGAIN, wherever he has come from. Settle is the one door
+            // every arrival goes through -- a fresh car, one hauled back off a wide lap, one
+            // that went home and came back for another turn -- so this is the only place that
+            // has to say it. A runner who kept his old clock would open straight out into the
+            // wide one on arrival and skip the brake and the smoke, which are the two parts
+            // everybody is stood there to watch.
+            r.WideAt = 0;
+            r.Wide = false;
+
             try
             {
                 Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
@@ -5709,6 +5737,12 @@ namespace Hoodrich.Locations
             r.NextAction = now + LockMs - TopUpLead;
             r.Burn = 0;
 
+            // The minute starts at the first lock and not before, so the five seconds of
+            // standing smoke are not counted as part of it. Set once: Show is called again
+            // every twelve seconds to top the lock up, and a clock that restarted each time
+            // would never come round.
+            if (r.WideAt == 0) r.WideAt = now + DonutMs;
+
             try
             {
                 Still(r.Car);
@@ -5719,6 +5753,69 @@ namespace Hoodrich.Locations
                 r.NextAction = now + 1000;
             }
         }
+
+        /// <summary>
+        /// THE BRAKE COMES OFF AND THE SAME DONUT TURNS INTO A BIG ONE.
+        ///
+        /// A minute is a long time to watch one car turning on one spot, and it is also longer
+        /// than anybody actually holds one: a donut tightens until the tyres give up and then
+        /// it opens out, because the driver stops fighting it and lets the car go where the
+        /// throttle is sending it. That is the whole move here -- SAME LOCK, SAME THROTTLE,
+        /// nothing let off except what was keeping him in one place.
+        ///
+        /// TWO THINGS ARE RELEASED AND THEY ARE BOTH BRAKES OF A KIND.
+        ///
+        /// The handbrake, explicitly, because a temp action may have left one on and a car
+        /// with a rear brake dragging cannot travel out of anything. It is a native that costs
+        /// nothing on a car that has none on.
+        ///
+        /// And the leash, which is the real one. StageLeash is seven metres and it is what has
+        /// been hauling him back onto his mark every time the donut wandered -- so the thing
+        /// stopping him going anywhere was never the car, it was this file. Past a minute he
+        /// gets the whole circle, and a donut that is allowed to travel travels: the back keeps
+        /// stepping out, the front washes wide with it, and it describes a proper arc across
+        /// the junction instead of a ring round a marker.
+        ///
+        /// HE IS STILL ON A LEASH, JUST A LONG ONE. WideLeash is most of the way to the crowd,
+        /// so a car that gets genuinely away from its driver is still brought back rather than
+        /// driven into the ring of people. And coming back starts the whole sequence again from
+        /// the brake, which is the right answer: what everybody is stood there for is the part
+        /// where he plants it and lights them up.
+        /// </summary>
+        private void Wider(Runner r)
+        {
+            r.Wide = true;
+
+            try
+            {
+                Function.Call(Hash.SET_VEHICLE_HANDBRAKE, r.Car.Handle, false);
+            }
+            catch
+            {
+                // He had none on, which is the usual answer.
+            }
+
+            Log.Info("Takeover: one of them has let it run wide.");
+        }
+
+        /// <summary>
+        /// How long he holds it on the spot before letting it out, and how far he may then go.
+        ///
+        /// A MINUTE, WHICH IS ALREADY A LONG TIME TO WATCH ONE CAR. Long enough that the tight
+        /// donut is the thing you remember and the wide one is what it turns into, rather than
+        /// the other way round.
+        ///
+        /// ELEVEN METRES, AND THE NUMBER IS DECIDED BY THE CROWD RATHER THAN BY TASTE. The
+        /// leash is measured from his PITCH, and the pitch is seven metres off the middle -- so
+        /// a leash of eleven lets him reach eighteen metres from the centre at the very worst,
+        /// and the ring of people stands at nineteen. Twenty-two was the first number written
+        /// here and it would have put a car three metres INTO them.
+        ///
+        /// It is still half again what he had. Combined with the handbrake coming off, the
+        /// difference between a ring round a marker and an arc across the tarmac.
+        /// </summary>
+        private const int DonutMs = 60000;
+        private const float WideLeash = 11f;
 
         /// <summary>
         /// A performer, performing, does not stop for anybody. The driver's reactions are
