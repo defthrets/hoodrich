@@ -273,6 +273,12 @@ namespace Hoodrich.Locations
             // thing they came for in order to save them nine steps. So the door does what a
             // door does, and everything after it is Rockstar's -- the transition, the
             // attendant, the challenges, the medals and the unlocks.
+            // LEROY'S ELECTRICAL. A shop front on Strawberry with a warehouse floor behind
+            // it, and the grow. Both coordinates in the ini were stood on rather than worked
+            // out, which is the only way this mod has ever got one right -- these two rows are
+            // how they got there and are how to move it.
+            P("LeroysElectrical", "Leroy's Electrical", "", 51,
+              "The black door with the NO TRESPASSING sign, round the back off Strawberry Ave."),
             P("GunRange", "Ammu-Nation range", "", 110,
               "Inside the shops that have one: Cypress Flats, Little Seoul, Vinewood, " +
               "Sandy Shores, Paleto Bay. Stand at the counter, facing the range door."),
