@@ -2255,7 +2255,7 @@ namespace Hoodrich.Missions
                 // passenger index is two below it.
                 for (var seat = 0; seat <= seats - 2; seat++)
                 {
-                    if (Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, ride.Handle, seat))
+                    if (Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, ride.Handle, seat, false))
                     {
                         return seat;
                     }
@@ -2581,7 +2581,7 @@ namespace Hoodrich.Missions
                 _hadCan = Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, player.Handle, can, false);
 
                 Function.Call(Hash.GIVE_WEAPON_TO_PED, player.Handle, can, 4500, false, true);
-                Function.Call(Hash.SET_PED_AMMO, player.Handle, can, 4500);
+                Function.Call(Hash.SET_PED_AMMO, player.Handle, can, 4500, false);
                 Function.Call(Hash.SET_CURRENT_PED_WEAPON, player.Handle, can, true);
             }
             catch (Exception ex)
@@ -3332,6 +3332,21 @@ namespace Hoodrich.Missions
 
             _bike.Clear();
             _tags.Clear();
+
+            // AND THE HUNT, WHICH WAS THE ONE THAT WAS MISSING.
+            //
+            // Hunt.Clear is the only thing that resets Phase, and it was reachable from
+            // Hunt.Start alone -- so a hunt that failed left IsRunning true for ever, Start
+            // refused every future job with "You're already on something", and the one job
+            // that would have cleared it was a future job. A closed loop with the player
+            // inside it, for the rest of the session, with no abort anywhere in the mod.
+            //
+            // It also spent that session firing the failure notification and its social post
+            // once a frame, because the OnHunt branch sits above the 500 ms throttle.
+            //
+            // Safe to call with no hunt running: HandItBack returns on _lent == 0, both lists
+            // are empty, and the three flags are already at rest.
+            _hunt.Clear();
 
             ClearSiteBlip();
             ClearBlips();

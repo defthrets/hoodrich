@@ -1917,7 +1917,7 @@ namespace Hoodrich.Locations
 
                 for (var seat = 0; seat < seats; seat++)
                 {
-                    if (Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, car.Handle, seat)) return seat;
+                    if (Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, car.Handle, seat, false)) return seat;
                 }
             }
             catch

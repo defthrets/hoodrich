@@ -1133,9 +1133,9 @@ namespace Hoodrich.Locations
 
                 var seat = RearSeat;
 
-                if (!Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, _car.Handle, RearSeat))
+                if (!Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, _car.Handle, RearSeat, false))
                 {
-                    if (!Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, _car.Handle, 1)) return;
+                    if (!Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, _car.Handle, 1, false)) return;
                     seat = 1;
                 }
 

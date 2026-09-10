@@ -442,8 +442,22 @@ namespace Hoodrich.UI
                 var capH = TextHeight(CapScale, Hud.FontLabel) + 0.004f;
                 var capY = top + PromptPad * 0.85f + (textH - capH) * 0.5f - 0.001f;
 
-                Hud.RoundRect(x + padX, capY, capW, capH, 0.0022f,
-                              Palette.Alpha(Palette.Warn, (int)(58f * ink)), steps: 8);
+                // A FLAT RECTANGLE, BECAUSE THE ROUNDING WAS NEVER VISIBLE.
+                //
+                // This asked for a 0.0022 radius, which is about two pixels, on a chip roughly
+                // five pixels tall -- and the rasteriser answers a radius that small with
+                // one-pixel bands, so it drew one rectangle per screen row per corner: 19 at
+                // 1080p, 27 at 1440p, for a corner nobody can see at any resolution.
+                //
+                // This is the prompt bar. It is the only thing of ours on screen while you are
+                // walking about, which is exactly when every other mod's HUD is drawing too,
+                // so it is the worst possible place to spend twenty rectangles on nothing.
+                //
+                // Sprite corners would be cheaper and still wrong; the honest answer at this
+                // size is a rectangle, which is what the class comment forty lines above says:
+                // "Rounded corners are the expensive thing and are spent on the panel only."
+                Hud.RectFrom(x + padX, capY, capW, capH,
+                             Palette.Alpha(Palette.Warn, (int)(58f * ink)));
 
                 Hud.Text(cap, x + padX + (capW - capText) * 0.5f, capY + 0.002f, CapScale,
                          Palette.Alpha(Palette.Warn, (int)(255f * ink)), Hud.FontLabel, centre: false);

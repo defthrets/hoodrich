@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -368,6 +368,52 @@ namespace Hoodrich.State
 
         private static float Clamp01(float v) => v < 0f ? 0f : v > 1f ? 1f : v;
 
-        public void RestoreWorld() => ClearBag();
+        /// <summary>
+        /// Everything ours, put back -- INCLUDING what is in the bag.
+        ///
+        /// This was one line, `ClearBag()`, which deletes the prop and the blip and walks away
+        /// from the two dictionaries holding the contents. A script reload with a bag on the
+        /// floor destroyed every gram in it, silently, and the save had already been touched
+        /// when it was dropped, so the loss was banked before anybody noticed.
+        ///
+        /// DroppedBags.RestoreWorld had this bug and fixed it; its comment is the argument for
+        /// this one too. Overflowing a full stash is strictly better than deleting the lot:
+        /// whatever will not fit is the only part lost.
+        ///
+        /// Logged rather than announced. A teardown may have no screen left to draw a ticker
+        /// on, and the log is the thing somebody reads afterwards to find out what happened.
+        /// </summary>
+        public void RestoreWorld()
+        {
+            try
+            {
+                var stash = _state == null ? null : _state.Stash;
+
+                if (stash != null)
+                {
+                    var back = 0f;
+
+                    foreach (var kv in _bagBulk) back += stash.AddBulk(kv.Key, kv.Value.Grams, kv.Value.Purity);
+                    foreach (var kv in _bagPackaged) back += stash.AddPackaged(kv.Key, kv.Value.Grams, kv.Value.Purity);
+
+                    if (back > 0.005f)
+                    {
+                        _state.Touch();
+
+                        Log.Info("Dead drop handed back on teardown: " + back.ToString("0.#") +
+                                 "g put in the stash rather than deleted with the bag.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not hand the dead drop back: " + ex.Message);
+            }
+
+            _bagBulk.Clear();
+            _bagPackaged.Clear();
+
+            ClearBag();
+        }
     }
 }

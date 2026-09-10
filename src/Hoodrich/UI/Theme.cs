@@ -172,7 +172,18 @@ namespace Hoodrich.UI
 
         public static void Card(float left, float top, float w, float h, Color back, Color rail, float railW)
         {
-            Hud.RoundRect(left, top, w, h, CardRound, back, sprite: false, steps: 12);
+            // SPRITE CORNERS, NOT FORTY STACKED RECTANGLES.
+            //
+            // At CardRound the fallback rasteriser lays down two-pixel bands, which is four
+            // corner discs of about ten rows each: 44 rectangles at 1080p and 60 at 1440p, for
+            // one card. Two cards at once -- a gang war starting during a mission, which is an
+            // ordinary Tuesday -- is 88 to 120, on top of whatever else is running on the
+            // machine, and past about four hundred the game simply stops drawing.
+            //
+            // Corners() does the same shape in four DRAW_SPRITE calls out of a different
+            // budget. The art is on disk, Draw.Panel has used it for months, and it also fixes
+            // the darker blobs the whole-disc fallback leaves under a translucent card.
+            Hud.RoundRect(left, top, w, h, CardRound, back, sprite: true, steps: 12);
 
             if (rail.A <= 0 || railW <= 0f) return;
 

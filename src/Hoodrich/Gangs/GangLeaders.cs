@@ -756,7 +756,8 @@ namespace Hoodrich.Gangs
 
                 var player = Game.Player.Character;
                 var you = player != null && player.Exists()
-                          && Function.Call<bool>(Hash.HAS_ENTITY_BEEN_DAMAGED_BY_ENTITY, h, player.Handle);
+                          && Function.Call<bool>(Hash.HAS_ENTITY_BEEN_DAMAGED_BY_ENTITY,
+                                                 h, player.Handle, true);
 
                 _defendUntil = now + DefendMs;
 
