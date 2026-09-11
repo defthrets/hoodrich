@@ -192,8 +192,12 @@ def from_data(root, texts=False):
         # house stapled to the end, so it names itself rather than hashing: <slug>_shop when
         # the stock is whole, <slug>_shopcut when it has been stepped on. The recording leaves
         # the arithmetic out; the screen is already showing it. See DealerTalk.Node.
+        # THE NAMED LINES. Each is a sentence the SOURCE builds with live arithmetic stapled
+        # on, so no hash can ever name it -- see DealerTalk. The recording says the words and
+        # the screen keeps the numbers.
         for tag, text in (("shop", "Ain't got time to stand here. What you taking? Nothing here's been touched."),
-                          ("shopcut", "Ain't got time to stand here. What you taking? It's all stepped on already.")):
+                          ("shopcut", "Ain't got time to stand here. What you taking? It's all stepped on already."),
+                          ("amount", "How many? And don't say one if you mean four.")):
             # A DEALER WHO NEVER CUTS ANYTHING NEVER SAYS THE CUT LINE. DealerTalk picks
             # between these two on PurityNow, and a dealer pinned at 1.0 can only ever come
             # out of that comparison one way -- so the other file is one the game cannot ask

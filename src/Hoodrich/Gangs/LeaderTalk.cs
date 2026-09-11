@@ -1150,8 +1150,17 @@ namespace Hoodrich.Gangs
                              "You're still holding his package");
                     node.WithIcon(Icons.Stash);
                 }
-                else
+                else if (OnOffer() != null)
                 {
+                    // THROUGH OnOffer, WHICH IS WHAT IT IS FOR.
+                    //
+                    // Its summary says it exists so "a row offered somewhere else cannot get a
+                    // different answer", and this row was the somewhere else -- it asked its
+                    // own two questions, never the third, and so kept fronting packages after
+                    // the two he actually has. Number three opened with "you been out there
+                    // once and you came back" and closed with "after that we talk about where
+                    // it comes from", to somebody who had been running the port for hours, and
+                    // the line under it read "3 of 2 cleared".
                     node.Say("I'm broke. Front me something.", () => OfferWork(def, gang),
                              "Sell a package for him");
                     node.WithIcon(Icons.Money);
@@ -1436,7 +1445,13 @@ namespace Hoodrich.Gangs
         /// </summary>
         private string PackageProgress()
         {
-            var done = _state.FrontsDone + " of 2 cleared";
+            // CLAMPED, because FrontsDone is also set straight to 2 by the skip-ahead path
+            // in PlayerState and was free to run past it while the row above kept offering.
+            // "3 of 2 cleared" is the sort of line that makes a player distrust every other
+            // number on the screen.
+            var cleared = _state.FrontsDone > 2 ? 2 : _state.FrontsDone;
+
+            var done = cleared + " of 2 cleared";
 
             if (!_state.HasFrontedWork) return done;
 

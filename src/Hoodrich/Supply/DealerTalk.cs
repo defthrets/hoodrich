@@ -528,6 +528,18 @@ namespace Hoodrich.Supply
         {
             var node = Node("How many? And don't say one if you mean four." + Standing());
 
+            // NAMED, BECAUSE NO HASH CAN EVER REACH THIS ONE.
+            //
+            // Standing() staples the money on you and the room at the house onto the end, so
+            // the string is different on every single utterance and the file it would hash to
+            // never exists twice. It carried no key at all, which made it the most-heard line
+            // in the mod and the only one that could never be given a voice: every purchase
+            // from every dealer comes through here.
+            //
+            // Counter() solved this the same way one method up -- the recording says the words
+            // and leaves the arithmetic to the screen, which is already showing it.
+            node.Voiced(Voice.Named(Name, "amount"));
+
             foreach (var lot in Lots)
             {
                 var count = lot;
