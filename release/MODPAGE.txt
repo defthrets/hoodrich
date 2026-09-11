@@ -45,7 +45,7 @@ NO DEPENDENCIES, NO GAME FILES TOUCHED
 
 One DLL and some JSON. No LemonUI, no NativeUI, no OpenIV, no installer. It won't fight your graphics mods, car packs or map edits. Uninstalling is deleting three things.
 
-Want to tinker? 12 JSON files and 148 settings in a commented INI. Drop a Menyoo spooner save in scripts\Hoodrich\scenery and the mod builds it every session.
+Want to tinker? 12 JSON files and 139 settings in a commented INI. Drop a Menyoo spooner save in scripts\Hoodrich\scenery and the mod builds it every session.
 
 Legacy and Enhanced, same DLL. Single player only. Keep it away from GTA Online.
 
@@ -87,6 +87,17 @@ The phone button opens everything. Arrows move, Enter chooses, Backspace goes ba
 ===================================
 
 CHANGELOG
+
+0.7.2 - 11 September 2026
+
+- The car meet, overhauled. Nobody warps and nobody stands about doing nothing. Drivers and passengers get out and walk, lean into engine bays, film down the sides, smoke, huddle, whoop at the lowrider; the crowd arrives from out of sight; cars crawl into the lot one at a time; at time everyone gets back in and they pull out one by one;
+- Lamar's hunt, redone under the same words. A marker for the ride out, Lamar in your car and at your pace, purple search rings that come off when you find a trail, targets that move and leave fresh prints, and a call that brings one to a rifle's length short of you. He goes back to his corner afterwards;
+- You lose what you are carrying when you die. A bag where you fell, or gone for good with a switch in the INI, and an arrest loses it. Neither ever fired before;
+- Vernon acts his lines. Gestures when he talks, a dance on every verse, the set when it ends. Per-speaker recording levels in the INI;
+- The conversation panel and the incoming call, cleaned up. A answers the call on a pad;
+- The house explains itself the first time you walk in: the kitchen, the bed, the closet, the stash;
+- Hao's lot and Vernon wait for Gerald's first front. Hao's number waits until you have met him. The port run's pallet carries twenty bricks, not two hundred kilos;
+- The paint. Blood, never bullets. Old tags come back in seconds instead of minutes and nothing is torn down to do it; the engine learns the game's decal pool and keeps the nearest paint up.
 
 0.7.1 - 11 September 2026
 

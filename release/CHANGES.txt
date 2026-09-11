@@ -1,4 +1,4 @@
-﻿Since 0.7.1 -- 11 September 2026
+﻿0.7.2 -- 11 September 2026
 
 
 YOU LOSE WHAT YOU ARE CARRYING WHEN YOU DIE. YOU DID NOT.
