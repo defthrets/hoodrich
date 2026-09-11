@@ -1142,7 +1142,7 @@ namespace Hoodrich.Wheel
             // The handset with a heart on the screen, so it cannot be confused with the Phone
             // app. mobile.png put a feed on the screen, and at twenty pixels a feed is three
             // smudges -- exactly what a phone with nothing on it looks like.
-            page.WithIcon(Icons.FromFile("socials.png"));
+            page.WithIcon(Icons.FromFile("likes_0.png")).WithFlipbook("likes", 9, 150);
 
             page.AddSub("Gangs", "%", BuildGangsPage,
                 detail: _crew.IsAffiliated
@@ -1174,7 +1174,7 @@ namespace Hoodrich.Wheel
                 value: "",
                 enabled: ShowSettings != null,
                 disabledReason: "Not wired up");
-            page.WithIcon(Icons.FromFile("scales.png"));
+            page.WithIcon(Icons.FromFile("balance_0.png")).WithFlipbook("balance", 9, 150);
 
             // Between Inventory and Settings rather than at the end. It is a thing you
             // carry and use, not a thing you configure, so it belongs with the other two apps
@@ -1209,18 +1209,9 @@ namespace Hoodrich.Wheel
             // stock cap is the one that comes on the can, and it is the better drawing.
             page.WithIcon(Icons.FromFile("spraycan_0.png")).WithFlipbook("spraycan", 16, 130);
 
-            // THE MASK. One tile, nothing behind it: on if it is off, off if it is on. The
-            // label stays and the value carries the state, same as the can beside it.
-            var masked = MaskOn != null && MaskOn();
-
-            page.Add("Mask", "*", () => ToggleMask?.Invoke(),
-                detail: masked
-                    ? "Takes the balaclava off"
-                    : "Pulls a balaclava on. Nobody needs to know it was you",
-                value: masked ? "ON" : "",
-                enabled: ToggleMask != null,
-                disabledReason: "Not wired up");
-            page.WithIcon(Icons.FromFile("bandana.png"));
+            // NO MASK TILE. The balaclava is still in the mod -- the shop, the setting, the
+            // toggle -- but it is not an app: a thing you pull on in the street does not
+            // want a phone taken out first. It will get its own way in.
 
             // LAST, where Socials used to sit. It is a service you use rather than a part of
             // the business, and the only app on here that will still be useful to somebody who
