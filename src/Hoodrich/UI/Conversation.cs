@@ -508,6 +508,17 @@ namespace Hoodrich.UI
         public Ped Speaker;
 
         /// <summary>
+        /// Whoever is stood there, told each time a page goes up, so the man can act the line.
+        ///
+        /// SET AND CLEARED BY WHOEVER OPENED THE SCREEN. The one screen is shared by everybody
+        /// in the mod, so a hook left behind after a close would be told about the next man's
+        /// lines. Vernon is the one who uses it: a gesture on a spoken line, a dance on a
+        /// verse, the set thrown up when the verse ends. The screen knows nothing about
+        /// anybody's body; it says which page is up and leaves the rest to him.
+        /// </summary>
+        public Action<DialogueNode> Staged;
+
+        /// <summary>
         /// Lines for the middle of a conversation.
         ///
         /// Deliberately NOT thanks. Thanks is what you say when money changes hands, and using
@@ -634,6 +645,20 @@ namespace Hoodrich.UI
 
             // A fresh beat has not heard anything yet. See TickBeat.
             _beatHeardAt = 0;
+
+            // AND ACT IT. After the voice has been cued, so a hook that asks whether the line
+            // is playing yet gets the honest answer (not yet; it is opening). See Staged.
+            if (Staged != null)
+            {
+                try
+                {
+                    Staged(node);
+                }
+                catch
+                {
+                    // A man who cannot act the line still says it.
+                }
+            }
 
             // THE CAMERA. Over his shoulder on the first line of a talk with somebody who is
             // stood there (a phone call has no Speaker), and the other shoulder on each line

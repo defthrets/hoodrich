@@ -97,6 +97,13 @@ namespace Hoodrich.Locations
         private bool _talkHeld;
         private int _leaning;
 
+        /// <summary>
+        /// True from HoldForTalk to ReleaseFromTalk. Update re-settles him on the wall
+        /// whenever he is not held, and a conversation is the one time he is off the wall on
+        /// purpose -- without this the 700ms tick would have him leaning again mid-sentence.
+        /// </summary>
+        private bool _talking;
+
         public Vernon(PlayerState state)
         {
             _state = state;
@@ -156,7 +163,7 @@ namespace Hoodrich.Locations
             if (away > SpawnRange) return;
 
             if (_ped == null || !_ped.Exists()) Spawn();
-            else if (!_held) Settle();
+            else if (!_held && !_talking) Settle();
         }
 
         private void Spawn()
@@ -236,7 +243,14 @@ namespace Hoodrich.Locations
         /// </summary>
         public void UpdatePrompt()
         {
-            if (Talk == null || Talk.IsOpen) return;
+            if (Talk == null) return;
+
+            // The screen is up: his body follows it. See TickAct. And if it has gone down on
+            // its own -- a choice that ends the talk closes the screen from inside -- this is
+            // where he finds out, because nothing else tells him.
+            if (Talk.IsOpen) { TickAct(); return; }
+            if (_talking) ReleaseFromTalk();
+
             if (!InReach) return;
             if (Suppressed != null && Suppressed()) return;
 
@@ -289,20 +303,21 @@ namespace Hoodrich.Locations
         /// </summary>
         public void HoldForTalk()
         {
-            if (_ped == null || !_ped.Exists() || !_held) return;
+            if (_ped == null || !_ped.Exists()) return;
 
             _held = false;
+            _talking = true;
+            _firstLine = true;
+            _act = Act.None;
+            _pending = null;
+
+            if (Talk != null) Talk.Staged = OnNode;
+            Warm();
 
             try
             {
-                var player = Game.Player.Character;
-
                 _ped.Task.ClearAll();
-
-                if (player != null && player.Exists())
-                {
-                    Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, _ped.Handle, player.Handle, -1);
-                }
+                Face();
             }
             catch
             {
@@ -312,8 +327,363 @@ namespace Hoodrich.Locations
 
         public void ReleaseFromTalk()
         {
-            if (_held || _ped == null || !_ped.Exists()) return;
+            if (!_talking && (_held || _ped == null || !_ped.Exists())) return;
+
+            _talking = false;
+            if (Talk != null && Talk.Staged == (Action<DialogueNode>)OnNode) Talk.Staged = null;
+
+            Rest();
+
+            if (_ped == null || !_ped.Exists()) return;
             Settle();
+        }
+
+        // ---- acting the line ---------------------------------------------------
+
+        /// <summary>
+        /// He does not stand still while he talks, and he does not stand still while he raps.
+        ///
+        /// THREE WAYS OF BEING ON. A spoken line gets a hand off the game's own street
+        /// conversation set, picked off the words -- a question gets the open palms, a "you"
+        /// gets the point at you, a "nah" gets the head shake -- and a line that keeps going
+        /// gets another every few seconds while the recording runs. A verse gets a whole
+        /// dance, full body, off the nightclub floor, for exactly as long as OG Vee is on the
+        /// mic. And the moment the verse ends and the screen hands you the choices, the dance
+        /// stops and he throws up the set and holds it, which is a man waiting to hear what
+        /// you thought of it.
+        ///
+        /// Told which page is up by Conversation.Staged, so the words-to-movement lives here
+        /// and the screen knows nothing about anybody's body. Every name below is in
+        /// RampageFiles\Lists\PedAnimList.txt on this install; none of them is guessed.
+        /// </summary>
+        private enum Act { None, Talk, Rap, Flex }
+
+        private const string GestureDict = "gestures@m@standing@casual";
+
+        /// <summary>Upper body and secondary: the hands move and the feet do not. See Greeting.</summary>
+        private const int GestureFlags = 48;
+
+        /// <summary>Looping and full body. A dance is not a thing you do from the waist up.</summary>
+        private const int DanceFlags = 1;
+
+        /// <summary>Looping, upper body, secondary: the set held up over a man standing still.</summary>
+        private const int SignFlags = 49;
+
+        private const string SignDict = "mp_player_int_uppergang_sign_a";
+        private const string SignClip = "mp_player_int_gang_sign_a";
+
+        /// <summary>
+        /// The nightclub's solo dances, one per verse so three verses are not one dance three
+        /// times over. var_a and var_b are two different routines; med and high is how hard
+        /// he goes. Which verse gets which is fixed off the words, so running one back gets
+        /// the same moves.
+        /// </summary>
+        private static readonly string[][] Dances =
+        {
+            new[] { "anim@amb@nightclub@mini@dance@dance_solo@male@var_a@", "med_center" },
+            new[] { "anim@amb@nightclub@mini@dance@dance_solo@male@var_b@", "med_center" },
+            new[] { "anim@amb@nightclub@mini@dance@dance_solo@male@var_a@", "high_center" },
+        };
+
+        /// <summary>What his hands do when the words do not say. hello is kept for the first line.</summary>
+        private static readonly string[] Hands =
+        {
+            "gesture_hand_left", "gesture_hand_right", "gesture_easy_now", "gesture_pleased",
+            "gesture_shrug_soft", "gesture_bring_it_on", "gesture_point", "gesture_me"
+        };
+
+        /// <summary>The gap between hands on a line that keeps going, and the jitter on it.</summary>
+        private const int HandGapMs = 2600;
+        private const int HandJitterMs = 1400;
+
+        /// <summary>
+        /// A verse is not over in the frames before its recording has started. The sound
+        /// device says "not playing" while it opens the file -- see Conversation.BeatOpenMs.
+        /// </summary>
+        private const int RapOpenMs = 600;
+
+        /// <summary>How long a clip whose dictionary is still loading is retried for.</summary>
+        private const int PendingMs = 2000;
+
+        private Act _act;
+        private int _actAt;
+        private bool _heard;
+        private bool _firstLine;
+        private int _nextHandAt;
+        private string _lastHand;
+        private string[] _dance;
+        private bool _signing;
+        private string[] _pending;
+        private int _pendingFlags;
+        private int _pendingAt;
+        private readonly Random _dice = new Random();
+
+        /// <summary>
+        /// Every dictionary he will need, asked for as the screen opens.
+        ///
+        /// REQUEST_ANIM_DICT is asynchronous and the first line goes up in the same frame as
+        /// this, so the first gesture still usually misses -- Play says so and the miss is
+        /// retried by TickAct for a moment. By the first verse everything is in.
+        /// </summary>
+        private void Warm()
+        {
+            try
+            {
+                Function.Call(Hash.REQUEST_ANIM_DICT, GestureDict);
+                Function.Call(Hash.REQUEST_ANIM_DICT, SignDict);
+                foreach (var d in Dances) Function.Call(Hash.REQUEST_ANIM_DICT, d[0]);
+            }
+            catch
+            {
+                // He will act it stiffer.
+            }
+        }
+
+        /// <summary>A page went up. See Conversation.Staged.</summary>
+        private void OnNode(DialogueNode node)
+        {
+            if (node == null || _ped == null || !_ped.Exists()) return;
+            if (Talk == null || !ReferenceEquals(Talk.Subject, this)) return;
+
+            if (node.Speaker == VernonTalk.Stage) Rap(node.Line);
+            else Say(node.Line);
+        }
+
+        private void Say(string line)
+        {
+            _pending = null;
+            StopDance();
+            StopSign();
+            Face();
+
+            _act = Act.Talk;
+            _actAt = Game.GameTime;
+
+            var hand = _firstLine ? "gesture_hello" : HandFor(line);
+            _firstLine = false;
+
+            Gesture(hand);
+            _nextHandAt = Game.GameTime + HandGapMs + _dice.Next(HandJitterMs);
+        }
+
+        private void Rap(string verse)
+        {
+            _pending = null;
+            StopSign();
+
+            _act = Act.Rap;
+            _actAt = Game.GameTime;
+            _heard = false;
+
+            var sum = 0;
+            foreach (var c in verse) sum += c;
+            var dance = Dances[sum % Dances.Length];
+
+            if (_dance != null && (_dance[0] != dance[0] || _dance[1] != dance[1])) StopDance();
+
+            if (Play(dance[0], dance[1], DanceFlags)) _dance = dance;
+            else Later(dance, DanceFlags);
+        }
+
+        private void Flex()
+        {
+            _pending = null;
+            StopDance();
+            Face();
+
+            _act = Act.Flex;
+            _actAt = Game.GameTime;
+
+            if (Play(SignDict, SignClip, SignFlags)) _signing = true;
+            else Later(new[] { SignDict, SignClip }, SignFlags);
+        }
+
+        /// <summary>Every frame the screen is up. See UpdatePrompt.</summary>
+        private void TickAct()
+        {
+            if (_act == Act.None || _ped == null || !_ped.Exists()) return;
+
+            var now = Game.GameTime;
+
+            if (_pending != null)
+            {
+                if (Play(_pending[0], _pending[1], _pendingFlags))
+                {
+                    if (_pendingFlags == DanceFlags) _dance = _pending;
+                    else if (_pendingFlags == SignFlags) _signing = true;
+                    _pending = null;
+                }
+                else if (now - _pendingAt > PendingMs)
+                {
+                    Log.Debug("Vernon's " + _pending[1] + " never loaded; acting it without.");
+                    _pending = null;
+                }
+            }
+
+            var talking = Voice.Talking;
+
+            switch (_act)
+            {
+                case Act.Rap:
+                    // For as long as the take runs. A verse with no recording yet keeps him
+                    // dancing until you pick something, which is the right look for it.
+                    if (talking) _heard = true;
+                    else if (_heard && now - _actAt > RapOpenMs) Flex();
+                    break;
+
+                case Act.Talk:
+                    if (now < _nextHandAt) break;
+
+                    if (talking)
+                    {
+                        Gesture(HandFor(null));
+                        _nextHandAt = now + HandGapMs + _dice.Next(HandJitterMs);
+                    }
+                    else
+                    {
+                        _nextHandAt = now + 500;
+                    }
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// The hand for a line, off its words; or off the dice when the words do not say.
+        ///
+        /// The FRONT of the line decides, because that is the part being said when the hand
+        /// goes up; the point at the basement is the one exception and reads the whole line,
+        /// because a man mentions the basement wherever in the sentence it falls and points
+        /// at it either way.
+        /// </summary>
+        private string HandFor(string line)
+        {
+            if (!string.IsNullOrEmpty(line))
+            {
+                var l = line.ToLowerInvariant();
+                var head = l.Length > 40 ? l.Substring(0, 40) : l;
+
+                if (l.TrimEnd().EndsWith("?")) return _dice.Next(2) == 0 ? "gesture_what_soft" : "gesture_why";
+                if (l.Contains("basement") || l.Contains("downstairs") || l.Contains("down there")) return "gesture_point";
+                if (head.Contains("nah") || head.Contains("no,") || head.Contains("don't") || head.Contains("never")) return "gesture_nod_no_soft";
+                if (head.StartsWith("you ") || head.Contains(" you ")) return "gesture_you_soft";
+                if (head.Contains("damn") || head.Contains("shit") || head.Contains("man,")) return "gesture_damn";
+                if (head.Contains("yeah") || head.Contains("aight") || head.Contains("okay")) return "gesture_nod_yes_soft";
+                if (head.Contains("i'm ") || head.Contains(" my ") || head.Contains(" me ")) return "gesture_me";
+            }
+
+            string pick;
+            do pick = Hands[_dice.Next(Hands.Length)]; while (pick == _lastHand);
+            return pick;
+        }
+
+        private void Gesture(string clip)
+        {
+            _lastHand = clip;
+            if (!Play(GestureDict, clip, GestureFlags)) Later(new[] { GestureDict, clip }, GestureFlags);
+        }
+
+        /// <summary>
+        /// One clip, now. False means the dictionary is not in yet and the caller should try
+        /// again; see Later and TickAct.
+        /// </summary>
+        private bool Play(string dict, string clip, int flags)
+        {
+            try
+            {
+                Function.Call(Hash.REQUEST_ANIM_DICT, dict);
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict)) return false;
+
+                Function.Call(Hash.TASK_PLAY_ANIM, _ped.Handle, dict, clip,
+                              4f, -4f, -1, flags, 0f, false, false, false);
+                return true;
+            }
+            catch
+            {
+                // A call that throws will throw again; there is nothing to wait for.
+                return true;
+            }
+        }
+
+        private void Later(string[] pair, int flags)
+        {
+            _pending = pair;
+            _pendingFlags = flags;
+            _pendingAt = Game.GameTime;
+        }
+
+        private void StopDance()
+        {
+            if (_dance == null) return;
+
+            try
+            {
+                if (_ped != null && _ped.Exists())
+                {
+                    Function.Call(Hash.STOP_ANIM_TASK, _ped.Handle, _dance[0], _dance[1], -4f);
+                }
+            }
+            catch
+            {
+                // The next task replaces it anyway.
+            }
+
+            _dance = null;
+        }
+
+        /// <summary>
+        /// The set down. A secondary loop is the one thing a scenario does NOT replace, so
+        /// this has to happen before Settle or he leans on the wall still holding it up.
+        /// </summary>
+        private void StopSign()
+        {
+            if (!_signing) return;
+
+            try
+            {
+                if (_ped != null && _ped.Exists())
+                {
+                    Function.Call(Hash.STOP_ANIM_TASK, _ped.Handle, SignDict, SignClip, -4f);
+                }
+            }
+            catch
+            {
+                // See StopDance.
+            }
+
+            _signing = false;
+        }
+
+        private void Face()
+        {
+            try
+            {
+                var player = Game.Player.Character;
+                if (player != null && player.Exists())
+                {
+                    Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, _ped.Handle, player.Handle, -1);
+                }
+            }
+            catch
+            {
+                // He talks to your shoulder.
+            }
+        }
+
+        /// <summary>Everything off, for the wall or for a teardown.</summary>
+        private void Rest()
+        {
+            _pending = null;
+            _act = Act.None;
+
+            if (_ped == null || !_ped.Exists())
+            {
+                _dance = null;
+                _signing = false;
+                return;
+            }
+
+            StopDance();
+            StopSign();
         }
 
         // ---- map ---------------------------------------------------------------

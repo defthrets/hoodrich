@@ -78,7 +78,7 @@ namespace Hoodrich.Locations
         /// does not change, because the photograph is taken off the ped stood in front of you
         /// rather than looked up from the name.
         /// </summary>
-        private const string Stage = "OG Vee";
+        internal const string Stage = "OG Vee";
 
         /// <summary>
         /// A whole verse, in one go, under his other name.
