@@ -489,6 +489,15 @@ namespace Hoodrich.UI
 
                 sprite.Size = new SizeF(wide, tall);
                 sprite.Position = new PointF(x * GTA.UI.Screen.ScaledWidth, y * ScaledHeight);
+                // AN i_ FILE CARRIES ITS OWN COLOUR. Bare Minimum's convention, shared here:
+                // i_<id>.png is pixel art in colour, and every other file is white line art
+                // tinted by the caller. So the tint's colour is dropped and only its alpha is
+                // kept, and the same call that greys a bong leaves a bag of weed green.
+                if (file.StartsWith("i_", StringComparison.OrdinalIgnoreCase))
+                {
+                    c = Color.FromArgb(c.A, 255, 255, 255);
+                }
+
                 sprite.Color = c;
                 sprite.Rotation = rotationDeg;
                 sprite.ScaledDraw();

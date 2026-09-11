@@ -124,9 +124,12 @@
         private const string Inventory = "mpinventory";
         private const string Menu = "commonmenu";
 
-        // Product. The multiplayer inventory dictionary carries one sprite per drug, which is
-        // as close to purpose-made art as this mod is ever going to get.
-        public static readonly Icon Weed = new Icon(Inventory, "mp_specitem_weed").WithFile("bong.png");
+        // Product. The multiplayer inventory dictionary carries one sprite per drug, and the
+        // i_ files -- pixel art in colour, drawn for Bare Minimum and shared with it, so the
+        // same weed is the same picture in both mods -- sit in front of them. Coke and crack
+        // keep the white line art until they are drawn. An i_ file is never tinted; see
+        // Draw.File.
+        public static readonly Icon Weed = new Icon(Inventory, "mp_specitem_weed").WithFile("i_weed.png");
         public static readonly Icon Coke = new Icon(Inventory, "mp_specitem_coke").WithFile("coke.png");
         /// <summary>
         /// Crack, ecstasy and heroin have no sprite of their own anywhere in the game, so each
@@ -137,9 +140,9 @@
         /// </summary>
         public static readonly Icon Crack = new Icon(Menu,
             "mp_specitem_crack", "shop_ammo_icon_a", "shop_franklin_icon_a").WithFile("crystal.png");
-        public static readonly Icon Meth = new Icon(Inventory, "mp_specitem_meth").WithFile("meth.png");
+        public static readonly Icon Meth = new Icon(Inventory, "mp_specitem_meth").WithFile("i_meth.png");
         public static readonly Icon Heroin = new Icon(Menu,
-            "mp_specitem_heroin", "shop_michael_icon_a", "shop_health_icon_a").WithFile("heroin.png");
+            "mp_specitem_heroin", "shop_michael_icon_a", "shop_health_icon_a").WithFile("i_heroin.png");
         /// <summary>
         /// Ecstasy.
         ///
@@ -152,7 +155,7 @@
         /// out empty whatever the first two do.
         /// </summary>
         public static readonly Icon Ecstasy = new Icon(Menu,
-            "mp_specitem_pills", "mp_specitem_ecstasy", "shop_health_icon_a").WithFile("pills.png");
+            "mp_specitem_pills", "mp_specitem_ecstasy", "shop_health_icon_a").WithFile("i_ecstasy.png");
 
         // Actions.
         public static readonly Icon Money = new Icon(Menu, "shop_money_icon_a").WithFile("money.png");
@@ -252,14 +255,14 @@
                 // took the bong, and a pre-roll is exactly what it is a picture of -- so the
                 // one product on the wheel still falling back to a text glyph gets the art
                 // that was drawn for it in the first place.
-                case "xanax": return FromFile("xanax.png");
+                case "xanax": return FromFile("i_xanax.png");
 
                 // A perforated sheet of blotter. Both names, because "acid" is what anybody
                 // would type and "lsd" is what the catalogue calls it -- the same rule
                 // Api.Drugs.IconOf follows, and the two have to agree or the wheel and
                 // whatever is reading us across the AppDomain show different pictures.
                 case "lsd":
-                case "acid": return FromFile("acid.png");
+                case "acid": return FromFile("i_lsd.png");
 
                 default: return new Icon();
             }

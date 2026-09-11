@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Hoodrich.Api
@@ -170,15 +170,15 @@ namespace Hoodrich.Api
 
                 switch ((id ?? "").ToLowerInvariant())
                 {
-                    case "weed": file = "bong.png"; break;
+                    case "weed": file = "i_weed.png"; break;
                     case "coke":
                     case "cocaine": file = "coke.png"; break;
                     case "crack": file = "crystal.png"; break;
-                    case "meth": file = "meth.png"; break;
-                    case "heroin": file = "heroin.png"; break;
+                    case "meth": file = "i_meth.png"; break;
+                    case "heroin": file = "i_heroin.png"; break;
                     case "ecstasy":
-                    case "pills": file = "pills.png"; break;
-                    case "xanax": file = "xanax.png"; break;
+                    case "pills": file = "i_ecstasy.png"; break;
+                    case "xanax": file = "i_xanax.png"; break;
 
                     // THE ART WAS ALREADY DRAWN. acid.png is a perforated sheet of blotter with
                     // the squares marked out, which has been in the set since before there was
@@ -186,7 +186,7 @@ namespace Hoodrich.Api
                     // to be drawn for it. Both names answer to it: "acid" is what anybody would
                     // type, and the id is "lsd".
                     case "lsd":
-                    case "acid": file = "acid.png"; break;
+                    case "acid": file = "i_lsd.png"; break;
 
                     // A drug added to drugs.json without art still gets a tile rather than a
                     // hole. Our own screens fall back to a text glyph, which another mod's
