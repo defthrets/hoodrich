@@ -85,6 +85,13 @@ namespace Hoodrich.Core
         public float VoiceVolume = 0.9f;
 
         /// <summary>
+        /// Per-speaker level on top of VoiceVolume, keyed by the front of the file name.
+        /// [Voice] Level.lamar=0.68 and so on; see the ini for the measured reasons.
+        /// </summary>
+        public readonly Dictionary<string, float> VoiceLevels =
+            new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
         /// Whether an already-heard line speaks again. See Voice.Repeat -- on is for recording.
         /// </summary>
         public bool VoiceRepeat;
@@ -757,6 +764,25 @@ namespace Hoodrich.Core
             s.VoiceEnabled = ini.GetBool("Voice", "Enabled", s.VoiceEnabled);
             s.VoiceVolume = Clamp(ini.GetFloat("Voice", "Volume", s.VoiceVolume), 0f, 1f);
             s.VoiceRepeat = ini.GetBool("Voice", "RepeatLines", s.VoiceRepeat);
+
+            // Level.<prefix>=0..1, read off the whole section rather than by a list of
+            // names, so a new speaker is one ini line and no code.
+            foreach (var kv in ini.Section("Voice"))
+            {
+                if (!kv.Key.StartsWith("Level.", StringComparison.OrdinalIgnoreCase)) continue;
+
+                var who = kv.Key.Substring(6).Trim();
+                float level;
+
+                if (who.Length == 0 ||
+                    !float.TryParse(kv.Value, System.Globalization.NumberStyles.Float,
+                                    System.Globalization.CultureInfo.InvariantCulture, out level))
+                {
+                    continue;
+                }
+
+                s.VoiceLevels[who] = Clamp(level, 0f, 1f);
+            }
 
             s.BulkPurchaseDiscountPercent =
                 Clamp(ini.GetFloat("Economy", "BulkPurchaseDiscountPercent", s.BulkPurchaseDiscountPercent), 0f, 90f);

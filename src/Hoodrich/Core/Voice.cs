@@ -43,6 +43,54 @@ namespace Hoodrich.Core
         public static float Volume = 0.9f;
 
         /// <summary>
+        /// Per-speaker level on top of Volume, keyed by the front of the file name.
+        ///
+        /// THE TAKES WERE NOT RECORDED AT ONE LEVEL. Measured over the whole pack, Vernon's
+        /// average eight decibels hotter than Gerald's, the OG Vee verses five, Lamar's
+        /// three -- and Gerald is the one the player is happy with, so the others come down
+        /// to him. A level only ever goes down: MCI tops out at the file, and Volume is the
+        /// ceiling. The quiet ones (Tao) want re-recording hotter, not a number here.
+        /// </summary>
+        private static readonly Dictionary<string, float> _levels =
+            new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+
+        public static void SetLevels(IDictionary<string, float> levels)
+        {
+            _levels.Clear();
+            if (levels == null) return;
+
+            foreach (var kv in levels) _levels[kv.Key] = Clamp(kv.Value, 0f, 1f);
+        }
+
+        /// <summary>
+        /// The level for one file, by the longest prefix that names it.
+        ///
+        /// A prefix has to end where a name part ends: "lamar" covers lamar_1f3c9a20,
+        /// lamar_shut and lamar_call_signed, and "hao" does NOT cover a file that merely
+        /// starts with those letters. Longest wins, so og_vee can be set apart from vernon
+        /// even though the man is the same.
+        /// </summary>
+        public static float Level(string name)
+        {
+            if (string.IsNullOrEmpty(name) || _levels.Count == 0) return 1f;
+
+            var best = 1f;
+            var bestLen = -1;
+
+            foreach (var kv in _levels)
+            {
+                var p = kv.Key;
+                if (p.Length <= bestLen || !name.StartsWith(p, StringComparison.OrdinalIgnoreCase)) continue;
+                if (name.Length > p.Length && name[p.Length] != '_') continue;
+
+                best = kv.Value;
+                bestLen = p.Length;
+            }
+
+            return best;
+        }
+
+        /// <summary>
         /// Whether a line you have already heard plays again.
         ///
         /// Off, because a recording is a performance rather than a sound effect: the first time
@@ -444,7 +492,15 @@ namespace Hoodrich.Core
             // The scale is the caller's, and it is applied to the setting rather than
             // replacing it: a radio at four tenths means four tenths of however loud this
             // player has the voices, not four tenths of the maximum.
-            var vol = (int)Math.Round(Clamp(Volume, 0f, 1f) * Clamp(scale, 0f, 1f) * 1000f);
+            // And the speaker's own level under both, off the file's name. See Level.
+            var level = Level(Path.GetFileNameWithoutExtension(path));
+            if (level < 0.999f)
+            {
+                Log.Debug("Voice: " + Path.GetFileName(path) + " at " +
+                          level.ToString("0.00", CultureInfo.InvariantCulture) + " of the level.");
+            }
+
+            var vol = (int)Math.Round(Clamp(Volume, 0f, 1f) * Clamp(scale, 0f, 1f) * level * 1000f);
             mciSendString("setaudio " + alias + " volume to " +
                           vol.ToString(CultureInfo.InvariantCulture), null, 0, IntPtr.Zero);
 

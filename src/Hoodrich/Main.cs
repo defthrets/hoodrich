@@ -699,6 +699,7 @@ namespace Hoodrich
                 // of its own -- see the Changed handler below, which pushes them again.
                 Core.Voice.Enabled = _cfg.VoiceEnabled;
                 Core.Voice.Volume = _cfg.VoiceVolume;
+                Core.Voice.SetLevels(_cfg.VoiceLevels);
                 Core.Voice.Repeat = _cfg.VoiceRepeat;
                 Social.Inbox.Chime = _cfg.PlaySounds;
 
@@ -2808,6 +2809,7 @@ namespace Hoodrich
 
                     Core.Voice.Enabled = _cfg.VoiceEnabled;
                     Core.Voice.Volume = _cfg.VoiceVolume;
+                    Core.Voice.SetLevels(_cfg.VoiceLevels);
                         Core.Voice.Repeat = _cfg.VoiceRepeat;
                     Social.Inbox.Chime = _cfg.PlaySounds;
 

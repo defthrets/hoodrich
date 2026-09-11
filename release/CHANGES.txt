@@ -1,6 +1,29 @@
 ﻿Since 0.7.1 -- 11 September 2026
 
 
+THE CONVERSATION PANEL, CLEANED UP.
+
+One header row -- his picture, his name in his colour, the place small and dim
+at the far end -- then the words, one hairline, the choices, the keys. The
+wordmark across the top went, and so did the place name in cursive the size
+of a headline, the white well behind the photograph, and the plate, sweeping
+sheen and glowing frame under the chosen line. (The sheen was the grey box
+that sat across "Everything he's holding": a band of white sweeping the row,
+caught at the right-hand end.) The chosen line now gets a soft fill and a
+rail that rise under it over the same sixth of a second, and the ink still
+brightens with them. Two rectangles on that row instead of ten.
+
+
+THE HOT TAKES BROUGHT DOWN TO GERALD.
+
+The recordings were not made at one level. Measured over the whole pack,
+Vernon's average eight decibels hotter than Gerald's, the OG Vee verses five,
+Lamar's three; Hao and Stretch already sit with Gerald and Tao is a touch
+under. [Voice] Level.<speaker>=0..1 in the ini scales one man's files under
+the main Volume, keyed by the front of the file name and read off the whole
+section, so a new speaker is one line and no code. Shipped: vernon 0.38,
+og_vee 0.58, lamar 0.68. A level only goes down; Tao wants re-recording hot.
+
 VERNON ACTS HIS LINES.
 
 He talked stood stock still, off the wall and turned to you like a man waiting

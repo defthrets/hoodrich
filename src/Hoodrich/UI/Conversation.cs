@@ -336,12 +336,27 @@ namespace Hoodrich.UI
         /// an ultrawide is a letterbox strip with a sentence a metre long across it. The
         /// stash screen made the same move for the same reason.
         /// </summary>
-        private const float PanelWidthH = 0.75f;
+        private const float PanelWidthH = 0.72f;
         private static float PanelWidth => Hud.ToX(PanelWidthH);
-        private const float LineHeight = 0.030f;
-        private const float ChoiceHeight = 0.032f;
+        private const float LineHeight = 0.031f;
+        private const float ChoiceHeight = 0.034f;
         private const float BodyScale = 0.36f;
-        private const float ChoiceScale = 0.36f;
+        private const float ChoiceScale = 0.34f;
+
+        // The panel's own measures. Heights are fractions of the screen's height, the x
+        // insets are fractions of its width, the way every Hud call takes them. See Draw.
+        private const float Pad = 0.014f;
+        private const float PadTop = 0.020f;
+        private const float PadBottom = 0.014f;
+        private const float NameRow = 0.034f;
+        private const float RuleGap = 0.011f;
+        private const float KeysGap = 0.010f;
+        private const float KeysRow = KeysGap + 0.0175f;
+        private const float Rail = 0.0030f;
+        private const float RowInset = 0.010f;
+        private const float RowFill = 26f;
+        private const float NameScale = 0.36f;
+        private const float PlaceScale = 0.27f;
 
         /// <summary>Ignore input for a moment after opening, or the key that opened it selects.</summary>
         private const int OpenGraceMs = 220;
@@ -1065,28 +1080,24 @@ namespace Hoodrich.UI
             var bodyHeight = _wrapped.Count * LineHeight;
             var choiceHeight = _node.Choices.Count * ChoiceHeight;
 
-            // Grown from the content and centred, like every other panel in the mod. It used to
-            // be pinned near the bottom of the screen, which put a conversation you are reading
-            // down in the subtitle band and out of step with the readouts and the transfer
-            // screen -- so where a panel appears depended on which one it was.
-            // 0.062 rather than 0.048: the wordmark went in above the speaker's name and the
-            // panel has to be that much taller, or the last line of choices runs off the bottom
-            // of its own ground.
-            // The body has to be at least as tall as the photograph, or a one-line answer
-            // leaves his face hanging over the first thing you can say back. The name row above
-            // it counts toward that, since the picture starts level with the name.
-            if (!string.IsNullOrEmpty(_face) || !string.IsNullOrEmpty(_shotTxd))
+            // The photograph runs from the name row down into the words, so a one-line
+            // answer still has to be as tall as his face, or the face hangs over the first
+            // thing you can say back.
+            var pictured = !string.IsNullOrEmpty(_face) || !string.IsNullOrEmpty(_shotTxd);
+            if (pictured)
             {
-                var room = FaceSize - 0.034f + 0.004f;
+                var room = FaceSize - NameRow + 0.004f;
                 if (bodyHeight < room) bodyHeight = room;
             }
 
-            var total = 0.075f + bodyHeight + 0.012f + choiceHeight + 0.038f;
-            if (!string.IsNullOrEmpty(Title)) total += 0.036f;
-            // STOOD ON THE BOTTOM OF THE SCREEN. Centred, it sat across the face of whoever
-            // was talking; centred lower, across their chin. Hung from the bottom edge it
-            // leaves the whole top of the picture to them, which is where the camera has put
-            // them (see TalkCam), and only a long list of choices climbs back up into it.
+            // ONE HEADER ROW, THE WORDS, A RULE, THE CHOICES, THE KEYS. Nothing else. The
+            // wordmark across the top and the place name in cursive the size of a headline
+            // both went: a conversation is the one screen where the man talking is the whole
+            // point, and everything above his name was competing with him for it.
+            var total = PadTop + NameRow + bodyHeight + RuleGap * 2f + choiceHeight + KeysRow + PadBottom;
+
+            // STOOD ON THE BOTTOM OF THE SCREEN, under the face the camera has put at the
+            // top -- see TalkCam. Only a long list of choices climbs back up into it.
             var top = Math.Max(0.06f, PanelFoot - total);
 
             // The entrance. Up and in over about a fifth of a second, eased out so it slows
@@ -1098,32 +1109,19 @@ namespace Hoodrich.UI
 
             top += EnterRise * (1f - arrive);
 
-            // The same panel as every other screen: rounded black, the ember wash, and no bar
-            // along the top. The speaker's colour stays on his name and beside his picture,
-            // which is where it says who is talking.
             Theme.Panel(PanelX, top, PanelWidth, total, arrive);
 
-            // Same idea as the info panels: the mod first, quietly, then who is speaking.
-            Hud.BrandCentre(0.5f, top + 0.024f, 0.022f, Palette.Alpha(Palette.Text, (int)(225f * arrive)));
+            var left = PanelX + Pad;
+            var right = PanelX + PanelWidth - Pad;
+            var inner = right - left;
+            var ink = (int)(255f * arrive);
 
-            var y = top + 0.039f;
+            var y = top + PadTop;
+            var said = left;
 
-            if (!string.IsNullOrEmpty(Title))
-            {
-                Hud.Text(Title.ToUpperInvariant(), PanelX + 0.014f, y - 0.004f, 0.62f,
-                         Palette.Text, Hud.FontCursive, centre: false);
-                y += 0.036f;
-            }
-
-            var said = PanelX + 0.014f;
-
-            // His photograph, beside what he is saying.
-            //
-            // Drawn from the top of the NAME rather than centred on the block of text, so a
-            // three-line answer and a one-line one both put his face in the same place --
-            // a portrait that slides up and down the panel as the sentence changes length
-            // reads as part of the sentence rather than as the man saying it.
-            // His own head if it has finished rendering, the contact picture until then.
+            // His photograph, level with his name, with his colour down the near edge --
+            // the one mark on the panel of whose it is. No well behind it: the picture has
+            // its own edge and the panel is flat everywhere else.
             Mugshot();
 
             var face = string.IsNullOrEmpty(_shotTxd) ? _face : _shotTxd;
@@ -1132,94 +1130,87 @@ namespace Hoodrich.UI
             {
                 var wide = Hud.ToX(FaceSize);
 
-                // A well behind it, the same one the objective card puts its icon in, so the
-                // picture has an edge on a panel that is otherwise flat.
-                Hud.RectFrom(said, y - 0.002f, wide, FaceSize,
-                             Color.FromArgb((int)(30f * arrive), 255, 255, 255));
+                Hud.Sprite(face, face, said + wide * 0.5f, y + FaceSize * 0.5f,
+                           wide, FaceSize, 0f, Color.FromArgb(ink, 255, 255, 255));
 
-                Hud.Sprite(face, face, said + wide * 0.5f, y - 0.002f + FaceSize * 0.5f,
-                           wide, FaceSize, 0f,
-                           Color.FromArgb((int)(255f * arrive), 255, 255, 255));
-
-                // And his own colour down the near edge of it, so the picture belongs to the
-                // name above the words rather than floating next to them.
-                Hud.RectFrom(said, y - 0.002f, 0.0022f, FaceSize,
-                             Palette.Alpha(_node.SpeakerColour, (int)(255f * arrive)));
+                Hud.RectFrom(said, y, Hud.ToX(Rail), FaceSize,
+                             Palette.Alpha(_node.SpeakerColour, ink));
 
                 said += TextInset;
             }
 
-            Hud.Text(_node.Speaker.ToUpperInvariant(), said, y, 0.36f,
-                         _node.SpeakerColour, Hud.FontLabel, centre: false);
-            y += 0.034f;
+            // The name in his colour; the place small and dim at the far end of the row,
+            // where a label goes, rather than over everything as a title.
+            Hud.Text(_node.Speaker.ToUpperInvariant(), said, y, NameScale,
+                     Palette.Alpha(_node.SpeakerColour, ink), Hud.FontLabel, centre: false);
+
+            if (!string.IsNullOrEmpty(Title))
+            {
+                Hud.TextRight(Title.ToUpperInvariant(), right, y + 0.004f, PlaceScale,
+                              Palette.Alpha(Palette.TextDim, (int)(200f * arrive)), Hud.FontLabel);
+            }
+
+            y += NameRow;
+
+            var bodyTop = y;
 
             foreach (var line in _wrapped)
             {
-                Hud.Text(line, said, y, BodyScale, Palette.Text, Hud.FontBody, centre: false);
+                Hud.Text(line, said, y, BodyScale, Palette.Alpha(Palette.Text, ink),
+                         Hud.FontBody, centre: false);
                 y += LineHeight;
             }
 
-            y += 0.012f;
+            // One hairline between what he said and what you can say back, tinted his
+            // colour at the near end the way every rule in the mod is.
+            y = bodyTop + bodyHeight + RuleGap;
+            Theme.Rule(left, y, inner, arrive, _node.SpeakerColour);
+            y += RuleGap;
 
-            // THE PLATE COMES UP UNDER THE CHOICE rather than sliding to it: the one under the
-            // new line rises over a sixth of a second while the one under the old line sinks,
-            // and the frame -- see Glide -- travels between them. Same as every other screen.
+            // THE LIGHT COMES UP UNDER THE CHOICE rather than a frame sliding to it: a soft
+            // fill and a rail rise under the new line over a sixth of a second while the
+            // ones under the old line sink, and the ink brightens by the same measure. No
+            // plate, no sheen, no frame -- a light behind the words, not a box round them.
             var grown = Theme.Grown(_pickedAt);
-
-            _glide.Begin();
 
             for (var i = 0; i < _node.Choices.Count; i++)
             {
                 var choice = _node.Choices[i];
                 var picked = i == _selected;
 
-                // Inked by how far the PLATE has come up under this row, not by which row is
-                // selected. Those are the same thing when nothing is moving and different for
-                // the sixth of a second the plate is rising -- and getting it wrong is visible:
-                // dark ink on a dark panel until the plate catches up.
+                // Inked by how far the light has come up under this row, not by which row
+                // is selected -- the two differ for the sixth of a second it is rising.
                 var under = Theme.Lit(i, _selected, _lastSelected, grown) * arrive;
+                var rowTop = y - 0.002f;
 
-                Theme.Plate(PanelX, y - 0.0015f, PanelWidth, ChoiceHeight, under);
-                Theme.Sheen(PanelX, y - 0.0015f, PanelWidth, ChoiceHeight, under);
-
-                if (picked) _glide.Target(PanelX, y - 0.0015f, PanelWidth, ChoiceHeight);
+                if (under > 0.01f)
+                {
+                    Hud.RectFrom(left, rowTop, inner, ChoiceHeight,
+                                 Color.FromArgb((int)(RowFill * under), 255, 255, 255));
+                    Hud.RectFrom(left, rowTop, Hud.ToX(Rail), ChoiceHeight,
+                                 Palette.Alpha(Palette.Brand, (int)(255f * under)));
+                }
 
                 var colour = !choice.Enabled
                     ? Theme.Ink(Palette.TextDisabled, under)
                     : Theme.Ink(picked ? Palette.Text : Palette.TextDim, under);
 
-                // The one the game is waiting on, breathing.
-                //
-                // UNDER everything else on the row rather than over it, so the words stay the
-                // words -- this is a light behind the line, not a badge stuck on the front of
-                // it. It fades out as the highlight arrives, by the same measure the ink uses,
-                // so it hands over during the slide instead of blinking off: two things
-                // pulsing on one row is a fairground, and the highlight is much the louder.
-                //
-                // A sine, and a slow one. Anything that snaps back to its start reads as a
-                // warning. Something that swells and falls reads as waiting, which is what
-                // this is.
+                colour = Palette.Alpha(colour, (int)(colour.A * arrive));
+
+                // The one the game is waiting on, breathing -- on the rail only. A slow
+                // sine: anything that snaps back to its start reads as a warning, and this
+                // is waiting. It hands over to the light as the light arrives.
                 if (choice.MovesOn && choice.Enabled && under < 0.99f)
                 {
                     var breath = (Game.GameTime % MovesOnMs) / (float)MovesOnMs;
                     var swell = 0.5f + 0.5f * (float)Math.Sin(breath * Math.PI * 2.0);
-
                     var strength = (1f - under) * arrive;
 
-                    Hud.RectFrom(PanelX, y - 0.0015f, PanelWidth, ChoiceHeight,
-                                 Palette.Alpha(Palette.Brand,
-                                               (int)((MovesOnFloor + MovesOnSwing * swell)
-                                                     * strength)));
-
-                    // And a hairline down the near edge, which is what the eye actually catches
-                    // in the corner of a panel this wide. The wash alone is a shade; the edge
-                    // is a mark.
-                    Hud.RectFrom(PanelX, y - 0.0015f, 0.0026f, ChoiceHeight,
-                                 Palette.Alpha(Palette.Brand,
-                                               (int)((90f + 130f * swell) * strength)));
+                    Hud.RectFrom(left, rowTop, Hud.ToX(Rail), ChoiceHeight,
+                                 Palette.Alpha(Palette.Brand, (int)((90f + 130f * swell) * strength)));
                 }
 
-                var textX = PanelX + 0.014f;
+                var textX = left + RowInset;
 
                 // Ours, if there is one. Square and authored for this size, so it needs none
                 // of the aspect correction the shipped sprites below do.
@@ -1253,27 +1244,20 @@ namespace Hoodrich.UI
                     textX += Hud.ToX(iw) + 0.006f;
                 }
 
-                // No caret. The plate and the frame say which line this is, and a mark that
-                // appears in front of the words shifts them sideways every time the cursor moves.
-                //
-                // FITTED TO WHAT IS LEFT. A line with a detail on the right -- a price, a
-                // reason it is locked -- used to run straight through it: "I want to sell the
-                // Vectre back." and "$14,000 -- full price" met in the middle of the panel.
-                // The detail is measured first and the words give way to it.
+                // FITTED TO WHAT IS LEFT. The detail on the right -- a price, a reason it is
+                // locked -- is measured first and the words give way to it, so the two never
+                // meet in the middle of the row.
                 var note = !choice.Enabled ? choice.DisabledReason : picked ? choice.Detail : "";
                 var noteW = string.IsNullOrEmpty(note) ? 0f : Hud.MeasureText(note, 0.26f, Hud.FontLabel) + 0.012f;
                 var markW = string.IsNullOrEmpty(choice.MarkFile) ? 0f : Hud.ToX(MarkSize) + 0.008f;
 
-                var labelled = Hud.Fit(choice.Label, PanelX + PanelWidth - 0.014f - noteW - markW - textX,
+                var labelled = Hud.Fit(choice.Label, right - noteW - markW - textX,
                                        ChoiceScale, Hud.FontBody);
 
                 Hud.Text(labelled, textX, y, ChoiceScale, colour, Hud.FontBody, centre: false);
 
-                // How strong it is, straight after what it is.
-                //
-                // Measured rather than parked at a fixed offset: "Marijuana." and "Ecstasy."
-                // are different widths, and one constant x sits inside the end of one word and
-                // out in the middle of nothing after the other.
+                // How strong it is, straight after what it is. Measured, because
+                // "Marijuana." and "Ecstasy." are different widths.
                 if (!string.IsNullOrEmpty(choice.MarkFile))
                 {
                     var wide = Hud.MeasureText(labelled, ChoiceScale, Hud.FontBody);
@@ -1284,24 +1268,22 @@ namespace Hoodrich.UI
 
                 if (!string.IsNullOrEmpty(note))
                 {
-                    Hud.TextRight(note, PanelX + PanelWidth - 0.014f, y + 0.004f, 0.26f,
-                                      Theme.Ink(!choice.Enabled ? Palette.Danger : Palette.TextDim, under),
-                                      Hud.FontLabel);
+                    var noteInk = Theme.Ink(!choice.Enabled ? Palette.Danger : Palette.TextDim, under);
+
+                    Hud.TextRight(note, right, y + 0.004f, 0.26f,
+                                  Palette.Alpha(noteInk, (int)(noteInk.A * arrive)), Hud.FontLabel);
                 }
 
                 y += ChoiceHeight;
             }
 
-            // The keys, drawn as keys, the way every other panel does it.
-            var ky = y + 0.008f;
+            // The keys, drawn as keys, the way every other panel does it, under a little air.
+            var ky = y + KeysGap;
 
-            UiKit.KeyRight(PanelX + PanelWidth - 0.014f, ky, UiKit.Back, "WALK OFF", arrive);
+            UiKit.KeyRight(right, ky, UiKit.Back, "WALK OFF", arrive);
 
-            var kx = UiKit.Key(PanelX + 0.014f, ky, null, "arrow_updown.png", "CHOOSE", arrive);
+            var kx = UiKit.Key(left, ky, null, "arrow_updown.png", "CHOOSE", arrive);
             UiKit.Key(kx, ky, UiKit.Confirm, null, "SAY IT", arrive);
-
-            // Last, so it rides over the lines it is pointing at.
-            _glide.Draw(arrive);
         }
 
         /// <summary>Smaller than the row's own art -- a footnote to the label rather than a
