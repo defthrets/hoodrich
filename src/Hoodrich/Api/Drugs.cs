@@ -172,8 +172,8 @@ namespace Hoodrich.Api
                 {
                     case "weed": file = "i_weed.png"; break;
                     case "coke":
-                    case "cocaine": file = "coke.png"; break;
-                    case "crack": file = "crystal.png"; break;
+                    case "cocaine": file = "i_coke.png"; break;
+                    case "crack": file = "i_crack.png"; break;
                     case "meth": file = "i_meth.png"; break;
                     case "heroin": file = "i_heroin.png"; break;
                     case "ecstasy":

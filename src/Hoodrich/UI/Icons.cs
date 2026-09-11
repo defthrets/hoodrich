@@ -126,11 +126,10 @@
 
         // Product. The multiplayer inventory dictionary carries one sprite per drug, and the
         // i_ files -- pixel art in colour, drawn for Bare Minimum and shared with it, so the
-        // same weed is the same picture in both mods -- sit in front of them. Coke and crack
-        // keep the white line art until they are drawn. An i_ file is never tinted; see
-        // Draw.File.
+        // same weed is the same picture in both mods -- sit in front of them, all eight. An
+        // i_ file is never tinted; see Draw.File.
         public static readonly Icon Weed = new Icon(Inventory, "mp_specitem_weed").WithFile("i_weed.png");
-        public static readonly Icon Coke = new Icon(Inventory, "mp_specitem_coke").WithFile("coke.png");
+        public static readonly Icon Coke = new Icon(Inventory, "mp_specitem_coke").WithFile("i_coke.png");
         /// <summary>
         /// Crack, ecstasy and heroin have no sprite of their own anywhere in the game, so each
         /// borrows one that reads at a glance: the rocket for a rock, the pill for a pill, and
@@ -139,7 +138,7 @@
         /// anything that resolves wins, and if none do the item keeps its text glyph.
         /// </summary>
         public static readonly Icon Crack = new Icon(Menu,
-            "mp_specitem_crack", "shop_ammo_icon_a", "shop_franklin_icon_a").WithFile("crystal.png");
+            "mp_specitem_crack", "shop_ammo_icon_a", "shop_franklin_icon_a").WithFile("i_crack.png");
         public static readonly Icon Meth = new Icon(Inventory, "mp_specitem_meth").WithFile("i_meth.png");
         public static readonly Icon Heroin = new Icon(Menu,
             "mp_specitem_heroin", "shop_michael_icon_a", "shop_health_icon_a").WithFile("i_heroin.png");
