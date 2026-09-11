@@ -99,28 +99,21 @@ namespace Hoodrich.Paint
     internal sealed class Marks
     {
         /// <summary>
-        /// 1030 is splatters_paint: authored pale, so an arbitrary RGB comes out as that colour.
+        /// The ladder: blood, then paint. Nothing else, ever.
         ///
-        /// The blood types behind it are a WORSE fallback than they look, and for a mod whose
-        /// entire point is picking a colour they are close to useless -- the r/g/b arguments
-        /// are multipliers over the source texture rather than a replacement, and Rockstar's
-        /// own scripts pass 0.196, 0, 0 to darken blood. Green over red comes out near black.
+        /// 1010 is splatters_blood, and judged on SHAPE it is the best texture the game
+        /// ships for a can: a dense middle with flung droplets round the edge, which is what
+        /// comes off an aerosol at the end of a stroke. 1030 is splatters_paint -- pale,
+        /// speckled, holes through it, but it takes any colour honestly -- and it is only
+        /// here for an install where blood will not place.
         ///
-        /// Kept anyway, because a dark splat still says somebody did something to that wall and
-        /// beats a wall that did not change -- but it is logged loudly when it happens, since
-        /// "my colours are all wrong" and "this install has no paint decal" are the same event.
-        ///
-        /// THE IMPACT TYPES SIT ABOVE THE BLOOD ONES, which is new and is the
-        /// only reordering here. If splatters_paint is missing, the next best thing is not a
-        /// red texture -- it is a NEUTRAL DARK one, because multiplying a neutral by your
-        /// colour at least moves it toward that colour, where multiplying red by green moves
-        /// it toward black. A concrete impact mark is a solid dab of dark grey and it is
-        /// exactly what a bullet leaves in a wall, which is to say it is already a mark
-        /// somebody made on purpose.
-        ///
-        /// 1030 is still first, so an install that has it is untouched by any of this.
+        /// THE IMPACT FAMILY IS GONE FROM THIS LIST AND REFUSED EVERYWHERE ELSE. 4010, 4020
+        /// and 4050 are the marks a BULLET leaves in metal, concrete and wood: a small solid
+        /// lump of near-black with a soft edge. They were in here as a fallback and they were
+        /// reachable from the ini as a can texture, a mix texture and the vehicle texture, and
+        /// a wall with them on it is a wall somebody shot. This is a spray can. See Bullets.
         /// </summary>
-        private static readonly int[] Types = { 1030, 4020, 4010, 1110, 1010 };
+        private static readonly int[] Types = { 1010, 1030 };
 
         /// <summary>What a type id is, for a log line that has to name one.</summary>
         private static string Called(int type)
@@ -267,10 +260,10 @@ namespace Hoodrich.Paint
                     Log.Warn("Twelve marks in a row would not place -- the game is full of " +
                              "decals. This is its own limit, not the mod's: nothing painted is " +
                              "lost, and it comes back as you walk up to it. What raises it is " +
-                             "a limit adjuster. On GTA V Enhanced that is DecalPatch.asi, a " +
-                             "drop-in ASI whose ini goes up to 2048 with no OpenIV and no RPF " +
-                             "editing. On Legacy it is a gameconfig with raised pools, and it " +
-                             "has to match your game build.");
+                             "a limit adjuster: DecalLimitAdjuster.asi next to the game exe, " +
+                             "with [ActiveDecals] Limit= set to what you want and PairRVA= " +
+                             "pointed at the pair its log lists (on Enhanced 1.0.1158.13 that is " +
+                             "0x0071D50E). DecalPatch.asi does the same up to 2048.");
                 }
 
                 return;
@@ -355,6 +348,30 @@ namespace Hoodrich.Paint
             m.Away = m.Handle == 0;
         }
 
+        /// <summary>
+        /// A bullet mark asked for, turned into blood, and said once.
+        ///
+        /// Whoever asked -- an ini with 4020 in it, a mark saved with one from before this
+        /// rule -- gets the splatter instead. Said once per session rather than per mark,
+        /// because this runs three hundred times a second under a held trigger.
+        /// </summary>
+        private int Bullets(int asked)
+        {
+            if (!_saidAboutBullets)
+            {
+                _saidAboutBullets = true;
+
+                Log.Warn("Decal type " + asked + " (" + Called(asked) + ") was asked for. That is " +
+                         "the mark a bullet leaves and this is a spray can, so splatters_blood " +
+                         "(1010) is used instead. Set CanDecal, MixDecal or VehicleDecal to " +
+                         "1010 or 1030 to stop this line.");
+            }
+
+            return 1010;
+        }
+
+        private bool _saidAboutBullets;
+
         /// <summary>Puts one up, trying each decal type until the game accepts one.</summary>
         private int Place(Mark m)
         {
@@ -370,6 +387,9 @@ namespace Hoodrich.Paint
             // fresh array per decal at three hundred a second is litter for the collector to
             // pick up mid-spray.
             var first = m.Type > 0 ? m.Type : (m.OnVehicle ? _cfg.VehicleDecal : Wanted);
+
+            // NEVER A BULLET. See Types.
+            if (first >= 4000) first = Bullets(first);
 
             for (var i = -1; i < Types.Length; i++)
             {
@@ -484,25 +504,18 @@ namespace Hoodrich.Paint
                 {
                     _type = type;
 
-                    if (type == 1030)
+                    if (type == 1010)
                     {
-                        Log.Info("Using splatters_paint (1030). Colours will be true.");
-                    }
-                    else if (type >= 4000)
-                    {
-                        Log.Warn("splatters_paint (1030) would not place; fell back to " +
-                                 Called(type) + " (" + type + "), which is the mark a BULLET " +
-                                 "leaves. It is solid and it takes a tint, but it is authored " +
-                                 "nearly black -- so everything will come out dark. Turn " +
-                                 "CanColourGain up if you want the colour back.");
+                        Log.Info("Using splatters_blood (1010): the dense middle and flung " +
+                                 "droplets of an aerosol. Colours multiply a red texture, so " +
+                                 "black comes out perfect and bright greens and blues come out " +
+                                 "muddy.");
                     }
                     else
                     {
-                        Log.Warn("splatters_paint (1030) would not place; fell back to " +
-                                 Called(type) + " (" + type + "), which is a BLOOD decal. Its " +
-                                 "colour arguments multiply over a red texture, so anything you " +
-                                 "pick will come out dark and wrong. This is not the picker " +
-                                 "misbehaving.");
+                        Log.Warn("splatters_blood (1010) would not place; using " + Called(type) +
+                                 " (" + type + "). Colours will be true and the marks will be " +
+                                 "speckle rather than splatter.");
                     }
                 }
 

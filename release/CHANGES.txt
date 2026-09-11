@@ -1,6 +1,15 @@
 ﻿Since 0.7.1 -- 11 September 2026
 
 
+THE CAN SPRAYS BLOOD, NEVER BULLETS, AND THE PAINT'S OWN CAP COMES OFF.
+
+The shared paint engine: splatters_blood is the default texture, the impact
+family (the marks a bullet leaves) is out of the fallback ladder and refused
+wherever it is asked for, and the record cap goes from fifty thousand marks
+to a quarter of a million, because with DecalLimitAdjuster raising the
+game's pool the record was the only cap left. The installed ini had
+MixDecal=4020 in it, which was a bullet mark on every twelfth dab; it is 0.
+
 LAMAR'S HUNT, REDONE. Same words, different job underneath them.
 
 The ride out has a marker now: the same yellow ring the other jobs use, with

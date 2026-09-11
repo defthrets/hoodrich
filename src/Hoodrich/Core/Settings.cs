@@ -195,7 +195,7 @@ namespace Hoodrich.Core
         /// LIKE rather than how it behaves, and they are the ones worth an evening on a wall.
         /// Everything else stays where it is: in PaintConfig, one copy, tuned in code.
         /// </summary>
-        public int PaintTexture = 1030;
+        public int PaintTexture = 1010;
         public int PaintMixTexture;
         public int PaintMixEvery;
         public float PaintColourGain = 1f;

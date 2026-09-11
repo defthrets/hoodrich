@@ -450,24 +450,16 @@
         /// The decal type used when the thing hit is a VEHICLE, or 0 to use the same one as
         /// everything else.
         ///
-        /// A CAR IS NOT A WALL as far as the decal system is concerned. splatters_paint goes on
-        /// the map perfectly and appears to do nothing at all on a vehicle -- which is what got
-        /// reported: paint that simply never showed up.
+        /// A CAR IS NOT A WALL as far as the decal system is concerned: splatters_paint goes
+        /// on the map perfectly and appeared to do nothing at all on a vehicle. The game
+        /// clearly CAN mark a car -- blood lands on one and stays there while it drives -- so
+        /// blood is what this tries. The first one to land says in the log whether the game
+        /// agrees it is there; if it never does, no decal type works on a vehicle.
         ///
-        /// The game clearly CAN mark a car, because bullet holes and blood land on one and stay
-        /// there while it drives. Those are the weapImpact family, so that is what this tries.
-        /// 4010 is weapImpact_metal, which is the one a car panel is.
-        ///
-        /// Unproven, which is why it is a setting and why the first one to land says so in the
-        /// log either way. If none of them take, no decal type works on a vehicle and the
-        /// honest fix is to stop probing them at all rather than to let the trigger do nothing.
-        ///
-        ///     4010  weapImpact_metal      a car panel
-        ///     4020  weapImpact_concrete
-        ///     4050  weapImpact_wood
-        ///     1030  splatters_paint       what walls use, and what does not appear here
+        /// The impact family (4010, 4020, 4050 -- a bullet's marks) is refused here as it is
+        /// everywhere else in the engine. See Marks.Bullets.
         /// </summary>
-        public int VehicleDecal = 4010;
+        public int VehicleDecal = 1010;
 
         /// <summary>
         /// Which decal texture the SPRAY CAN lays down. 0 means the same one the extinguisher
@@ -484,46 +476,29 @@
         /// as that colour. Anything authored dark or strongly coloured tints everything toward
         /// itself -- mud is brown, so red over it is a rust and blue over it is a murk.
         ///
-        ///     1030  splatters_paint   pale, speckled, takes colour honestly. The default.
+        ///     1010  splatters_blood   the best SHAPE of the four. The default.
+        ///     1030  splatters_paint   pale, speckled, takes colour honestly.
         ///     1020  splatters_mud     bigger, wetter blobs. Fuller coverage, brown cast.
         ///     1040  splatters_water   faint. Barely marks a wall.
-        ///     1010  splatters_blood   see below. The best SHAPE of the four.
         ///
-        /// BLOOD IS NOT THE BOOBY PRIZE THIS LIST USED TO CALL IT. "Red, and it looks it" was
-        /// the whole entry, written when the only question about a texture was whether your
-        /// colour survived it. Judged on SHAPE rather than on colour it is the best of the
-        /// four: a dense middle with flung droplets round the edge, which is what comes off an
-        /// aerosol at the end of a stroke. The paint texture is speckle with holes through it
-        /// and no edge behaviour at all.
+        /// BLOOD IS THE DEFAULT NOW, and on shape alone: a dense middle with flung droplets
+        /// round the edge, which is what comes off an aerosol at the end of a stroke. The
+        /// paint texture is speckle with holes through it and no edge behaviour at all.
         ///
         /// The red is real and it is the cost. Your colour multiplies it, so everything drags
         /// toward red -- greens and blues come out muddy. What it is superb at is BLACK and the
         /// near-blacks, where the multiply takes the red out entirely and leaves you the
         /// shape: nothing left of the blood but the spatter.
         ///
-        /// AND THE IMPACT FAMILY, which is what a bullet leaves in a wall.
-        ///
-        ///     4020  weapImpact_concrete   what a machine pistol writes on stucco
-        ///     4010  weapImpact_metal      the same, on a panel
-        ///     4050  weapImpact_wood
-        ///
-        /// These are worth knowing about for a reason that has nothing to do with guns. The
-        /// splatter textures are SPLATTERS -- speckled, with holes in them -- and a wall covered
-        /// in them still reads as a wall with something thrown at it. An impact mark is a small
-        /// SOLID lump with a soft edge, which is very close to what a can actually leaves, and
-        /// a hundred of them overlapping is a filled shape rather than a cloud of dots.
-        ///
-        /// THEY ARE NEARLY BLACK, and that is the whole cost. The colour arguments multiply, so
-        /// a black texture stays black whatever you pass it -- an impact tag is a BLACK tag with
-        /// a hint of your colour in the soft edge, not a green one. Which for an outline, a
-        /// throw-up or anything that wants to read as solid is not a compromise; for a bright
-        /// fill it is fatal. CanColourGain is the dial that might drag it back up, and might do
-        /// nothing at all: see there.
+        /// THE IMPACT FAMILY IS REFUSED. 4010, 4020 and 4050 are the marks a bullet leaves in
+        /// metal, concrete and wood -- solid near-black lumps -- and a wall with them on it is
+        /// a wall somebody shot. Ask for one here, as a mix texture or for vehicles and the
+        /// engine uses blood instead and says so once in the log. See Marks.Bullets.
         ///
         /// Marks remember which one they were placed with, so changing this leaves everything
         /// already on a wall alone.
         /// </summary>
-        public int CanDecal = 1030;
+        public int CanDecal = 1010;
 
         /// <summary>
         /// A SECOND texture, laid instead of the first every so often, and how often in a
@@ -602,14 +577,16 @@
         /// What this buys is everything you have EVER painted staying real. The list is the
         /// truth and the decals are a view of it: whatever is near you is on the wall, a
         /// refusal takes a slot back off something further away, and walking back to a piece
-        /// you did an hour ago puts it up again. At fifty thousand that is a whole city's
-        /// worth of paint you can return to, for a few megabytes of small structs.
+        /// you did an hour ago puts it up again. At a quarter of a million that is more paint
+        /// than a city holds, for some tens of megabytes of small structs.
         ///
-        /// It is only affordable because the two loops that touch every mark were fixed to
-        /// stop doing that -- see Marks.Recycle, which used to scan the entire list on every
-        /// refused dab.
+        /// FIFTY THOUSAND WAS THE OLD FIGURE, and it was set with a two-thousand-decal game
+        /// pool in mind. With a limit adjuster raising that pool the record is the only cap
+        /// left, so it is out of the way. It is only affordable because the two loops that
+        /// touch every mark were fixed to stop doing that -- see Marks.Recycle, which used to
+        /// scan the entire list on every refused dab.
         /// </summary>
-        public int MaxMarks = 50000;
+        public int MaxMarks = 250000;
 
         /// <summary>Whether the visible jet is tinted to the colour being sprayed.</summary>
         public bool ColourTheSmoke = true;
