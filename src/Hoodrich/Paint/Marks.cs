@@ -189,34 +189,14 @@ namespace Hoodrich.Paint
         private const int PerFrame = 20;
 
         /// <summary>
-        /// THE POOL, LEARNED. The game does not refuse a decal when its pool is full; it takes
-        /// the oldest one down, silently, and the oldest is as likely to be your own piece on
-        /// this wall as anything. So: how many of ours are up (_up), how many we let be up
-        /// (_budget, learned from where evictions start), and the ones found dead this frame,
-        /// near enough to go straight back (_lost). See Verify, Room and Learn.
+        /// The paint in hand that the intake refused last frame, to go up first next frame;
+        /// and how many marks are up, for the status line.
         /// </summary>
         private readonly List<Mark> _lost = new List<Mark>();
         private int _up;
-        private int _budget = BudgetCeiling;
-        private int _verifyAt;
-        private int _evicted;
-        private int _upWhenEvicted;
-        private int _calm;
-        private int _saidPoolAt;
 
-        /// <summary>
-        /// How many alive-checks a frame, how far under the observed pool the budget sits, the
-        /// least it will ever be, and the most.
-        /// </summary>
-        private const int VerifyPerFrame = 120;
-        private const int BudgetHeadroom = 24;
-        private const int BudgetFloor = 128;
-        private const int BudgetCeiling = 200000;
-
-        /// <summary>Whether the alive-check has been proven honest yet, and the status clock.</summary>
-        private bool _testedAlive;
+        /// <summary>The status line's clock.</summary>
         private int _statusAt;
-        private int _deadSeen;
         private const int StatusEveryMs = 20000;
 
         public Marks(PaintConfig cfg)
@@ -281,10 +261,7 @@ namespace Hoodrich.Paint
                 OnVehicle = onCar
             };
 
-            // ROOM FIRST. See Room: once the learned budget is reached a far mark of ours
-            // gives up its slot before this one is asked for, so what goes is the furthest
-            // away rather than whatever the game would have taken, which is the oldest.
-            mark.Handle = Room(at) ? Place(mark) : 0;
+            mark.Handle = Place(mark);
 
             // THE GAME'S POOL IS THE REAL CEILING, NOT MaxMarks. When it refuses outright, a
             // refusal takes the slot back off whatever is furthest away and already painted.
@@ -304,7 +281,12 @@ namespace Hoodrich.Paint
                 mark.Made = Game.GameTime;
                 _marks.Add(mark);
 
-                if (_throttled) return;
+                if (_throttled)
+                {
+                    // Next frame, ahead of everything in the queue: it is the paint in hand.
+                    _lost.Add(mark);
+                    return;
+                }
 
                 _refused++;
 
@@ -380,7 +362,7 @@ namespace Hoodrich.Paint
                 OnVehicle = _cfg.VehicleDecal > 0 && IsVehicle(hit)
             };
 
-            m.Handle = Room(at) ? Place(m) : 0;
+            m.Handle = Place(m);
 
             if (m.Handle == 0 && !_throttled && Recycle(at)) m.Handle = Place(m);
 
@@ -390,6 +372,7 @@ namespace Hoodrich.Paint
                 // being full is different -- it goes up next frame like anything else.
                 if (!_throttled) return null;
                 m.Away = true;
+                _lost.Add(m);
             }
 
             m.Made = Game.GameTime;
@@ -529,8 +512,6 @@ namespace Hoodrich.Paint
                         {
                             Log.Info("First decal is on the wall and alive: type " + type +
                                      ", " + m.Size.ToString("0.00") + "m across.");
-
-                            TestAlive(m, type);
                         }
                         else
                         {
@@ -790,6 +771,13 @@ namespace Hoodrich.Paint
         /// only then is a far slot taken. Six thousand marks now come back in about five
         /// seconds instead of five minutes, and nothing is torn down to do it.
         ///
+        /// AND NOTHING ASKS THE GAME WHETHER A MARK IS STILL THERE. It was tried, with
+        /// IS_DECAL_ALIVE and a pool budget learned from the answers, and the probe put up
+        /// to prove the native honest reported alive after it had been removed -- the native
+        /// lags a frame or more in both directions, so fresh paint read as evicted, the
+        /// budget fell to its floor in seconds and the can was refused on every dab. A thing
+        /// that cannot be measured is not managed here.
+        ///
         /// Sweep is called once a frame by the mod's tick, which makes it the frame clock for
         /// everything in here that has to know how much has already gone up.
         /// </summary>
@@ -812,167 +800,12 @@ namespace Hoodrich.Paint
             }
 
             Drain(me);
-            Verify(me);
 
             var now = Game.GameTime;
             if (now < _nextSweep) return;
             _nextSweep = now + SweepMs;
 
             Rescan(me);
-            Learn();
-        }
-
-        /// <summary>
-        /// Whether IS_DECAL_ALIVE can be believed, found out once.
-        ///
-        /// Everything Verify does rests on the native saying "no" for a decal that is gone.
-        /// If it says "yes" for one this engine has just removed, evictions are invisible
-        /// to it and the log has to say so, because every other number in here would be
-        /// telling a story about a wall that is not there.
-        /// </summary>
-        private void TestAlive(Mark like, int type)
-        {
-            if (_testedAlive) return;
-            _testedAlive = true;
-
-            try
-            {
-                var probe = Function.Call<int>(Hash.ADD_DECAL, type,
-                                               like.At.X, like.At.Y, like.At.Z,
-                                               like.Into.X, like.Into.Y, like.Into.Z,
-                                               like.Side.X, like.Side.Y, like.Side.Z,
-                                               0.02f, 0.02f, like.R, like.G, like.B, 0.01f,
-                                               Forever, false, false, false);
-
-                if (probe == 0)
-                {
-                    Log.Info("Alive-check test: the probe decal would not place; nothing learned.");
-                    return;
-                }
-
-                var before = Function.Call<bool>(Hash.IS_DECAL_ALIVE, probe);
-                Function.Call(Hash.REMOVE_DECAL, probe);
-                var after = Function.Call<bool>(Hash.IS_DECAL_ALIVE, probe);
-
-                Log.Info("Alive-check test: probe " + probe + " alive before removal = " + before +
-                         ", after = " + after + ". " +
-                         (after ? "THE NATIVE LIES ABOUT REMOVED DECALS: evictions cannot be seen from here."
-                                : "The native is honest; evictions will be seen."));
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Alive-check test failed: " + ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// A slice of the marks believed up, asked whether they still are.
-        ///
-        /// THE GAME TAKES DECALS DOWN WITHOUT A WORD. Its pool is a fixed number of slots and
-        /// when they are gone the oldest goes to make room -- ours or its own -- and the
-        /// handle simply stops being alive. The record had no way of knowing: a mark stayed
-        /// "up" for the rest of the session, never put back, and that is the tag that was
-        /// there a minute ago and is not now.
-        ///
-        /// A round-robin slice a frame, over the whole record, so a few thousand up marks are
-        /// all looked at about once a second for the price of a hundred-odd native calls.
-        /// A dead one is marked away and counted; if it is near it goes to the front of the
-        /// queue and is back up next frame.
-        /// </summary>
-        private void Verify(Vector3 me)
-        {
-            var n = _marks.Count;
-            if (n == 0 || _up == 0) return;
-
-            var restore = NearEnough * NearEnough;
-            var checks = 0;
-            var looked = 0;
-
-            while (looked < n && checks < VerifyPerFrame)
-            {
-                _verifyAt++;
-                if (_verifyAt >= n) _verifyAt = 0;
-                looked++;
-
-                var m = _marks[_verifyAt];
-                if (m.Away || m.Handle == 0) continue;
-
-                checks++;
-
-                var alive = true;
-
-                try { alive = Function.Call<bool>(Hash.IS_DECAL_ALIVE, m.Handle); }
-                catch { continue; }
-
-                if (alive) continue;
-
-                // Gone without a word: this is the pool, and the count of ours that were up
-                // when it started going is the size of it.
-                if (_evicted == 0) _upWhenEvicted = _up;
-                _evicted++;
-                _deadSeen++;
-
-                m.Handle = 0;
-                m.Away = true;
-                if (_up > 0) _up--;
-
-                var want = Math.Max(BudgetFloor, _upWhenEvicted - BudgetHeadroom);
-                if (want < _budget) _budget = want;
-
-                if (me.DistanceToSquared(m.At) < restore) _lost.Add(m);
-            }
-        }
-
-        /// <summary>
-        /// Whether one more can go up without the game taking something down for it.
-        ///
-        /// Under the budget, yes. At it, a far mark of ours gives up its slot first, and the
-        /// answer is whether one could be found. The choice of WHAT goes is the whole point:
-        /// left to the game it is the oldest decal in the world, which is as likely to be the
-        /// start of the piece you are painting as anything; Recycle takes the furthest away.
-        /// </summary>
-        private bool Room(Vector3 near)
-        {
-            if (_up < _budget) return true;
-            return Recycle(near);
-        }
-
-        /// <summary>
-        /// What this sweep's evictions taught, said once, and the budget let creep back up
-        /// while nothing is being taken.
-        ///
-        /// It creeps because the pool is shared: the game's own bullet holes and tyre marks
-        /// come and go, and a budget learned on a busy street is too low for a quiet one.
-        /// Sixteen every four calm sweeps, and only when we are actually up against it.
-        /// </summary>
-        private void Learn()
-        {
-            if (_evicted > 0)
-            {
-                _calm = 0;
-
-                if (_saidPoolAt == 0 || _budget < _saidPoolAt - 256)
-                {
-                    _saidPoolAt = _budget;
-
-                    Log.Info("The game took " + _evicted + " of our decals down while " + _upWhenEvicted +
-                             " were up. That is the size of its own pool -- the compare thresholds " +
-                             "are not it. Keeping " + _budget + " up from here, nearest first; the " +
-                             "furthest give way and come back as you move.");
-                }
-            }
-            else
-            {
-                _calm++;
-
-                if (_calm >= 4 && _budget < BudgetCeiling && _up >= _budget - 40)
-                {
-                    _budget += 16;
-                    _calm = 0;
-                }
-            }
-
-            _evicted = 0;
         }
 
         /// <summary>A few off the queue and onto the wall. See Sweep.</summary>
@@ -980,8 +813,8 @@ namespace Hoodrich.Paint
         {
             var restore = NearEnough * NearEnough;
 
-            // THE ONES THE GAME TOOK DOWN, FIRST. They were on a wall you can see a moment
-            // ago; nothing in the queue is more urgent. See Verify.
+            // THE PAINT IN HAND, FIRST. A dab the intake refused last frame is the thing you
+            // are looking at; nothing in the queue is more urgent.
             while (_lost.Count > 0 && _placedThisFrame < PerFrame && !_throttled)
             {
                 var m = _lost[_lost.Count - 1];
@@ -989,7 +822,7 @@ namespace Hoodrich.Paint
 
                 if (!m.Away || m.Handle != 0) continue;
 
-                m.Handle = Room(m.At) ? Place(m) : 0;
+                m.Handle = Place(m);
                 if (m.Handle == 0 && !_throttled && Recycle(m.At)) m.Handle = Place(m);
 
                 if (m.Handle != 0)
@@ -1014,7 +847,7 @@ namespace Hoodrich.Paint
                 if (!m.Away || m.Handle != 0) continue;
                 if (me.DistanceToSquared(m.At) > restore) continue;
 
-                m.Handle = Room(m.At) ? Place(m) : 0;
+                m.Handle = Place(m);
 
                 // THE POOL, NOT THE INTAKE: a slot is taken off something far away, once.
                 // Recycle only takes from marks a good margin further away than this one, so
@@ -1126,10 +959,8 @@ namespace Hoodrich.Paint
             {
                 _statusAt = now;
 
-                Log.Info("Paint: " + _up + " up, budget " + _budget + ", " +
-                         (_queue.Count - _queueAt) + " queued, " + _stuck + " refused by the pool " +
-                         "since last sweep, " + _deadSeen + " found dead so far, " +
-                         _marks.Count + " in the record.");
+                Log.Info("Paint: " + _up + " up, " + (_queue.Count - _queueAt) + " queued, " + _stuck +
+                         " refused by the pool since last sweep, " + _marks.Count + " in the record.");
             }
         }
 

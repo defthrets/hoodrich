@@ -1,6 +1,15 @@
 ﻿Since 0.7.2 -- 11 September 2026
 
 
+THE CAN STOPPED AFTER HALF A LETTER, AND IT WAS THE EVICTION CHECK.
+
+Paint engine, synced from Overspray: 0.7.2 asked the game whether each mark
+was still alive and learned a pool budget from the answers, and the probe
+meant to prove the native honest reported alive after it had been removed.
+Fresh paint read as evicted, the budget fell to its floor in seconds, and the
+can was refused on every dab. The check, the budget and the probe are gone;
+a refused dab now goes up first next frame, because it is the paint in hand.
+
 THE GRAFFITI APP GETS THE BLACKLETTER MARK AND THE TIDIED PANEL.
 
 The app draws its own copies of the mark, and the art tool had been writing
