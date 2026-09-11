@@ -1918,9 +1918,13 @@ namespace Hoodrich.Phone
             // The grow stays, and now it moves the icon rather than swelling a box. It is what
             // the eye follows when the cursor jumps two tiles across the grid -- a highlight
             // that simply appears somewhere else leaves you re-finding it.
+            // NOT ON A FLIPBOOK TILE. Those have their own movement under the cursor, and
+            // the pop and the sway on top of it were two animations arguing over one icon.
+            var still = item.IconFrameCount > 0;
+
             var pop = 0f;
 
-            if (on)
+            if (on && !still)
             {
                 var age = Game.GameTime - _movedAt;
                 var t = age >= PopMs ? 1f : Math.Max(0f, age / (float)PopMs);
@@ -1963,7 +1967,7 @@ namespace Hoodrich.Phone
             // which one the cursor is on.
             var sway = 0f;
 
-            if (on)
+            if (on && !still)
             {
                 var since = Game.GameTime - _movedAt;
 
