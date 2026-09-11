@@ -259,30 +259,13 @@ namespace Hoodrich.Locations
             P("DoomsdaySub", "Doomsday submarine",
               "xm_x17dlc_int_placement_interior_8_x17dlc_int_sub_milo_", 40,
               "Under the water off the north coast."),
-            // NO IPL, AND NO CUTSCENE TO BUILD EITHER.
-            //
-            // The range is part of the base map and always loaded, so this needs nothing asked
-            // for -- and it is the one room on this list you can already walk into, which is
-            // exactly why it is worth a second door. A shooting range half an hour's drive
-            // away is a thing you did once.
-            //
-            // AND THE DOOR PUTS YOU IN THE SHOP, NOT IN THE RANGE. That looks like the lazier
-            // choice and it is the opposite: the walk from the counter through the range door
-            // is where the game plays its own arrival, and the challenge board on the far wall
-            // is the game's own too. Land somebody past all of it and you have skipped the
-            // thing they came for in order to save them nine steps. So the door does what a
-            // door does, and everything after it is Rockstar's -- the transition, the
-            // attendant, the challenges, the medals and the unlocks.
             // LEROY'S ELECTRICAL. A shop front on Strawberry with a warehouse floor behind
             // it, and the grow. Both coordinates in the ini were stood on rather than worked
             // out, which is the only way this mod has ever got one right -- these two rows are
             // how they got there and are how to move it.
-            P("LeroysElectrical", "Leroy's Electrical", "", 51,
+            P("LeroysElectrical", "Leroy's Electrical", "", 497,
               "Strawberry Ave, the black door with the NO TRESPASSING sign. Comes out in the " +
               "Torture room in Banning -- the same room as the entry below, under a shop name."),
-            P("GunRange", "Ammu-Nation range", "", 110,
-              "Inside the shops that have one: Cypress Flats, Little Seoul, Vinewood, " +
-              "Sandy Shores, Paleto Bay. Stand at the counter, facing the range door."),
             P("IaaFacility", "IAA facility", "", 40,
               "The one under the Kortz Center."),
             P("ServerFarm", "IAA server farm", "", 40,

@@ -1,6 +1,24 @@
 ﻿0.7.1 -- 11 September 2026
 
 
+ONE BLIP FOR VERNON, ON HIM, AND IT IS THE RAZOR.
+
+Two marks sat on the same corner of Strawberry: the door's on the big map and
+his on the minimap as well, and both were sprite 51 -- which is not the razor
+blade at all but radar_crim_drugs, the generic capsule. The ini comment said
+"the razor and the line" and was wrong. The razor over lines of powder is 497,
+the Bikers cocaine-lockup mark. Vernon carries that one now, and the door beside
+him carries nothing: the man you walk up to is the thing worth pointing at.
+
+
+THE AMMU-NATION RANGE DOOR IS GONE.
+
+A door on Innocence Blvd that warped you into a gun shop with a range behind
+it, with its own blip. It was the first idea; the targets-anywhere range in
+Locations/Range.cs is what replaced it, and that stays. Out of the ini, out of
+the picker, out of the map.
+
+
 THE FEED TOGGLE IS F4.
 
 It was NumPad *, under a comment claiming that was one of the few keys the

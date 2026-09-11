@@ -77,13 +77,18 @@ namespace Hoodrich.Locations
         private readonly PlayerState _state;
 
         /// <summary>
-        /// 51 -- radar_crim_drugs, the razor and the line.
+        /// 497 -- radar_production_crack, the razor blade over lines of powder.
         ///
-        /// The same mark the door beside him carries, because it is the same business. His
-        /// goes on the minimap as well: the door's is big-map only, which is right for a door
-        /// you have to know about, and wrong for the man you are actually going to see.
+        /// NOT 51. That is radar_crim_drugs, and it draws as a capsule -- the reference and the
+        /// ini both called it "the razor and the line" and both were wrong, which is how he
+        /// stood there wearing a pill. 497 is the cocaine-lockup mark from the Bikers business
+        /// and it is the one picture the game has of what is actually in his basement.
+        ///
+        /// THE ONLY MARK ON THAT CORNER. The door beside him used to carry one too, on the
+        /// same spot; the man you walk up to is the thing worth pointing at, so the door's is
+        /// off and this is on the minimap as well as the big map.
         /// </summary>
-        private const int Sprite = 51;
+        private const int Sprite = 497;
 
         private Ped _ped;
         private Blip _blip;
