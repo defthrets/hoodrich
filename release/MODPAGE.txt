@@ -45,7 +45,9 @@ NO DEPENDENCIES, NO GAME FILES TOUCHED
 
 One DLL and some JSON. No LemonUI, no NativeUI, no OpenIV, no installer. It won't fight your graphics mods, car packs or map edits. Uninstalling is deleting three things.
 
-Want to tinker? 12 JSON files and 139 settings in a commented INI. Drop a Menyoo spooner save in scripts\Hoodrich\scenery and the mod builds it every session.
+Want to tinker? 12 JSON files and 140 settings in a commented INI. Drop a Menyoo spooner save in scripts\Hoodrich\scenery and the mod builds it every session.
+
+Reads in nine languages from the settings screen: English (UK and US), Portugues (BR), Espanol, Francais, Deutsch, Russkiy, Polski, Chinese (Simplified, with the game set to Chinese) and Hindi in Latin letters. Each is a json a translator can edit without the source; anything untranslated shows in English.
 
 Legacy and Enhanced, same DLL. Single player only. Keep it away from GTA Online.
 
@@ -87,6 +89,13 @@ The phone button opens everything. Arrows move, Enter chooses, Backspace goes ba
 ===================================
 
 CHANGELOG
+
+0.8.0 - 11 September 2026
+
+- A language setting, and nine languages to go in it. First row of the settings screen: English (UK and US), Portugues (BR), Espanol, Francais, Deutsch, Russkiy, Polski, Chinese (Simplified) and Hindi in Latin letters. Each is a json with English on the left; anything untranslated shows in English;
+- The phone stops flickering. Faces for the feed and the handset prop were loaded by blocking the tick, which draws nothing while it waits; both stream across ticks now, and the log names anything that holds the tick again;
+- One list of rectangles, counted for the whole machine. Posted Up, Bare Minimum, Fumes, Five0 Patrol and Bloody Mess count into one shared tally, every log says who spent the busiest frame, and decoration yields before instruments when the frame is full;
+- The colours come out as picked -- paint texture for colours, blood for black -- and A skips the phone's boot screen.
 
 0.7.3 - 11 September 2026
 

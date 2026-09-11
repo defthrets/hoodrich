@@ -1,4 +1,4 @@
-﻿Since 0.7.3 -- 11 September 2026
+﻿0.8.0 -- 11 September 2026
 
 
 A LANGUAGE SETTING, AND NINE LANGUAGES TO GO IN IT.

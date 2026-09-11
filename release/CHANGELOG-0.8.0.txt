@@ -1,0 +1,41 @@
+0.8.0 -- 11 September 2026
+
+
+A LANGUAGE SETTING, AND NINE LANGUAGES TO GO IN IT. [General] Language, the
+first row of the settings screen, English by default: English (UK and US),
+Portugues (Brasil), Espanol, Francais, Deutsch, Russkiy, Polski, Chinese
+(Simplified) and Hindi in Latin letters, the way it is typed -- the game's
+fonts have no Devanagari. Each one is a data file, scripts\Hoodrich\lang\
+<code>.json, English on the left and the language on the right, so it
+survives every update and needs no fork; anything a file does not cover shows
+in English. Looked up as it is drawn, so the screen changes as you pick.
+Chinese needs the game itself in Chinese, or its characters are not in the
+font. The dialogue, the feed and the log stay English by design.
+
+THE PHONE STOPS FLICKERING, AND THE LOG SAYS WHY IF IT EVER DOES AGAIN. Every
+new face on the feed, and the handset prop on every take-out, was made by
+blocking the tick on a model load -- and a blocked tick draws nothing, so the
+phone went dark for as long as each model took to stream. Both stream across
+ticks now and the phone stays on. Every system the tick runs is a named
+segment, and one that hands the frame back is logged by name with how many
+frames the HUD was dark for.
+
+ONE LIST OF RECTANGLES, COUNTED FOR THE WHOLE MACHINE. The game keeps one list
+of rectangles a frame for every script on it and drops the rest past about
+three hundred and fifty, so the mod that draws last pays for everybody's
+frame. The set now counts into one shared tally -- Posted Up, Bare Minimum,
+Fumes, Five0 Patrol, Bloody Mess -- and every log says what the busiest frame
+cost and who spent it. Decoration asks the tally first: past the soft line,
+whoever is over their share loses their sparkle until the room is measured to
+be there again, and the instruments never go.
+
+THE COLOURS COME OUT AS PICKED. Blood as the one paint texture could not do
+it -- the colour multiplies the texture, blood is red, green came out bronze
+and cyan grey. Paint is the texture for anything with a colour in it again;
+black keeps blood, whose shape is the best on the rack. CanDecal for the
+colours, CanDecalDark for black, in the ini.
+
+A SKIPS THE PHONE'S BOOT SCREEN. The seal turning on the handset's first open
+is a piece of character once and a toll booth after that. A on a pad or Enter
+on a keyboard cuts straight to the apps, and the boot stays skipped for the
+session.
