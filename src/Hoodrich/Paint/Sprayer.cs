@@ -305,9 +305,9 @@ namespace Hoodrich.Paint
             // Which texture this tool wants. Set here rather than once per session because the
             // player can swap tools between one mark and the next -- and now also because it
             // is not the same answer twice running. See Mixed.
-            _marks.Wanted = _cfg.SprayCanLook ? Mixed() : 0;
-
             var c = Shade();
+
+            _marks.Wanted = _cfg.SprayCanLook ? Mixed(c) : 0;
 
             // BAKED IN HERE, not applied at placing time. The mark keeps the final multipliers,
             // so restoring one after a save replays exactly what went on the wall rather than
@@ -330,14 +330,26 @@ namespace Hoodrich.Paint
         /// mark and saves it -- so a wall reloads exactly as it was laid rather than being
         /// re-rolled into a different mix next session.
         /// </summary>
-        private int Mixed()
+        /// <summary>
+        /// The texture for this mark: paint for a colour, blood for black -- see
+        /// PaintConfig.CanDecalDark -- and now and then the mix texture instead of either.
+        /// </summary>
+        private int Mixed(Color c)
         {
+            var body = Luma(c) < _cfg.DarkBelow ? _cfg.CanDecalDark : _cfg.CanDecal;
+
             var mix = _cfg.MixDecal;
             var every = _cfg.MixEvery;
 
-            if (mix <= 0 || every <= 0) return _cfg.CanDecal;
+            if (mix <= 0 || every <= 0) return body;
 
-            return _rng.Next(100) < every ? mix : _cfg.CanDecal;
+            return _rng.Next(100) < every ? mix : body;
+        }
+
+        /// <summary>How bright a colour reads. Rec. 601, plenty for "is this black".</summary>
+        private static float Luma(Color c)
+        {
+            return (0.299f * c.R + 0.587f * c.G + 0.114f * c.B) / 255f;
         }
 
         /// <summary>

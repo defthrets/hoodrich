@@ -99,7 +99,7 @@ namespace Hoodrich.Paint
     internal sealed class Marks
     {
         /// <summary>
-        /// The ladder: blood, then paint. Nothing else, ever.
+        /// The ladder: paint, then blood. Nothing else, ever.
         ///
         /// 1010 is splatters_blood, and judged on SHAPE it is the best texture the game
         /// ships for a can: a dense middle with flung droplets round the edge, which is what
@@ -113,7 +113,7 @@ namespace Hoodrich.Paint
         /// reachable from the ini as a can texture, a mix texture and the vehicle texture, and
         /// a wall with them on it is a wall somebody shot. This is a spray can. See Bullets.
         /// </summary>
-        private static readonly int[] Types = { 1010, 1030 };
+        private static readonly int[] Types = { 1030, 1010 };
 
         /// <summary>What a type id is, for a log line that has to name one.</summary>
         private static string Called(int type)

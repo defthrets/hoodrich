@@ -195,7 +195,8 @@ namespace Hoodrich.Core
         /// LIKE rather than how it behaves, and they are the ones worth an evening on a wall.
         /// Everything else stays where it is: in PaintConfig, one copy, tuned in code.
         /// </summary>
-        public int PaintTexture = 1010;
+        public int PaintTexture = 1030;
+        public int PaintTextureDark = 1010;
         public int PaintMixTexture;
         public int PaintMixEvery;
         public float PaintColourGain = 1f;
@@ -708,6 +709,7 @@ namespace Hoodrich.Core
 
             // The paint engine's texture knobs. See PaintTexture.
             s.PaintTexture = ini.GetInt("Paint", "CanDecal", s.PaintTexture);
+            s.PaintTextureDark = ini.GetInt("Paint", "CanDecalDark", s.PaintTextureDark);
             s.PaintMixTexture = ini.GetInt("Paint", "MixDecal", s.PaintMixTexture);
             s.PaintMixEvery = (int)Clamp(ini.GetInt("Paint", "MixEvery", s.PaintMixEvery), 0f, 100f);
             s.PaintColourGain = Clamp(ini.GetFloat("Paint", "CanColourGain", s.PaintColourGain), 0.1f, 8f);

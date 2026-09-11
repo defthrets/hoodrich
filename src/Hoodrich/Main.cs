@@ -957,6 +957,7 @@ namespace Hoodrich
                 // The four texture knobs, from this mod's ini rather than the standalone's.
                 // See Settings.PaintTexture.
                 _paint.CanDecal = _cfg.PaintTexture;
+                _paint.CanDecalDark = _cfg.PaintTextureDark;
                 _paint.MixDecal = _cfg.PaintMixTexture;
                 _paint.MixEvery = _cfg.PaintMixEvery;
                 _paint.CanColourGain = _cfg.PaintColourGain;

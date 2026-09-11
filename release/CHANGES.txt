@@ -1,6 +1,14 @@
 ﻿Since 0.7.3 -- 11 September 2026
 
 
+THE COLOURS COME OUT AS PICKED.
+
+Paint engine, synced from Overspray: blood as the one texture could not do
+it -- the colour multiplies the texture, blood is red, green came out bronze
+and cyan grey. Paint is the texture for anything with a colour in it again;
+black keeps blood, whose shape is the best on the rack and whose red black
+multiplies away. CanDecal for the colours, CanDecalDark for black, in the ini.
+
 A SKIPS THE PHONE'S BOOT SCREEN.
 
 The seal turning on the handset's first open is a piece of character once and

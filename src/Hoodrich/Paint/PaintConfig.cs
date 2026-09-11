@@ -462,8 +462,8 @@
         public int VehicleDecal = 1010;
 
         /// <summary>
-        /// Which decal texture the SPRAY CAN lays down. 0 means the same one the extinguisher
-        /// uses, which is 1030 splatters_paint.
+        /// Which decal texture the SPRAY CAN lays down for a COLOUR. 0 means the same one the
+        /// extinguisher uses, which is 1030 splatters_paint.
         ///
         /// The texture is what a mark actually looks like, and there is no way to author one
         /// from a script -- PATCH_DECAL_DIFFUSE_MAP exists but Rockstar never call it anywhere
@@ -471,24 +471,17 @@
         /// Choosing between the ones the game already ships is the whole of the control there
         /// is over the shape of a mark.
         ///
-        /// Worth knowing before changing it: THE COLOUR ARGUMENTS MULTIPLY THE TEXTURE rather
-        /// than replacing it. 1030 is authored pale, which is why an arbitrary colour comes out
-        /// as that colour. Anything authored dark or strongly coloured tints everything toward
-        /// itself -- mud is brown, so red over it is a rust and blue over it is a murk.
+        /// THE COLOUR ARGUMENTS MULTIPLY THE TEXTURE rather than replacing it, and that decides
+        /// everything here. 1030 is authored pale, so an arbitrary colour comes out as that
+        /// colour. 1010, blood, is authored red, so it drags every colour toward red: green
+        /// comes out bronze, cyan comes out grey. That was the default for a day, on shape,
+        /// and the first wall painted with it was the complaint that the colours were not
+        /// true. They could not be.
         ///
-        ///     1010  splatters_blood   the best SHAPE of the four. The default.
-        ///     1030  splatters_paint   pale, speckled, takes colour honestly.
+        ///     1030  splatters_paint   pale, speckled, takes colour honestly. The default.
         ///     1020  splatters_mud     bigger, wetter blobs. Fuller coverage, brown cast.
         ///     1040  splatters_water   faint. Barely marks a wall.
-        ///
-        /// BLOOD IS THE DEFAULT NOW, and on shape alone: a dense middle with flung droplets
-        /// round the edge, which is what comes off an aerosol at the end of a stroke. The
-        /// paint texture is speckle with holes through it and no edge behaviour at all.
-        ///
-        /// The red is real and it is the cost. Your colour multiplies it, so everything drags
-        /// toward red -- greens and blues come out muddy. What it is superb at is BLACK and the
-        /// near-blacks, where the multiply takes the red out entirely and leaves you the
-        /// shape: nothing left of the blood but the spatter.
+        ///     1010  splatters_blood   the best SHAPE of the four, and red. See CanDecalDark.
         ///
         /// THE IMPACT FAMILY IS REFUSED. 4010, 4020 and 4050 are the marks a bullet leaves in
         /// metal, concrete and wood -- solid near-black lumps -- and a wall with them on it is
@@ -498,7 +491,21 @@
         /// Marks remember which one they were placed with, so changing this leaves everything
         /// already on a wall alone.
         /// </summary>
-        public int CanDecal = 1010;
+        public int CanDecal = 1030;
+
+        /// <summary>
+        /// The texture for BLACK and the near-blacks, and where "dark" starts as a luma out
+        /// of one.
+        ///
+        /// TWO TEXTURES BECAUSE ONE CANNOT DO BOTH. Black is the one colour that does not care
+        /// what the texture is: multiplied down to nothing, only the shape is left, and
+        /// blood's shape is the best on the rack -- a dense middle with flung droplets round
+        /// the edge, which is what comes off an aerosol. So black gets blood, everything with
+        /// a colour in it gets paint, and both come out as what was picked. Set this to 1030
+        /// for speckle everywhere.
+        /// </summary>
+        public int CanDecalDark = 1010;
+        public float DarkBelow = 0.20f;
 
         /// <summary>
         /// A SECOND texture, laid instead of the first every so often, and how often in a
