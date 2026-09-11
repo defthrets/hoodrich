@@ -312,5 +312,8 @@ namespace Hoodrich.Core
         /// file in all six -- it can only ask for the folder by one name.
         /// </summary>
         public static string Icons => Path.Combine(Data, "icons");
+
+        /// <summary>The translations, one json per language. Ships with the mod; nothing writes it. See Lang.</summary>
+        public static string Lang => Path.Combine(Data, "lang");
 }
 }

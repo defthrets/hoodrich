@@ -2126,7 +2126,7 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_BLIP_COLOUR, _blip.Handle, 2);
 
                 Function.Call(Hash.BEGIN_TEXT_COMMAND_SET_BLIP_NAME, "STRING");
-                Function.Call(Hash.ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME, Name);
+                Function.Call(Hash.ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME, Core.Lang.T(Name));
                 Function.Call(Hash.END_TEXT_COMMAND_SET_BLIP_NAME, _blip.Handle);
             }
             catch

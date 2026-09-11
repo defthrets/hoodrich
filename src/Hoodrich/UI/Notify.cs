@@ -19,6 +19,8 @@ namespace Hoodrich.UI
 
         public static void Ticker(string message)
         {
+            message = Core.Lang.T(message);
+
             if (string.IsNullOrEmpty(message) || Repeat(message)) return;
             GTA.UI.Notification.PostTicker(message, false, true);
         }
@@ -26,6 +28,8 @@ namespace Hoodrich.UI
         /// <summary>A message the player should not miss (blinks in the feed).</summary>
         public static void Important(string message)
         {
+            message = Core.Lang.T(message);
+
             if (string.IsNullOrEmpty(message) || Repeat(message)) return;
 
             // NO BLINK. The second argument to the game's ticker is "blink", and it was on
@@ -81,11 +85,15 @@ namespace Hoodrich.UI
         /// <summary>Something went wrong, phrased for the player rather than the log.</summary>
         public static void Problem(string message)
         {
+            message = Core.Lang.T(message);
+
             Ticker("~o~" + Brand + ":~s~ " + message);
         }
 
         public static void Failure(string message)
         {
+            message = Core.Lang.T(message);
+
             Important("~r~" + Brand + ":~s~ " + message);
         }
 
@@ -118,6 +126,9 @@ namespace Hoodrich.UI
                                 bool urgent = false, string icon = null)
         {
             if (string.IsNullOrEmpty(body)) return;
+
+            subject = Core.Lang.T(subject);
+            body = Core.Lang.T(body);
             if (Repeat((sender ?? "") + "|" + body)) return;
 
             // A caller that named nobody in particular gets whoever the sender turns out to be.
@@ -194,6 +205,9 @@ namespace Hoodrich.UI
         public static void Card(string portrait, string from, string subject, string body)
         {
             if (string.IsNullOrEmpty(body)) return;
+
+            subject = Core.Lang.T(subject);
+            body = Core.Lang.T(body);
             if (Repeat((from ?? "") + "|" + body)) return;
 
             // The same as Text. See the note there about which native answers for which

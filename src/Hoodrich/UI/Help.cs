@@ -44,7 +44,7 @@ namespace Hoodrich.UI
         {
             if (string.IsNullOrEmpty(message)) return;
 
-            _wanted = message;
+            _wanted = Core.Lang.T(message);
             _askedAt = GTA.Game.GameTime;
         }
 

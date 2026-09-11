@@ -98,6 +98,14 @@ namespace Hoodrich.UI
         public string Suffix = "";
 
         public string[] Choices;
+
+        /// <summary>
+        /// What each choice is WRITTEN as, when that is not what it is shown as. The language
+        /// row shows "PORTUGUÊS (BR)" and writes "PortugueseBR", which is what the ini reads.
+        /// Null means the label is the value, which is every other choice row.
+        /// </summary>
+        public string[] Values;
+
         public Func<int> GetChoice;
         public Action<int> SetChoice;
 
@@ -431,7 +439,7 @@ namespace Hoodrich.UI
         }
 
         private void Pick(string label, string section, string key, string[] choices,
-                          Func<int> get, Action<int> set, string note = "")
+                          Func<int> get, Action<int> set, string note = "", string[] values = null)
         {
             _rows.Add(new Opt
             {
@@ -441,6 +449,7 @@ namespace Hoodrich.UI
                 Section = section,
                 Key = key,
                 Choices = choices,
+                Values = values,
                 GetChoice = get,
                 SetChoice = set
             });
@@ -484,6 +493,16 @@ namespace Hoodrich.UI
             var c = _cfg;
 
             Head("The mod");
+            // FIRST, AND LIVE. The table is looked up at draw time, so choosing a language
+            // here changes this screen as you look at it -- including this row. The value
+            // written is the enum's name, which is what the ini reads back; the label is how
+            // the language names itself. See Core.Lang.
+            Pick("Language", "General", "Language", Core.Lang.Names,
+                 () => (int)c.Language,
+                 v => { c.Language = (Core.Language)v; Core.Lang.Use(c.Language); },
+                 "Menus, prompts and notices. English fills in anything untranslated",
+                 Core.Lang.Codes);
+
             Tick("Posted Up on", "General", "Enabled", () => c.Enabled, v => c.Enabled = v,
                  "Off leaves the game exactly as it was");
             Tick("Pause during story missions", "General", "PauseDuringMission",
@@ -1540,7 +1559,7 @@ namespace Hoodrich.UI
                     if (now >= row.Choices.Length) now = 0;
 
                     row.SetChoice?.Invoke(now);
-                    Write(row, row.Choices[now]);
+                    Write(row, row.Values != null && now < row.Values.Length ? row.Values[now] : row.Choices[now]);
                     break;
                 }
 

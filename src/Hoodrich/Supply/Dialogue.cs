@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Hoodrich.Core;
 
 namespace Hoodrich.Supply
@@ -33,7 +33,7 @@ namespace Hoodrich.Supply
                     ? line
                     : "~y~" + speaker + ":~s~ " + line;
 
-                GTA.UI.Screen.ShowSubtitle(text, DurationFor(line));
+                GTA.UI.Screen.ShowSubtitle(Core.Lang.T(text), DurationFor(line));
             }
             catch (Exception ex)
             {

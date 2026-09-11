@@ -738,7 +738,7 @@ namespace Hoodrich.Missions
         {
             if (string.IsNullOrEmpty(line)) return;
 
-            try { GTA.UI.Screen.ShowSubtitle(who + ":~s~ " + line, ms); }
+            try { GTA.UI.Screen.ShowSubtitle(Core.Lang.T(who + ":~s~ " + line), ms); }
             catch { /* the objective still says what to do */ }
 
             Aloud(Plain(who), line);
@@ -1612,7 +1612,7 @@ namespace Hoodrich.Missions
         {
             if (string.IsNullOrEmpty(line)) return;
 
-            try { GTA.UI.Screen.ShowSubtitle("~y~LAMAR:~s~ " + line, 3500); }
+            try { GTA.UI.Screen.ShowSubtitle(Core.Lang.T("~y~LAMAR:~s~ " + line), 3500); }
             catch { /* the objective still says what to do */ }
 
             Aloud("Lamar", line);

@@ -1309,6 +1309,11 @@ namespace Hoodrich.UI
                 return new string[0];
             }
 
+            // Translated BEFORE it is wrapped, or the lines handed back would be fragments of
+            // the English that match nothing. A line drawn afterwards is translated again and
+            // comes back as itself. See Core.Lang.
+            text = Core.Lang.T(text);
+
             var words = text.Split(' ');
             var lines = new List<string>();
             var i = 0;
@@ -1379,6 +1384,11 @@ namespace Hoodrich.UI
         {
             if (string.IsNullOrEmpty(text)) return;
 
+            // IN THE PLAYER'S LANGUAGE, decided here and nowhere else: every label in the
+            // mod comes through this call or TextRight, so this is where English becomes
+            // whatever the settings say. See Core.Lang.
+            text = Core.Lang.T(text);
+
             Function.Call(Hash.SET_TEXT_FONT, font);
             Function.Call(Hash.SET_TEXT_SCALE, scale, scale);
             Function.Call(Hash.SET_TEXT_COLOUR, (int)c.R, (int)c.G, (int)c.B, (int)c.A);
@@ -1406,6 +1416,8 @@ namespace Hoodrich.UI
                                      int font = FontBody, bool shadow = true)
         {
             if (string.IsNullOrEmpty(text)) return;
+
+            text = Core.Lang.T(text);
 
             Function.Call(Hash.SET_TEXT_FONT, font);
             Function.Call(Hash.SET_TEXT_SCALE, scale, scale);
@@ -1465,6 +1477,9 @@ namespace Hoodrich.UI
 
         public static float MeasureText(string text, float scale, int font = FontChaletComprimeCologne)
         {
+            // Measured as it will be drawn. See Text.
+            text = Core.Lang.T(text);
+
             if (string.IsNullOrEmpty(text)) return 0f;
 
             Function.Call(Hash.SET_TEXT_FONT, font);

@@ -705,6 +705,10 @@ namespace Hoodrich
                 Preflight.Step = "reading Hoodrich.ini";
                 _cfg = Core.Settings.Load();
 
+                // Before anything is drawn: the table is looked up at draw time, and the
+                // first thing drawn is the splash.
+                Core.Lang.Use(_cfg.Language);
+
                 // Copied rather than read live, because the conversation screen has no config
                 // of its own -- see the Changed handler below, which pushes them again.
                 Core.Voice.Enabled = _cfg.VoiceEnabled;

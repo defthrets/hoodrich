@@ -15,6 +15,12 @@ namespace Hoodrich.Core
     {
         // ---- general -----------------------------------------------------------
         public bool Enabled = true;
+        /// <summary>
+        /// What the player reads. English is the code's own; the rest are files in
+        /// scripts\Hoodrich\lang, and anything a file does not cover shows in English. See Lang.
+        /// </summary>
+        public Language Language = Language.English;
+
         public LogLevel LogLevel = LogLevel.Info;
         public int SaveIntervalSeconds = 120;
         public bool PauseDuringMission = true;
@@ -660,6 +666,7 @@ namespace Hoodrich.Core
 
             s.Enabled = ini.GetBool("General", "Enabled", s.Enabled);
             s.LogLevel = ini.GetEnum("General", "LogLevel", s.LogLevel);
+            s.Language = ini.GetEnum("General", "Language", s.Language);
             // CLAMPED, because Main multiplies this by a thousand into an int.
             //
             // It was the only setting in this whole method with neither a Clamp nor a Max on

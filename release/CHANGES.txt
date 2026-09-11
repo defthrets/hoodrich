@@ -1,6 +1,18 @@
 ﻿Since 0.7.3 -- 11 September 2026
 
 
+A LANGUAGE SETTING, AND NINE LANGUAGES TO GO IN IT.
+
+[General] Language, the first row of the settings screen, English by default:
+English (UK and US), Portugues (Brasil), Espanol, Francais, Deutsch, Russkiy,
+Polski, Chinese (Simplified) and Hindi in Latin letters, the way it is typed --
+the game's fonts have no Devanagari. Each one is a data file,
+scripts\Hoodrich\lang\<code>.json, English on the left and the language on
+the right, the same shape as Fumes', so it survives every update and needs no
+fork; anything a file does not cover shows in English. Looked up as it is
+drawn, so the screen changes as you pick. Chinese needs the game itself in
+Chinese, or its characters are not in the font.
+
 THE PHONE NO LONGER BLINKS ON THE WAY OUT OF HIS POCKET.
 
 Taking it out loaded the handset prop by blocking the tick, four frames every
