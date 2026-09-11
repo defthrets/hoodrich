@@ -1077,7 +1077,10 @@ namespace Hoodrich.Wheel
                 detail: "Hands the button back so you can open your own phone",
                 enabled: ShowVanillaPhone != null,
                 disabledReason: "Not wired up");
-            page.WithIcon(Icons.FromFile("mobile.png"));
+            // THE GRID IS PIXEL ART NOW, one flipbook a tile, split out of GIFs by
+            // tools/gif2frames.py: the first frame is the icon, the rest play while the
+            // cursor is on it. See WheelItem.IconFrames.
+            page.WithIcon(Icons.FromFile("nokia_0.png")).WithFlipbook("nokia", 9, 150);
 
             // SECOND, right under the real phone, because it is the thing on here you open
             // most and the one with something waiting in it. Dealing moved down to sit beside
@@ -1103,7 +1106,7 @@ namespace Hoodrich.Wheel
             // until now the two were the same grey. See WheelItem.Urgent.
             page.WhenWaiting(Inbox.Unread > 0);
 
-            page.WithIcon(Icons.FromFile("reply.png"));
+            page.WithIcon(Icons.FromFile("bubble_0.png")).WithFlipbook("bubble", 9, 150);
 
             // Contacts sits on the RIGHT, two slots off Socials rather than next to it. The
             // wheel fills clockwise from the top, so where a wedge is added is where it lands
@@ -1112,7 +1115,7 @@ namespace Hoodrich.Wheel
             page.AddSub("Contacts", "#", BuildContactsPage,
                 detail: "Everyone you can reach, and what you can say to them",
                 value: ContactsSummary());
-            page.WithIcon(Icons.FromFile("people.png"));
+            page.WithIcon(Icons.FromFile("faces_0.png")).WithFlipbook("faces", 9, 150);
 
             // A baggie, not a bong. The old one was a picture of SMOKING and this menu is
             // about selling, which is the one thing nobody in it ever does with the product.
@@ -1146,14 +1149,14 @@ namespace Hoodrich.Wheel
                     ? "You run with " + _crew.Current.Name
                     : "Nobody has put you on yet",
                 value: _crew.IsAffiliated ? _crew.Current.Tag : "SOLO");
-            page.WithIcon(Icons.Gang);
+            page.WithIcon(Icons.FromFile("ganghead_0.png")).WithFlipbook("ganghead", 9, 150);
 
             // What you are carrying, rather than how you are doing -- the stats moved under
             // Gangs, because who rates you is a gang question.
             page.Add("Inventory", "*", ShowInventory,
                 detail: _stash.AtDoor ? "Move product between your pockets and the house" : "Everything you are carrying",
                 value: _stash.AtDoor ? "at the house" : CarriedSummary());
-            page.WithIcon(Icons.Stash);
+            page.WithIcon(Icons.FromFile("duffel_0.png")).WithFlipbook("duffel", 9, 150);
 
             // Its own wedge rather than a line inside something else. What the block is saying
             // about you is not a sub-heading of your inventory, and burying it two levels down
@@ -1204,7 +1207,7 @@ namespace Hoodrich.Wheel
             // THE STOCK ONE of the three. The fat cap's nozzle is the biggest and survives
             // being shrunk best, which is an argument for it and not a good enough one: the
             // stock cap is the one that comes on the can, and it is the better drawing.
-            page.WithIcon(Icons.FromFile("cap_stock.png"), CapMark);
+            page.WithIcon(Icons.FromFile("spraycan_0.png")).WithFlipbook("spraycan", 16, 130);
 
             // THE MASK. One tile, nothing behind it: on if it is off, off if it is on. The
             // label stays and the value carries the state, same as the can beside it.
@@ -1236,7 +1239,7 @@ namespace Hoodrich.Wheel
             // You|Tube lockup with the halves swapped, and it looked it; and the three little
             // pictures say what the app does, which no arrangement of the name can. See
             // tools/make_luber.py.
-            page.WithIcon(Icons.FromFile("luber.png"), LuberMark);
+            page.WithIcon(Icons.FromFile("burger_0.png")).WithFlipbook("burger", 9, 150);
 
             return page;
         }
