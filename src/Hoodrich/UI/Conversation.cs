@@ -1167,8 +1167,8 @@ namespace Hoodrich.UI
             if (!string.IsNullOrEmpty(Badge) && BadgeFrames > 0)
             {
                 var wide = Hud.ToX(FaceSize);
-                Hud.Animated(Badge, BadgeFrames, BadgeMs, right - wide, y, wide, FaceSize,
-                             Color.FromArgb(ink, 255, 255, 255));
+                Hud.Animated(Badge, BadgeFrames, BadgeMs, right - wide * 0.5f, y + FaceSize * 0.5f,
+                             wide, FaceSize, Color.FromArgb(ink, 255, 255, 255));
                 labelRight = right - wide - 0.008f;
             }
 

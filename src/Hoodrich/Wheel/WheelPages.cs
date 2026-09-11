@@ -1121,7 +1121,9 @@ namespace Hoodrich.Wheel
                 value: DrugsSummary(),
                 enabled: !_cutting.IsBusy,
                 disabledReason: "You're working the counter");
-            page.WithIcon(Icons.FromFile("baggie.png"));
+            // The pixel baggie, still until the cursor lands on it and shaking while it is
+            // there: the first frame is the icon, the other fifteen are the selection.
+            page.WithIcon(Icons.FromFile("baggie_0.png")).WithFlipbook("baggie", 16, 130);
 
             // IN THE MIDDLE OF THE GRID, swapped with Luber. It is the app with something
             // new in it most often, and it was sat on its own on a fourth row underneath three

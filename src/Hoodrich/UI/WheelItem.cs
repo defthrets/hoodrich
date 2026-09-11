@@ -43,6 +43,16 @@ namespace Hoodrich.UI
         public string IconBlip = "";
 
         /// <summary>
+        /// A flipbook behind the icon: the base name of name_0.png, name_1.png ... in the
+        /// icons folder, how many, and the delay. Drawn in place of IconFile while the item
+        /// is the one the cursor is on, so the still frame IS the icon and the movement is
+        /// the selection. Colour art, so it is never tinted. See Draw.Animated.
+        /// </summary>
+        public string IconFrames = "";
+        public int IconFrameCount;
+        public int IconFrameMs = 100;
+
+        /// <summary>
         /// How many times a texture has been looked for and not found.
         ///
         /// A count rather than a flag, because "not resolved yet" and "will never resolve" look
@@ -247,6 +257,18 @@ namespace Hoodrich.UI
         public WheelPage WhenWaiting(bool waiting)
         {
             if (Items.Count > 0) Items[Items.Count - 1].Urgent = waiting;
+            return this;
+        }
+
+        /// <summary>The last item's icon moves while it is selected. See WheelItem.IconFrames.</summary>
+        public WheelPage WithFlipbook(string name, int frames, int frameMs)
+        {
+            if (Items.Count == 0 || string.IsNullOrEmpty(name) || frames <= 0) return this;
+
+            var item = Items[Items.Count - 1];
+            item.IconFrames = name;
+            item.IconFrameCount = frames;
+            item.IconFrameMs = frameMs;
             return this;
         }
 

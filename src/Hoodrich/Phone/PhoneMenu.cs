@@ -2010,7 +2010,7 @@ namespace Hoodrich.Phone
             }
 
             Art(item, x + w * 0.5f, y + h * 0.31f, 0.042f * (1f - PunchDip * punch),
-                Fade(art, fade), sway);
+                Fade(art, fade), sway, on ? Math.Max(0, _movedAt) : -1);
 
             // A badge when the tile has something to say -- a count, a price, a "3 waiting".
             // The wheel put this in its hub; a grid has no hub, so it goes with the name.
@@ -2275,8 +2275,26 @@ namespace Hoodrich.Phone
 
 
         private static void Art(WheelItem item, float cx, float cy, float size, Color c,
-                                float spin = 0f)
+                                float spin = 0f, int animateFrom = -1)
         {
+            // A FLIPBOOK IS COLOUR ART, so it is never tinted -- the green of the selected
+            // tile would turn the powder green -- and the movement is what says selected.
+            // Still on the first frame the rest of the time. See WheelItem.IconFrames.
+            if (item.IconFrameCount > 0 && !string.IsNullOrEmpty(item.IconFrames))
+            {
+                var plain = Color.FromArgb(c.A, 255, 255, 255);
+
+                if (animateFrom >= 0)
+                {
+                    if (Hud.Animated(item.IconFrames, item.IconFrameCount, item.IconFrameMs, cx, cy,
+                                     ArtWidth(item, size), size, plain, animateFrom, spin)) return;
+                }
+                else if (Hud.File(item.IconFrames + "_0.png", cx, cy, ArtWidth(item, size), size, spin, plain))
+                {
+                    return;
+                }
+            }
+
             if (!string.IsNullOrEmpty(item.IconFile))
             {
                 if (Hud.File(item.IconFile, cx, cy, ArtWidth(item, size), size, spin, c)) return;

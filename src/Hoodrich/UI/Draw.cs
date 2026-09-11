@@ -449,7 +449,7 @@ namespace Hoodrich.UI
         /// </summary>
         /// <summary>
         /// A flipbook: name_0.png, name_1.png ... drawn one per frameMs, looping, placed by
-        /// its top-left like File. This is how a GIF gets on the HUD.
+        /// its CENTRE like File. This is how a GIF gets on the HUD.
         ///
         /// THE TEXTURE LOADER KNOWS NOTHING OF GIFS. It decodes one image into one texture,
         /// so a .gif would be its first frame, still. tools/gif2frames.py splits one into the
@@ -464,7 +464,7 @@ namespace Hoodrich.UI
         /// </summary>
         public static bool Animated(string name, int frames, int frameMs, float x, float y,
                                     float widthFraction, float heightFraction, Color c,
-                                    int startedAt = 0)
+                                    int startedAt = 0, float rotationDeg = 0f)
         {
             if (frames <= 0 || string.IsNullOrEmpty(name)) return false;
             if (frameMs < 16) frameMs = 16;
@@ -472,7 +472,7 @@ namespace Hoodrich.UI
             var i = (int)(((long)Game.GameTime - startedAt) / frameMs % frames);
             if (i < 0) i += frames;
 
-            return File(name + "_" + i + ".png", x, y, widthFraction, heightFraction, 0f, c);
+            return File(name + "_" + i + ".png", x, y, widthFraction, heightFraction, rotationDeg, c);
         }
 
         public static bool File(string file, float x, float y, float widthFraction,
