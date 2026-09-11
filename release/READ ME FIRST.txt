@@ -33,9 +33,9 @@
 
   scripts\Hoodrich.dll        the mod
   scripts\Hoodrich.ini        every setting, commented
-  scripts\Hoodrich\           its data: 10 json files and 95 icons
-  scripts\Hoodrich\voice\     152 recordings. Gerald, Lamar, Tao, Hao and
-                              Stretch saying what the screen says.
+  scripts\Hoodrich\           its data: 12 json files and 118 icons
+  scripts\Hoodrich\voice\     191 recordings. Gerald, Lamar, Tao, Hao,
+                              Stretch and Vernon saying what the screen says.
 
   ScriptHookVDotNet.asi       ScriptHookVDotNet, which runs .NET mods. Included
   ScriptHookVDotNet2.dll      because its licence expressly allows it. Not our

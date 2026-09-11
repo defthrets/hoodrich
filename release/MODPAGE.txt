@@ -1,193 +1,125 @@
-📍 POSTED UP
++-+-+-+-+-+-+ +-+-+
+|P|O|S|T|E|D| |U|P|
++-+-+-+-+-+-+ +-+-+
 
 A drug-dealing and gang mod for GTA V. You pick the corner, not the customer.
 
-You run with the Chamberlain Gangster Families. Buy product, cut it at home,
-stand somewhere busy and let the trade come to you. Then be gone before the
-police, or somebody else's people, decide you've been there long enough.
+You run with the Chamberlain Gangster Families. Buy product, cut it at home, stand somewhere busy and let the trade come to you. Then be gone before the police, or somebody else's people, decide you've been there long enough.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Free. Open source under MIT at github.com/defthrets/hoodrich. Nightly builds at spitmux.me if you want it before it lands here.
 
-🔁 THE LOOP
+===================================
 
-1. 📦 GET IT. Gerald fronts you the first two packages. After that it's by the
-   gram from him or by the brick at the port.
-2. 🧪 CUT IT. Brick weight won't sell until you've cut it at the sink in
-   Denise's kitchen. How hard you step on it is the only real decision in the
-   mod. 100g at half strength is 200g to sell -- and the block can tell.
-3. 📍 POST UP. Pick a spot. Busy pavements sell fast and get you noticed fast.
-   Every block pays differently.
-4. 🚨 MOVE ON. Heat sticks to the ground, not to you. A new block is a clean
-   start. The one you burned stays burned.
+THE LOOP
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Get it. Gerald fronts you the first two packages. After that it's by the gram from him, by the brick at the port, or pills and tabs off Hao's phone.
+2. Cut it. Brick weight won't sell until you've cut it at the sink in Denise's kitchen. How hard you step on it is the only real decision in the mod. 100g at half strength is 200g to sell, and the block can tell.
+3. Post up. Pick a spot. Busy pavements sell fast and get you noticed fast. Every block pays differently.
+4. Move on. Heat sticks to the ground, not to you. A new block is a clean start. The one you burned stays burned.
 
-📋 WHAT'S IN IT
+===================================
 
-🏴 Nine gangs with named leaders, their own turf, and their own opinion of you.
-🤝 Thirteen suppliers to track down.
-🎯 Six jobs from Lamar, who rides along and doesn't shut up.
-🚔 Police that aren't a wanted level. Patrols work your blocks regardless. Get
-   searched holding product and it's gone.
-🏁 Street takeovers one night in three. Burnouts, a crowd, and they'll buy
-   from you.
-🍺 A block that lives without you. Crews drinking and smoking, lowriders and
-   donks cruising, dogs on leads, guards who take breaks.
-📱 A social feed of 174 people reacting to what you actually do.
-📉 Block saturation. Worked corners go quiet, then recover while you're away.
-🏠 Stash house raids. Hold too much and someone comes for it.
-💊 Seven products, and yes, you can take them yourself.
-🚗 Eleven cars from Hao, a cheap mod shop, driverless rides off the phone.
-🔫 Guns from Stretch, bodyguards, turf war, dead drops, and a spray can app
-   called Overspray.
-👕 Six outfits at the closet, plus how Franklin walks and holds a gun.
-🐕 Trigger, a dog you can pet at the party and take with you.
-🎤 152 recorded lines. Gerald, Lamar, Tao, Hao and Stretch speak.
+WHAT'S IN IT
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Nine gangs with their own turf and their own opinion of you;
+- Seven jobs from Lamar, who rides along and doesn't shut up. Drive-bys, a hit, tags, a torch job, a bike ride, a hunt;
+- Police that aren't a wanted level. Patrols work your blocks regardless. Get searched holding product and it's gone;
+- Street takeovers one night in three. Burnouts, a crowd, and they'll buy from you;
+- A car meet on Carson Ave. Thirteen spaces, a lowrider on hydraulics, bonnets up, a crowd going car to car;
+- A block that lives without you. Crews drinking and smoking, lowriders and donks cruising, dogs on leads, guards who take breaks;
+- A social feed of 188 people reacting to what you actually do, and replying when you text them;
+- Block saturation. Worked corners go quiet, then recover while you're away;
+- Stash house raids. Hold too much and someone comes for it;
+- Eight products, and yes, you can take them yourself. Acid does what acid does. Three tabs and the floor goes;
+- Fourteen cars from Hao, a cheap mod shop, driverless rides off the phone;
+- Guns from Stretch, nearly every one in the game, plus vests, bodyguards, turf war, dead drops, and a spray can app called Overspray;
+- A shooting range anywhere. Stand three targets up and it's a range, with timed trials and your bests kept;
+- OG Vee outside Leroy's Electrical on Strawberry. Wannabe rapper, coke operation in his dad's old basement, will spit at you whether you asked or not;
+- Six outfits at the closet, plus how Franklin walks and holds a gun;
+- Trigger, a dog you can pet at the party and take with you;
+- 191 recorded lines. Gerald, Lamar, Tao, Hao, Stretch and Vernon speak. Vee raps.
 
-🔧 NO DEPENDENCIES, NO GAME FILES TOUCHED
+===================================
 
-One DLL and some JSON. No LemonUI, no NativeUI, no OpenIV, no installer. It
-won't fight your graphics mods, car packs or map edits. Uninstalling is
-deleting three things.
+NO DEPENDENCIES, NO GAME FILES TOUCHED
 
-Want to tinker? 11 JSON files and 103 settings in a commented INI.
+One DLL and some JSON. No LemonUI, no NativeUI, no OpenIV, no installer. It won't fight your graphics mods, car packs or map edits. Uninstalling is deleting three things.
 
-Legacy and Enhanced, same DLL. Single player only -- keep it away from GTA
-Online.
+Want to tinker? 12 JSON files and 148 settings in a commented INI. Drop a Menyoo spooner save in scripts\Hoodrich\scenery and the mod builds it every session.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Legacy and Enhanced, same DLL. Single player only. Keep it away from GTA Online.
 
-📦 REQUIREMENTS
+===================================
 
-- Script Hook V: http://www.dev-c.com/gtav/scripthookv/
-- ScriptHookVDotNet 3 (v2 alone won't do it; 3.6+ for Enhanced):
-  https://github.com/scripthookvdotnet/scripthookvdotnet/releases
+REQUIREMENTS
+
+- Script Hook V (http://www.dev-c.com/gtav/scripthookv/);
+- ScriptHookVDotNet 3 (https://github.com/scripthookvdotnet/scripthookvdotnet/releases) (v2 alone won't do it; 3.6+ for Enhanced);
 - .NET Framework 4.8. Windows 10 and 11 already have it.
 
-🤝 COMPATIBILITY. Graphics, map and texture mods (NVE, Forests, RWEU,
-Remastered packs) are fine -- nothing here replaces a game file. Trainers are
-fine. Police mods like RDE run alongside; this mod's patrols still happen.
-Phone mods share the phone key, so rebind it in the INI. You don't need the
-standalone Overspray, the app does the same thing.
+Compatibility. Graphics, map and texture mods (NVE, Forests, RWEU, Remastered packs) are fine, nothing here replaces a game file. Trainers are fine. Police mods like RDE run alongside; this mod's patrols still happen. Phone mods share the phone key, so rebind it in the INI. You don't need the standalone Overspray, the app does the same thing. Built alongside Bare Minimum and Fumes and tested with both running.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+===================================
 
-🛠️ INSTALL
+INSTALL
 
-1. ⚠️ UNBLOCK THE ZIP FIRST. Right-click → Properties → Unblock → OK. Windows
-   marks downloaded files and ScriptHookVDotNet silently refuses a marked
-   DLL. This is the number one reason it "doesn't work".
-2. 📁 Drag the scripts folder into your GTA V folder, the one with GTA5.exe in
-   it. Merge when asked.
+1. Unblock the zip first. Right-click, Properties, Unblock, OK. Windows marks downloaded files and ScriptHookVDotNet silently refuses a marked DLL. This is the number one reason it "doesn't work";
+2. Drag the scripts folder into your GTA V folder, the one with GTA5.exe in it. Merge when asked.
 
-You'll end up with scripts\Hoodrich.dll, scripts\Hoodrich.ini and a
-scripts\Hoodrich\ folder.
+You'll end up with scripts\Hoodrich.dll, scripts\Hoodrich.ini and a scripts\Hoodrich\ folder.
 
-🔄 UPGRADING: drop it over the top, old saves load. Copy the folder as well as
-   the DLL.
-🗑️ UNINSTALLING: delete those three things.
-🚫 NO LOG AT ALL? The mod writes its own log on startup, so if
-   scripts\Hoodrich\Hoodrich.log doesn't exist the DLL never ran. That's
-   almost always ScriptHookVDotNet 3 missing. Check your GTA folder for
-   ScriptHookVDotNet3.dll.
+Upgrading: drop it over the top, old saves load. Copy the folder as well as the DLL.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Uninstalling: delete those three things.
 
-▶️ GETTING STARTED
+No log at all? The mod writes its own log on startup, so if scripts\Hoodrich\Hoodrich.log doesn't exist the DLL never ran. That's almost always ScriptHookVDotNet 3 missing. Check your GTA folder for ScriptHookVDotNet3.dll.
 
-🗺️ Gerald is the only marker on the map. See him at the flats on Grove and
-he'll hand you the first lot. Open the phone, go to Dealing, post up somewhere
-with people on it.
+===================================
 
-💡 The bit nobody works out on their own: WEIGHT YOU BUY WON'T SELL UNTIL IT'S
-CUT AND BAGGED at Denise's sink. Anything you're given is already bagged.
+GETTING STARTED
 
-🎮 The phone button opens everything. Arrows move, Enter chooses, Backspace
-goes back, d-pad right talks to people. Every key is rebindable.
+Gerald is the only marker on the map. See him at the flats on Grove and he'll hand you the first lot. Open the phone, go to Dealing, post up somewhere with people on it.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+The bit nobody works out on their own: weight you buy won't sell until it's cut and bagged at Denise's sink. Anything you're given is already bagged.
 
-📜 CHANGELOG
+The phone button opens everything. Arrows move, Enter chooses, Backspace goes back, d-pad right talks to people. F4 hides the feed. Every key is rebindable.
 
+===================================
 
-🧹 0.7.0 -- 8 September 2026
+CHANGELOG
 
-- GROW ROOM AND PILL PRESS REMOVED, blips and all. They were freezing people
-  going in and out and could never be proven to exist. The freeze itself is
-  fixed at the root too.
-- ONE ERROR NO LONGER WIPES THE WORLD. A single fault used to delete and
-  rebuild everything the mod placed. Deprecated SHVDN calls replaced, so
-  newer SHVDN builds are fine.
-- STRETCH'S COUNTER: extended mags actually stay on now, X on a pad opens the
-  parts, and the parts have pictures.
-- THE FAMILIES WON'T START ON THE POLICE, but they'll finish a fight the
-  police start.
-- GUARDS TAKE SMOKE BREAKS, out of step with each other. Everyone at Lamar's
-  uses the furniture. The car meet is a crowd now, not a ring.
-- DOG WALKERS: the lead runs hand to head, stretches with distance, snaps at
-  20m. The dog keeps pace. WalkerDogs setting added.
-- TRIGGER runs when you run, gets his own prompt instead of the game's help
-  box, a green blip, and a TriggerBreed setting.
-- XANAX can put you on the floor now, rarely, and the drunk walk comes and
-  goes.
-- Smaller: the graffiti app is called Overspray, the police radio recording
-  is gone, the Asbo has its speakers, zero compiler warnings.
+0.7.1 - 11 September 2026
 
+- Acid. One tab is colour, two is double, three puts you in the sky over Mirror Park radio;
+- A shooting range wherever you stand three targets up, with trials and bests;
+- The car meet on Carson Ave, every few nights or from the settings screen;
+- OG Vee and Leroy's Electrical. New man, new door, new room, fully voiced, verses in a second voice;
+- Hao sells pills and tabs by text and drives them over in his own Penumbra. In person he sells cars;
+- Lamar's hunt recorded. Lamar and Hao change clothes day to day. DJ Pooh on the decks, Johnny Guns on Stretch's door;
+- Voice pack 152 to 191 lines, and a line with no recording now names its file in the log;
+- 21 fixes from a full audit. A failed hunt locked every mission for the session; the wanted ceiling could stick at one star for good; a script reload destroyed whatever was in your dead drop; handing over 27g paid double what 28g did; Lamar repeated his whole introduction every visit; 92 feed reactions had never once fired; the draw budget that made the HUD flicker with other mods running is 75 rectangles a frame lighter. Full list on GitHub;
+- The feed toggle moved from NumPad * to F4. Fumes was already on that key.
 
-🚗 0.6.2 -- 7 September 2026
+0.7.0 - 8 September 2026
 
-- SERVE FROM THE CAR WINDOW. Post up in the driver's seat and they come to
-  your door.
-- SIX OUTFITS AT THE CLOSET, plus how Franklin walks and holds a gun.
-- DOGS ON LEADS with a quarter of the crews on foot.
-- FIVE MORE GANG CARS, all black or dark green.
-- NOBODY OF OURS SHOOTS AT POLICE, they clear off instead.
-- Fixed: crews ignoring stand-down, Lamar's tag jobs spraying a splatter, two
-  gangs the wrong colour on the map.
+- Grow room and pill press removed, blips and all. They were freezing people going in and out. The freeze itself is fixed at the root too;
+- One error no longer wipes the world. Deprecated SHVDN calls replaced, so newer SHVDN builds are fine;
+- Stretch's counter: extended mags stay on, X on a pad opens the parts, the parts have pictures;
+- Dog walkers on a real lead. Trigger runs when you run, gets a blip and a breed setting;
+- Xanax can put you on the floor now, rarely.
 
+0.6.x - serve from the car window, six outfits, dogs on leads, street takeovers, the block that lives without you, take your own product, turf on the map, the mod shop, driverless cars.
 
-🩹 0.6.1 -- 7 September 2026
+0.5.x - 152 recorded lines, a phone call from Lamar, product sold by weight, the spray can app, sell cars back to Hao, progress kept between sessions.
 
-- Fixed: the phone and kitchen dying once you walked into Franklin's house.
-- The social feed can be switched off on screen. NumPad * or the INI.
+0.4.0 - block saturation, stash house raids, eleven more plugs.
 
+0.3.0 - the messages app, the party runs seven till two, drive-bys work, graffiti survives a restart.
 
-🏁 0.6.0 -- 6 September 2026
+0.2.0 - first public release.
 
-- STREET TAKEOVERS. A junction taken over one night in three. Cars and people
-  arrive from the streets around it, park up, burn out and spin until the
-  blue lights come. Happens whether you go or not. Post up and the crowd
-  buys.
-- THE BLOCK LIVES WITHOUT YOU. Crews on the back streets, lowriders one night
-  and donks the next, corners with people on them, a bike meet at Leroy's.
-- THE FAMILIES NEVER TURN ON FRANKLIN, and no raids in the first ten minutes.
-- TAKE YOUR OWN PRODUCT. Each of the seven does something different.
-- TURF ON THE MAP, a CHEAP MOD SHOP, DRIVERLESS CARS off the phone, STRETCH'S
-  COUNTER redrawn, Franklin's bike is a Sanchez.
-- Every yard and room dressed properly. Dozens of fixes.
+===================================
 
-Works alongside Bare Minimum (hunger and sleep).
+Something wrong? Attach scripts\Hoodrich\Hoodrich.log. A report with the log is worth ten without.
 
-
-💾 0.5.1 -- progress no longer resets between sessions. Your old save is in
-   Documents\Hoodrich and this build finds it.
-
-🎤 0.5.0 -- 152 recorded lines, a phone call from Lamar, product sold by
-   weight, the spray can app, sell cars back to Hao.
-
-🌆 0.4.0 -- block saturation, stash house raids, eleven more plugs, an
-   unreadable save no longer wipes your game.
-
-🔧 0.3.0 -- the messages app, the party runs seven till two, drive-bys work,
-   graffiti survives a restart.
-
-🌱 0.2.0 -- first public release.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🐛 SOMETHING WRONG? Attach scripts\Hoodrich\Hoodrich.log. A report with the
-log is worth ten without.
-
-📄 LICENCE: MIT.
+Licence: MIT.

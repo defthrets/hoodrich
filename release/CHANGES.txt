@@ -1,4 +1,309 @@
-﻿0.7.1 -- unreleased
+﻿0.7.1 -- 11 September 2026
+
+
+THE FEED TOGGLE IS F4.
+
+It was NumPad *, under a comment claiming that was one of the few keys the
+mods people run alongside this one leave alone. On this machine it was not:
+Fumes reads the same key at a pump to cycle the hose rope, so one press
+toggled the feed and rebuilt the hose. It never showed in a keymap because
+Fumes binds it in code rather than in its ini. Every key bound by every mod on
+the install was mapped -- F4, F7, F8, F9 and NumPad 1 to 9 were all that was
+free -- and F4 sits beside the phone on F2.
+
+
+THE FIRST-TICK SWEEP ASKS BEFORE IT WIPES.
+
+On its first tick the mod cleared the timecycle, stopped every post effect,
+reset time scale, stopped the camera shake and sobered the player, on the
+reasoning that nothing of ours could be live yet. True of a fresh game; false
+of the thing that actually happens, which is SHVDN rebuilding every script on a
+keypress an hour into somebody else's session -- so a player Bare Minimum had
+drunk went visually sober and stayed mechanically drunk, because that mod's own
+flags still said applied. A marker file now records whether a high was live
+when the last run ended, and the sweep runs only when it was.
+
+
+GERALD STOPS AT TWO PACKAGES.
+
+OnOffer() was written to be the one place that decides whether he has a
+package for you, and it had no callers. The row asked its own two questions
+and never the third, so package three, four and five arrived, each opening with
+"you been out there once and you came back" to somebody who had been running
+the port for hours, under a line reading "3 of 2 cleared". The row asks OnOffer
+now, and the counter is clamped.
+
+
+THE AMOUNT PROMPT CAN BE VOICED.
+
+"How many? And don't say one if you mean four." has your money and your free
+space stapled onto the end, so no hash could ever name a file for it, and it
+carried no key of its own. Every purchase from every dealer comes through it.
+Named now, the way the counter line is: the recording says the words and the
+screen keeps the arithmetic. Three new files -- hao_amount, tao_cheng_amount,
+gerald_amount.
+
+
+FOUR WAYS THE MOD WAS LEAVING LITTER IN THE WORLD.
+
+The nightly cruise handed its peds back deaf: Seat() sets five behaviour
+overrides and the file contained exactly one blocking call, the one that turns
+it on, so four ambient drivers a night went round Los Santos who would sit at
+a red light being shot at. Dismissed homies were never taken back off the
+minded list, and the game reuses handles, so an ordinary Families ped could
+inherit "does not run from the police" and open up on a patrol car for no
+reason anybody could trace. Scenery's failure path returned "nothing was
+built" while the thing it built stood there persistent, one more on every
+rebuild. And nobody had ever crouched to set up a takeover firework, because
+the scenario name was WORLD_HUMAN_CROUCH_INSPECT and the game's is
+WORLD_HUMAN_INSPECT_CROUCH. All four fixed; the whole repo checked against the
+scenario list afterwards, zero invalid names.
+
+
+THE BED AND THE CLOSET STOP FIGHTING OVER THE SAME METRE OF FLOOR.
+
+Their centres are two metres apart and both reach 1.6, and in the overlap the
+wardrobe won the prompt while the bed won the button -- so you read "press E
+to change", pressed E, and slept six hours. Whichever you are stood nearer to
+gets both now.
+
+
+A KEY FOR LEROY'S BASEMENT.
+
+The door is locked behind Vee's job and the job is not written yet, so the
+lock was permanent: nothing anywhere could set the flag. The gate stays, and a
+switch on the settings screen beside "Call a car meet" counts the job as done
+-- a toggle, so it can be locked again, and nothing fakes progress. When the
+mission lands it will mark itself and this becomes the row that skips it.
+
+
+THE WANTED CEILING STOPS RATCHETING DOWN TO ONE STAR.
+
+Tag a wall in a cop's view and the mod caps the ceiling at one. A gang war an
+hour later read that one as "what it was before", and put it back to one when
+the war ended, for the rest of the session, with nothing in the log to say
+why. The level to go back to is read once a session now, from whichever of a
+hold or a cap touches the police first, and never again -- because after that,
+every value the game can report is one of ours.
+
+
+LAMAR STOPS REPEATING HIS WHOLE INTRODUCTION.
+
+The once-only rule for a recording checked one name and wrote down a different
+one whenever a named line fell back to its hashed name, so the line was never
+marked heard. His two greetings are exactly that case: sixty words, in full,
+every time you walked up to him, for the life of the save. Both names are
+recorded now.
+
+
+NINETY-TWO FEED LINES GET TO BE SEEN.
+
+The set that dropped you is meant to be still laughing about it when you get
+out of Pillbox. The event resolved to a post set nobody wrote, so the feed
+returned before the reactions and the four sets behind them -- shot, beaten,
+run down, blown up -- had never once fired. Other people reacting no longer
+depends on you posting.
+
+
+THE REPLY MATCHER STOPS EATING ITS OWN TRIGGERS.
+
+First set wins on a plain substring, and a shorter word is a substring of a
+longer one: "war" answered every message about a warrant and "car" answered
+every message about Carson, which is the takeover block, so none of its
+replies could be reached. Longest trigger first, across every set.
+
+
+THE CAR MEET IS TORN DOWN WITH EVERYTHING ELSE.
+
+It had no teardown at all -- the only way out was walking 700 m off -- so a
+script reload on site orphaned twelve cars and twelve drivers, all persistent
+and mission-flagged, which the game never reclaims. Reload twice and the
+junction had two meets on it. Stop() was always the right cleanup and simply
+had no route from an abort.
+
+
+HANDING OVER LESS NO LONGER PAYS MORE.
+
+A full deal pays the catalogue price; a short one re-priced what you handed
+over off the ladder, and the ladder is where the bulk discount lives. Weed's
+ounce is 28g for $200 against $50 an eighth, so 27g came out as seven eighths
+plus change -- about $400 for a gram less. The deal agreed is the ceiling now.
+
+
+A SCRIPT RELOAD STOPS DESTROYING YOUR DEAD DROP.
+
+Teardown deleted the bag's prop and blip and abandoned the two lists holding
+its contents. Die with three hundred grams on you, press Insert before you
+have walked back, and it was gone -- and the save had been touched when it
+dropped, so the loss was already banked. It hands the contents back first,
+the way the ordinary dropped bags already did.
+
+
+A FAILED HUNT NO LONGER LOCKS EVERY MISSION FOR THE SESSION.
+
+The runner cleared the bike ride and the tag run and not the hunt, and the
+hunt's own clear was reachable only from starting a hunt. So a spooked hunt
+left the runner believing a job was still on, every future job -- including
+the one that would have cleared it -- was refused with "you're already on
+something", and the failure notice fired once a frame for the rest of the
+session. There is no abort in the mod; this was a closed loop with the player
+inside it.
+
+
+THE TWO THINGS ON SCREEN DURING ORDINARY PLAY COST SEVENTY-FIVE RECTANGLES.
+
+The game stops honouring rectangles past about four hundred a frame across
+every mod at once, and past that it draws nothing and says nothing -- that is
+the flicker with Bare Minimum and Fumes running. Every full-screen menu here is
+clear on its own; the mission card and the world prompt bar were not, because
+both drew their rounded corners out of stacked rectangles: 44 and 31 a frame,
+against sprite corners the repo has had for months. The card takes the sprites.
+The prompt's key cap takes a flat rectangle, because at two pixels of radius
+the rounding was never visible. Four rects now, from seventy-five.
+
+
+FOUR NATIVES WERE CALLED TWO DIFFERENT WAYS.
+
+If one repo calls the same native with two argument counts, one of them is
+wrong. A sweep of 3,120 call sites found four: a leader deciding whether his
+set turns on you for clipping him was reading stack garbage as the missing
+third argument. All corrected towards the majority form; the sweep now finds
+none.
+
+
+HAO IS A CAR DEALER TO YOUR FACE.
+
+His dealer entry carried coordinates, so a second Hao was spawned on his own
+forecourt on top of the real one -- two of him, in two different shirts,
+offering a drug menu to a man on a car lot. He is delivery-only now: in person
+he sells cars, and the pills are a phone number. That change locked him out of
+his own phone for anyone on a new save, because the marker that says you have
+met a dealer could only be written by walking up to him; a man who only ever
+comes to you counts as met now, the same rule the port already had.
+
+
+THE GOODBYE PLAYS AT THE CAR DOOR.
+
+The conversation screen played a dealer's farewell on every way out, and on a
+delivery the screen closes when you have finished buying -- so he said goodbye
+and then carried a box up your path and into your house. It is cued the frame
+he is told to get in his car.
+
+
+THE WRITTEN LINES GET SOMEWHERE TO BE SAID.
+
+Each dealer's greeting, number line and source reply were read out of the
+data and used by nothing, so recordings of them could never play. The greeting
+and the number are beats now -- they play and hand on by themselves, so
+meeting somebody costs no extra button presses -- and "where you getting
+this?" is a row on the counter for a dealer with no port behind him.
+
+
+EVERY DEALER SAYS HIS OWN WORDS OVER THE COUNTER.
+
+The counter line and the four stash-room lines were one hardcoded string each,
+said by whoever you happened to be buying off. Tao's take opens "Ai-ya" and
+Gerald's opens "Stand aside, boy", so the lines are per dealer in
+dealers.json, empty falling back to the shared sentence. Gerald's five, Tao's
+counter and Hao's six are placed. A dealer who never cuts anything is no longer
+asked to record the cut line.
+
+
+A PHONE MESSAGE IS NOT A LINE TO RECORD.
+
+The to-record tool listed every courier text -- sixteen of the twenty-three it
+said Hao owed -- and none of them ever reaches a speaker. Off the list unless
+asked for. It also matched takes on the head of a line only, so a recorder
+dropping "Ho --" off the front lost the take; it looks inside the line now,
+when exactly one line contains it. And three men say the shop sentence, each
+in his own voice, and the table had room for one of them -- it refuses now and
+--who settles it.
+
+
+OG VEE.
+
+Vernon leans on the wall outside Leroy's Electrical on Strawberry: his dad's
+old shop, a coke operation in the basement, and a wannabe rapper's conviction
+that his bars are good. He already knows you, he spits, he asks if you're
+busy, and the door beside him stays shut until his job is done -- the door's
+prompt goes quiet while he is stood in it, because the man who opens it is the
+explanation. Twenty takes placed. The verses are one take each under his other
+name, OG Vee, so the folder says which voice a file wants, and the run-up
+carries straight into the verse with no button press between them. The room
+behind the door is the warehouse floor in Banning, with the booth and the coke
+setup from the spooner, and he has the razor blip on the minimap.
+
+
+LAMAR AND HAO CHANGE THEIR CLOTHES.
+
+By the day rather than the spawn, so the same man wears the other jacket some
+mornings and not while you drive round the corner. DJ Pooh is behind the decks
+at Lamar's and Johnny Guns is on Stretch's door. The two Online models that
+were standing in for people are out of the spawn lists.
+
+
+A CAR MEET ON CARSON AVE.
+
+Every few nights, or from the settings screen. Twelve of the set's cars spawn
+blocks away and drive in, park the way they arrived in the surveyed bays, pop
+the bonnets, and a lowrider on juice works the switches. Everybody gets out and
+mingles, then breaks into threes round the cars, and a crowd that came on foot
+goes bonnet to bonnet with cameras out. Nobody is ever teleported, no two cars
+share a model, the spaces are cleared before anyone is sent, and it runs ten
+minutes. The first car crashed the game outright: a native that wants a
+pointer as its seventh argument was handed a literal zero in that slot.
+
+
+ONE SEAL FOR THE WHOLE SET.
+
+Every mod in the set draws the one spinning mark at load with the names as a
+list beside it, and the stock start-up tickers are gone.
+
+
+ACID.
+
+One tab is colour -- the screen swells on a slow period and the palette
+throws. Two tabs doubles it. Three and the floor goes: Franklin comes down out
+of the sky the way the game's own drugged fall works, no parachute, slower the
+nearer the ground, with Radio Mirror Park on and fading out as he lands.
+
+
+THE MESSAGES TILE BREATHES RED.
+
+"N new" is red and animated while something is unread, grey like the others
+when nothing is.
+
+
+A SHOOTING RANGE WHEREVER YOU STAND THREE TARGETS UP.
+
+No coordinates in it. Three or more target props within ninety metres are a
+range: timed trials, hits read off your own last impact, bests kept in the
+save. A row on the block reaches it.
+
+
+FRANKLIN HOLDS THE GUN SIDEWAYS.
+
+Off the wardrobe, the same way the set does, and a rifle the same way.
+
+
+THE HUNT.
+
+Lookouts instead of wind: get spotted and one of them makes a call that
+scares the quarry off. The tracks can be seen. Lamar comes along, and the
+brief that said to go by yourself does not. Recorded.
+
+
+LOOT: YOU PICK WHAT YOU TAKE.
+
+Left on the pad was taking the item on the way to it. Select takes now, and
+the card wears the set's colour -- green for Families, yellow for Vagos.
+
+
+THE PANEL ART COMES BACK AFTER A FADE.
+
+ScriptHookV empties its texture list on a screen fade, so every cached sprite
+handle went stale and drew nothing -- the "over limit" that was not the draw
+budget at all. The cache is forgotten on the fade's falling edge and remade.
 
 
 GERALD SPEAKS THE SECOND PACKAGE AGAIN.
