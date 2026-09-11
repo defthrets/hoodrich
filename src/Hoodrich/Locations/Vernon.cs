@@ -275,6 +275,14 @@ namespace Hoodrich.Locations
             HoldForTalk();
 
             Talk.Speaker = _ped;
+
+            // His thing, shaking on the panel while he talks: sixteen frames of a baggie,
+            // split out of a GIF by tools/gif2frames.py. The first flipbook on the HUD, and
+            // the test of the mechanism.
+            Talk.Badge = "baggie";
+            Talk.BadgeFrames = 16;
+            Talk.BadgeMs = 130;
+
             Talk.Open(root, this);
         }
 

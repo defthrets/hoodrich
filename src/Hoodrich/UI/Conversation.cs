@@ -613,6 +613,18 @@ namespace Hoodrich.UI
         /// </summary>
         public string Title = "";
 
+        /// <summary>
+        /// A moving picture at the far end of the name row, the size of his face: the base
+        /// name of a flipbook in the icons folder, how many frames, and the delay. See
+        /// Draw.Animated. Empty means none, which is every conversation but the one that
+        /// set it; Close clears it so nobody inherits it.
+        /// </summary>
+        public string Badge = "";
+        public int BadgeFrames;
+        public int BadgeMs = 100;
+
+        private float BadgeInset => string.IsNullOrEmpty(Badge) ? 0f : TextInset;
+
         public void Open(DialogueNode node, object subject = null)
         {
             if (node == null) return;
@@ -692,7 +704,7 @@ namespace Hoodrich.UI
 
             _face = string.IsNullOrEmpty(node.Portrait) ? FaceFor(node.Speaker) : node.Portrait;
 
-            _wrapped = Wrap(node.Line, PanelWidth - 0.03f - TextInset, BodyScale);
+            _wrapped = Wrap(node.Line, PanelWidth - 0.03f - TextInset - BadgeInset, BodyScale);
 
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
 
@@ -714,6 +726,9 @@ namespace Hoodrich.UI
 
         public void Close()
         {
+            Badge = "";
+            BadgeFrames = 0;
+
             TalkCam.Stop();
 
             // The button that got you out of here does not also swing at somebody.
@@ -1144,9 +1159,22 @@ namespace Hoodrich.UI
             Hud.Text(_node.Speaker.ToUpperInvariant(), said, y, NameScale,
                      Palette.Alpha(_node.SpeakerColour, ink), Hud.FontLabel, centre: false);
 
+            // The badge, level with the face at the other end: the same size, the same
+            // top, so the row reads as a pair -- his picture on the left, his thing on the
+            // right -- and the place label steps in to make room for it.
+            var labelRight = right;
+
+            if (!string.IsNullOrEmpty(Badge) && BadgeFrames > 0)
+            {
+                var wide = Hud.ToX(FaceSize);
+                Hud.Animated(Badge, BadgeFrames, BadgeMs, right - wide, y, wide, FaceSize,
+                             Color.FromArgb(ink, 255, 255, 255));
+                labelRight = right - wide - 0.008f;
+            }
+
             if (!string.IsNullOrEmpty(Title))
             {
-                Hud.TextRight(Title.ToUpperInvariant(), right, y + 0.004f, PlaceScale,
+                Hud.TextRight(Title.ToUpperInvariant(), labelRight, y + 0.004f, PlaceScale,
                               Palette.Alpha(Palette.TextDim, (int)(200f * arrive)), Hud.FontLabel);
             }
 

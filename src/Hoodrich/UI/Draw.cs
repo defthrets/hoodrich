@@ -447,6 +447,34 @@ namespace Hoodrich.UI
         /// is unreadable -- so the width is its own argument, in X units, and the square
         /// version above is now the special case rather than the only one.
         /// </summary>
+        /// <summary>
+        /// A flipbook: name_0.png, name_1.png ... drawn one per frameMs, looping, placed by
+        /// its top-left like File. This is how a GIF gets on the HUD.
+        ///
+        /// THE TEXTURE LOADER KNOWS NOTHING OF GIFS. It decodes one image into one texture,
+        /// so a .gif would be its first frame, still. tools/gif2frames.py splits one into the
+        /// numbered PNGs this wants, every frame the full canvas so nothing shifts, and the
+        /// frame shown is the game clock divided by the delay -- so it pauses when the game
+        /// does, and plays at the rate it is told rather than whatever the file said. Same
+        /// mechanism as the Graffiti app's logo spraying itself on; that one just does not
+        /// loop.
+        ///
+        /// Each frame is its own texture and stays loaded for the session, so a flipbook is
+        /// for something the eye rests on -- a badge, a spinner -- not for a feed of them.
+        /// </summary>
+        public static bool Animated(string name, int frames, int frameMs, float x, float y,
+                                    float widthFraction, float heightFraction, Color c,
+                                    int startedAt = 0)
+        {
+            if (frames <= 0 || string.IsNullOrEmpty(name)) return false;
+            if (frameMs < 16) frameMs = 16;
+
+            var i = (int)(((long)Game.GameTime - startedAt) / frameMs % frames);
+            if (i < 0) i += frames;
+
+            return File(name + "_" + i + ".png", x, y, widthFraction, heightFraction, 0f, c);
+        }
+
         public static bool File(string file, float x, float y, float widthFraction,
                                 float heightFraction, float rotationDeg, Color c)
         {
