@@ -2281,24 +2281,28 @@ namespace Hoodrich.Phone
         private static void Art(WheelItem item, float cx, float cy, float size, Color c,
                                 float spin = 0f, int animateFrom = -1)
         {
-            // A FLIPBOOK IS COLOUR ART AND IS DRAWN AS IT IS. The grid's ink and the green
-            // under the cursor are for the white line art; put onto pixel art they turned
-            // the whole set grey, and a monochrome pass (tools/gif2frames.py --mono, still
-            // there) was tried and taken off again for the same reason. Only the alpha is
-            // borrowed, for the fade. Still on the first frame until the cursor lands; the
-            // movement is the selection. See WheelItem.IconFrames.
+            // A FLIPBOOK RESTS IN GREY AND WAKES IN COLOUR. Off the cursor the tile shows
+            // name_still.png -- the first frame with the colour taken out, which the
+            // splitter writes beside the frames -- in the grid's own ink, so the resting
+            // grid is one quiet set. Under the cursor the frames play in their own colours,
+            // untinted, borrowing only the alpha for the fade: the colour and the movement
+            // arrive together and both say "this one". See WheelItem.IconFrames.
             if (item.IconFrameCount > 0 && !string.IsNullOrEmpty(item.IconFrames))
             {
-                var plain = Color.FromArgb(c.A, 255, 255, 255);
-
                 if (animateFrom >= 0)
                 {
+                    var plain = Color.FromArgb(c.A, 255, 255, 255);
+
                     if (Hud.Animated(item.IconFrames, item.IconFrameCount, item.IconFrameMs, cx, cy,
                                      ArtWidth(item, size), size, plain, animateFrom, spin)) return;
                 }
-                else if (Hud.File(item.IconFrames + "_0.png", cx, cy, ArtWidth(item, size), size, spin, plain))
+                else
                 {
-                    return;
+                    if (Hud.File(item.IconFrames + "_still.png", cx, cy, ArtWidth(item, size), size, spin, c)) return;
+
+                    // No resting picture beside the frames: the first frame, as it is.
+                    if (Hud.File(item.IconFrames + "_0.png", cx, cy, ArtWidth(item, size), size, spin,
+                                 Color.FromArgb(c.A, 255, 255, 255))) return;
                 }
             }
 

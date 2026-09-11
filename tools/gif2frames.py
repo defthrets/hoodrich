@@ -80,6 +80,13 @@ def main():
         im.seek(i)
         delays.append(int(im.info.get("duration", 100)))
         frame = im.convert("RGBA")
+        if i == 0:
+            # THE RESTING PICTURE: the first frame with the colour taken out, for a tile
+            # that is not under the cursor. The colour comes back with the movement.
+            still = monochrome(frame)
+            if scale != 1:
+                still = still.resize((still.width * scale, still.height * scale), Image.NEAREST)
+            still.save(os.path.join(OUT, "%s_still.png" % name), optimize=True)
         if mono:
             frame = monochrome(frame)
         if scale != 1:
