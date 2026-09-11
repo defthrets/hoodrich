@@ -52,7 +52,7 @@ namespace Hoodrich.UI
                        "Six outfits, plus his build, how he walks and how he holds a gun. What "
                        + "you settle on goes in the save and is put back on him when the game "
                        + "loads",
-                       r => r.ArtFile = "stash.png");
+                       r => r.ArtFile = "cap.png");
 
             sections.Add(closet);
 
