@@ -1,6 +1,16 @@
 ﻿Since 0.7.1 -- 11 September 2026
 
 
+YOU LOSE WHAT YOU ARE CARRYING WHEN YOU DIE. YOU DID NOT.
+
+The drop-on-death check lived inside the playable tick, and the playable tick
+stands down the moment you are dead or cuffed -- so the one thing it existed
+to notice was the one thing it could never see. Two deaths in the log, no bag
+either time, everything still in his pockets at Pillbox. Death and arrest are
+watched every frame now, the notice waits until there is a screen to read it
+on, and [Risk] DeathBagRecoverable says whether the bag is left where you
+fell to go back for (on, as before) or the product is gone for good (off).
+
 THE POOL THE COMPARES ARE NOT.
 
 Paint engine, synced from Overspray: the game takes the oldest decal down

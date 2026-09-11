@@ -3402,6 +3402,10 @@ namespace Hoodrich
                 WatchForPillbox();
                 WatchForGunfire();
 
+                // And the bag. Dying and being cuffed both stand the playable tick down, so
+                // the drop-on-death check inside it never once saw a death. See DeadDrop.Watch.
+                _deadDrop?.Watch();
+
                 // No lid. Every frame rather than on mounting, because the game hands one out
                 // the moment he sits on a bike and would do it again on the next one -- and
                 // it is two natives on a bare head, one of which is only asked.
@@ -4650,6 +4654,11 @@ namespace Hoodrich
 
             _pillboxAt = 0;
             _social?.On(SocialEvent.Hospital, "");
+
+            // What the death cost, now that there is a screen to read it on. The bag went
+            // down on the frame he did, behind the fade -- see DeadDrop.DropBag.
+            var cost = _deadDrop == null ? null : _deadDrop.TakeDeathNotice();
+            if (!string.IsNullOrEmpty(cost)) Notify.Important(cost);
 
             // The war ended on the frame he went down, but saying so then would have put it
             // behind the death fade. Here it can be read.

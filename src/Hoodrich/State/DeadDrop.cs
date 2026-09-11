@@ -63,7 +63,25 @@ namespace Hoodrich.State
 
         public bool HasBag => _bag != null && _bag.Exists();
 
+        /// <summary>The bag on the floor: its lifetime, and picking it up. From the playable tick.</summary>
         public void Update()
+        {
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return;
+
+            CheckBagLifetime(player);
+        }
+
+        /// <summary>
+        /// Dying and being arrested, watched EVERY FRAME, playable or not.
+        ///
+        /// THIS SAT IN THE PLAYABLE TICK, and the playable tick stands down the moment you are
+        /// dead or cuffed -- so the one thing it existed to notice was the one thing it could
+        /// never see. By the time it ran again you were stood outside Pillbox, alive, with
+        /// everything still in your pockets. Two deaths in the log and no bag either time.
+        /// Same shape as the job runner's Died: read on the frame he goes down.
+        /// </summary>
+        public void Watch()
         {
             var now = Game.GameTime;
             if (now - _lastCheck < CheckIntervalMs) return;
@@ -74,7 +92,6 @@ namespace Hoodrich.State
 
             CheckArrest(player);
             CheckDeath(player);
-            CheckBagLifetime(player);
         }
 
         private void CheckArrest(Ped player)
@@ -139,33 +156,63 @@ namespace Hoodrich.State
             // Going down twice without picking the first one up used to leave that bag behind
             // as a persistent prop with a blip on it and nothing tracking either -- a marker
             // pointing at a bag that no longer contained anything.
+            var lastBagGone = false;
+
             if (HasBag)
             {
                 ClearBag();
-                Notify.Ticker("~o~Whatever was in the last bag is gone.~s~");
+                lastBagGone = true;
             }
 
             _bagBulk.Clear();
             _bagPackaged.Clear();
 
-            var taken = Confiscate(fraction, _bagBulk, _bagPackaged);
-            if (taken <= 0.005f) return;
+            // FOR GOOD, if the ini says so: nothing is written down, so there is nothing to
+            // hand back. Otherwise into the bag's own record, to be handed back at the spot.
+            var keep = _cfg.DeathBagRecoverable;
+
+            var taken = Confiscate(fraction, keep ? _bagBulk : null, keep ? _bagPackaged : null);
+
+            if (taken <= 0.005f)
+            {
+                if (lastBagGone) _notice = "~o~Whatever was in the last bag is gone.~s~";
+                return;
+            }
 
             _state.Touch();
 
-            if (!SpawnBag(where))
+            // SAID LATER. This runs on the frame he goes down, behind the death fade, and a
+            // notification behind a black screen is a notification thrown away. Main asks for
+            // it once he is stood outside Pillbox -- see TakeDeathNotice.
+            if (!keep || !SpawnBag(where))
             {
-                // Nowhere to put it: the product is simply gone.
                 _bagBulk.Clear();
                 _bagPackaged.Clear();
-                Notify.Failure("you lost " + taken.ToString("0.#") + "g.");
+
+                _notice = "~r~You lost " + taken.ToString("0.#") + "g.~s~" +
+                          (keep ? " There was nowhere to drop it." : " It went down with you.");
+
+                Log.Info("Death: lost " + taken.ToString("0.##") + "g" + (keep ? " (no bag prop)." : " for good."));
                 return;
             }
 
             _bagDroppedAt = Game.GameTime;
-            Notify.Important("~o~You dropped " + taken.ToString("0.#") + "g.~s~ It's on your map -- go get it.");
+
+            _notice = (lastBagGone ? "~o~The last bag is gone.~s~ " : "") +
+                      "~o~You dropped " + taken.ToString("0.#") + "g.~s~ It's on your map -- go get it.";
+
             Log.Info("Death: dropped " + taken.ToString("0.##") + "g at " + where + ".");
         }
+
+        /// <summary>What the death cost, handed over once there is a screen to read it on.</summary>
+        public string TakeDeathNotice()
+        {
+            var said = _notice;
+            _notice = null;
+            return said;
+        }
+
+        private string _notice;
 
         /// <summary>
         /// Removes a fraction of everything held. When given dictionaries, records what was
