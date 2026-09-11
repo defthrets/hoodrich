@@ -116,11 +116,21 @@ namespace Hoodrich.Core
         /// <summary>
         /// A key that turns that on and off where you stand, and writes the answer to the ini.
         ///
-        /// NumPad * by default, which is one of the few keys this game and the mods people run
-        /// alongside it leave alone. Set it to None and there is no key -- the tick on the
-        /// settings screen does the same job.
+        /// F4 by default. It used to be NumPad *, under a comment claiming that was "one of the
+        /// few keys this game and the mods people run alongside it leave alone" -- which was
+        /// not true here. Fumes reads the same key at a pump to cycle the hose rope, so one
+        /// press toggled the feed AND rebuilt the hose, and it never showed up in anybody's
+        /// keymap because Fumes binds it in code rather than in its ini.
+        ///
+        /// F4 is beside the phone on F2, which is the other thing that opens a screen, and it
+        /// is genuinely free: every key bound by every mod on this install was mapped, and F4,
+        /// F7, F8, F9 and NumPad 1-9 were all that was left. No numpad key is safe -- Fumes has
+        /// Multiply and NumPad0 and Franklin-RP has NumPad0.
+        ///
+        /// Set it to None and there is no key -- the tick on the settings screen does the same
+        /// job.
         /// </summary>
-        public Keys FeedKey = Keys.Multiply;
+        public Keys FeedKey = Keys.F4;
 
         /// <summary>
         /// Draw the blip art inside the posted-up status bars instead of their names.

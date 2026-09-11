@@ -985,6 +985,11 @@ namespace Hoodrich.Economy
             {
                 _live.Add(new Live { What = recipe, Until = Game.GameTime + recipe.Ms });
 
+                // FROM HERE UNTIL CLEAR, THE SCREEN IS OURS. If the process dies in between,
+                // the marker is what tells the next run there is something to sweep up. See
+                // MarkerFile.
+                MarkLive(true);
+
                 Log.Info("High: " + recipe.Drug + " for " + (recipe.Ms / 1000) + "s. " +
                          _live.Count + " in him.");
             }
@@ -1227,7 +1232,15 @@ namespace Hoodrich.Economy
             {
                 _swept = true;
 
-                if (_live.Count == 0 && !_coming && _blackFrom == 0) Sweep();
+                // AND ONLY IF WE ACTUALLY LEFT SOMETHING. See LeftSomething.
+                //
+                // This used to fire on every first tick, and a first tick is not a fresh game
+                // -- SHVDN rebuilds every script on a keypress, so ours lands an hour into
+                // everybody else's session. Sweep clears the timecycle, stops ALL postfx,
+                // resets time scale and sobers the player, none of which is ours to decide when
+                // we have not put anything on the screen. Bare Minimum's drunk went with it and
+                // never came back, because its own "applied" flags still said yes.
+                if (_live.Count == 0 && !_coming && _blackFrom == 0 && LeftSomething()) Sweep();
             }
 
             if (_falling != 0) { Falling(); return; }
@@ -2554,6 +2567,54 @@ namespace Hoodrich.Economy
         /// tick, with nothing of ours live -- which is the one moment where "there should be
         /// no drug effects on this screen" is certainly true.
         /// </summary>
+        /// <summary>
+        /// The marker that says a previous instance had the screen and may not have given it back.
+        ///
+        /// A FILE, NOT A FIELD. The case this exists for is the one where nothing was saved --
+        /// an abort, a crash, Insert pressed mid-trip -- so it has to outlive the process
+        /// rather than the save. It is dropped the moment anything of ours touches the screen
+        /// and removed the moment Clear puts it back, so its presence on a fresh start means
+        /// exactly one thing: the last run ended with our effects still up.
+        /// </summary>
+        private static string MarkerFile
+        {
+            get
+            {
+                try { return System.IO.Path.Combine(Core.Paths.Writable, "high.live"); }
+                catch { return ""; }
+            }
+        }
+
+        /// <summary>Says we have the screen. See MarkerFile.</summary>
+        private static void MarkLive(bool live)
+        {
+            var path = MarkerFile;
+            if (string.IsNullOrEmpty(path)) return;
+
+            try
+            {
+                if (live)
+                {
+                    if (!System.IO.File.Exists(path)) System.IO.File.WriteAllText(path, "1");
+                }
+                else if (System.IO.File.Exists(path))
+                {
+                    System.IO.File.Delete(path);
+                }
+            }
+            catch
+            {
+                // Worst case the sweep runs when it need not, or does not when it could.
+            }
+        }
+
+        /// <summary>Whether a previous run left our effects on the screen. See MarkerFile.</summary>
+        private static bool LeftSomething()
+        {
+            try { var p = MarkerFile; return !string.IsNullOrEmpty(p) && System.IO.File.Exists(p); }
+            catch { return false; }
+        }
+
         private void Sweep()
         {
             try
@@ -2573,6 +2634,11 @@ namespace Hoodrich.Economy
 
                 _clip = "";
                 _drunk = false;
+
+                // Whatever the last run left is gone; the next start has nothing to clean.
+                MarkLive(false);
+
+                Log.Info("Swept up after a run that ended with the screen still ours.");
             }
             catch (Exception ex)
             {
@@ -2598,6 +2664,9 @@ namespace Hoodrich.Economy
         /// </summary>
         private void Clear()
         {
+            // Handed back, so a later start has nothing of ours to clean up after. See Sweep.
+            MarkLive(false);
+
             _cycleOwner = null;
             _cyclePower = 0f;
 
