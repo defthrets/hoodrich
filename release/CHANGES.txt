@@ -1,6 +1,14 @@
 ﻿Since 0.7.1 -- 11 September 2026
 
 
+THE POOL THE COMPARES ARE NOT.
+
+Paint engine, synced from Overspray: the game takes the oldest decal down
+silently when its pool is full, so marks the engine believed up were gone.
+Every frame a slice is asked whether it is still alive; the dead come back
+first; the pool size is learned from where evictions start and the engine
+keeps under it, giving up the furthest mark rather than the oldest.
+
 OLD TAGS COME BACK IN SECONDS, AND NOTHING IS TORN DOWN TO DO IT.
 
 Paint engine, synced from Overspray: the game takes about thirty-two new
