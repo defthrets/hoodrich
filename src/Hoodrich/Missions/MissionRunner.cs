@@ -289,6 +289,11 @@ namespace Hoodrich.Missions
                 // which is the whole reason it is his job rather than a marker on a map.
                 var boss = value;
                 _hunt.Fixer = () => boss == null ? null : boss.Lend();
+
+                // AND GIVES HIM BACK. The bike ride calls TakeBack at its end; the hunt never
+                // did, so after a hunt he stayed lent for the rest of the session, which is a
+                // man you cannot talk to stood on his own corner. See Hunt.GiveBack.
+                _hunt.GiveBack = () => { if (boss != null) boss.TakeBack(); };
             }
         }
 

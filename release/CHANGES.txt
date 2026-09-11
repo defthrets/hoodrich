@@ -1,6 +1,29 @@
 ﻿Since 0.7.1 -- 11 September 2026
 
 
+LAMAR'S HUNT, REDONE. Same words, different job underneath them.
+
+The ride out has a marker now: the same yellow ring the other jobs use, with
+the route. Lamar gets in whatever you get in and out when you do, walks
+behind you at your pace, crouches when you crouch, and stands still when you
+are looking down the glass; he was being re-tasked every frame, which is a
+man who never finishes starting to walk. The three Ballas and the three
+lookouts are put down out of your sight and have their permanent events
+blocked, so the game's own gang hatred cannot turn a stalk into a gunfight
+the moment one of them glances your way. Each of the three has a purple
+ring on the map that says roughly where and not exactly; stand on his
+trail and the ring comes off and a mark goes on him. They walk between two
+spots now and then and every step is a fresh print, and the prints are
+bigger and lighter, because a print tinted thirty percent grey on wet
+asphalt was a print nobody could see. Lamar's call goes when you are
+crouched and still with one of them out of sight and not too far, and it
+brings him to a place a rifle's length short of you, where he looks about
+and then walks back -- it used to go every thirty seconds and send him to
+your exact coordinate. Lines of sight are asked for a few times a second
+instead of six raycasts a frame. And Lamar is handed back to his corner
+when the job ends; he was left lent for the rest of the session, which is
+a man you cannot talk to.
+
 THE PORT RUN'S LOAD IS TWENTY KILOS.
 
 Four of the biker coke "block" went on the pallet, and that prop is a bale of
