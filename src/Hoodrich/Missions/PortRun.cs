@@ -350,15 +350,25 @@ namespace Hoodrich.Missions
         private const float PackFit = 0.88f;
 
         /// <summary>
-        /// How many bricks go on, and how high they are allowed to climb to fit.
+        /// How many bricks go on: ONE PER KILO, so the load is the number on the card.
         ///
-        /// Sixteen. The layer count is a ceiling rather than a target -- the plan fills the
-        /// bottom course first and only starts another when that one is full, so a big brick
-        /// on a small pallet builds upward instead of refusing to fit, and a small one lies
-        /// flat. Either way sixteen go on.
+        /// It was four of bkr_prop_coke_block_01a, which is not a brick but a bale of them --
+        /// four across, a few deep, five high -- and four bales on a pallet is a couple of
+        /// hundred kilos sat behind a card that says twenty. The load is single kilo bricks
+        /// now, and there are as many as there are kilos, so the picture and the number are
+        /// the same fact. The layer count is a ceiling rather than a target: the plan fills
+        /// the bottom course first and only starts another when that one is full.
         /// </summary>
-        private const int LoadBricks = 4;
-        private const int LoadLayers = 4;
+        private static readonly int LoadBricks = Math.Max(1, (int)Math.Round(Package / 1000f));
+        private const int LoadLayers = 5;
+
+        /// <summary>
+        /// How many of them the men actually lift on while you watch. The rest are on the
+        /// pallet when it comes out of the shed: twenty bricks at the clip's own pace is most
+        /// of a minute stood watching, and a pallet that arrives with most of the load on it
+        /// and two men finishing it is both quicker and truer.
+        /// </summary>
+        private const int Heaved = 4;
 
         /// <summary>
         /// How long between bricks, and it is set by the ANIMATION rather than by taste.
@@ -391,14 +401,17 @@ namespace Hoodrich.Missions
         /// pallet, which is a picture of an errand that did not happen.
         ///
         /// Rather than hunt for a pre-loaded pallet model and hope, the load is a second prop
-        /// stood on top of the first. Wrapped bales lead because this is twenty kilos off a
-        /// boat and the bales are what the game already uses for exactly that; a box pile is
-        /// under them so an install without the biker pack still gets something on the deck.
+        /// stood on top of the first, one per kilo. SINGLE BRICKS, NOT BALES: the biker
+        /// "block" that used to lead this list is a bale of forty-odd, and four of them was a
+        /// load that outweighed its own card ten times over. prop_drug_package is the game's
+        /// own wrapped kilo and ships with the base game, so nothing here depends on a pack;
+        /// the others are the same brick from later packs, and a plain package is under them
+        /// in case.
         /// </summary>
         private static readonly string[] LoadModels =
         {
-            "bkr_prop_coke_block_01a", "ba_prop_battle_coke_block_01a",
-            "bkr_prop_weed_bigbag_01a", "prop_boxpile_06a", "prop_box_wood04a"
+            "prop_drug_package", "prop_drug_package_02", "prop_mp_drug_package",
+            "ba_prop_battle_drug_package_02", "prop_cs_package_01"
         };
         private readonly Random _rng = new Random();
 
@@ -2317,10 +2330,14 @@ namespace Hoodrich.Missions
                     _loadModel = model;
                     _loadNext = 0;
                     _loadStop = _loadPlan.Count;
+
+                    // Most of it is on already -- see Heaved. The men lift the last few.
+                    while (_loadNext < _loadStop - Heaved) PutBrick();
+
                     _loadDueAt = Game.GameTime + LoadEveryMs;
 
-                    Log.Info("Port run: loading " + _loadStop + " x " + name + " onto the pallet, " +
-                             "one a second (" + cols + " across, " + rows + " deep).");
+                    Log.Info("Port run: " + _loadNext + " x " + name + " on the pallet, " +
+                             (_loadStop - _loadNext) + " to lift (" + cols + " across, " + rows + " deep).");
                     return;
                 }
                 catch (Exception ex)
@@ -2361,7 +2378,24 @@ namespace Hoodrich.Missions
             if (_loadDueAt < now) _loadDueAt = now + LoadEveryMs;
 
             Heave();
+            PutBrick();
 
+            if (StillLoading) return;
+
+            // Done. The men can go, and the settle beat starts from HERE rather than from the
+            // moment the van pulled in -- otherwise they say their goodbyes and walk off while
+            // the pallet behind them is still filling up.
+            _bayAt = Game.GameTime;
+
+            try { _loadModel.MarkAsNoLongerNeeded(); }
+            catch { /* the streamer will get to it */ }
+
+            Log.Info("Port run: pallet loaded, " + _loadNext + " on the deck.");
+        }
+
+        /// <summary>The next brick of the plan, onto the deck, now.</summary>
+        private void PutBrick()
+        {
             try
             {
                 // Held across the whole sequence rather than requested once and forgotten: the
@@ -2389,18 +2423,6 @@ namespace Hoodrich.Missions
             }
 
             _loadNext++;
-
-            if (StillLoading) return;
-
-            // Done. The men can go, and the settle beat starts from HERE rather than from the
-            // moment the van pulled in -- otherwise they say their goodbyes and walk off while
-            // the pallet behind them is still filling up.
-            _bayAt = Game.GameTime;
-
-            try { _loadModel.MarkAsNoLongerNeeded(); }
-            catch { /* the streamer will get to it */ }
-
-            Log.Info("Port run: pallet loaded, " + _loadNext + " on the deck.");
         }
 
         /// <summary>
