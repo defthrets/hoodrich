@@ -379,6 +379,7 @@ namespace Hoodrich.UI
         public static void Rect(float x, float y, float w, float h, Color c)
         {
             RectsThisFrame++;
+            Ledger.Count();
             Function.Call(Hash.DRAW_RECT, x, y, w, h, (int)c.R, (int)c.G, (int)c.B, (int)c.A);
         }
 
@@ -924,6 +925,9 @@ namespace Hoodrich.UI
                 ? rowPx
                 : Math.Max(1, (int)Math.Ceiling(radius * 2f * ScreenHeight / 300f));
 
+            // Coarser when the machine is busy, for the same reason a corner is. See Ledger.
+            if (!Ledger.Room) rows = Math.Max(rows, Bands(radius, 6));
+
             var pxTop = (int)Math.Floor((cy - radius) * ScreenHeight);
             var pxBottom = (int)Math.Ceiling((cy + radius) * ScreenHeight);
 
@@ -1005,6 +1009,11 @@ namespace Hoodrich.UI
 
             // Sprite corners if asked for and the files are in; the bands otherwise.
             if (sprite && Corners(left, top, w, h, r, c)) return;
+
+            // THE STACK GOES COARSE WHEN THE MACHINE IS BUSY. Six steps is a corner you can see
+            // the stagger on and a fifth of the rectangles; the flats and the fill stay, so the
+            // panel is still a panel. See Ledger.Room for who decides and when.
+            if (!Ledger.Room && (steps <= 0 || steps > 6)) steps = 6;
 
             var band = Bands(r, steps);
 
