@@ -1,6 +1,13 @@
 ﻿Since 0.7.3 -- 11 September 2026
 
 
+THE LOG NAMES WHATEVER HOLDS THE TICK.
+
+Every system the tick runs is now a named segment, and a segment that hands
+the frame back -- a model request with a timeout, a wait -- is logged by name
+with how many frames the HUD was dark for, once and then as a tally every
+few seconds. A HUD that flickers with no cause in the log was the reason.
+
 THE COLOURS COME OUT AS PICKED.
 
 Paint engine, synced from Overspray: blood as the one texture could not do

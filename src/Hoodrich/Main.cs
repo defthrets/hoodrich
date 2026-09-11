@@ -3278,6 +3278,8 @@ namespace Hoodrich
         {
             // The set's mark, for a few seconds after load. Bows out on its own and
             // costs a comparison thereafter; see UI.Splash.
+            Core.Pace.Begin();
+            Core.Pace.At("UI.Splash.Render");
             UI.Splash.Render();
 
             // BEFORE THE ENABLED CHECK, and before Franklin. Somebody whose install is broken
@@ -3285,6 +3287,7 @@ namespace Hoodrich
             // only see by switching character is a report they will not see.
             if (_trouble.IsOpen)
             {
+                Core.Pace.At("_trouble.Draw");
                 _trouble.Draw();
                 return;
             }
@@ -3353,10 +3356,12 @@ namespace Hoodrich
                 // UI that returns early would freeze the stack rather than hide it -- and you
                 // would close a menu to find four tweets from a minute ago still sat there. It
                 // skips the actual drawing while a UI is up on its own.
+                Core.Pace.At("_toasts.Draw");
                 _toasts.Draw();
 
                 // Under the toasts, over nothing. The range card sits where the hunt's does
                 // and only one of the two can be up.
+                Core.Pace.At("_range.Draw");
                 _range.Draw();
 
                 // ABOVE THE AVAILABILITY GATE, and on purpose. A recording that paused whenever
@@ -3376,6 +3381,7 @@ namespace Hoodrich
                 // A system that takes the screen away has to be one that keeps running while
                 // the screen is away. Update does nothing at all unless something is actually
                 // in him, so this costs a branch.
+                Core.Pace.At("_highs.Update");
                 _highs.Update();
 
                 // Somebody answering a text you sent, for the same reason on a smaller scale:
@@ -3398,6 +3404,7 @@ namespace Hoodrich
                 // EVERY FRAME, PLAYABLE OR NOT. The muffler shop lives behind a fade at each
                 // end, and a fade is one of the things that stands the mod down -- ticked from
                 // inside the gate it never came back from its own black screen.
+                Core.Pace.At("_garage.Update");
                 _garage.Update(available);
 
                 WatchForPillbox();
@@ -3405,11 +3412,13 @@ namespace Hoodrich
 
                 // And the bag. Dying and being cuffed both stand the playable tick down, so
                 // the drop-on-death check inside it never once saw a death. See DeadDrop.Watch.
+                Core.Pace.At("_deadDrop.Watch");
                 _deadDrop?.Watch();
 
                 // No lid. Every frame rather than on mounting, because the game hands one out
                 // the moment he sits on a bike and would do it again on the next one -- and
                 // it is two natives on a bare head, one of which is only asked.
+                Core.Pace.At("Core.Helmets.Off");
                 Core.Helmets.Off(Game.Player.Character);
 
                 // Before any of the full-screen UIs, every one of which returns early. A narc
@@ -3418,6 +3427,7 @@ namespace Hoodrich
                 // opening a menu.
                 // Before anything else reads a control. A screen that closed a moment ago is
                 // still holding the button that closed it.
+                Core.Pace.At("InputGuard.Tick");
                 InputGuard.Tick();
 
                 // Offered every tick and registered once. It has to be a tick rather than a
@@ -3427,7 +3437,9 @@ namespace Hoodrich
                 // absent on those launches only.
                 Bridge.OfferSeizure(Seized);
 
+                Core.Pace.At("_bust.Update");
                 _bust.Update();
+                Core.Pace.At("_postUp.Update");
                 _postUp.Update();
 
                 // A meal chosen on the phone waits for the phone to go away before it starts,
@@ -3438,6 +3450,7 @@ namespace Hoodrich
                     try { _phone.ClosePhone(); } catch { /* already shut */ }
                 }
 
+                Core.Pace.At("Core.Larder.Tick");
                 Core.Larder.Tick();
 
                 // What is on you owns the screen the same way moving it does. Closed if the
@@ -3448,7 +3461,9 @@ namespace Hoodrich
                     if (!available) _pocketScreen.Close();
                     else
                     {
+                        Core.Pace.At("_pocketScreen.Update");
                         _pocketScreen.Update();
+                        Core.Pace.At("_pocketScreen.Draw");
                         _pocketScreen.Draw();
                         SlowTick();
                         _failures = 0;
@@ -3462,7 +3477,9 @@ namespace Hoodrich
                     if (!available || !_stash.AtDoor) _stashScreen.Close();
                     else
                     {
+                        Core.Pace.At("_stashScreen.Update");
                         _stashScreen.Update();
+                        Core.Pace.At("_stashScreen.Draw");
                         _stashScreen.Draw();
                         SlowTick();
                         _failures = 0;
@@ -3485,7 +3502,9 @@ namespace Hoodrich
                     if (!available && !fading) _modShop.Close();
                     else
                     {
+                        Core.Pace.At("_modShop.Update");
                         _modShop.Update();
+                        Core.Pace.At("_modShop.Draw");
                         _modShop.Draw();
                         SlowTick();
                         _failures = 0;
@@ -3498,7 +3517,9 @@ namespace Hoodrich
                     if (!available) _plateScreen.Close();
                     else
                     {
+                        Core.Pace.At("_plateScreen.Update");
                         _plateScreen.Update();
+                        Core.Pace.At("_plateScreen.Draw");
                         _plateScreen.Draw();
                         SlowTick();
                         _failures = 0;
@@ -3512,7 +3533,9 @@ namespace Hoodrich
                     if (!available || !_hao.InReach) _carScreen.Close();
                     else
                     {
+                        Core.Pace.At("_carScreen.Update");
                         _carScreen.Update();
+                        Core.Pace.At("_carScreen.Draw");
                         _carScreen.Draw();
                         SlowTick();
                         _failures = 0;
@@ -3525,7 +3548,9 @@ namespace Hoodrich
                     if (!available) _ridePick.Close();
                     else
                     {
+                        Core.Pace.At("_ridePick.Update");
                         _ridePick.Update();
+                        Core.Pace.At("_ridePick.Draw");
                         _ridePick.Draw();
                         SlowTick();
                         _failures = 0;
@@ -3540,7 +3565,9 @@ namespace Hoodrich
                     if (!available) _boot.Close();
                     else
                     {
+                        Core.Pace.At("_boot.Update");
                         _boot.Update();
+                        Core.Pace.At("_boot.Draw");
                         _boot.Draw();
                         SlowTick();
                         _failures = 0;
@@ -3555,7 +3582,9 @@ namespace Hoodrich
                     if (!available) _search.RestoreWorld();
                     else
                     {
+                        Core.Pace.At("_search.Update");
                         _search.Update(Game.Player.Character);
+                        Core.Pace.At("_search.Draw");
                         _search.Draw();
                         SlowTick();
                         _failures = 0;
@@ -3568,7 +3597,9 @@ namespace Hoodrich
                     if (!available) _wardrobeScreen.Close();
                     else
                     {
+                        Core.Pace.At("_wardrobeScreen.Update");
                         _wardrobeScreen.Update();
+                        Core.Pace.At("_wardrobeScreen.Draw");
                         _wardrobeScreen.Draw();
                         SlowTick();
                         _failures = 0;
@@ -3581,7 +3612,9 @@ namespace Hoodrich
                     if (!available) _maskScreen.Close();
                     else
                     {
+                        Core.Pace.At("_maskScreen.Update");
                         _maskScreen.Update();
+                        Core.Pace.At("_maskScreen.Draw");
                         _maskScreen.Draw();
                         SlowTick();
                         _failures = 0;
@@ -3594,7 +3627,9 @@ namespace Hoodrich
                     if (!available) _graffiti.Close();
                     else
                     {
+                        Core.Pace.At("_graffiti.Update");
                         _graffiti.Update();
+                        Core.Pace.At("_graffiti.Draw");
                         _graffiti.Draw();
                         SlowTick();
                         _failures = 0;
@@ -3616,7 +3651,9 @@ namespace Hoodrich
                     if (!available || !_bigj.InReach) _gunScreen.Close();
                     else
                     {
+                        Core.Pace.At("_gunScreen.Update");
                         _gunScreen.Update();
+                        Core.Pace.At("_gunScreen.Draw");
                         _gunScreen.Draw();
                         SlowTick();
                         _failures = 0;
@@ -3630,7 +3667,9 @@ namespace Hoodrich
                     if (!available || !_kitchen.InReach) _cook.Close();
                     else
                     {
+                        Core.Pace.At("_cook.Update");
                         _cook.Update();
+                        Core.Pace.At("_cook.Draw");
                         _cook.Draw();
                         SlowTick();
                         _failures = 0;
@@ -3646,7 +3685,9 @@ namespace Hoodrich
                     if (!available) _settingsScreen.Close();
                     else
                     {
+                        Core.Pace.At("_settingsScreen.Update");
                         _settingsScreen.Update();
+                        Core.Pace.At("_settingsScreen.Draw");
                         _settingsScreen.Draw();
 
                         SlowTick();
@@ -3669,7 +3710,9 @@ namespace Hoodrich
                     if (!available) _messages.Close();
                     else
                     {
+                        Core.Pace.At("_messages.Update");
                         _messages.Update();
+                        Core.Pace.At("_messages.Draw");
                         _messages.Draw();
 
                         // THE WORLD KEEPS TURNING WHILE YOU READ, which for this screen is the
@@ -3683,7 +3726,9 @@ namespace Hoodrich
                         //
                         // The prompts are deliberately NOT ticked. Those draw on the world and
                         // would paint through the panel.
+                        Core.Pace.At("_dealers.Update");
                         _dealers.Update(_turf, _crew, _state);
+                        Core.Pace.At("_delivery.Update");
                         _delivery.Update();
 
                         SlowTick();
@@ -3697,10 +3742,13 @@ namespace Hoodrich
                     if (!available) _socialScreen.Close();
                     else
                     {
+                        Core.Pace.At("_socialScreen.Update");
                         _socialScreen.Update();
+                        Core.Pace.At("_socialScreen.Draw");
                         _socialScreen.Draw();
 
                         // The block keeps talking while you read it, which is the entire point.
+                        Core.Pace.At("_social.Update");
                         _social.Update();
 
                         SlowTick();
@@ -3738,7 +3786,9 @@ namespace Hoodrich
                     if (!available) _info.Close();
                     else
                     {
+                        Core.Pace.At("_info.Update");
                         _info.Update();
+                        Core.Pace.At("_info.Draw");
                         _info.Draw();
                         SlowTick();
                         _failures = 0;
@@ -3762,7 +3812,9 @@ namespace Hoodrich
                     }
                     else
                     {
+                        Core.Pace.At("_talk.Update");
                         _talk.Update();
+                        Core.Pace.At("_talk.Draw");
                         _talk.Draw();
                         SlowTick();
                         _failures = 0;
@@ -3770,22 +3822,35 @@ namespace Hoodrich
                     }
                 }
 
+                Core.Pace.At("_phone.Update");
                 _phone.Update(available);
 
                 if (available)
                 {
+                    Core.Pace.At("_crew.Update");
                     _crew.Update();
+                    Core.Pace.At("_turf.Update");
                     _turf.Update();
+                    Core.Pace.At("_dealers.Update");
                     _dealers.Update(_turf, _crew, _state);
                     _dealers.GreetIfNeeded();
+                    Core.Pace.At("_dealers.UpdatePrompt");
                     _dealers.UpdatePrompt();
+                    Core.Pace.At("_delivery.Update");
                     _delivery.Update();
+                    Core.Pace.At("_delivery.UpdatePrompt");
                     _delivery.UpdatePrompt();
+                    Core.Pace.At("_cutting.Update");
                     _cutting.Update();
+                    Core.Pace.At("_deadDrop.Update");
                     _deadDrop.Update();
+                    Core.Pace.At("_market.Update");
                     _market.Update(_drugs);
+                    Core.Pace.At("_blocks.Update");
                     _blocks.Update(_turf == null ? "" : _turf.ZoneCode);
+                    Core.Pace.At("_locker.Update");
                     _locker.Update();
+                    Core.Pace.At("_raid.Update");
                     _raid.Update();
 
                     // ---- the can ----
@@ -3811,10 +3876,13 @@ namespace Hoodrich
                     // in the picker is the mod editing somebody else's graffiti.
                     _sprayer.Sheen = forced ? 0f : _graffiti.Sheen;
                     _sprayer.Nozzle = _spraycan.Handle;
+                    Core.Pace.At("_sprayer.Update");
                     _sprayer.Update();
 
+                    Core.Pace.At("_spraycan.Update");
                     _spraycan.Update(_sprayer.Spraying, Paint.Aiming.Now());
 
+                    Core.Pace.At("Core.Mask.Update");
                     Core.Mask.Update(_cfg);
 
                     // What he settled on at the closet goes back on him once he is stood in
@@ -3835,12 +3903,15 @@ namespace Hoodrich
                     // until it lands rather than trying once and walking normally all night.
                     if (!_carrying) _carrying = Wardrobe.Carry(_state);
 
+                    Core.Pace.At("_can.Match");
                     if (_paint.TintTheCan) _can.Match(_graffiti.Colour, _paint.PaintEnabled);
 
                     // Safe unconditionally: a weapon he is not holding spends no ammo, so
                     // there is nothing to refund and this does nothing.
+                    Core.Pace.At("_can.Feed");
                     _can.Feed(_paint);
 
+                    Core.Pace.At("_marks.Sweep");
                     _marks.Sweep();
                     PaintChatter();
 
@@ -3848,6 +3919,7 @@ namespace Hoodrich
                     Booked();
 
                     // The street's opinion of a man with a can, instead of running from him.
+                    Core.Pace.At("_street.Update");
                     _street.Update(Paint.Can.Out() && _paint.PaintEnabled && _paint.Armed);
 
                     // Only when there is something new, and not often.
@@ -3859,34 +3931,48 @@ namespace Hoodrich
 
                     if (Paint.Can.Out() && _paint.PaintEnabled && _paint.Armed)
                     {
+                        Core.Pace.At("Reticle.Draw");
                         Reticle.Draw(_graffiti.Colour, Paint.Aiming.Now(), _sprayer.Spraying);
                     }
 
+                    Core.Pace.At("_stash.Update");
                     _stash.Update();
+                    Core.Pace.At("_sleep.Update");
                     _sleep.Update();
+                    Core.Pace.At("_kitchen.Update");
                     _kitchen.Update();
+                    Core.Pace.At("_wardrobe.Update");
                     _wardrobe.Update();
+                    Core.Pace.At("_maskShop.Update");
                     _maskShop?.Update();
+                    Core.Pace.At("_graves.Update");
                     _graves.Update(Game.Player.Character);
+                    Core.Pace.At("_boot.Update");
                     _boot?.Update();
+                    Core.Pace.At("_search.Update");
                     _search?.Update(Game.Player.Character);
+                    Core.Pace.At("_buffalo.Update");
                     _buffalo.Update(Game.Player.Character);
+                    Core.Pace.At("_scenes.Update");
                     _scenes.Update();
 
                     // AFTER EVERY OTHER PROMPT, ON PURPOSE. It offers the context key anywhere
                     // there is a person, so it has to be the last one to ask -- Help.Taken is
                     // how it finds out whether a door or a counter already spoke for the
                     // corner this tick. See Gangs.Greeting.
+                    Core.Pace.At("_greeting.Update");
                     _greeting.Update();
 
                     // The gun art sweep and its probe. Both stop dead once they are finished,
                     // so this is a branch and nothing else for the rest of the session -- and
                     // ticking it here rather than only at the counter means the probe can be
                     // started from the settings screen and run wherever he happens to be.
+                    Core.Pace.At("UI.GunArt.Update");
                     UI.GunArt.Update();
 
                     // The room sweep, when somebody has asked for one. A branch and nothing
                     // else the rest of the time.
+                    Core.Pace.At("Core.Rooms.Update");
                     Core.Rooms.Update();
 
                     // THE SET'S OWN JOIN IN. Anybody placed in a spooner scene whose model is
@@ -3902,9 +3988,13 @@ namespace Hoodrich
                         _scenes.Defend(_crew == null ? null : _crew.Current, inIt);
                     }
                     _sleep.RestoreOnLoad();
+                    Core.Pace.At("_leaders.Update");
                     _leaders.Update();
+                    Core.Pace.At("_leaders.UpdatePrompt");
                     _leaders.UpdatePrompt();
+                    Core.Pace.At("_fixer.Update");
                     _fixer.Update();
+                    Core.Pace.At("_fixer.UpdatePrompt");
                     _fixer.UpdatePrompt();
 
                     // He rings once you have signed on, half a minute later -- long enough that it
@@ -3942,88 +4032,144 @@ namespace Hoodrich
                         _wasJoined = joined;
                         _joinSeen = true;
 
+                    Core.Pace.At("_call.Update");
                     _call.Update(Game.Player.Character);
+                    Core.Pace.At("_blockTalk.Update");
                     _blockTalk.Update();
+                    Core.Pace.At("_bigj.Update");
                     _bigj.Update();
+                    Core.Pace.At("_bigj.UpdatePrompt");
                     _bigj.UpdatePrompt();
 
                     // AFTER THE COUNTER, so the prompt to start a trial never lands on top of
                     // the one to look at what Stretch is holding. Both are the context button
                     // and the range is the one that can wait.
+                    Core.Pace.At("_range.Update");
                     _range.Update();
+                    Core.Pace.At("_carMeet.Update");
                     _carMeet.Update();
 
                     // Before Hao only because they are both people to walk up to and this
                     // one has a door behind him -- see Vernon.Suppressed.
+                    Core.Pace.At("_vernon.Update");
                     _vernon.Update();
+                    Core.Pace.At("_vernon.UpdatePrompt");
                     _vernon.UpdatePrompt();
 
+                    Core.Pace.At("_hao.Update");
                     _hao.Update();
+                    Core.Pace.At("_ownedCars.Update");
                     if (_ownedCars != null) _ownedCars.Update();
+                    Core.Pace.At("_hao.UpdatePrompt");
                     _hao.UpdatePrompt();
+                    Core.Pace.At("_garage.Mark");
                     _garage.Mark();
 
                     // After OwnedCars, which is what decides a car is still there to be a
                     // wreck at all.
+                    Core.Pace.At("_tow.Update");
                     _tow.Update(Game.Player.Character);
 
+                    Core.Pace.At("_ride.Update");
                     _ride.Update(Game.Player.Character);
+                    Core.Pace.At("_food.Update");
                     _food.Update(Game.Player.Character);
+                    Core.Pace.At("Locations.RideCam.Update");
                     Locations.RideCam.Update();
 
+                    Core.Pace.At("_social.Update");
                     _social.Update();
 
                     // The desk, watching the street for the two things nothing else reports.
+                    Core.Pace.At("_newsroom.Update");
                     if (_newsroom != null) _newsroom.Update();
 
                     // And anything you have put down, waiting to be picked back up.
+                    Core.Pace.At("_bags.Update");
                     if (_bags != null) _bags.Update();
 
+                    Core.Pace.At("_homies.Update");
                     if (_homies != null) _homies.Update();
 
                     // The van, the port, and the man waiting on the other end of it.
+                    Core.Pace.At("_port.Update");
                     if (_port != null) _port.Update();
 
+                    Core.Pace.At("_copWatch.Update");
                     _copWatch.Update();
+                    Core.Pace.At("_block.Update");
                     _block.Update();
+                    Core.Pace.At("_couch.Update");
                     _couch.Update();
+                    Core.Pace.At("_stove.Update");
                     _stove.Update();
+                    Core.Pace.At("_armourerStockA.Update");
                     _armourerStockA.Update();
+                    Core.Pace.At("_armourerStockB.Update");
                     _armourerStockB.Update();
                     foreach (var door in _doors) door.Update();
+                    Core.Pace.At("_traffic.Update");
                     _traffic.Update();
+                    Core.Pace.At("_payback.Update");
                     _payback.Update();
+                    Core.Pace.At("_rollers.Update");
                     _rollers.Update();
+                    Core.Pace.At("_walkers.Update");
                     _walkers.Update();
+                    Core.Pace.At("_hisBike.Update");
                     _hisBike.Update();
+                    Core.Pace.At("_cruise.Update");
                     _cruise.Update();
+                    Core.Pace.At("_takeover.Update");
                     if (_takeover != null) _takeover.Update();
+                    Core.Pace.At("_war.Update");
                     _war.Update();
 
+                    Core.Pace.At("_lamarCrew.Update");
                     _lamarCrew.Update();
+                    Core.Pace.At("_leaderCrew.Update");
                     if (_leaderCrew != null) _leaderCrew.Update();
+                    Core.Pace.At("_armourerCrew.Update");
                     _armourerCrew.Update();
+                    Core.Pace.At("_labCrew.Update");
                     _labCrew.Update();
+                    Core.Pace.At("_denCrew.Update");
                     _denCrew.Update();
                     foreach (var car in _cars) car.Update();
+                    Core.Pace.At("_party.Update");
                     _party.Update();
+                    Core.Pace.At("_meet.Update");
                     _meet.Update();
+                    Core.Pace.At("_washCrew.Update");
                     _washCrew.Update();
+                    Core.Pace.At("_lotCrew.Update");
                     _lotCrew.Update();
+                    Core.Pace.At("_lotDecks.Update");
                     _lotDecks.Update();
+                    Core.Pace.At("_shopsCrew.Update");
                     _shopsCrew.Update();
+                    Core.Pace.At("_bholesCrew.Update");
                     _bholesCrew.Update();
+                    Core.Pace.At("_strawCrew.Update");
                     _strawCrew.Update();
+                    Core.Pace.At("_leroyCrew.Update");
                     _leroyCrew.Update();
+                    Core.Pace.At("_partyBarrel.Update");
                     _partyBarrel.Update();
+                    Core.Pace.At("_partyLight.Update");
                     _partyLight?.Update();
 
                     foreach (var corner in _corners) corner.Update();
+                    Core.Pace.At("_partyCouch.Update");
                     _partyCouch.Update();
+                    Core.Pace.At("_partyDog.Update");
                     _partyDog?.Update();
                     foreach (var prop in _scenery) prop.Update();
+                    Core.Pace.At("_decks.Update");
                     _decks.Update();
+                    Core.Pace.At("_partyDecks.Update");
                     _partyDecks.Update();
+                    Core.Pace.At("_jobs.Update");
                     _jobs.Update();
                 }
 
@@ -4042,17 +4188,22 @@ namespace Hoodrich
                 // thing here that is not competing for the same corner.
                 if (!_phone.IsOpen)
                 {
+                    Core.Pace.At("_war.Draw");
                     _war.Draw();
+                    Core.Pace.At("_jobs.Draw");
                     _jobs.Draw();
+                    Core.Pace.At("_port.Draw");
                     if (_port != null) _port.Draw();
                 }
 
                 // The prompt, every frame rather than every tick, for exactly the reason the
                 // spotlight below is. Anything that asked for it this tick, or recently
                 // enough, gets re-issued now -- see Help.
+                Core.Pace.At("UI.Help.Tick");
                 UI.Help.Tick();
 
                 // The beat between "hey" and "hey back". See Greeting.
+                Core.Pace.At("_greeting.Tick");
                 _greeting.Tick();
 
                 // The button that closed a conversation stays off the trigger for a moment
@@ -4060,6 +4211,7 @@ namespace Hoodrich
                 UI.Conversation.TickQuiet();
 
                 // The green "+$" the game leaves behind after we pay somebody. See Cash.
+                Core.Pace.At("UI.Cash.Tick");
                 UI.Cash.Tick();
 
                 // ONCE, ON THE FIRST TICK OF THIS LOAD. The face factory keeps its peds
@@ -4070,26 +4222,35 @@ namespace Hoodrich
                 if (!_sweptFaces)
                 {
                     _sweptFaces = true;
+                    Core.Pace.At("UI.Headshots.Sweep");
                     UI.Headshots.Sweep();
                 }
 
                 // One step of the face factory. Does nothing at all when nobody is waiting,
                 // which is almost always -- it only has work while the feed is open on
                 // somebody it has not photographed yet.
+                Core.Pace.At("UI.Headshots.Tick");
                 UI.Headshots.Tick();
 
                 if (!_phone.IsOpen)
                 {
+                    Core.Pace.At("_cutting.Draw");
                     _cutting.Draw();
+                    Core.Pace.At("_bust.Draw");
                     _bust.Draw();
+                    Core.Pace.At("_postUp.Draw");
                     _postUp.Draw();
+                    Core.Pace.At("_stash.Draw");
                     _stash.Draw();
+                    Core.Pace.At("_sleep.Draw");
                     _sleep.Draw();
+                    Core.Pace.At("_kitchen.Draw");
                     _kitchen.Draw();
                 }
 
                 // Last, deliberately. Everything above owns a specific spot and has first
                 // claim on the key; this is whoever happens to be stood there otherwise.
+                Core.Pace.At("_blockTalk.Draw");
                 if (!_phone.IsOpen) _blockTalk.Draw();
 
                 SlowTick();
