@@ -1,6 +1,13 @@
 ﻿Since 0.7.3 -- 11 September 2026
 
 
+A FACE NO LONGER COSTS THE PHONE A BLINK.
+
+Every new face on the feed was made by blocking the tick on a ped model, and
+a blocked tick draws nothing: the phone went dark for as long as the model
+took to stream, once for everybody you scrolled past that the store had not
+got. The model now streams in across ticks and the phone stays on.
+
 THE LOG NAMES WHATEVER HOLDS THE TICK.
 
 Every system the tick runs is now a named segment, and a segment that hands

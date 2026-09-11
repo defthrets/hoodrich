@@ -184,6 +184,14 @@ namespace Hoodrich.UI
         private static int _shot;
         private static int _startedAt;
 
+        /// <summary>
+        /// The head of the queue, while its model streams in: which of its names is being
+        /// waited on, and since when. See Start.
+        /// </summary>
+        private static int _loadingIndex;
+        private static int _loadingSince;
+        private const int LoadPatienceMs = 6000;
+
         // ---- asking -------------------------------------------------------------
 
         /// <summary>
@@ -343,30 +351,67 @@ namespace Hoodrich.UI
         private static void Start()
         {
             var key = Queue[0];
-            Queue.RemoveAt(0);
 
             string[] names;
-            if (!Wanted.TryGetValue(key, out names)) return;
-
-            Wanted.Remove(key);
+            if (!Wanted.TryGetValue(key, out names))
+            {
+                Queue.RemoveAt(0);
+                return;
+            }
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return;
 
-            // The first of them this build has. A name that is not here is a reason to try the
-            // next one, not a reason for somebody to have no face.
+            // THE MODEL STREAMS IN ACROSS TICKS, NOT INSIDE ONE.
+            //
+            // This was Model.Request with a timeout, which yields the script until the model
+            // lands -- and a yielded tick draws nothing, so every frame it was away was a
+            // frame with no phone on it. The feed is on the phone, and the feed is what asks
+            // for faces: a new one for everybody you scroll past that the store has not got,
+            // each costing the phone a blink of however long a ped model takes to stream.
+            // That is the phone flickering, from the pavement.
+            //
+            // So the key stays at the head of the queue and this asks the streamer again next
+            // tick, which costs the HUD nothing. See Core.Models. The first of the names this
+            // build has is the one waited on; one that does not land in its time is a reason
+            // to try the next name, not a reason for somebody to have no face.
             Model model = default(Model);
             var got = false;
+            var i = _loadingIndex;
 
-            foreach (var name in names)
+            while (i < names.Length)
             {
-                model = new Model(name);
+                model = new Model(names[i]);
 
-                if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
+                if (!model.IsValid || !model.IsInCdImage)
+                {
+                    i++;
+                    _loadingSince = 0;
+                    continue;
+                }
 
-                got = true;
-                break;
+                if (_loadingSince == 0) _loadingSince = Game.GameTime;
+
+                if (Models.Ready(model))
+                {
+                    got = true;
+                    break;
+                }
+
+                if (Game.GameTime - _loadingSince < LoadPatienceMs)
+                {
+                    _loadingIndex = i;
+                    return;
+                }
+
+                i++;
+                _loadingSince = 0;
             }
+
+            _loadingIndex = 0;
+            _loadingSince = 0;
+            Queue.RemoveAt(0);
+            Wanted.Remove(key);
 
             if (!got)
             {
@@ -515,6 +560,8 @@ namespace Hoodrich.UI
             _model = null;
             _shot = 0;
             _doing = "";
+            _loadingIndex = 0;
+            _loadingSince = 0;
         }
 
         /// <summary>Hands back the face nobody has looked at for the longest.</summary>
