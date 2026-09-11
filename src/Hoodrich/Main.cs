@@ -108,6 +108,16 @@ namespace Hoodrich
         /// See Locations.CarMeet -- every coordinate in it was stood on.
         /// </summary>
         private readonly Locations.CarMeet _carMeet = new Locations.CarMeet();
+
+        /// <summary>
+        /// Whether Gerald has started you off.
+        ///
+        /// THE OPENING IS ONE MAN AND ONE ICON. Everything that is not Gerald waits for his
+        /// first front before it goes on the map: Hao's lot and Vernon's wall both went up on
+        /// a fresh save the moment the script loaded, next to the one marker the guide says
+        /// is the only one. Either the front in hand or one already paid back counts.
+        /// </summary>
+        private bool Started => _state != null && (_state.FrontsDone >= 1 || _state.HasFrontedWork);
         private readonly Hao _hao;
 
         /// <summary>The man on the wall at Leroy's, and the lock on its basement.</summary>
@@ -724,6 +734,24 @@ namespace Hoodrich
                 _stash = new StashHouse(_cfg);
                 _stash.Told = () => _state.SeenHouse;
                 _stash.Tell = () => { _state.SeenHouse = true; _state.Touch(); };
+
+                // THE HOUSE, EXPLAINED ONCE. First time through the door the readout puts up
+                // the kitchen, the bed, the closet and the stash -- see HouseGuide -- and the
+                // house keeps its tickers to itself. Once per save, by the same marker set the
+                // plugs' introductions use, so an old save gets it on its next visit too.
+                _stash.Entered = () =>
+                {
+                    if (_state == null || _info == null || _info.IsOpen) return false;
+                    if (_talk != null && _talk.IsOpen) return false;
+                    if (_state.HasBeenOffered("help:house")) return false;
+
+                    _state.MarkOffered("help:house");
+                    _state.Touch();
+
+                    _info.Open("The spot", "Denise's, and what's in it", HouseGuide.Pages());
+                    Log.Info("Showed the house guide.");
+                    return true;
+                };
                 _sleep = new SleepSpot(_state, () => SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint, _blocks));
                 _market = new Market(_cfg);
                 _blocks = new BlockDemand(_cfg);
@@ -921,7 +949,7 @@ namespace Hoodrich
                 // Nobody sends you to a car dealer in Little Seoul before you are anybody. The
                 // yard is there the whole time and you can find it on foot; what waits is the
                 // marker telling you to.
-                _hao.Known = () => _crew != null && _crew.IsAffiliated;
+                _hao.Known = () => Started && _crew != null && _crew.IsAffiliated;
 
                 _social = SocialFeed.Load();
                 _socialScreen = new SocialScreen(_social);
@@ -2636,6 +2664,9 @@ namespace Hoodrich
                 // can be asked about it. See InteriorDoor.WantsTheButton.
                 _vernon.Suppressed = () => _leroys != null &&
                                            (_leroys.IsInside || _leroys.WantsTheButton);
+
+                // And not on the map until Gerald has started you off. See Started.
+                _vernon.Known = () => Started;
 
                 _hao.Talk = _talk;
                 _hao.Showroom = () => _carScreen.Open();

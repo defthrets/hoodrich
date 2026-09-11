@@ -126,6 +126,16 @@ namespace Hoodrich.Locations
         /// </summary>
         public Func<bool> Suppressed;
 
+        /// <summary>
+        /// Set by Main: whether the map is allowed to point at him yet.
+        ///
+        /// The opening of this mod is one man and one icon, and it was two icons and a razor
+        /// blade: his mark went up the moment the script loaded, next to Hao's lot, before
+        /// Gerald had put anything in your hand. He is still on the wall -- the man is there
+        /// whether or not the map says so -- it is only the mark that waits.
+        /// </summary>
+        public Func<bool> Known;
+
         public bool InReach
         {
             get
@@ -150,7 +160,7 @@ namespace Hoodrich.Locations
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return;
 
-            EnsureBlip();
+            if (Known == null || Known()) EnsureBlip(); else DropBlip();
 
             var away = player.Position.DistanceTo(Spot);
 
@@ -719,6 +729,17 @@ namespace Hoodrich.Locations
             {
                 Log.Debug("No blip for Vernon: " + ex.Message);
             }
+        }
+
+        /// <summary>Takes the mark off the wall, for when you are not anybody yet.</summary>
+        private void DropBlip()
+        {
+            if (_blip == null) return;
+
+            try { if (_blip.Exists()) _blip.Delete(); }
+            catch { /* it goes with the session */ }
+
+            _blip = null;
         }
 
         // ---- teardown ----------------------------------------------------------

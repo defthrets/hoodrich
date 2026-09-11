@@ -837,6 +837,7 @@ namespace Hoodrich.State
             FrontsDone = 2;
             HomiesUnlocked = true;
             MetHao = true;
+            MarkOffered("met:hao");
             SleptAtStashHouse = true;
 
             ClearFronted();

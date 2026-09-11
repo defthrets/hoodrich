@@ -1,6 +1,49 @@
 ﻿Since 0.7.1 -- 11 September 2026
 
 
+THE CAR MEET, OVERHAULED.
+
+Nobody warps and nobody stands doing nothing. Every walk-over used to be a
+go-to task cancelled on the same frame by a scenario task with its teleport
+flag on, at the car's centre height (waist deep in the ground) and with a
+duration of nought (dropped out at once, stood with nothing); on a driver
+still in his seat it played a standing scenario in the seat. Now everybody at
+the meet -- driver, passenger, walk-in -- runs the same small state machine:
+out of the car, then one sequence of nav-mesh walk and scenario, stints of
+twenty to sixty seconds at a nose, down a side, in the huddle or round the
+bouncing lowrider, never the same place twice running, and anybody found
+task-less is sent somewhere else. Walk-ins are put down seventy to a hundred
+metres out on a pavement behind a sphere the camera cannot see. Cars slow to
+seven metres a second and stop for vehicles and people inside the lot, go in
+one at a time, get squared up from four metres after twenty seconds of parking
+instead of sitting crooked forever with the driver in them, and are asked to
+park again if stuck. Most cars bring a passenger. The lowrider carries the
+music. At time the passengers get in, the drivers follow, the lids come down
+and the cars pull out into traffic one by one; the walk-ins walk back out.
+
+
+HAO'S NUMBER WAITS FOR THE HANDSHAKE.
+
+The text with his number in it -- "yo its hao. from the lot" -- arrived on
+saves that had never been to the lot. A man who only ever comes to you is met
+where he actually stands, and talking to him at his yard is now what unlocks
+the phone.
+
+
+THE MAP WAITS FOR GERALD.
+
+Hao's lot and Vernon's razor blade were on a fresh save's map before Gerald
+had put anything in your hand. The opening is one man and one icon; both
+marks now wait for his first front.
+
+
+THE HOUSE, EXPLAINED ONCE.
+
+First time through Denise's door a page comes up on the readout: the kitchen
+(cut it and bag it, and why), the bed (sleep, save, six hours), the closet,
+and the stash. The three tickers stand down for it. Once per save; an existing
+save gets it on its next visit.
+
 THE CONVERSATION PANEL, CLEANED UP.
 
 One header row -- his picture, his name in his colour, the place small and dim

@@ -1679,18 +1679,24 @@ namespace Hoodrich.Supply
             // corner waiting to be found, and both of these already have gates of their own --
             // the port stays shut until DocksUnlocked, Gerald until you have moved enough for
             // him to bother.
-            // AND ANYBODY ELSE WHO ONLY EVER COMES TO YOU. See DealerDef.DeliveryOnly.
-            //
-            // Hao is the first of these: a car dealer to your face, a phone number for the
-            // pills. The moment he stopped standing somewhere you could walk up to, the only
-            // thing that could ever write his "met" marker went with it -- and the other way
-            // in, the introduction text, is itself gated on having met him. A cycle with no
-            // entry, which on a new save means he can never be reached at all.
-            //
-            // Invisible on any existing save, because the marker was written back when there
-            // was a ped there to walk up to. That is the whole reason it is worth stating in
-            // the rule rather than leaving to be noticed.
-            if (def.Kind == DealerKind.Docks || def.DeliveryOnly) return true;
+            if (def.Kind == DealerKind.Docks) return true;
+
+            // A MAN WHO ONLY EVER COMES TO YOU IS MET WHERE HE ACTUALLY STANDS. See
+            // DealerDef.DeliveryOnly. Hao is the first of these: a car dealer to your face at
+            // his lot, a phone number for the pills. For a while this simply said yes for him,
+            // because the corner men's "met" marker is written by walking up to a corner and
+            // he has no corner -- and the text with his number in it turned up on saves that
+            // had never been near Little Seoul, from a man introducing himself as "from the
+            // lot" to somebody who had not been to the lot. Now HaoTalk writes the same marker
+            // when you talk to him there, and the number waits for the handshake. MetHao is
+            // kept as the fallback so a save that shook hands before the marker existed does
+            // not lose his phone.
+            if (def.DeliveryOnly)
+            {
+                return state.HasBeenOffered(MetKey(def)) ||
+                       state.HasBeenOffered("plug:" + def.Id) ||
+                       (string.Equals(def.Id, "hao", StringComparison.OrdinalIgnoreCase) && state.MetHao);
+            }
 
             return state.HasBeenOffered(MetKey(def)) ||
                    state.HasBeenOffered("plug:" + def.Id);

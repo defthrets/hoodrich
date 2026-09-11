@@ -57,6 +57,12 @@ namespace Hoodrich.Locations
         /// <summary>Set by Main: whether the three lines on the way in have been said. Once, on the first visit.</summary>
         public Func<bool> Told;
 
+        /// <summary>
+        /// Set by Main: called once on the way in. True means the caller put something up
+        /// for the occasion -- the guide page -- and the tickers below stand down.
+        /// </summary>
+        public Func<bool> Entered;
+
         /// <summary>Set by Main: they have been said now.</summary>
         public Action Tell;
 
@@ -133,6 +139,16 @@ namespace Hoodrich.Locations
 
             // Told once on the way in, rather than a marker on the floor. It is a house, not a
             // pickup: standing in the right two metres should not be part of using it.
+            // THE GUIDE FIRST. On a first visit the house puts its own page up -- the
+            // kitchen, the bed, the closet, the stash -- and three tickers under a screen
+            // that already says all of it would be noise. See HouseGuide.
+            if (_inside && Entered != null && Entered())
+            {
+                _sayCutAt = 0;
+                Tell?.Invoke();
+                return;
+            }
+
             if (_inside && !(Told != null && Told()))
             {
                 Notify.Ticker("~g~You're at the spot.~s~ Open your inventory to move work in or out.");

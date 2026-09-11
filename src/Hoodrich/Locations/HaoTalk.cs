@@ -48,6 +48,10 @@ namespace Hoodrich.Locations
                 if (_state != null)
                 {
                     _state.MetHao = true;
+
+                    // The dealer-side marker too, so the phone knows. See DealerManager.HaveMet:
+                    // "met:" + the id in dealers.json, which for him is hao.
+                    _state.MarkOffered("met:hao");
                     _state.Touch();
                 }
 
