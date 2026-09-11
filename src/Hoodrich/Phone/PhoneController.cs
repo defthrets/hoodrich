@@ -155,6 +155,7 @@ namespace Hoodrich.Phone
 
             LockControlsThisFrame();
             HoldItUp();
+            KeepHandset();
 
             // A key pressed at the boot screen would act on a page nobody can see yet --
             // and the first page is Dealing, so the mis-press is not a harmless one. The
@@ -314,7 +315,15 @@ namespace Hoodrich.Phone
                 try
                 {
                     var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(600)) continue;
+                    if (!model.IsValid || !model.IsInCdImage) continue;
+
+                    // NOT WAITED FOR. This was Model.Request with a timeout, which yields the
+                    // tick until the prop streams in -- four frames, measured -- and a yielded
+                    // tick draws nothing, so the phone came up with a blink every time it was
+                    // taken out. Asked for here and again each frame from KeepHandset until it
+                    // lands; the hand is empty for those frames, which nobody sees, rather
+                    // than the screen, which everybody does.
+                    if (!Models.Ready(model)) return;
 
                     _handset = World.CreateProp(model, player.Position, false, false);
                     model.MarkAsNoLongerNeeded();
@@ -335,6 +344,25 @@ namespace Hoodrich.Phone
                     Log.Debug("No handset: " + ex.Message);
                 }
             }
+        }
+
+        /// <summary>
+        /// The prop, once its model has landed. See GiveHandset: the model is not waited for,
+        /// so the first frames of a take-out can be empty-handed, and this fills the hand the
+        /// frame the streamer delivers. Gives up quietly after a few seconds.
+        /// </summary>
+        private const int HandsetPatienceMs = 3000;
+
+        private void KeepHandset()
+        {
+            if (_shownAt == 0) return;
+            if (_handset != null && _handset.Exists()) return;
+            if (Game.GameTime - _shownAt > HandsetPatienceMs) return;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists() || !player.IsAlive || player.IsInVehicle()) return;
+
+            GiveHandset(player);
         }
 
         private void DropHandset()
