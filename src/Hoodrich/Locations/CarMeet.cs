@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -16,49 +16,75 @@ namespace Hoodrich.Locations
 
         public bool IsHopper => string.Equals(Role, "hop", StringComparison.OrdinalIgnoreCase);
 
-        /// <summary>Where everybody ends up. Nothing parks here. See CarMeet.Crowd.</summary>
+        /// <summary>Where everybody ends up. Nothing parks here. See CarMeet.Plan.</summary>
         public bool IsCrowd => string.Equals(Role, "crowd", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
     /// THE CAR MEET.
     ///
-    /// A dozen cars turn up on Carson Ave of an evening, park in a row, and sit there with
-    /// their neons on. That is the whole of it, and every decision below is about the word
-    /// TURN UP.
+    /// A dozen cars turn up on Carson Ave of an evening, park in a row with the lids up, and
+    /// the people who came in them and the people who walked over stand about the cars for
+    /// ten minutes and then go home. Every decision below is about the words TURN UP, STAND
+    /// ABOUT and GO HOME, because a meet is those three things and a car park is none of them.
     ///
-    /// THEY ARE NOT PLACED, THEY ARRIVE. Spawning twelve cars in twelve parking spaces takes
-    /// one line and looks like exactly what it is: a car park that was empty and then was
-    /// not. So each one is put on a road a few hundred metres out, given a driver and told to
-    /// drive here -- normally, stopping at lights, in traffic, like anybody else -- and only
-    /// once it is at the mouth of the meet is it told to park. You can stand on the corner
-    /// and watch them come in, which is what a meet IS.
+    /// THEY ARE NOT PLACED, THEY ARRIVE. Each car is put on a road a few hundred metres out,
+    /// given a driver -- and sometimes a passenger -- and told to drive here. At the mouth of
+    /// the lot it slows right down and starts stopping for things, because the last fifty
+    /// metres are a car park with eleven other cars trying to get into it, and it parks with
+    /// the game's own parking task. The last half-metre is a snap to the surveyed bay, done
+    /// while the car is already stopped in roughly the right place, which is invisible and is
+    /// the difference between parked and nearly parked.
     ///
-    /// AND THEN THEY ARE PLACED, ONCE. The game's own parking task gets a car near enough and
-    /// no nearer; a row of twelve where each is a foot off and two degrees out reads as a
-    /// shunt rather than a meet. So the last half-metre is a snap to the surveyed coordinate,
-    /// done while the car is already stopped in roughly the right place, which is invisible
-    /// and is the difference between parked and nearly parked.
+    /// NOBODY IS EVER WARPED AND NOBODY EVER STANDS DOING NOTHING. This is the part that was
+    /// wrong. Every "walk over" used to be a go-to task followed on the same frame by a
+    /// scenario task with its teleport flag set -- so the go-to was cancelled before it
+    /// started, the man was warped to the coordinate, and because the coordinate was a car's
+    /// centre height he was warped into the ground to the waist. On a driver still sat in his
+    /// car the same call played a standing scenario on a seated man, which is the "weird
+    /// motions", and he never got out. Now every move is ONE SEQUENCE: walk there on the nav
+    /// mesh, then start the scenario at the spot with no teleport and no end. The man walks,
+    /// arrives, and does the thing; and a tick watches every one of them and gives anybody
+    /// found stood with no task somewhere else to be.
     ///
-    /// WHAT THEY LOOK LIKE. Competition suspension on everything, whatever the car has that
-    /// is lowest. No liveries -- a livery is somebody's racing team and this is somebody's
-    /// street. Any colour at all, and neons on most of them in any colour, because a car park
-    /// where every car has neons is a showroom and one where none do is a car park.
+    /// WHAT THEY DO is chosen by where they are. At a nose with the lid up: lean into the
+    /// bay, talk, film it, stand and look. Down a side: photographs, filming, a smoke, a
+    /// crouch at the wheel. In the huddle: talk, drink, smoke, phone. Round the lowrider:
+    /// film it and whoop. Nobody stays anywhere longer than a minute and nobody goes to the
+    /// same place twice running, so the shape of it changes the whole time it is on.
     ///
-    /// THE ONE ON JUICE is its own thing: a green lowrider away from the row, green neons,
-    /// bouncing. See Hopping.
+    /// AND THEN THEY GO HOME. At time the passengers get back in, the drivers follow, the
+    /// lids come down and the cars pull out one by one and drive off into traffic; the people
+    /// who walked in walk back out the way they came. Nothing vanishes in front of anybody.
     ///
-    /// It uses the same cars as the block and the takeovers, which is the point -- these are
-    /// the set's cars, and turning up in the same Sultans and Sentinels is what makes it
-    /// their meet rather than a car show.
+    /// Every scenario name in this file is in RampageFiles\Lists\Scenarios.txt on this
+    /// machine. None of them is guessed.
     /// </summary>
     internal sealed class CarMeet
     {
-        /// <summary>How far out they are put on the road, and how far they may be from a node.</summary>
+        // ======================================================================
+        // Measures
+        // ======================================================================
+
+        /// <summary>How far out they are put on the road.</summary>
         private const float ComeFromMin = 220f;
         private const float ComeFromMax = 480f;
 
-        /// <summary>Near enough to the meet to stop driving and start parking.</summary>
+        /// <summary>
+        /// The mouth of the lot: inside this they drive like people in a car park.
+        ///
+        /// THIS IS THE CRASH FIX. Out on the road they come in at speed and stop for nothing,
+        /// which is right for a car that has to actually arrive. Inside fifty-five metres
+        /// there are eleven other cars, twenty people on foot and one car park entrance, and
+        /// a car doing twenty-four metres a second through that hits something. So the drive
+        /// is re-issued at walking-pace-for-a-car with STOP for vehicles and STOP for people
+        /// switched on: a car that finds another one parking in front of it waits, which is
+        /// what a queue at a meet looks like.
+        /// </summary>
+        private const float LotFrom = 55f;
+        private const float LotSpeed = 7f;
+
+        /// <summary>Near enough to the bay to stop driving and start parking.</summary>
         private const float ParkFrom = 26f;
 
         /// <summary>
@@ -67,100 +93,282 @@ namespace Hoodrich.Locations
         /// A METRE, NOT FOUR AND A HALF. At four and a half the correction was a car visibly
         /// jumping the last stride into its bay; at one it is the difference between a car
         /// that parked well and a car that parked perfectly, and nobody can see it happen.
-        ///
-        /// It only ever runs on a car that has ALREADY STOPPED in its own space. There is no
-        /// distance at which this fires on a moving car and no clock that makes it fire on a
-        /// car that never arrived -- see Driving.
         /// </summary>
         private const float SeatWithin = 1.0f;
         private const float SeatSpeed = 0.6f;
 
-        /// <summary>Nothing is done to a car more often than this.</summary>
+        /// <summary>
+        /// The patience on a park that is not quite landing.
+        ///
+        /// The game's parking task gets a car near and no nearer, and now and then "near" is
+        /// three metres off and stopped, at which point the metre above never fires and the
+        /// car sits crooked across two bays with its driver in it for the rest of the meet --
+        /// which is a driver who never got out. So a car that has been parking this long and
+        /// is within a few metres is squared up from there: a bigger snap, seen once in a
+        /// while, against a car stuck for ten minutes. Further off than that and it has given
+        /// up somewhere daft, and it is asked to park again.
+        /// </summary>
+        private const int ParkPatienceMs = 20000;
+        private const float SeatLoose = 4f;
+        private const int ParkRetryMs = 32000;
+
+        /// <summary>Nothing is done to anybody more often than this.</summary>
         private const int TickMs = 400;
 
-        /// <summary>One goes every few seconds, so they arrive in a trickle rather than a convoy.</summary>
-        private const int SendEveryMs = 3500;
+        /// <summary>
+        /// One goes every few seconds, so they arrive in a trickle rather than a convoy --
+        /// and NOT while the last one is still in the lot and not yet parked, up to a limit.
+        /// Two cars parking side by side at once is the other way they crash.
+        /// </summary>
+        private const int SendEveryMs = 6500;
+        private const int LotHoldMs = 16000;
 
         /// <summary>How far the player has to be for the meet to keep itself alive.</summary>
         private const float ForgetAt = 700f;
 
         /// <summary>
-        /// How they drive here.
+        /// How they drive here, out on the road.
         ///
         /// AVOID THINGS, STOP FOR NOTHING. 4|8|16|32 is go round cars, empty cars, people and
-        /// objects, and that is the whole of it: no stop-before-vehicles, no stop-before-peds,
-        /// no stopping at lights. The same set the takeover cars come in on, and for the same
-        /// reason it was changed there -- a car obeying every light between here and half a
-        /// mile out does not arrive, it queues, and what that looks like from the meet is
-        /// eleven empty bays.
-        ///
-        /// They still go ROUND everything, which is the part that matters: this is a car in a
-        /// hurry, not a car with its eyes shut.
+        /// objects, and no stopping at lights. A car obeying every light between here and
+        /// half a mile out does not arrive, it queues, and what that looks like from the meet
+        /// is eleven empty bays. They still go ROUND everything.
         /// </summary>
         private const int RoadStyle = 4 | 8 | 16 | 32;
         private const float RoadSpeed = 24f;
 
-        /// <summary>How many of the twelve get neons.</summary>
+        /// <summary>
+        /// How they drive inside the lot: stop for vehicles (1), stop for people (2), steer
+        /// round parked cars (8), people (16) and objects (32). No swerving -- a swerve in a
+        /// car park is a shunt.
+        /// </summary>
+        private const int LotStyle = 1 | 2 | 8 | 16 | 32;
+
+        /// <summary>How they leave: the game's ordinary careful traffic style.</summary>
+        private const int HomeStyle = 786603;
+        private const float HomeSpeed = 14f;
+
+        /// <summary>How many of the twelve get neons, and how many bring somebody.</summary>
         private const int NeonChance = 70;
+        private const int PassengerChance = 45;
+
+        /// <summary>How long one lasts, and how long the going-home is given before it is cut.</summary>
+        private const int RunMs = 600000;
+        private const int EndingMs = 80000;
+
+        // ---- people ----
+
+        /// <summary>How many walk in, how often, and from how far out.</summary>
+        private const int WalkInCount = 8;
+        private const int WalkInEveryMs = 4000;
+        private const float WalkFromMin = 70f;
+        private const float WalkFromVary = 40f;
+
+        /// <summary>
+        /// A walk-in is only put down where the player cannot see, and not close.
+        ///
+        /// The old figure was twenty-six metres, in an open car park, in daylight -- which is
+        /// a man appearing. Seventy to a hundred out on a pavement, behind a sphere the camera
+        /// cannot see, and the first thing anybody sees him do is walk up.
+        /// </summary>
+        private const float SpawnClearOfPlayer = 40f;
+
+        /// <summary>How long after parking the driver gets out, and his passenger before him.</summary>
+        private const int OutAfterMs = 3000;
+        private const int OutVaryMs = 5000;
+        private const int PassengerOutMs = 1200;
+        private const int PassengerOutVaryMs = 2500;
+
+        /// <summary>A stint somewhere, and the longer first one at your own car.</summary>
+        private const int StayMinMs = 18000;
+        private const int StayVaryMs = 22000;
+        private const int OwnStayMinMs = 35000;
+        private const int OwnStayVaryMs = 25000;
+
+        /// <summary>How long everybody favours the one huddle before it thins out round the cars.</summary>
+        private const int MingleMs = 150000;
+
+        /// <summary>Walking paces: brisk to arrive, a stroll between cars.</summary>
+        private const float ArrivePace = 1.35f;
+        private const float StrollPace = 1.0f;
+
+        /// <summary>The nav-mesh walk's own patience, and how long a walk may take before it is doubted.</summary>
+        private const int WalkTimeoutMs = 90000;
+        private const int WalkDoubtMs = 30000;
+
+        /// <summary>How long a man is allowed to be stood with no task before he is given one.</summary>
+        private const int IdleDoubtMs = 3500;
+
+        /// <summary>Where they stand: off the nose, down the side, round the huddle, back from the hopper.</summary>
+        private const float NoseGap = 2.3f;
+        private const float Abreast = 0.9f;
+        private const float SideGap = 2.4f;
+        private const float SideSlide = 1.3f;
+        private const float RingMin = 1.8f;
+        private const float RingVary = 1.2f;
+        private const float HopperGap = 4.0f;
+        private const float HopperSlide = 1.6f;
+        private const float Elbow = 0.75f;
+
+        // ======================================================================
+        // What they do, by where they are. Every name is in Scenarios.txt here.
+        // ======================================================================
+
+        /// <summary>
+        /// At a nose with the lid up. VEHICLE_MECHANIC is the one scenario in the game of a
+        /// man leaning INTO an engine bay, and one of those with two beside him talking is the
+        /// exact picture. INSPECT_STAND is a man looking down at something with his hands on
+        /// his hips.
+        /// </summary>
+        private static readonly string[] AtNose =
+        {
+            "WORLD_HUMAN_VEHICLE_MECHANIC", "WORLD_HUMAN_HANG_OUT_STREET",
+            "WORLD_HUMAN_HANG_OUT_STREET", "WORLD_HUMAN_MOBILE_FILM_SHOCKING",
+            "WORLD_HUMAN_INSPECT_STAND", "WORLD_HUMAN_STAND_MOBILE"
+        };
+
+        /// <summary>Down a side: photographs, filming, a smoke, a crouch at the wheel.</summary>
+        private static readonly string[] AtSide =
+        {
+            "WORLD_HUMAN_PAPARAZZI", "WORLD_HUMAN_MOBILE_FILM_SHOCKING",
+            "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_STAND_MOBILE",
+            "WORLD_HUMAN_INSPECT_CROUCH", "WORLD_HUMAN_HANG_OUT_STREET"
+        };
+
+        /// <summary>
+        /// In the huddle: mostly talking, because that is what the group is, with a couple of
+        /// smokers, a drinker and somebody on their phone, because a dozen people all doing
+        /// the identical thing is a chorus line. One in eight is dancing a bit.
+        /// </summary>
+        private static readonly string[] InHuddle =
+        {
+            "WORLD_HUMAN_HANG_OUT_STREET", "WORLD_HUMAN_HANG_OUT_STREET",
+            "WORLD_HUMAN_HANG_OUT_STREET", "WORLD_HUMAN_DRINKING",
+            "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_STAND_MOBILE",
+            "WORLD_HUMAN_HANG_OUT_STREET", "WORLD_HUMAN_PARTYING"
+        };
+
+        /// <summary>Round the one on juice: phones up, and somebody whooping at it.</summary>
+        private static readonly string[] AtHopper =
+        {
+            "WORLD_HUMAN_MOBILE_FILM_SHOCKING", "WORLD_HUMAN_MOBILE_FILM_SHOCKING",
+            "WORLD_HUMAN_PAPARAZZI", "WORLD_HUMAN_CHEERING", "WORLD_HUMAN_HANG_OUT_STREET"
+        };
+
+        /// <summary>Before anything has parked: waiting about, the way people do.</summary>
+        private static readonly string[] Waiting =
+        {
+            "WORLD_HUMAN_STAND_MOBILE", "WORLD_HUMAN_SMOKING",
+            "WORLD_HUMAN_HANG_OUT_STREET", "WORLD_HUMAN_STAND_IMPATIENT"
+        };
+
+        // ======================================================================
+        // The things in it
+        // ======================================================================
 
         private sealed class Runner
         {
             public Vehicle Car;
             public Ped Driver;
+            public Ped Passenger;
             public MeetSpot Spot;
 
             public int SentAt;
+            public bool InLot;
             public bool Parking;
             public int ParkFrom;
+            public int ParkTries;
             public bool Seated;
 
             public int HopAt;
             public int Hop;
 
-            /// <summary>Out of the car and on his way to the crowd. See Crowd.</summary>
-            public int OutAt;
-            public bool Walked;
+            /// <summary>Going home: told to pull out, and when. See Ending.</summary>
+            public bool Going;
+            public int LeftAt;
+            public bool Released;
+        }
 
-            /// <summary>Which knot he ended up in once it broke up. See Split.</summary>
-            public int Group;
+        private enum Stage { Riding, Leaving, Walking, Standing, Boarding, Going }
+
+        /// <summary>
+        /// Anybody at the meet on foot, or about to be: a driver, a passenger, a walk-in.
+        ///
+        /// ONE KIND OF PERSON. The drivers and the crowd used to be two systems with two sets
+        /// of rules, which is how the drivers came to be treated as furniture. Once he is out
+        /// of the car a driver is somebody at a car meet like everybody else; the only thing
+        /// his car buys him is that his first stint is at it.
+        /// </summary>
+        private sealed class Person
+        {
+            public Ped Man;
+            public Runner Ride;
+            public bool Drives;
+            public Stage Stage;
+
+            /// <summary>When this stage started, and when he next picks somewhere.</summary>
+            public int At;
+            public int MoveAt;
+
+            public Vector3 Stand;
+            public float Face;
+            public string Doing = "";
+
+            /// <summary>The car he is stood at, or null in the huddle.</summary>
+            public Runner Near;
+            public int Stints;
+
+            /// <summary>Where a walk-in was put down, to walk back out to. See Ending.</summary>
+            public Vector3 Home;
+            public bool WalkedIn;
+            public bool Released;
         }
 
         private readonly List<MeetSpot> _spots = new List<MeetSpot>();
         private readonly List<Runner> _out = new List<Runner>();
+        private readonly List<Person> _people = new List<Person>();
         private readonly Random _rng = new Random();
 
         private bool _on;
+        private bool _ending;
+        private int _endAt;
         private int _lastTick;
         private int _lastSend;
+        private int _lastWalkIn;
         private int _next;
+        private int _startedAt;
 
         /// <summary>How many goes this space has had, and how many it gets. See Sending.</summary>
         private int _misses;
         private const int MostMisses = 4;
         private Vector3 _middle;
 
-        /// <summary>Where they all end up, or null if the file does not say. See Crowd.</summary>
+        /// <summary>Where the huddle is, or null if the file does not say.</summary>
         private MeetSpot _crowd;
         private Blip _blip;
 
         /// <summary>Set by Main: the cars the set drives. See Takeover.</summary>
         public Func<string[]> Cars;
 
-        /// <summary>Set by Main: who turns up to look, and what they do. See Takeover.</summary>
+        /// <summary>Set by Main: who turns up to look. See Takeover.</summary>
         public Func<string[]> Faces;
+
+        /// <summary>
+        /// Set by Main: the takeover's watching idles. Kept for the side of a car, where
+        /// filming and photographing -- which is most of that list -- is exactly right.
+        /// </summary>
         public Func<string[]> Idles;
+
+        /// <summary>Set by Main: whether the player owns that car. See Yours.</summary>
+        public Func<Vehicle, bool> Owned;
 
         /// <summary>
         /// The one on juice, and it is its OWN list rather than the takeover's.
         ///
-        /// A VAN TURNED UP AND SAT THERE. The takeover's list is every Benny's body that
-        /// nominally has hydraulics, which includes a Moonbeam and a Minivan -- and a van at
-        /// the one spot in the meet whose entire job is to bounce is wrong twice over: it does
-        /// not read as a lowrider, and on this install it did not hop.
-        ///
-        /// Six classics instead, which is a shorter list and the right one. This spot is not
-        /// "a car with hydraulics", it is THE lowrider, and there is exactly one of it -- so
-        /// the list only has to be deep enough that it is not the same car every meet.
+        /// Six classics: this spot is not "a car with hydraulics", it is THE lowrider, and
+        /// there is exactly one of it, so the list only has to be deep enough that it is not
+        /// the same car every meet. A van at the one spot whose whole job is to bounce was a
+        /// mistake made once already.
         /// </summary>
         private static readonly string[] Hoppers =
         {
@@ -168,6 +376,7 @@ namespace Hoodrich.Locations
         };
 
         public bool IsOn => _on;
+
         public int Parked
         {
             get
@@ -180,14 +389,15 @@ namespace Hoodrich.Locations
 
         public int Places => _spots.Count;
 
-        // ---- the file ----------------------------------------------------------------
+        // ======================================================================
+        // The file
+        // ======================================================================
 
         /// <summary>
         /// The spots, once.
         ///
         /// A meet with no file is not an error and does not complain twice: it is a mod
-        /// somebody has deleted a data file out of, and the answer is to do nothing quietly
-        /// rather than to log a line every tick for the rest of the session.
+        /// somebody has deleted a data file out of, and the answer is to do nothing quietly.
         /// </summary>
         public void Load()
         {
@@ -222,8 +432,7 @@ namespace Hoodrich.Locations
                     if (Math.Abs(spot.At.X) < 0.01f && Math.Abs(spot.At.Y) < 0.01f) continue;
 
                     // THE CROWD SPOT IS NOT A SPACE AND NOTHING IS SENT TO IT. It is in the
-                    // same file because it is part of the same place -- somebody laying a meet
-                    // out wants the cars and the people in one list -- but a car driven to it
+                    // same file because it is part of the same place, but a car driven to it
                     // would park in the middle of everybody.
                     if (spot.IsCrowd) { _crowd = spot; continue; }
 
@@ -246,7 +455,9 @@ namespace Hoodrich.Locations
             }
         }
 
-        // ---- starting and stopping -----------------------------------------------------
+        // ======================================================================
+        // Starting and stopping
+        // ======================================================================
 
         /// <summary>Put one on. Returns why not, or null once it is running.</summary>
         public string Start()
@@ -258,16 +469,14 @@ namespace Hoodrich.Locations
             if (player == null || !player.Exists()) return "not right now.";
 
             _on = true;
+            _ending = false;
             _next = 0;
             _lastSend = 0;
-            _lastFace = 0;
+            _lastWalkIn = 0;
             _startedAt = Game.GameTime;
             _misses = 0;
-            _split = false;
-            _pickFrom = _rng.Next(64);
 
             Sweep(null);
-
             Blip();
 
             Log.Info("Car meet: on, " + _spots.Count + " space(s) to fill.");
@@ -275,20 +484,29 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
-        /// Time. Everybody unfrozen, handed back, and let go.
+        /// Everything ours, gone. For a teardown or for the player driving off the map.
         ///
-        /// NOT DELETED WHERE THEY STAND. Twelve cars vanishing out of a car park in front of
-        /// somebody is worse than twelve cars being there too long. They are unfrozen, the
-        /// handbrake comes off, the engine goes on and they are released to the game -- which
-        /// means the population manager owns them again and clears them the way it clears
-        /// anything else: once nobody is looking.
-        ///
-        /// The drivers are let go with them. They are sat in cars they own now, and a ped in a
-        /// car the game owns is a car that drives away, which is exactly how a meet should end.
+        /// THE PEOPLE ARE DELETED and the cars handed back. A script reload on site used to
+        /// leave twelve cars and twelve drivers behind, persistent, mission-flagged and never
+        /// reclaimed; and twenty-odd people released with KEEP_TASK on are twenty-odd people
+        /// stood in scenarios for the rest of the session. Deleting them is the only cleanup
+        /// that is actually clean. Nobody is watching a teardown.
         /// </summary>
-        private void Over()
+        public void Stop()
         {
-            Log.Info("Car meet: time. " + _out.Count + " car(s) heading off.");
+            foreach (var p in _people)
+            {
+                try
+                {
+                    if (p.Man == null || !p.Man.Exists()) continue;
+                    p.Man.MarkAsNoLongerNeeded();
+                    p.Man.Delete();
+                }
+                catch
+                {
+                    // The game takes them back.
+                }
+            }
 
             foreach (var r in _out)
             {
@@ -297,122 +515,34 @@ namespace Hoodrich.Locations
                     if (r.Car != null && r.Car.Exists())
                     {
                         Function.Call(Hash.FREEZE_ENTITY_POSITION, r.Car.Handle, false);
-                        Function.Call(Hash.SET_VEHICLE_HANDBRAKE, r.Car.Handle, false);
-                        Function.Call(Hash.SET_VEHICLE_ENGINE_ON, r.Car.Handle, true, true, true);
                         Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, r.Car.Handle, false, true);
-
                         r.Car.MarkAsNoLongerNeeded();
                     }
-
-                    if (r.Driver != null && r.Driver.Exists())
-                    {
-                        Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, false);
-                        Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, r.Driver.Handle, false);
-                        Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
-                        Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, r.Driver.Handle, false, true);
-
-                        r.Driver.MarkAsNoLongerNeeded();
-                    }
                 }
                 catch
                 {
-                    // It goes with the session either way.
+                    // Likewise.
                 }
             }
 
-            Loose();
-
+            _people.Clear();
             _out.Clear();
             _next = 0;
             _on = false;
+            _ending = false;
 
             Unblip();
         }
 
-        /// <summary>
-        /// The crowd, handed back.
-        ///
-        /// Released rather than deleted, the same as the cars: fourteen people vanishing off a
-        /// pavement in front of somebody is worse than fourteen people wandering off, and the
-        /// population manager clears them the way it clears anybody else.
-        /// </summary>
-        private void Loose()
-        {
-            foreach (var w in _watching)
-            {
-                try
-                {
-                    if (w.Man == null || !w.Man.Exists()) continue;
-
-                    Function.Call(Hash.SET_PED_KEEP_TASK, w.Man.Handle, false);
-                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, w.Man.Handle, false);
-                    Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
-                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, w.Man.Handle, false, true);
-
-                    w.Man.MarkAsNoLongerNeeded();
-                }
-                catch
-                {
-                    // They go with the session either way.
-                }
-            }
-
-            _watching.Clear();
-        }
-
-        /// <summary>How long one lasts.</summary>
-        private const int RunMs = 600000;
-
-        /// <summary>When it was called. See Update.</summary>
-        private int _startedAt;
-
-        public void Stop()
-        {
-            foreach (var r in _out)
-            {
-                try
-                {
-                    if (r.Driver != null && r.Driver.Exists())
-                    {
-                        r.Driver.MarkAsNoLongerNeeded();
-                        r.Driver.Delete();
-                    }
-
-                    if (r.Car != null && r.Car.Exists()) r.Car.MarkAsNoLongerNeeded();
-                }
-                catch
-                {
-                    // The game takes them back.
-                }
-            }
-
-            Loose();
-
-            _out.Clear();
-            _next = 0;
-            _on = false;
-
-            Unblip();
-        }
-
-        /// <summary>
-        /// Everything ours, handed back.
-        ///
-        /// THERE WAS NO WAY OUT OF A MEET EXCEPT WALKING AWAY FROM IT. Stop() is only reached
-        /// from the 700 m check in Update, so a script reload on site left twelve cars and
-        /// twelve drivers behind -- persistent, mission-flagged, and therefore never reclaimed.
-        /// Reload twice and there are two meets on the junction and twenty-four peds the game
-        /// cannot have back.
-        ///
-        /// Stop() was always the right cleanup; it just had no route from a teardown.
-        /// </summary>
         public void RestoreWorld()
         {
             try { Stop(); }
             catch { /* the session is ending either way */ }
         }
 
-        // ---- the tick -------------------------------------------------------------------
+        // ======================================================================
+        // The tick
+        // ======================================================================
 
         public void Update()
         {
@@ -427,29 +557,23 @@ namespace Hoodrich.Locations
                 var player = Game.Player.Character;
                 if (player == null || !player.Exists()) return;
 
-                // FAR ENOUGH AWAY AND IT NEVER HAPPENED. Twelve cars and twelve drivers held
-                // across the map is twelve of everything the game could have been using for
-                // wherever the player actually is.
+                // FAR ENOUGH AWAY AND IT NEVER HAPPENED. Twelve cars and thirty people held
+                // across the map is all of that the game could have been using for wherever
+                // the player actually is.
                 if (player.Position.DistanceTo(_middle) > ForgetAt) { Stop(); return; }
 
-                // TEN MINUTES AND THEY GO HOME. A meet with no end is a car park with twelve
-                // cars welded into it for the rest of the session -- twelve vehicles and twelve
-                // peds the game cannot have back, on a block that already runs a takeover and a
-                // set of rollers out of the same pool.
-                //
-                // THE LAST CAR IN GETS ITS TIME. The clock starts when the meet is called, and
-                // the twelfth car does not arrive until nearly a minute in, so the run is
-                // measured from the start and the ending is not a hard cut -- see Over.
-                if (now - _startedAt > RunMs) { Over(); return; }
+                if (_ending) { Ending(now); return; }
 
-                Sending(player, now);
+                // TEN MINUTES AND THEY GO HOME. Measured from the call, so the last car in
+                // gets the least of it, and the going is a thing you watch -- see Over.
+                if (now - _startedAt > RunMs) { Over(now); return; }
 
-                // AND THEN IT BREAKS UP. See Split -- one crowd for the first stretch, then
-                // threes round the cars for the rest of it.
-                Split(now);
-                Watchers(player, now);
+                Sending(now);
+                WalkIns(player, now);
 
                 foreach (var r in _out) Driving(r, now);
+
+                People(now);
             }
             catch (Exception ex)
             {
@@ -457,30 +581,42 @@ namespace Hoodrich.Locations
             }
         }
 
+        // ======================================================================
+        // The cars, arriving
+        // ======================================================================
+
         /// <summary>One more car sets off, every few seconds, until the places are full.</summary>
-        private void Sending(Ped player, int now)
+        private void Sending(int now)
         {
             if (_next >= _spots.Count) return;
             if (_lastSend != 0 && now - _lastSend < SendEveryMs) return;
+
+            // NOT WHILE THE LAST ONE IS STILL PARKING. Two cars threading into neighbouring
+            // bays at once is the shunt everybody sees; one at a time is a queue, which is
+            // what the entrance to a meet looks like anyway. Bounded, so a car that never
+            // manages it does not hold the other ten on the road for the rest of the night.
+            var last = _out.Count > 0 ? _out[_out.Count - 1] : null;
+
+            if (last != null && last.InLot && !last.Seated && now - last.ParkFrom < LotHoldMs &&
+                last.Car != null && last.Car.Exists())
+            {
+                return;
+            }
 
             _lastSend = now;
 
             var spot = _spots[_next];
 
-            // AND AGAIN, FOR THIS ONE. The spaces were emptied when the meet was called, but
-            // a car sets off from half a mile away and traffic parks in things. Clearing the
-            // one space a car is actually on its way to, at the moment it sets off, costs one
-            // world query and is the difference between a meet and a shunt.
+            // AND AGAIN, FOR THIS ONE. The spaces were emptied when the meet was called, but a
+            // car sets off from half a mile away and traffic parks in things.
             Sweep(spot);
 
-            var r = Send(player, spot, now);
+            var r = Send(spot, now);
 
-            // A SPACE IS ONLY SPENT ON A CAR THAT ACTUALLY SET OFF. This moved on to the next
-            // spot whether or not anything had been made for this one, so twelve failed sends
-            // was twelve empty spaces and one car at the meet -- reported as exactly that. A
-            // send can fail for a reason that will not be true in three seconds: no road found
-            // out there, a model that would not stream, a full vehicle pool. So it keeps the
-            // space and tries again, and only gives up on it after several goes.
+            // A SPACE IS ONLY SPENT ON A CAR THAT ACTUALLY SET OFF. A send can fail for a
+            // reason that will not be true in six seconds -- no road found out there, a model
+            // that would not stream -- so it keeps the space and tries again, and only gives
+            // up on it after several goes.
             if (r == null)
             {
                 _misses++;
@@ -501,18 +637,11 @@ namespace Hoodrich.Locations
         /// <summary>
         /// The spaces, emptied.
         ///
-        /// TRAFFIC PARKS IN CAR PARKS. Twelve surveyed spaces on a public street are twelve
-        /// places the game will have put a parked Asea by the time anybody calls a meet, and
-        /// a meet car driving into one either shunts it out of the way or gives up trying and
-        /// sits in the road with its indicator on. Neither reads as a car meet.
-        ///
-        /// NOT YOURS, THOUGH, AND THAT IS THE WHOLE CARE IN HERE. A system that deletes cars
-        /// in an area is one keystroke away from deleting the car somebody spent an hour
-        /// building and parked outside their own house. What is spared: whatever the player is
-        /// sat in, whatever they were last sat in, and anything the ledger says they own. What
-        /// goes is ambient traffic, which the game made and will make again.
-        ///
-        /// Passed a spot it does one; passed nothing it does the lot.
+        /// TRAFFIC PARKS IN CAR PARKS. NOT YOURS, THOUGH, AND NOT OURS: whatever the player is
+        /// sat in, whatever they were last sat in, anything the ledger says they own, and any
+        /// car that is at this meet already -- a meet car that landed a foot into the next bay
+        /// used to be swept away by the next car sent to it. What goes is ambient traffic,
+        /// which the game made and will make again.
         /// </summary>
         private void Sweep(MeetSpot only)
         {
@@ -525,7 +654,7 @@ namespace Hoodrich.Locations
                     foreach (var car in World.GetNearbyVehicles(spot.At, ClearRadius))
                     {
                         if (car == null || !car.Exists()) continue;
-                        if (Yours(car)) continue;
+                        if (Yours(car) || Mine(car)) continue;
 
                         car.MarkAsNoLongerNeeded();
                         car.Delete();
@@ -538,12 +667,6 @@ namespace Hoodrich.Locations
             }
         }
 
-        /// <summary>
-        /// Whether that car is one this mod has no business deleting.
-        ///
-        /// Three questions, cheapest first, and the ledger last because it is the only one
-        /// that walks a list.
-        /// </summary>
         private bool Yours(Vehicle car)
         {
             try
@@ -565,21 +688,28 @@ namespace Hoodrich.Locations
             }
         }
 
+        private bool Mine(Vehicle car)
+        {
+            foreach (var r in _out)
+            {
+                if (r.Car != null && r.Car.Exists() && r.Car == car) return true;
+            }
+
+            return false;
+        }
+
         /// <summary>How much of a space is cleared. A car and a bit either side of it.</summary>
         private const float ClearRadius = 3.6f;
 
-        /// <summary>Set by Main: whether the player owns that car. See Yours.</summary>
-        public Func<Vehicle, bool> Owned;
-
         /// <summary>
-        /// One car, on a road, a long way off, pointed at its space.
+        /// One car, on a road, a long way off, pointed at its space, with somebody in it and
+        /// sometimes somebody beside them.
         ///
-        /// GET_NTH_CLOSEST_VEHICLE_NODE_WITH_HEADING rather than a coordinate we picked: the
-        /// car has to start ON a road facing the way the road goes, or the first thing it does
-        /// is a three-point turn in somebody's garden. Asked around a point a few hundred
-        /// metres out in a random direction, so they do not all come down the same street.
+        /// GetNextPositionOnStreet rather than the node native by hand: that native takes a
+        /// pointer the game writes a lane count into, and passing a nought where it belongs
+        /// took the process down. The wrapper has the argument list right.
         /// </summary>
-        private Runner Send(Ped player, MeetSpot spot, int now)
+        private Runner Send(MeetSpot spot, int now)
         {
             try
             {
@@ -596,25 +726,7 @@ namespace Hoodrich.Locations
                 var probe = _middle + new Vector3((float)Math.Cos(way) * far,
                                                   (float)Math.Sin(way) * far, 0f);
 
-                // THE MANAGED ONE, AND THIS IS WHY.
-                //
-                // This called GET_NTH_CLOSEST_VEHICLE_NODE_WITH_HEADING directly and it hard
-                // crashed the game the instant the first car set off. That native takes TEN
-                // arguments and the seventh is an int* the game writes a lane count into; nine
-                // were passed, with a literal nought where the pointer belongs. So the engine
-                // took nought as an address and wrote to it, which is not an exception a script
-                // can catch -- it is the process going down. The log's last line was "Car meet:
-                // on", which is exactly one line before this.
-                //
-                // GetNextPositionOnStreet is the wrapper for the same job with the argument
-                // list already correct. There is no version of this worth hand-rolling.
-                // UNOCCUPIED FIRST, ANY ROAD SECOND. The unoccupied flag asks for a piece of
-                // road with nothing already on it, which is the right thing to want and is also
-                // a question a busy city answers with nothing rather often. Asked that way
-                // first because a car spawned on top of another car is a crash somebody sees;
-                // asked again without it, because no road at all is a space that stays empty.
                 var at = World.GetNextPositionOnStreet(probe, true);
-
                 if (at == Vector3.Zero) at = World.GetNextPositionOnStreet(probe, false);
 
                 if (at == Vector3.Zero)
@@ -625,10 +737,6 @@ namespace Hoodrich.Locations
                     return null;
                 }
 
-                // POINTED AT WHERE IT IS GOING. The wrapper hands back a place on a road and
-                // not which way the road runs, and a car facing across one does a three-point
-                // turn before it sets off. Facing the meet is right often enough, and the drive
-                // task turns it round where it is not.
                 var toward = _middle - at;
                 var face = (float)(Math.Atan2(toward.Y, toward.X) * 180.0 / Math.PI) - 90f;
 
@@ -650,20 +758,41 @@ namespace Hoodrich.Locations
                     return null;
                 }
 
-                driver.IsPersistent = true;
-                Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, driver.Handle, true, true);
-                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, driver.Handle, true);
+                Keep(driver);
                 Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, driver.Handle, false);
                 Function.Call(Hash.SET_DRIVER_ABILITY, driver.Handle, 1f);
                 Function.Call(Hash.SET_DRIVER_AGGRESSIVENESS, driver.Handle, 0.1f);
 
-                // The mouth of the meet rather than the space itself. He drives here like
-                // anybody else and only starts parking once he has arrived -- see Driving.
+                var r = new Runner { Car = car, Driver = driver, Spot = spot, SentAt = now };
+
+                // SOMEBODY IN THE PASSENGER SEAT, on most cars but not all. He costs nothing
+                // to arrive -- he is in the car -- and he is one more person at the meet who
+                // was not put down on the pavement. Not in the lowrider: that man is working.
+                if (!spot.IsHopper && _rng.Next(100) < PassengerChance)
+                {
+                    var mate = car.CreatePedOnSeat(VehicleSeat.RightFront, DriverModel());
+
+                    if (mate != null && mate.Exists())
+                    {
+                        Keep(mate);
+                        r.Passenger = mate;
+                    }
+                }
+
+                // The bay itself, from out on the road. The lot re-issues this slower once he
+                // is at the mouth of it -- see Driving.
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, driver.Handle, car.Handle,
                               spot.At.X, spot.At.Y, spot.At.Z,
                               RoadSpeed, 0, car.Model.Hash, RoadStyle, 12f, true);
 
-                return new Runner { Car = car, Driver = driver, Spot = spot, SentAt = now };
+                _people.Add(new Person { Man = driver, Ride = r, Drives = true, Stage = Stage.Riding, At = now });
+
+                if (r.Passenger != null)
+                {
+                    _people.Add(new Person { Man = r.Passenger, Ride = r, Stage = Stage.Riding, At = now });
+                }
+
+                return r;
             }
             catch (Exception ex)
             {
@@ -672,68 +801,101 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>Ours, and not somebody the game gets to redirect.</summary>
+        private static void Keep(Ped ped)
+        {
+            ped.IsPersistent = true;
+            Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped.Handle, true, true);
+            Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, true);
+            Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, ped.Handle, false);
+        }
+
         /// <summary>Where one car is up to.</summary>
         private void Driving(Runner r, int now)
         {
             if (r.Car == null || !r.Car.Exists()) return;
 
-            if (r.Seated) { Hopping(r, now); Crowd(r, now); return; }
+            if (r.Seated) { Hopping(r, now); return; }
+            if (r.Driver == null || !r.Driver.Exists() || !r.Driver.IsAlive) return;
 
             var gap = r.Car.Position.DistanceTo(r.Spot.At);
 
-            // AT THE MOUTH OF IT, so stop driving and start parking.
-            if (!r.Parking && gap < ParkFrom)
+            // AT THE MOUTH OF THE LOT: slow right down and start stopping for things.
+            if (!r.InLot && gap < LotFrom)
             {
-                r.Parking = true;
+                r.InLot = true;
                 r.ParkFrom = now;
 
                 try
                 {
-                    Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
-
-                    // Mode 0 is nose first, which is how anybody pulls into a bay.
-                    Function.Call(Hash.TASK_VEHICLE_PARK, r.Driver.Handle, r.Car.Handle,
-                                  r.Spot.At.X, r.Spot.At.Y, r.Spot.At.Z, r.Spot.Heading,
-                                  0, 20f, true);
+                    Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle, r.Car.Handle,
+                                  r.Spot.At.X, r.Spot.At.Y, r.Spot.At.Z,
+                                  LotSpeed, 0, r.Car.Model.Hash, LotStyle, 8f, true);
                 }
                 catch
                 {
-                    // The seat below catches it either way.
+                    // He carries on at road pace, which is what he did before this existed.
                 }
 
                 return;
             }
 
-            // NEAR ENOUGH AND STOPPED, AND NOTHING ELSE.
-            //
-            // THERE WAS A GIVE-UP HERE AND IT WAS THE THING THAT LOOKED LIKE TELEPORTING. Past
-            // twenty-two seconds of parking, or two and a half minutes of driving, the car was
-            // simply put on its space from wherever it had got to -- which on a bad run is
-            // most of the way down the street, in front of somebody stood watching them
-            // arrive. The whole point of this feature is the arriving.
-            //
-            // So there is no clock on it any more. A car that cannot reach its space drives
-            // around trying to, for as long as the meet lasts, and if it never gets there then
-            // that bay stays empty -- which is a car that could not find a parking spot, and
-            // is a thing that happens.
-            //
-            // What is left is not a teleport. It is under a metre, done while the car is
-            // already stopped in its bay, and it is what squares eleven cars into a row.
+            // AT THE BAY: park. Mode 0 is nose first, which is how anybody pulls into one.
+            if (!r.Parking && gap < ParkFrom)
+            {
+                Park(r, now);
+                return;
+            }
+
+            if (!r.Parking) return;
+
             var slow = false;
             try { slow = r.Car.Speed < SeatSpeed; } catch { slow = true; }
 
-            if (gap < SeatWithin && slow) Seat(r);
+            // NEAR ENOUGH AND STOPPED, AND NOTHING ELSE, is the ordinary way in.
+            if (gap < SeatWithin && slow) { Seat(r, now); return; }
+
+            var parking = now - r.ParkFrom;
+
+            // Close and stopped for a while, but not the metre: squared up from there.
+            if (parking > ParkPatienceMs && gap < SeatLoose && slow) { Seat(r, now); return; }
+
+            // Stopped somewhere daft, or still wandering: asked to park again, a few times.
+            if (parking > ParkRetryMs && r.ParkTries < 3)
+            {
+                Log.Debug("Car meet: a car is " + gap.ToString("0.0") + " m off its bay after " +
+                          (parking / 1000) + " s; asking again.");
+                Park(r, now);
+            }
+        }
+
+        private void Park(Runner r, int now)
+        {
+            r.Parking = true;
+            r.ParkFrom = now;
+            r.ParkTries++;
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+                Function.Call(Hash.TASK_VEHICLE_PARK, r.Driver.Handle, r.Car.Handle,
+                              r.Spot.At.X, r.Spot.At.Y, r.Spot.At.Z, r.Spot.Heading,
+                              0, 20f, true);
+            }
+            catch
+            {
+                // The seat above catches it either way.
+            }
         }
 
         /// <summary>
-        /// The car, on its spot, exactly.
+        /// The car, on its spot, exactly, and the people in it given their cue to get out.
         ///
         /// NO OFFSET. SET_ENTITY_COORDS applies the game's own lift and a car put down with it
-        /// stands a foot in the air and then drops, which on twelve cars in a row is twelve
-        /// visible thumps. The spot's Z came off a car that was parked in it, so it is already
-        /// the right height.
+        /// stands a foot in the air and then drops. The spot's Z came off a car that was
+        /// parked in it, so it is already the right height.
         /// </summary>
-        private void Seat(Runner r)
+        private void Seat(Runner r, int now)
         {
             r.Seated = true;
 
@@ -751,71 +913,63 @@ namespace Hoodrich.Locations
 
                 Function.Call(Hash.SET_VEHICLE_HANDBRAKE, r.Car.Handle, true);
 
-                // BONNET UP, WHICH IS THE ONLY REASON ANYBODY PARKS LIKE THIS. A row of closed
-                // cars is a car park; a row with the lids up is people showing each other
-                // things. Door four is the bonnet, opened loose so it sits rather than swings,
-                // and instantly because it happens while the car is still settling and nobody
-                // watches a bonnet rise on a car that has not stopped moving.
-                //
-                // Not the one on juice: its whole show is underneath it.
+                // BONNET UP, WHICH IS THE ONLY REASON ANYBODY PARKS LIKE THIS. Door four is the
+                // bonnet, opened loose so it sits rather than swings. Not the one on juice: its
+                // whole show is underneath it.
                 if (!r.Spot.IsHopper)
                 {
                     Function.Call(Hash.SET_VEHICLE_DOOR_OPEN, r.Car.Handle, Bonnet, true, true);
                 }
+
                 Function.Call(Hash.SET_VEHICLE_ENGINE_ON, r.Car.Handle, r.Spot.IsHopper, true, true);
                 Function.Call(Hash.SET_VEHICLE_LIGHTS, r.Car.Handle, r.Spot.IsHopper ? 2 : 0);
 
-                // He sits in it until there is somewhere for him to be. The peds who get out
-                // and stand about are the next piece of this and are not written yet.
-                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, r.Driver.Handle, true);
+                // FROZEN, WHICH FOR A PARKED CAR IS WHAT PARKED MEANS. Square in a bay and
+                // still square in it in ten minutes; nobody can nudge it, and at a car meet
+                // that is not a cost. Not the one on juice, which has to be able to move.
+                if (!r.Spot.IsHopper) Function.Call(Hash.FREEZE_ENTITY_POSITION, r.Car.Handle, true);
 
-                // AND IT DOES NOT GO ANYWHERE. THIS IS WHY THE FIRST ONE DROVE OFF.
-                //
-                // A driver whose tasks have just been cleared is a driver the game is free to
-                // hand a new one to, and the one it hands somebody sat behind a wheel is drive
-                // away. KEEP_TASK holds the nothing he was given -- but that on its own is a
-                // promise about tasks, not about the car, and a parked show car being shunted
-                // out of a row by traffic is the same problem wearing a different hat.
-                //
-                // FROZEN, WHICH FOR A PARKED CAR IS WHAT PARKED MEANS. It is square in a bay
-                // and it should still be square in that bay in ten minutes. The cost is that
-                // nobody can nudge it, and at a car meet that is not a cost.
+                // THE LOWRIDER HAS THE MUSIC. Engine running, doors shut, radio loud -- one
+                // car at the meet is the sound system, and it is the one everybody is stood
+                // round anyway.
+                if (r.Spot.IsHopper)
+                {
+                    Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, r.Car.Handle, true);
+                    Function.Call(Hash.SET_VEH_RADIO_STATION, r.Car.Handle, Radio.WestCoast);
+                    Function.Call(Hash.SET_VEHICLE_RADIO_LOUD, r.Car.Handle, true);
+                }
+
                 Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, true);
 
-                // EXCEPT THE ONE ON JUICE. Freezing is what keeps eleven parked cars square in
-                // their bays for ten minutes, and it is also, precisely, a car that cannot
-                // move -- so the hydraulics were being asked to bounce something nailed to the
-                // floor. It came, it was green, it had green neons and it sat there.
-                //
-                // It does not need freezing anyway: it is off on its own with nothing to be
-                // shunted into and nothing to shunt.
-                if (!r.Spot.IsHopper) Function.Call(Hash.FREEZE_ENTITY_POSITION, r.Car.Handle, true);
+                Log.Info("Car meet: " + r.Car.DisplayName + " is in, bay " + (_out.IndexOf(r) + 1) +
+                         " of " + _spots.Count + ".");
             }
             catch
             {
                 // It is where it is.
             }
 
-            // AND HE GETS OUT IN A MINUTE. Staggered off the arrival rather than all at
-            // once: twelve doors opening on the same frame is a cutscene, and twelve men
-            // wandering over one at a time as they pull in is a car meet filling up.
-            r.OutAt = Game.GameTime + OutAfterMs + _rng.Next(OutVaryMs);
+            // AND THEY GET OUT IN A MOMENT. Staggered off the arrival rather than all at
+            // once, passenger first, the way it goes. Not the man on the switches.
+            if (r.Spot.IsHopper) return;
 
+            foreach (var p in _people)
+            {
+                if (p.Ride != r || p.Stage != Stage.Riding) continue;
+
+                p.MoveAt = now + (p.Drives
+                    ? OutAfterMs + _rng.Next(OutVaryMs)
+                    : PassengerOutMs + _rng.Next(PassengerOutVaryMs));
+            }
         }
 
         /// <summary>
         /// Which way round it ends up sitting.
         ///
-        /// EITHER WAY DOWN THE BAY, whichever it is already nearest. The spot's heading came
-        /// off a car parked in it, so it is one of the two ways a car can sit there -- and a
-        /// car that has just driven in nose first was being spun a hundred and eighty degrees
-        /// on the spot to match it. That is the teleport: it drove in correctly and then
-        /// turned round without moving.
-        ///
-        /// A bay does not care which way you point. What it cares about is being square in
-        /// it, which is the part the snap is actually for. So the line is kept and the
-        /// direction along it is whichever the car already had -- reverse in and it stays
-        /// reversed, drive in and it stays nose first, and neither is ever spun.
+        /// EITHER WAY DOWN THE BAY, whichever it is already nearest. A car that has just
+        /// driven in nose first was being spun a hundred and eighty degrees on the spot to
+        /// match the surveyed heading. A bay does not care which way you point; what it cares
+        /// about is being square in it.
         /// </summary>
         private static float Facing(Runner r)
         {
@@ -824,11 +978,8 @@ namespace Hoodrich.Locations
             try
             {
                 var has = r.Car.Heading;
-
                 var off = Math.Abs(((want - has) % 360f + 540f) % 360f - 180f);
 
-                // More than a right angle away from the surveyed line means the other end of
-                // the same line is the near one.
                 if (off > 90f) return (want + 180f) % 360f;
             }
             catch
@@ -839,18 +990,11 @@ namespace Hoodrich.Locations
             return want;
         }
 
-        // ---- the one on juice ---------------------------------------------------------------
+        // ---- the one on juice ----
 
         /// <summary>
-        /// The lowrider, bouncing.
-        ///
-        /// TWO STATES ON A CLOCK, not a held one. SET_HYDRAULIC_VEHICLE_STATE is a pose rather
-        /// than a motion -- it puts the car somewhere and leaves it there -- so a bounce is
-        /// asking for one and then the other, which is exactly what somebody working the
-        /// switches is doing anyway.
-        ///
-        /// The gap is not the same every time. A car hopping on a metronome reads as a script
-        /// and a car hopping when somebody hits the switch reads as a car.
+        /// The lowrider, bouncing. Two poses on a clock rather than a held one, worked round
+        /// the switch box in order, with a gap that is not the same twice.
         /// </summary>
         private void Hopping(Runner r, int now)
         {
@@ -858,13 +1002,6 @@ namespace Hoodrich.Locations
             if (r.HopAt != 0 && now < r.HopAt) return;
 
             r.HopAt = now + HopMinMs + _rng.Next(HopVaryMs);
-
-            // MORE THAN UP AND DOWN. Two states alternating is a car doing press-ups; somebody
-            // actually on the switches works one corner, then the front, then drops the lot,
-            // and the pattern is the point of the whole car. Walked in order rather than
-            // picked at random, for the same reason the colours are -- random puts the same
-            // state twice in a row about as often as not, and twice in a row is a car that
-            // stopped.
             r.Hop = (r.Hop + 1) % Hops.Length;
 
             try
@@ -880,82 +1017,59 @@ namespace Hoodrich.Locations
         private const int HopMinMs = 650;
         private const int HopVaryMs = 800;
 
-        /// <summary>
-        /// The hydraulic poses, in the order they are worked through.
-        ///
-        /// Down, up, front, back, and the two sides -- the whole switch box rather than the two
-        /// ends of it. Nought comes round often so it keeps landing rather than hanging in the
-        /// air, which is what a lowrider does between moves.
-        /// </summary>
+        /// <summary>Down, up, front, back, and the two sides. Nought comes round often.</summary>
         private static readonly int[] Hops = { 0, 2, 0, 3, 4, 0, 5, 6, 0, 2 };
 
-        // ---- the people who came to look -------------------------------------------------------
-
-        /// <summary>Somebody who did not drive here.</summary>
-        private sealed class Watcher
-        {
-            public Ped Man;
-            public int MoveAt;
-            public int Seen;
-        }
-
-        private readonly List<Watcher> _watching = new List<Watcher>();
+        // ======================================================================
+        // The people who came on foot
+        // ======================================================================
 
         /// <summary>
-        /// A crowd that came on foot, going from bonnet to bonnet.
+        /// One more of them, put down a long way off where the camera is not looking, and
+        /// left to walk in.
         ///
-        /// A CAR MEET WITH ONLY DRIVERS AT IT IS TWELVE MEN AND TWELVE CARS. Most of the
-        /// people at one did not bring anything -- they came to look, they walk the row, they
-        /// stop at whatever has something worth stopping at, and they move on. That wandering
-        /// is the difference between a car park with people in it and a car meet.
-        ///
-        /// THEY MOVE, WHICH IS THE ENTIRE POINT. A ring of spectators standing still is
-        /// scenery; the same people drifting from one nose to the next every half minute is a
-        /// place with something going on in it. Nobody has a route -- each one picks a car,
-        /// stands at it for a while, and picks another, so the pattern is never the same twice
-        /// and never repeats.
-        ///
-        /// WHO AND WHAT ARE THE TAKEOVER'S OWN LISTS. Faces is Chamberlain Hills rather than
-        /// the game's ambient population -- a coach party of hipsters and tourists on a block
-        /// none of them live on was a mistake made once already. Watching is the idles that do
-        /// NOT lean: half the standing idles in this game are authored for a ped up against a
-        /// wall, and there is no wall in a car park. Both cost a night to get right and neither
-        /// gets typed twice.
+        /// Tried a handful of places round the compass and given up for this tick if none
+        /// is out of sight: a man appearing in front of you is worse than a man arriving
+        /// four seconds later.
         /// </summary>
-        private void Watchers(Ped player, int now)
+        private void WalkIns(Ped player, int now)
         {
-            if (_crowd == null) return;
+            var have = 0;
+            foreach (var p in _people) if (p.WalkedIn) have++;
 
-            // A few at a time rather than all at once, same as the cars.
-            if (_watching.Count < HowMany && now - _lastFace > FaceEveryMs)
-            {
-                _lastFace = now;
-                Make();
-            }
+            if (have >= WalkInCount) return;
+            if (_lastWalkIn != 0 && now - _lastWalkIn < WalkInEveryMs) return;
 
-            for (var i = _watching.Count - 1; i >= 0; i--)
-            {
-                var w = _watching[i];
+            _lastWalkIn = now;
 
-                if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive)
-                {
-                    _watching.RemoveAt(i);
-                    continue;
-                }
-
-                if (now < w.MoveAt) continue;
-
-                Wander(w, now);
-            }
-        }
-
-        /// <summary>One more of them, put down out of the way and left to walk in.</summary>
-        private void Make()
-        {
             try
             {
                 var names = Faces == null ? null : Faces();
                 if (names == null || names.Length == 0) return;
+
+                var centre = _crowd != null ? _crowd.At : _middle;
+                var me = player.Position;
+
+                var at = Vector3.Zero;
+
+                for (var tries = 0; tries < 6; tries++)
+                {
+                    var way = (float)(_rng.NextDouble() * Math.PI * 2.0);
+                    var far = WalkFromMin + (float)_rng.NextDouble() * WalkFromVary;
+
+                    var probe = centre + new Vector3((float)Math.Cos(way) * far,
+                                                     (float)Math.Sin(way) * far, 0f);
+
+                    var on = World.GetNextPositionOnSidewalk(probe);
+                    if (on == Vector3.Zero) continue;
+                    if (on.DistanceTo(me) < SpawnClearOfPlayer) continue;
+                    if (Function.Call<bool>(Hash.IS_SPHERE_VISIBLE, on.X, on.Y, on.Z, 3f)) continue;
+
+                    at = on;
+                    break;
+                }
+
+                if (at == Vector3.Zero) return;
 
                 Model model = new Model(0);
 
@@ -968,33 +1082,17 @@ namespace Hoodrich.Locations
 
                 if (!model.IsValid) return;
 
-                // ON THE PAVEMENT AND NOT IN THE ROW. Put down a little way off and left to
-                // walk in on his own, so the first thing anybody sees him do is arrive.
-                var way = (float)(_rng.NextDouble() * Math.PI * 2.0);
-
-                var probe = _crowd.At + new Vector3((float)Math.Cos(way) * ComeInFrom,
-                                                    (float)Math.Sin(way) * ComeInFrom, 0f);
-
-                var at = World.GetNextPositionOnSidewalk(probe);
-                if (at == Vector3.Zero) at = probe;
-
                 var man = World.CreatePed(model, at);
                 model.MarkAsNoLongerNeeded();
 
                 if (man == null || !man.Exists()) return;
 
-                man.IsPersistent = true;
+                Keep(man);
 
-                Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, man.Handle, true, true);
-                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, man.Handle, true);
-                Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, man.Handle, false);
-                Function.Call(Hash.SET_PED_KEEP_TASK, man.Handle, true);
+                var p = new Person { Man = man, Stage = Stage.Walking, At = now, Home = at, WalkedIn = true };
+                _people.Add(p);
 
-                var w = new Watcher { Man = man };
-
-                _watching.Add(w);
-
-                Wander(w, Game.GameTime);
+                Plan(p, now, ArrivePace);
             }
             catch (Exception ex)
             {
@@ -1002,345 +1100,703 @@ namespace Hoodrich.Locations
             }
         }
 
+        // ======================================================================
+        // Everybody, every tick
+        // ======================================================================
+
         /// <summary>
-        /// Off to the next bonnet.
+        /// Where each person is up to, and what to do about it.
         ///
-        /// A CAR HE IS NOT ALREADY AT, picked fresh each time. The nose rather than the side,
-        /// because the nose is where the lid is up and is the only part of a parked car worth
-        /// walking over to -- and a little way off it and to one side, so two people who pick
-        /// the same car are not stood in each other.
-        ///
-        /// How long he stays is not the same twice. Everybody moving on the same clock is a
-        /// shift change.
+        /// RIDING waits for the cue Seat gave him, then he is told to get out. LEAVING waits
+        /// until he is actually out of the car (or has had long enough) and then plans his
+        /// first stint, at his own car. WALKING ends when the scenario at the far end takes
+        /// him, and is doubted if it takes too long. STANDING ends on his clock -- and early,
+        /// if the scenario has dropped him and he is stood there with nothing, which is the
+        /// one thing nobody at this meet is allowed to do.
         /// </summary>
-        private void Wander(Watcher w, int now)
+        private void People(int now)
         {
-            w.MoveAt = now + StayMinMs + _rng.Next(StayVaryMs);
-
-            try
+            for (var i = _people.Count - 1; i >= 0; i--)
             {
-                var cars = new List<Runner>();
-                foreach (var r in _out) if (r.Seated) cars.Add(r);
+                var p = _people[i];
 
-                Vector3 stand;
-                float face;
-
-                if (cars.Count == 0)
+                if (p.Man == null || !p.Man.Exists() || !p.Man.IsAlive)
                 {
-                    // Nothing parked yet, so he waits about where everybody ends up.
-                    var round = (float)(_rng.NextDouble() * Math.PI * 2.0);
+                    _people.RemoveAt(i);
+                    continue;
+                }
 
-                    stand = _crowd.At + new Vector3((float)Math.Cos(round) * MillAbout,
-                                                    (float)Math.Sin(round) * MillAbout, 0f);
+                try
+                {
+                    switch (p.Stage)
+                    {
+                        case Stage.Riding:
+                            if (p.Ride == null || !p.Ride.Seated || p.Ride.Spot.IsHopper) break;
+                            if (p.MoveAt == 0 || now < p.MoveAt) break;
 
-                    var toCrowd = _crowd.At - stand;
-                    face = (float)(Math.Atan2(toCrowd.Y, toCrowd.X) * 180.0 / Math.PI) - 90f;
+                            if (p.Ride.Car != null && p.Ride.Car.Exists())
+                            {
+                                Function.Call(Hash.SET_PED_KEEP_TASK, p.Man.Handle, false);
+                                Function.Call(Hash.CLEAR_PED_TASKS, p.Man.Handle);
+                                Function.Call(Hash.TASK_LEAVE_VEHICLE, p.Man.Handle, p.Ride.Car.Handle, 0);
+                            }
+
+                            p.Stage = Stage.Leaving;
+                            p.At = now;
+                            break;
+
+                        case Stage.Leaving:
+                            if (p.Man.IsInVehicle() && now - p.At < LeaveDoubtMs) break;
+
+                            Plan(p, now, StrollPace);
+                            break;
+
+                        case Stage.Walking:
+                            if (Function.Call<bool>(Hash.IS_PED_USING_ANY_SCENARIO, p.Man.Handle))
+                            {
+                                p.Stage = Stage.Standing;
+                                p.At = now;
+                                break;
+                            }
+
+                            // Not walking and not stood in it: the route failed or the
+                            // scenario would not take there. Somewhere else, then.
+                            if (now - p.At > WalkDoubtMs ||
+                                (now - p.At > IdleDoubtMs &&
+                                 !Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, p.Man.Handle, 224)))
+                            {
+                                Plan(p, now, StrollPace);
+                            }
+                            break;
+
+                        case Stage.Standing:
+                            if (now >= p.MoveAt)
+                            {
+                                Plan(p, now, StrollPace);
+                                break;
+                            }
+
+                            if (now - p.At > IdleDoubtMs &&
+                                !Function.Call<bool>(Hash.IS_PED_USING_ANY_SCENARIO, p.Man.Handle))
+                            {
+                                Plan(p, now, StrollPace);
+                            }
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Somebody at the meet fell over: " + ex.Message);
+                }
+            }
+        }
+
+        /// <summary>How long a man is given to get out of a car before he is planned for anyway.</summary>
+        private const int LeaveDoubtMs = 9000;
+
+        // ======================================================================
+        // Somewhere to be
+        // ======================================================================
+
+        /// <summary>
+        /// Pick him somewhere, and something to do there, and send him.
+        ///
+        /// HIS OWN CAR FIRST if he came in one -- the driver at the nose with the lid up, his
+        /// passenger down the side -- and for longer, because a man who just drove his car to
+        /// a meet stands at it. After that it is the huddle, mostly, for the first couple of
+        /// minutes, and the cars mostly after -- and the lowrider now and then, because it is
+        /// the thing bouncing. Never the car he is already at.
+        /// </summary>
+        private void Plan(Person p, int now, float pace)
+        {
+            var cars = new List<Runner>();
+            Runner hopper = null;
+
+            foreach (var r in _out)
+            {
+                if (!r.Seated || r.Car == null || !r.Car.Exists()) continue;
+                if (r.Spot.IsHopper) hopper = r;
+                else cars.Add(r);
+            }
+
+            var first = p.Stints == 0 && p.Ride != null && p.Ride.Seated && p.Ride.Car != null && p.Ride.Car.Exists();
+            var mingle = _crowd != null && now - _startedAt < MingleMs;
+
+            Vector3 stand;
+            float face;
+            string doing;
+            Runner near = null;
+            var own = false;
+
+            if (first)
+            {
+                near = p.Ride;
+                own = true;
+
+                if (p.Drives) Nose(near, out stand, out face, out doing, true);
+                else Side(near, out stand, out face, out doing);
+            }
+            else
+            {
+                var roll = _rng.Next(100);
+                var huddle = _crowd != null && roll < (mingle ? 45 : 18);
+                var juice = !huddle && hopper != null && hopper != p.Near && roll < (mingle ? 57 : 32);
+
+                if (huddle)
+                {
+                    Ring(_crowd.At, RingMin, RingVary, InHuddle, out stand, out face, out doing);
+                }
+                else if (juice)
+                {
+                    near = hopper;
+                    Watch(hopper, out stand, out face, out doing);
+                }
+                else if (cars.Count > 0)
+                {
+                    // One he is not at. Walked from a random start so a full row is used.
+                    near = cars[_rng.Next(cars.Count)];
+
+                    if (near == p.Near && cars.Count > 1)
+                    {
+                        near = cars[(cars.IndexOf(near) + 1 + _rng.Next(cars.Count - 1)) % cars.Count];
+                    }
+
+                    if (_rng.Next(100) < 62) Nose(near, out stand, out face, out doing, false);
+                    else Side(near, out stand, out face, out doing);
+                }
+                else if (_crowd != null)
+                {
+                    Ring(_crowd.At, RingMin, RingVary, InHuddle, out stand, out face, out doing);
                 }
                 else
                 {
-                    var pick = cars[(w.Seen + _rng.Next(1, cars.Count + 1)) % cars.Count];
-                    w.Seen = (w.Seen + 1) % Math.Max(1, cars.Count);
-
-                    var car = pick.Car;
-
-                    var off = ((float)_rng.NextDouble() - 0.5f) * 2f * Spread;
-
-                    stand = car.Position + car.ForwardVector * (NoseGap + (float)_rng.NextDouble())
-                          + car.RightVector * off;
-
-                    var toCar = car.Position - stand;
-                    face = (float)(Math.Atan2(toCar.Y, toCar.X) * 180.0 / Math.PI) - 90f;
+                    Ring(_middle, 4f, 3f, Waiting, out stand, out face, out doing);
                 }
+            }
 
-                Function.Call(Hash.SET_PED_KEEP_TASK, w.Man.Handle, false);
-                Function.Call(Hash.CLEAR_PED_TASKS, w.Man.Handle);
+            if (!Go(p, stand, face, doing, pace))
+            {
+                // Try again next tick rather than leaving him.
+                p.Stage = Stage.Standing;
+                p.At = now - IdleDoubtMs;
+                p.MoveAt = now + 800;
+                return;
+            }
 
-                Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, w.Man.Handle,
-                              stand.X, stand.Y, stand.Z, WalkPace, -1, face, 0.4f);
+            p.Stage = Stage.Walking;
+            p.At = now;
+            p.Stand = stand;
+            p.Face = face;
+            p.Doing = doing;
+            p.Near = near;
+            p.Stints++;
 
-                var doing = Doing();
+            p.MoveAt = now + (own
+                ? OwnStayMinMs + _rng.Next(OwnStayVaryMs)
+                : StayMinMs + _rng.Next(StayVaryMs));
+        }
 
-                Function.Call(Hash.TASK_START_SCENARIO_AT_POSITION, w.Man.Handle, doing,
-                              stand.X, stand.Y, stand.Z, face, 0, true, true);
+        /// <summary>
+        /// Across the nose, three abreast a hand's width apart, facing back at the engine,
+        /// which is the shape people make when there is something to look at under a lid.
+        /// The middle slot is the mechanic's if the driver wants it.
+        /// </summary>
+        private void Nose(Runner car, out Vector3 stand, out float face, out string doing, bool owner)
+        {
+            var v = car.Car;
+            var nose = v.Position + v.ForwardVector * NoseGap;
 
-                Function.Call(Hash.SET_PED_KEEP_TASK, w.Man.Handle, true);
+            var order = new[] { 0, -1, 1 };
+            Shuffle(order);
+
+            stand = nose;
+
+            foreach (var slot in order)
+            {
+                var candidate = nose + v.RightVector * (slot * Abreast);
+                if (!Free(candidate)) continue;
+
+                stand = candidate;
+                break;
+            }
+
+            stand = Ground(stand);
+            face = Toward(v.Position, stand);
+
+            doing = owner && _rng.Next(100) < 55
+                ? "WORLD_HUMAN_VEHICLE_MECHANIC"
+                : AtNose[_rng.Next(AtNose.Length)];
+        }
+
+        /// <summary>Down a side, a stride off it, somewhere along its length, looking at it.</summary>
+        private void Side(Runner car, out Vector3 stand, out float face, out string doing)
+        {
+            var v = car.Car;
+
+            stand = v.Position;
+
+            for (var tries = 0; tries < 5; tries++)
+            {
+                var hand = _rng.Next(2) == 0 ? -1f : 1f;
+                var along = ((float)_rng.NextDouble() - 0.5f) * 2f * SideSlide;
+
+                var candidate = v.Position + v.RightVector * (hand * SideGap) + v.ForwardVector * along;
+
+                stand = candidate;
+                if (Free(candidate)) break;
+            }
+
+            stand = Ground(stand);
+            face = Toward(v.Position, stand);
+
+            // The takeover's watching list is filming and photographs, which down the side of
+            // a car is right. Half and half with ours.
+            var theirs = Idles == null ? null : Idles();
+
+            doing = theirs != null && theirs.Length > 0 && _rng.Next(2) == 0
+                ? theirs[_rng.Next(theirs.Length)]
+                : AtSide[_rng.Next(AtSide.Length)];
+        }
+
+        /// <summary>Back from the lowrider, either side, phone up.</summary>
+        private void Watch(Runner car, out Vector3 stand, out float face, out string doing)
+        {
+            var v = car.Car;
+
+            stand = v.Position;
+
+            for (var tries = 0; tries < 5; tries++)
+            {
+                var hand = _rng.Next(2) == 0 ? -1f : 1f;
+                var along = ((float)_rng.NextDouble() - 0.5f) * 2f * HopperSlide;
+
+                var candidate = v.Position + v.RightVector * (hand * HopperGap) + v.ForwardVector * along;
+
+                stand = candidate;
+                if (Free(candidate)) break;
+            }
+
+            stand = Ground(stand);
+            face = Toward(v.Position, stand);
+            doing = AtHopper[_rng.Next(AtHopper.Length)];
+        }
+
+        /// <summary>
+        /// Round a point, facing in, which is what a group of people talking is. Where in the
+        /// ring is wherever is free, so two men never walk to the same patch of ground.
+        /// </summary>
+        private void Ring(Vector3 centre, float radius, float vary, string[] pool,
+                          out Vector3 stand, out float face, out string doing)
+        {
+            stand = centre;
+
+            for (var tries = 0; tries < 8; tries++)
+            {
+                var round = (float)(_rng.NextDouble() * Math.PI * 2.0);
+                var far = radius + (float)_rng.NextDouble() * vary;
+
+                var candidate = centre + new Vector3((float)Math.Cos(round) * far,
+                                                     (float)Math.Sin(round) * far, 0f);
+
+                stand = candidate;
+                if (Free(candidate)) break;
+            }
+
+            stand = Ground(stand);
+            face = Toward(centre, stand);
+            doing = pool[_rng.Next(pool.Length)];
+        }
+
+        /// <summary>Whether nobody else is headed for, or stood on, that patch.</summary>
+        private bool Free(Vector3 at)
+        {
+            foreach (var p in _people)
+            {
+                if (p.Stage != Stage.Walking && p.Stage != Stage.Standing) continue;
+                if (p.Stand.DistanceTo2D(at) < Elbow) return false;
+            }
+
+            return true;
+        }
+
+        private static float Toward(Vector3 target, Vector3 from)
+        {
+            var d = target - from;
+            return (float)(Math.Atan2(d.Y, d.X) * 180.0 / Math.PI) - 90f;
+        }
+
+        /// <summary>
+        /// The ground under a point.
+        ///
+        /// A car's Position is its centre, half a metre up; a ped's is his pelvis. Handing a
+        /// car's height to a scenario as a place to stand is how they ended up in the ground
+        /// to the waist. Asked from a bit above, and only believed within a few metres.
+        /// </summary>
+        private static Vector3 Ground(Vector3 where)
+        {
+            try
+            {
+                if (World.GetGroundHeight(new Vector3(where.X, where.Y, where.Z + 1.5f),
+                                          out var groundZ, GetGroundHeightMode.Normal) &&
+                    groundZ > 0f && Math.Abs(groundZ - where.Z) <= 3f)
+                {
+                    where.Z = groundZ;
+                }
             }
             catch
             {
-                // He stays where he is and tries again in half a minute.
+                // Then where it was, which the nav mesh will settle anyway.
+            }
+
+            return where;
+        }
+
+        private void Shuffle(int[] a)
+        {
+            for (var i = a.Length - 1; i > 0; i--)
+            {
+                var j = _rng.Next(i + 1);
+                var t = a[i]; a[i] = a[j]; a[j] = t;
             }
         }
 
         /// <summary>
-        /// Something to be doing. The takeover's list, plus the cameras.
+        /// Walk there, then do that, as one sequence.
         ///
-        /// PAPARAZZI IS THE ONE THAT MATTERS HERE and it is not on that list, because nobody
-        /// stands at a junction with a camera up. At a car meet everybody has one out, so it
-        /// goes in heavily -- and TOURIST_MAP does not, because a man reading a map at a car
-        /// meet is a man who is lost.
+        /// THIS IS THE FIX FOR THE WARPING. Two tasks issued back to back are one task: the
+        /// second replaces the first on the same frame. In a sequence they run in order --
+        /// the nav-mesh walk first, which goes round parked cars rather than through them,
+        /// and then the scenario AT the spot with the teleport flag OFF and no end, so he
+        /// stays in it until his clock says otherwise. Same shape Homies uses for the cab.
         /// </summary>
-        private string Doing()
+        private bool Go(Person p, Vector3 stand, float face, string doing, float pace)
         {
-            if (_rng.Next(100) < CameraChance) return "WORLD_HUMAN_PAPARAZZI";
-
-            var list = Idles == null ? null : Idles();
-
-            if (list == null || list.Length == 0) return "WORLD_HUMAN_STAND_IMPATIENT_UPRIGHT";
-
-            return list[_rng.Next(list.Length)];
-        }
-
-        /// <summary>How many turn up, how fast, and how far out they start.</summary>
-        private const int HowMany = 14;
-        private const int FaceEveryMs = 2600;
-        private const float ComeInFrom = 26f;
-
-        /// <summary>How long one stays at a bonnet, and how far off it he stands.</summary>
-        private const int StayMinMs = 22000;
-        private const int StayVaryMs = 26000;
-        private const float Spread = 1.6f;
-        private const float MillAbout = 3.2f;
-
-        /// <summary>How many of them have a camera out at any one time.</summary>
-        private const int CameraChance = 30;
-
-        private int _lastFace;
-
-        // ---- everybody stood about -----------------------------------------------------------
-
-        /// <summary>
-        /// He gets out, walks over, and stands in it.
-        ///
-        /// THE CROWD IS ONE COORDINATE AND THEY ARRANGE THEMSELVES ROUND IT. Twelve marked
-        /// standing spots would be twelve more numbers to survey and would put everybody on a
-        /// grid; a ring worked out from one point puts them in a huddle facing inwards, which
-        /// is what a group of people talking is. Where in the ring is decided by which car he
-        /// drove, so two men never walk to the same patch of ground.
-        ///
-        /// FACING THE MIDDLE, which is the whole of making it read as a conversation. Nothing
-        /// here plays a talking animation at anybody in particular: a scenario in place, faced
-        /// inward, at a sensible distance, is what the game itself uses for a group stood
-        /// round outside a shop, and it holds up from the distance anybody watches this from.
-        ///
-        /// NOT THE ONE ON JUICE. Somebody has to be working the switches.
-        /// </summary>
-        private void Crowd(Runner r, int now)
-        {
-            if (_crowd == null) return;
-            if (r.Walked || r.Spot.IsHopper) return;
-            if (r.OutAt == 0 || now < r.OutAt) return;
-            if (r.Driver == null || !r.Driver.Exists() || !r.Driver.IsAlive) { r.Walked = true; return; }
-
-            r.Walked = true;
+            var slot = new OutputArgument();
 
             try
             {
-                var which = _out.IndexOf(r);
-                if (which < 0) which = 0;
+                Function.Call(Hash.SET_PED_KEEP_TASK, p.Man.Handle, false);
 
-                var many = Math.Max(1, _spots.Count - 1);
-                var round = (float)(which * Math.PI * 2.0 / many);
+                Function.Call(Hash.OPEN_SEQUENCE_TASK, slot);
+                var seq = slot.GetResult<int>();
 
-                var stand = _crowd.At + new Vector3((float)Math.Cos(round) * CrowdRing,
-                                                    (float)Math.Sin(round) * CrowdRing, 0f);
+                Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, 0,
+                              stand.X, stand.Y, stand.Z, pace, WalkTimeoutMs, 0.6f, 0, face);
 
-                // Facing the middle of it, which is what everybody in a huddle is doing.
-                var toward = _crowd.At - stand;
-                var face = (float)(Math.Atan2(toward.Y, toward.X) * 180.0 / Math.PI) - 90f;
+                Function.Call(Hash.TASK_START_SCENARIO_AT_POSITION, 0, doing,
+                              stand.X, stand.Y, stand.Z, face, -1, false, false);
+
+                Function.Call(Hash.CLOSE_SEQUENCE_TASK, seq);
+                Function.Call(Hash.TASK_PERFORM_SEQUENCE, p.Man.Handle, seq);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, p.Man.Handle, true);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not send somebody across the meet: " + ex.Message);
+                return false;
+            }
+            finally
+            {
+                try { Function.Call(Hash.CLEAR_SEQUENCE_TASK, slot); } catch { }
+            }
+        }
+
+        // ======================================================================
+        // Going home
+        // ======================================================================
+
+        /// <summary>
+        /// Time. The people who walked in walk out; the passengers get back in; the drivers
+        /// follow in a moment; and the cars pull out as they fill -- see Ending.
+        ///
+        /// NOT DELETED WHERE THEY STAND AND NOT ABANDONED WHERE THEY STAND EITHER. Twelve
+        /// cars vanishing out of a car park in front of somebody is worse than twelve cars
+        /// being there too long; and twelve cars simply "released" with their drivers stood
+        /// about in scenarios was twelve cars welded to the block until the game got round
+        /// to them. This is the going that a meet actually has.
+        /// </summary>
+        private void Over(int now)
+        {
+            _ending = true;
+            _endAt = now;
+
+            Log.Info("Car meet: time. " + _out.Count + " car(s) and " + _people.Count + " people heading off.");
+
+            var nth = 0;
+
+            foreach (var p in _people)
+            {
+                try
+                {
+                    if (p.Man == null || !p.Man.Exists()) continue;
+
+                    Function.Call(Hash.SET_PED_KEEP_TASK, p.Man.Handle, false);
+
+                    if (p.WalkedIn || p.Ride == null || p.Ride.Car == null || !p.Ride.Car.Exists())
+                    {
+                        // Back out the way he came, or if he has nowhere, off the middle of it.
+                        var home = p.WalkedIn ? p.Home : Away(now, nth++);
+
+                        Function.Call(Hash.CLEAR_PED_TASKS, p.Man.Handle);
+                        Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, p.Man.Handle,
+                                      home.X, home.Y, home.Z, ArrivePace, WalkTimeoutMs, 1.0f, 0, 0f);
+
+                        p.Stage = Stage.Going;
+                        p.At = now;
+                        continue;
+                    }
+
+                    // A driver: the car he came in wants to be able to move again first, and
+                    // the lid comes down. A passenger goes straight for his door; the driver
+                    // a few seconds after, staggered so twelve doors do not open on one frame.
+                    if (p.Drives)
+                    {
+                        p.MoveAt = now + 2500 + nth * 900 + _rng.Next(2500);
+                        nth++;
+                    }
+                    else
+                    {
+                        p.MoveAt = now + 400 + _rng.Next(1500);
+                    }
+
+                    p.Stage = Stage.Boarding;
+                    p.At = now;
+                }
+                catch
+                {
+                    // He goes with the session.
+                }
+            }
+        }
+
+        /// <summary>Somewhere off the meet to walk to when there is no "home" to go back to.</summary>
+        private Vector3 Away(int now, int nth)
+        {
+            var round = (float)((nth * 0.9 + (now % 1000) / 1000.0) % (Math.PI * 2.0));
+            var probe = _middle + new Vector3((float)Math.Cos(round) * 60f, (float)Math.Sin(round) * 60f, 0f);
+
+            var on = World.GetNextPositionOnSidewalk(probe);
+            return on == Vector3.Zero ? probe : on;
+        }
+
+        /// <summary>
+        /// The going, every tick.
+        ///
+        /// A car pulls out once its driver is in and its passenger is in or has had long
+        /// enough. Anything twenty-five seconds down the road, or out of sight, is handed
+        /// back to the game. When everything is handed back -- or the whole thing has run
+        /// long enough -- what is left is stopped the hard way, which by then is nothing.
+        /// </summary>
+        private void Ending(int now)
+        {
+            var left = 0;
+
+            for (var i = _people.Count - 1; i >= 0; i--)
+            {
+                var p = _people[i];
+
+                if (p.Man == null || !p.Man.Exists() || !p.Man.IsAlive) { _people.RemoveAt(i); continue; }
+                if (p.Released) continue;
+
+                try
+                {
+                    if (p.Stage == Stage.Boarding)
+                    {
+                        left++;
+
+                        if (p.MoveAt != 0 && now >= p.MoveAt)
+                        {
+                            p.MoveAt = 0;
+                            Board(p);
+                        }
+                        continue;
+                    }
+
+                    if (p.Stage == Stage.Going)
+                    {
+                        var far = p.Man.Position.DistanceTo(_middle);
+
+                        if (far > 55f || (far > 30f && !p.Man.IsOnScreen) || now - p.At > 60000)
+                        {
+                            Let(p.Man);
+                            p.Released = true;
+                        }
+                        else
+                        {
+                            left++;
+                        }
+                        continue;
+                    }
+
+                    // Still in the car he came in (the man on the switches, or anybody whose
+                    // cue never came): he leaves with it.
+                    left++;
+                }
+                catch
+                {
+                    // Counted as gone.
+                }
+            }
+
+            foreach (var r in _out)
+            {
+                if (r.Released) continue;
+
+                try
+                {
+                    if (r.Car == null || !r.Car.Exists() || r.Driver == null || !r.Driver.Exists())
+                    {
+                        Release(r);
+                        continue;
+                    }
+
+                    if (!r.Going)
+                    {
+                        left++;
+
+                        var driverIn = r.Driver.IsInVehicle(r.Car);
+                        var mateIn = r.Passenger == null || !r.Passenger.Exists() ||
+                                     r.Passenger.IsInVehicle(r.Car) || now - _endAt > 30000;
+
+                        // Nobody got in within the time: the car is handed back as it is.
+                        if (!driverIn && now - _endAt > 45000) { Release(r); continue; }
+
+                        if (driverIn && mateIn) PullOut(r, now);
+                        continue;
+                    }
+
+                    var gone = r.Car.Position.DistanceTo(_middle);
+
+                    if (gone > 70f || (gone > 35f && !r.Car.IsOnScreen) || now - r.LeftAt > 30000)
+                    {
+                        Release(r);
+                    }
+                    else
+                    {
+                        left++;
+                    }
+                }
+                catch
+                {
+                    // Counted as gone.
+                }
+            }
+
+            if (left == 0 || now - _endAt > EndingMs)
+            {
+                Log.Info("Car meet: over.");
+                Stop();
+            }
+        }
+
+        /// <summary>Get back in. The driver's car is unfrozen and shut up first.</summary>
+        private void Board(Person p)
+        {
+            var r = p.Ride;
+            if (r == null || r.Car == null || !r.Car.Exists()) return;
+
+            if (p.Drives)
+            {
+                Function.Call(Hash.FREEZE_ENTITY_POSITION, r.Car.Handle, false);
+                Function.Call(Hash.SET_VEHICLE_HANDBRAKE, r.Car.Handle, false);
+                Function.Call(Hash.SET_VEHICLE_DOOR_SHUT, r.Car.Handle, Bonnet, false);
+            }
+
+            if (p.Man.IsInVehicle(r.Car)) return;
+
+            Function.Call(Hash.CLEAR_PED_TASKS, p.Man.Handle);
+            Function.Call(Hash.TASK_ENTER_VEHICLE, p.Man.Handle, r.Car.Handle,
+                          30000, p.Drives ? -1 : 0, 1.6f, 1, 0);
+        }
+
+        /// <summary>Out of the bay and off into traffic, carefully.</summary>
+        private void PullOut(Runner r, int now)
+        {
+            r.Going = true;
+            r.LeftAt = now;
+
+            try
+            {
+                Function.Call(Hash.FREEZE_ENTITY_POSITION, r.Car.Handle, false);
+                Function.Call(Hash.SET_VEHICLE_HANDBRAKE, r.Car.Handle, false);
+                Function.Call(Hash.SET_VEHICLE_DOOR_SHUT, r.Car.Handle, Bonnet, false);
+                Function.Call(Hash.SET_VEHICLE_ENGINE_ON, r.Car.Handle, true, true, false);
+                Function.Call(Hash.SET_VEHICLE_LIGHTS, r.Car.Handle, 0);
+
+                if (r.Spot.IsHopper)
+                {
+                    Function.Call(Hash.SET_HYDRAULIC_VEHICLE_STATE, r.Car.Handle, 0);
+                    Function.Call(Hash.SET_VEHICLE_RADIO_LOUD, r.Car.Handle, false);
+                }
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, false);
                 Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
-
-                // OUT, THEN OVER, THEN STOOD. TASK_LEAVE_VEHICLE opens the door and steps him
-                // out properly; a warp out of a parked car is a man appearing beside it.
-                Function.Call(Hash.TASK_LEAVE_VEHICLE, r.Driver.Handle, r.Car.Handle, 0);
-
-                Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, r.Driver.Handle,
-                              stand.X, stand.Y, stand.Z, WalkPace, -1, face, 0.4f);
-
-                var doing = Standing[which % Standing.Length];
-
-                Function.Call(Hash.TASK_START_SCENARIO_AT_POSITION, r.Driver.Handle, doing,
-                              stand.X, stand.Y, stand.Z, face, 0, true, true);
-
-                Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, true);
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, r.Driver.Handle, r.Car.Handle, HomeSpeed, HomeStyle);
             }
             catch (Exception ex)
             {
-                Log.Debug("Could not get a driver out: " + ex.Message);
+                Log.Debug("A meet car would not pull out: " + ex.Message);
             }
         }
 
-        /// <summary>
-        /// The crowd breaks into threes and goes to look at the cars.
-        ///
-        /// EVERYBODY IN ONE HUDDLE IS THE FIRST TEN MINUTES OF A MEET AND NOT THE WHOLE OF IT.
-        /// People arrive, they say hello in one lump, and then it thins out into knots of
-        /// three or four stood round whatever somebody has the lid up on. That second half is
-        /// most of what a car meet actually looks like, and a ring of twelve that never moves
-        /// is a photograph of the first two minutes.
-        ///
-        /// THREES, AND A CAR EACH RATHER THAN A CAR BETWEEN THEM ALL. The group picks one car
-        /// and stands across its nose, which is where you stand when the bonnet is up -- so
-        /// the bonnet being up is not decoration, it is the reason there is somewhere to
-        /// stand.
-        ///
-        /// ONCE. This runs on a clock and sets a flag; a meet does not re-shuffle itself every
-        /// few seconds, and people who have found a car to look at stay at it.
-        /// </summary>
-        private void Split(int now)
+        /// <summary>A car and whoever is in it, handed back to the game.</summary>
+        private void Release(Runner r)
         {
-            if (_split) return;
-            if (now - _startedAt < MingleMs) return;
-
-            _split = true;
-
-            // Only the ones who actually made it out and over. Anybody still driving, or the
-            // one working the switches, is left where he is.
-            var them = new List<Runner>();
-            foreach (var r in _out) if (r.Walked && !r.Spot.IsHopper) them.Add(r);
-
-            if (them.Count == 0) return;
-
-            // Shuffled, so the threes are not "whoever parked next to each other" -- which
-            // would put the same men together every meet and in the order they arrived.
-            for (var i = them.Count - 1; i > 0; i--)
-            {
-                var j = _rng.Next(i + 1);
-                var swap = them[i]; them[i] = them[j]; them[j] = swap;
-            }
-
-            var cars = new List<Runner>();
-            foreach (var r in _out) if (r.Seated && !r.Spot.IsHopper) cars.Add(r);
-
-            if (cars.Count == 0) return;
-
-            var group = 0;
-
-            for (var i = 0; i < them.Count; i += Threes)
-            {
-                // A DIFFERENT CAR EACH, walked round the list rather than drawn from it, so
-                // four groups never all pick the same one. The offset is random so it is not
-                // the same car every meet either.
-                var pick = cars[(group + _pickFrom) % cars.Count];
-
-                for (var n = 0; n < Threes && i + n < them.Count; n++)
-                {
-                    Round(them[i + n], pick, n);
-                }
-
-                group++;
-            }
-
-            Log.Info("Car meet: broke into " + group + " group(s) round the cars.");
-        }
-
-        /// <summary>
-        /// One man, stood at the front of one car.
-        ///
-        /// ACROSS THE NOSE, NOT ROUND THE WHOLE THING. Three abreast a hand's width apart,
-        /// facing back at the engine, which is the shape people actually make when there is
-        /// something to look at under a lid. Standing round the car would be standing round a
-        /// car, and there is nothing to see from the back of one.
-        /// </summary>
-        private void Round(Runner who, Runner car, int place)
-        {
-            if (who.Driver == null || !who.Driver.Exists() || !who.Driver.IsAlive) return;
-            if (car.Car == null || !car.Car.Exists()) return;
+            r.Released = true;
 
             try
             {
-                var nose = car.Car.Position + car.Car.ForwardVector * NoseGap;
-                var side = car.Car.RightVector * ((place - 1) * Abreast);
+                if (r.Car != null && r.Car.Exists())
+                {
+                    Function.Call(Hash.FREEZE_ENTITY_POSITION, r.Car.Handle, false);
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, r.Car.Handle, false, true);
+                    r.Car.IsPersistent = false;
+                    r.Car.MarkAsNoLongerNeeded();
+                }
 
-                var stand = nose + side;
+                foreach (var p in _people)
+                {
+                    if (p.Ride != r || p.Released) continue;
+                    if (p.Man == null || !p.Man.Exists()) continue;
 
-                var toward = car.Car.Position - stand;
-                var face = (float)(Math.Atan2(toward.Y, toward.X) * 180.0 / Math.PI) - 90f;
-
-                Function.Call(Hash.SET_PED_KEEP_TASK, who.Driver.Handle, false);
-                Function.Call(Hash.CLEAR_PED_TASKS, who.Driver.Handle);
-
-                Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, who.Driver.Handle,
-                              stand.X, stand.Y, stand.Z, WalkPace, -1, face, 0.3f);
-
-                var doing = Looking[(place + who.Group) % Looking.Length];
-
-                Function.Call(Hash.TASK_START_SCENARIO_AT_POSITION, who.Driver.Handle, doing,
-                              stand.X, stand.Y, stand.Z, face, 0, true, true);
-
-                Function.Call(Hash.SET_PED_KEEP_TASK, who.Driver.Handle, true);
-
-                who.Group++;
+                    Let(p.Man);
+                    p.Released = true;
+                }
             }
-            catch (Exception ex)
+            catch
             {
-                Log.Debug("Could not stand somebody at a car: " + ex.Message);
+                // It goes with the session either way.
             }
         }
 
-        /// <summary>
-        /// What they do stood at the nose of a car. Every name off the machine's own list.
-        ///
-        /// WORLD_HUMAN_VEHICLE_MECHANIC is the one scenario in the game of somebody leaning
-        /// INTO an engine bay, and one man doing that with two beside him talking is the exact
-        /// picture this is after. Checked against the machine's own list, like the rest.
-        /// </summary>
-        private static readonly string[] Looking =
+        /// <summary>One person, handed back. His task stays with him so he keeps going.</summary>
+        private static void Let(Ped man)
         {
-            "WORLD_HUMAN_HANG_OUT_STREET", "WORLD_HUMAN_VEHICLE_MECHANIC",
-            "WORLD_HUMAN_STAND_MOBILE", "WORLD_HUMAN_SMOKING",
-            "WORLD_HUMAN_HANG_OUT_STREET", "WORLD_HUMAN_STAND_IMPATIENT"
-        };
+            try
+            {
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, man.Handle, false);
+                Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, man.Handle, false, true);
+                man.IsPersistent = false;
+                man.MarkAsNoLongerNeeded();
+            }
+            catch
+            {
+                // Likewise.
+            }
+        }
 
-        /// <summary>How long everybody stays in one crowd before it thins out.</summary>
-        private const int MingleMs = 170000;
-
-        /// <summary>How many to a group, how far off the nose they stand, and how far apart.</summary>
-        private const int Threes = 3;
-        private const float NoseGap = 2.3f;
-        private const float Abreast = 0.85f;
-
-        /// <summary>Whether it has already broken up, and where the car-picking starts.</summary>
-        private bool _split;
-        private int _pickFrom;
-
-        /// <summary>
-        /// What they do while they are stood there.
-        ///
-        /// Every one of these is in the game's own scenario list on this machine. Mostly
-        /// talking, because that is what the group is -- with a couple of smokers and somebody
-        /// on their phone, because a dozen people all doing the identical thing is a chorus
-        /// line.
-        /// </summary>
-        private static readonly string[] Standing =
-        {
-            "WORLD_HUMAN_STAND_MOBILE", "WORLD_HUMAN_HANG_OUT_STREET",
-            "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_STAND_IMPATIENT",
-            "WORLD_HUMAN_HANG_OUT_STREET", "WORLD_HUMAN_DRINKING",
-            "WORLD_HUMAN_STAND_MOBILE", "WORLD_HUMAN_HANG_OUT_STREET"
-        };
-
-        /// <summary>How wide the huddle is, and how long after parking he gets out.</summary>
-        private const float CrowdRing = 2.1f;
-        private const int OutAfterMs = 4000;
-        private const int OutVaryMs = 5000;
-        private const float WalkPace = 1.2f;
-
-        // ---- what they look like ---------------------------------------------------------------
+        // ======================================================================
+        // What they look like
+        // ======================================================================
 
         /// <summary>
         /// Competition suspension, no livery, any colour, and neons on most of them.
         ///
-        /// THE LOWEST THE CAR HAS, rather than index four. Suspension runs stock, lowered,
-        /// street, sport, competition -- but not every car has all five, and asking for an
-        /// index a car does not have leaves it at stock, which on a row of twelve shows up as
-        /// two of them sitting high for no reason anybody could explain. The count is asked
-        /// for and the last one taken, which is competition wherever competition exists and
-        /// the lowest it goes everywhere else.
-        ///
-        /// AND THE MOD KIT FIRST. Nothing takes without it, which is the quiet way a car ends
-        /// up looking untouched with no error anywhere.
+        /// THE LOWEST THE CAR HAS, rather than index four: not every car has all five
+        /// suspension mods. NOT ON THE ONE WITH HYDRAULICS -- on a Benny's lowrider the
+        /// suspension slot IS the hydraulics.
         /// </summary>
         private void Dress(Vehicle car, MeetSpot spot)
         {
@@ -1350,19 +1806,12 @@ namespace Hoodrich.Locations
 
                 Function.Call(Hash.SET_VEHICLE_MOD_KIT, h, 0);
 
-                // NOT ON THE ONE WITH HYDRAULICS. On a Benny's lowrider the suspension slot
-                // IS the hydraulics, so fitting the lowest thing in it takes the juice off the
-                // car -- which is the second reason it did not bounce, and the one that would
-                // have survived unfreezing it.
                 if (!spot.IsHopper)
                 {
                     var many = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, h, Suspension);
                     if (many > 0) Function.Call(Hash.SET_VEHICLE_MOD, h, Suspension, many - 1, false);
                 }
 
-                // NO RACING TEAMS. A livery is somebody's sponsor and this is somebody's
-                // street. Both calls, because the older cars carry it as a livery and the
-                // newer ones as mod slot forty-eight, and a car can have either.
                 Function.Call(Hash.SET_VEHICLE_LIVERY, h, -1);
                 Function.Call(Hash.SET_VEHICLE_MOD, h, Livery, -1, false);
 
@@ -1371,8 +1820,6 @@ namespace Hoodrich.Locations
 
                 if (spot.IsHopper)
                 {
-                    // GREEN, AND GREEN. The one car at this meet that is not "whatever colour"
-                    // -- it is the set's car and it is out on its own for people to look at.
                     Function.Call(Hash.SET_VEHICLE_COLOURS, h, Green, Green);
                     Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, h, GreenPearl, 0);
 
@@ -1387,8 +1834,6 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_VEHICLE_COLOURS, h, paint, paint);
                 Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, h, Paints[_rng.Next(Paints.Length)], 0);
 
-                // MOST OF THEM, NOT ALL OF THEM. A car park where every car glows is a
-                // showroom; one where none do is a car park. Somewhere in between is a meet.
                 if (_rng.Next(100) >= NeonChance) return;
 
                 Neon(car, _rng.Next(60, 256), _rng.Next(60, 256), _rng.Next(60, 256));
@@ -1429,11 +1874,8 @@ namespace Hoodrich.Locations
         private const int GreenPearl = 55;
 
         /// <summary>
-        /// Whatever colour, out of the ones that read as a paint job.
-        ///
-        /// Not 0-159 at random: a good third of the game's palette is primer, rust, matte
-        /// service colours and the browns off a taxi, and a meet made of those looks like a
-        /// scrapyard. These are the metallics and the brights.
+        /// Whatever colour, out of the ones that read as a paint job: the metallics and the
+        /// brights, not the primers and the browns off a taxi.
         /// </summary>
         private static readonly int[] Paints =
         {
@@ -1446,16 +1888,9 @@ namespace Hoodrich.Locations
         };
 
         /// <summary>
-        /// A car nobody at this meet is already in.
-        ///
-        /// FOUR OF THE SAME CAR IS NOT A CAR MEET. This picked at random out of forty-odd
-        /// names, and random over twelve draws gives a repeat far more often than people
-        /// expect -- four the same in a row of twelve is an ordinary outcome of it, and it was
-        /// exactly the outcome. Nobody turns up to a meet to look at four of the same Camry.
-        ///
-        /// So what is already parked is walked past. The list is deep enough that this never
-        /// runs out -- forty names against twelve spaces -- but if it ever did, a repeat beats
-        /// an empty bay, and the last few tries stop caring.
+        /// A car nobody at this meet is already in. Four of the same car is not a car meet,
+        /// and random over twelve draws gives a repeat far more often than people expect.
+        /// The last few tries take anything, so a short list cannot leave a space empty.
         /// </summary>
         private Model Pick(string[] names)
         {
@@ -1463,7 +1898,6 @@ namespace Hoodrich.Locations
             {
                 var name = names[_rng.Next(names.Length)];
 
-                // The last few goes take anything, so a short list cannot leave a space empty.
                 if (tries < 18 && Already(name)) continue;
 
                 var model = new Model(name);
@@ -1474,7 +1908,6 @@ namespace Hoodrich.Locations
             return new Model(0);
         }
 
-        /// <summary>Whether one of these is already at the meet, or on its way to it.</summary>
         private bool Already(string name)
         {
             var hash = Function.Call<int>(Hash.GET_HASH_KEY, name);
@@ -1494,7 +1927,7 @@ namespace Hoodrich.Locations
             return false;
         }
 
-        /// <summary>Somebody to drive it. Anybody; they are in the car and not the point.</summary>
+        /// <summary>Somebody to drive it, or ride in it. The set and the block.</summary>
         private Model DriverModel()
         {
             var names = new[]
@@ -1513,7 +1946,9 @@ namespace Hoodrich.Locations
             return new Model("a_m_y_soucent_01");
         }
 
-        // ---- the blip -----------------------------------------------------------------------
+        // ======================================================================
+        // The blip
+        // ======================================================================
 
         private void Blip()
         {
