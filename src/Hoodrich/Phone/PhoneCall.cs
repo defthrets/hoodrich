@@ -39,8 +39,11 @@ namespace Hoodrich.Phone
         /// <summary>How long he lets it ring before giving up on you.</summary>
         private const int GivesUpMs = 25000;
 
-        /// <summary>Set by Main: brings the handset out ringing, and puts it away.</summary>
-        public Action<string, string> ShowCall;
+        /// <summary>
+        /// Set by Main: brings the handset out ringing, and puts it away. The third argument
+        /// is how long it rings for, so the screen can show it running out.
+        /// </summary>
+        public Action<string, string, int> ShowCall;
         public Action HideCall;
 
         /// <summary>Set by Main: the panel a picked-up call opens in.</summary>
@@ -114,11 +117,8 @@ namespace Hoodrich.Phone
 
                 if (!Ringing) return;
 
-                // The handset shows who it is and the two buttons; this only says which
-                // keys press them.
-                Help.ShowThisFrame("~INPUT_CELLPHONE_RIGHT~  answer          " +
-                                   "~INPUT_CELLPHONE_CANCEL~  decline");
-
+                // The handset shows who it is and the two buttons, and the buttons carry
+                // their own keys -- see PhoneMenu.CallScreen. Nothing in the corner.
                 if (Answered())
                 {
                     Answer();
@@ -164,7 +164,7 @@ namespace Hoodrich.Phone
                 Function.Call(Hash.PLAY_SOUND_FRONTEND, _sound,
                               "Remote_Ring", RingSet(), false);
 
-                if (ShowCall != null) ShowCall(_who, _portrait);
+                if (ShowCall != null) ShowCall(_who, _portrait, GivesUpMs);
             }
             catch
             {
@@ -266,7 +266,7 @@ namespace Hoodrich.Phone
         }
 
         /// <summary>
-        /// The same press that talks to anybody else.
+        /// Backspace, or B on a pad.
         ///
         /// Held rather than tapped would answer it the moment you walked up to somebody with
         /// the button down, so it wants the edge -- and it reads the disabled control too,
@@ -294,16 +294,26 @@ namespace Hoodrich.Phone
 
         private bool _declineHeld;
 
+        /// <summary>
+        /// Enter, or A on a pad -- the same press that picks anything else in this mod.
+        ///
+        /// It was D-pad right on a pad, which is nobody's idea of the answer button: the
+        /// green button on a ringing phone is the accept button, and on a controller that is
+        /// A. The old presses still work, so a hand that learned E or right keeps them.
+        /// </summary>
         private bool Answered()
         {
             var down = false;
 
             try
             {
-                down = Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
+                down = Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.PhoneSelect)
+                    || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)Control.PhoneSelect)
+                    || Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
                     || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)Control.PhoneRight)
                     || Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.Context)
-                    || Game.IsKeyPressed(System.Windows.Forms.Keys.E);
+                    || Game.IsKeyPressed(System.Windows.Forms.Keys.E)
+                    || Game.IsKeyPressed(System.Windows.Forms.Keys.Enter);
             }
             catch
             {

@@ -1,6 +1,16 @@
 ﻿Since 0.7.1 -- 11 September 2026
 
 
+THE INCOMING CALL, AND A ANSWERS IT.
+
+The ringing screen's keys were a help line in the top-left corner while the
+handset on the right showed two plain blocks with nothing on them, and on a
+pad the answer was D-pad right. The buttons now carry their own caps -- A or
+ENTER on the green, B or BACKSPACE on the red -- the corner line is gone, a
+drain under the buttons shows how long he keeps ringing, and it says
+"ringing" rather than "calling", because he is ringing you. E and right
+still answer for a hand that learned them.
+
 THE CAR MEET, OVERHAULED.
 
 Nobody warps and nobody stands doing nothing. Every walk-over used to be a

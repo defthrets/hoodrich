@@ -375,6 +375,10 @@ namespace Hoodrich.Phone
         private string _callWho = "";
         private string _callPic = "";
 
+        /// <summary>When it started ringing and how long it rings for. See CallScreen's drain.</summary>
+        private int _callAt;
+        private int _callFor;
+
         /// <summary>True while the home grid is showing rather than a list.</summary>
         public bool AtHome => _stack.Count == 1;
 
@@ -433,10 +437,12 @@ namespace Hoodrich.Phone
         }
 
         /// <summary>Bring it out ringing, with no page stack behind it.</summary>
-        public void OpenCall(string who, string pic)
+        public void OpenCall(string who, string pic, int forMs)
         {
             _callWho = who ?? "";
             _callPic = pic ?? "";
+            _callAt = Game.GameTime;
+            _callFor = Math.Max(1000, forMs);
 
             _stack.Clear();
 
@@ -900,32 +906,46 @@ namespace Hoodrich.Phone
         /// No apps, no rows, no footer. A phone showing a call shows a face, a name and two
         /// buttons; anything else on that screen is the mod talking over him.
         /// </summary>
+        /// <summary>
+        /// The ringing screen: who it is, that it is ringing, and the two buttons with their
+        /// keys on them.
+        ///
+        /// THE KEYS ARE ON THE BUTTONS. They used to be a help line in the top-left corner
+        /// of the screen while the handset, on the right, showed two plain blocks that said
+        /// ANSWER and DECLINE with nothing on them -- so the thing you looked at did not say
+        /// how to press it and the thing that said how was somewhere else. Each button now
+        /// carries its own cap, A or ENTER on the green and B or BACKSPACE on the red, the
+        /// same caps every other screen in the mod uses, switched by what you last touched.
+        ///
+        /// A DRAIN under the buttons shows how long he keeps ringing before he gives up and
+        /// texts instead, because a phone with no end to it is a modal dialog, and a bar
+        /// running out says "decide" without a word.
+        /// </summary>
         private void CallScreen(float left, float top, float w, float h, int fade)
         {
-            var pad = Hud.ToX(0.013f);
+            var pad = Hud.ToX(0.014f);
             var mid = left + w * 0.5f;
 
-            Hud.Text("INCOMING CALL", mid, top + 0.026f, 0.30f,
+            Hud.Text("INCOMING CALL", mid, top + 0.022f, 0.27f,
                      Fade(Palette.TextDim, fade), Hud.FontLabel, centre: true);
 
             // A plain block behind the face, so a texture that will not stream is a shape
             // rather than a hole.
             var picH = 0.150f;
             var picW = Hud.ToX(picH);
-            var picY = top + 0.070f;
+            var picY = top + 0.064f;
 
             Hud.RectFrom(mid - picW * 0.5f, picY, picW, picH, Fade(Palette.PanelHeader, fade));
 
-            // RINGS LEAVING THE PICTURE, the way a ringing phone's screen does it: two of them,
-            // half a cycle apart, growing and fading. Movement that means "answer me", which
-            // is a different thing from the breathing word underneath that means "still going".
+            // RINGS LEAVING THE PICTURE, the way a ringing phone's screen does it: two of
+            // them, half a cycle apart, growing and fading. Movement that means "answer me".
             for (var k = 0; k < 2; k++)
             {
                 var ph = ((Game.GameTime + k * 700) % 1400) / 1400f;
-                var g = 0.008f + 0.030f * ph;
+                var g = 0.006f + 0.028f * ph;
 
                 Theme.Rim(mid - picW * 0.5f - Hud.ToX(g), picY - g, picW + Hud.ToX(g) * 2f, picH + g * 2f,
-                         0.0016f, Fade(Color.FromArgb((int)(150 * (1f - ph)), 108, 196, 106), fade));
+                         0.0016f, Fade(Palette.Alpha(Palette.Brand, (int)(130 * (1f - ph))), fade));
             }
 
             if (!string.IsNullOrEmpty(_callPic) && Hud.EnsureTextureDict(_callPic))
@@ -934,30 +954,72 @@ namespace Hoodrich.Phone
                            Color.FromArgb(fade, 255, 255, 255));
             }
 
-            Hud.Text(_callWho, mid, picY + picH + 0.020f, 0.68f,
+            // His colour down the near edge of the picture, the same mark the talk panel
+            // puts on whoever is speaking.
+            Hud.RectFrom(mid - picW * 0.5f, picY, Hud.ToX(0.0030f), picH, Fade(Palette.Brand, fade));
+
+            var nameY = picY + picH + 0.018f;
+
+            Hud.Text(_callWho.ToUpperInvariant(), mid, nameY, 0.62f,
                      Fade(Palette.Text, fade), Hud.FontLabel, centre: true);
 
-            // Breathing, so a still screen still reads as a phone that is ringing.
-            var turn = (Game.GameTime % PulseMs) / (double)PulseMs * Math.PI * 2d;
-            // 0..1, NOT -1..1. Sin swings negative and this used to be written as a plain
-    // 0.35 + 0.65 * sin, which dips to minus a third -- a negative alpha, which is an
-    // ArgumentException out of the draw and takes the whole tick with it. The status
-    // bar above already had this right; I did not copy it properly.
-    var breath = 0.35f + 0.65f * (0.5f + 0.5f * (float)Math.Sin(turn));
+            Hud.Text("mobile", mid, nameY + 0.048f, 0.30f,
+                     Fade(Palette.TextDim, fade), Hud.FontBody, centre: true);
 
-            Hud.Text("calling", mid, picY + picH + 0.062f, 0.34f,
+            // Breathing, so a still screen still reads as a phone that is ringing. 0..1,
+            // never negative: a negative alpha is an exception out of the draw.
+            var turn = (Game.GameTime % PulseMs) / (double)PulseMs * Math.PI * 2d;
+            var breath = 0.35f + 0.65f * (0.5f + 0.5f * (float)Math.Sin(turn));
+
+            Hud.Text("ringing", mid, nameY + 0.086f, 0.32f,
                      Fade(Palette.TextDim, (int)(fade * breath)), Hud.FontBody, centre: true);
 
+            // The two buttons, side by side, each with its key on it.
             var bw = (w - pad * 3f) * 0.5f;
-            var bh = 0.055f;
-            var by = top + h - bh - 0.030f;
+            var bh = 0.054f;
+            var by = top + h - bh - 0.040f;
 
-            Hud.RectFrom(left + pad, by, bw, bh, Fade(Palette.Cash, fade));
-            Hud.Text("ANSWER", left + pad + bw * 0.5f, by + 0.014f, 0.40f,
+            CallButton(left + pad, by, bw, bh, Palette.Cash, UiKit.Confirm, "ANSWER", fade);
+            CallButton(left + pad * 2f + bw, by, bw, bh, Palette.Danger, UiKit.Back, "DECLINE", fade);
+
+            // How long he keeps ringing, draining left to right into nothing.
+            var track = w - pad * 2f;
+            var lasted = Game.GameTime - _callAt;
+            var remaining = _callFor <= 0 ? 0f : 1f - Math.Min(1f, lasted / (float)_callFor);
+
+            var dy = by + bh + 0.014f;
+
+            Hud.RectFrom(left + pad, dy, track, 0.0022f, Fade(Palette.Alpha(Palette.Text, 30), fade));
+            if (remaining > 0f)
+            {
+                Hud.RectFrom(left + pad, dy, track * remaining, 0.0022f,
+                             Fade(Palette.Alpha(Palette.TextDim, 190), fade));
+            }
+        }
+
+        /// <summary>
+        /// One of the two: a coloured ground, a darker cap with the key on it at the near end,
+        /// and the word beside it. The cap is sized to its key, because BACKSPACE is a lot
+        /// wider than A.
+        /// </summary>
+        private static void CallButton(float x, float y, float w, float h, Color ground,
+                                       string cap, string word, int fade)
+        {
+            Hud.RectFrom(x, y, w, h, Fade(ground, fade));
+
+            var capH = 0.026f;
+            var capW = Math.Max(Hud.ToX(capH), Hud.MeasureText(cap, 0.28f, Hud.FontLabel) + 0.008f);
+            var capX = x + Hud.ToX(0.010f);
+            var capY = y + (h - capH) * 0.5f;
+
+            Hud.RectFrom(capX, capY, capW, capH, Fade(Color.FromArgb(80, 0, 0, 0), fade));
+            Hud.Text(cap, capX + capW * 0.5f, capY + 0.0035f, 0.28f,
                      Fade(Palette.TextOnHover, fade), Hud.FontLabel, centre: true);
 
-            Hud.RectFrom(left + pad * 2f + bw, by, bw, bh, Fade(Palette.Warn, fade));
-            Hud.Text("DECLINE", left + pad * 2f + bw * 1.5f, by + 0.014f, 0.40f,
+            // The word, centred in what the cap leaves.
+            var wordX = capX + capW + (w - (capX - x) - capW) * 0.5f;
+
+            Hud.Text(word, wordX, y + 0.014f, 0.36f,
                      Fade(Palette.TextOnHover, fade), Hud.FontLabel, centre: true);
         }
 

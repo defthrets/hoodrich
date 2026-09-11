@@ -89,7 +89,7 @@ namespace Hoodrich.Phone
         /// somebody about to read a menu; a phone ringing wants the street carrying on around
         /// it, so this goes straight to the handset.
         /// </summary>
-        public void ShowIncoming(string who, string pic) { _menu.OpenCall(who, pic); }
+        public void ShowIncoming(string who, string pic, int forMs) { _menu.OpenCall(who, pic, forMs); }
 
         public void HideIncoming() { _menu.CloseCall(); }
 
