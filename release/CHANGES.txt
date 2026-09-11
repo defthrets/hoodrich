@@ -1,6 +1,14 @@
 ﻿Since 0.7.1 -- 11 September 2026
 
 
+OLD TAGS COME BACK IN SECONDS, AND NOTHING IS TORN DOWN TO DO IT.
+
+Paint engine, synced from Overspray: the game takes about thirty-two new
+decals a frame, and the sweep was asking for six thousand at once, reading
+every refusal as a full pool and wiping a far mark for each. The wall is fed
+from a queue now, twenty a frame, nearest first, and a full intake is no
+longer mistaken for a full pool.
+
 THE CAN SPRAYS BLOOD, NEVER BULLETS, AND THE PAINT'S OWN CAP COMES OFF.
 
 The shared paint engine: splatters_blood is the default texture, the impact

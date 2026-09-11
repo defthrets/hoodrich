@@ -170,6 +170,24 @@ namespace Hoodrich.Paint
         private int _stuck;
         private bool _proved;
 
+        /// <summary>
+        /// The intake: how many have gone up this frame, whether the game has stopped taking
+        /// them, and the queue of away-marks waiting to go back up. See Sweep.
+        /// </summary>
+        private readonly List<Mark> _queue = new List<Mark>();
+        private int _queueAt;
+        private int _queueWas;
+        private int _placedThisFrame;
+        private bool _throttled;
+        private int _poolFull;
+
+        /// <summary>
+        /// How many go up a frame from the queue. The game takes about thirty-two new decals a
+        /// frame -- the log counted exactly that -- and the can itself needs some of them, so
+        /// the queue takes twenty and leaves the rest.
+        /// </summary>
+        private const int PerFrame = 20;
+
         public Marks(PaintConfig cfg)
         {
             _cfg = cfg;
@@ -244,10 +262,20 @@ namespace Hoodrich.Paint
             // far one stays in the list, so it comes back when you walk to it. That turns the
             // pool from a hard cap on how much you can paint into a budget spent on whatever
             // you are actually looking at.
-            if (mark.Handle == 0 && Recycle(at)) mark.Handle = Place(mark);
+            if (mark.Handle == 0 && !_throttled && Recycle(at)) mark.Handle = Place(mark);
 
             if (mark.Handle == 0)
             {
+                // KEPT, NOT DROPPED. Either the game's intake is full for this frame -- in
+                // which case it goes up next frame from the queue -- or the pool is, in which
+                // case it goes up when a slot frees. A refused dab used to be thrown away,
+                // which is paint you sprayed that was never anywhere.
+                mark.Away = true;
+                mark.Made = Game.GameTime;
+                _marks.Add(mark);
+
+                if (_throttled) return;
+
                 _refused++;
 
                 if (_refused == 12)
@@ -324,8 +352,15 @@ namespace Hoodrich.Paint
 
             m.Handle = Place(m);
 
-            if (m.Handle == 0 && Recycle(at)) m.Handle = Place(m);
-            if (m.Handle == 0) return null;
+            if (m.Handle == 0 && !_throttled && Recycle(at)) m.Handle = Place(m);
+
+            if (m.Handle == 0)
+            {
+                // The pool is full and nothing could be taken for it: no drip. The intake
+                // being full is different -- it goes up next frame like anything else.
+                if (!_throttled) return null;
+                m.Away = true;
+            }
 
             m.Made = Game.GameTime;
             _marks.Add(m);
@@ -375,6 +410,13 @@ namespace Hoodrich.Paint
         /// <summary>Puts one up, trying each decal type until the game accepts one.</summary>
         private int Place(Mark m)
         {
+            // THE INTAKE IS FULL FOR THIS FRAME: nothing more is asked for. See Sweep.
+            if (_placedThisFrame >= PerFrame + 12)
+            {
+                _throttled = true;
+                return 0;
+            }
+
             // A MARK THAT HAS ALREADY BEEN ON A WALL GOES BACK AS ITSELF, which is why this
             // is not simply the ladder. The sweep takes distant marks down and puts them back
             // as you return, and without this a mud tag comes back as paint.
@@ -439,6 +481,8 @@ namespace Hoodrich.Paint
                 }
 
                 if (handle == 0) continue;
+
+                _placedThisFrame++;
 
                 // A HANDLE IS NOT A DECAL. ADD_DECAL hands back a number whether or not
                 // anything ended up on the wall, so the first one that places gets asked
@@ -521,6 +565,10 @@ namespace Hoodrich.Paint
 
                 return handle;
             }
+
+            // REFUSED AFTER SOMETHING WENT UP THIS FRAME: that is the intake, not the pool.
+            // Whoever asked keeps the mark and asks again next frame, and recycles nothing.
+            if (_placedThisFrame > 0) _throttled = true;
 
             return 0;
         }
@@ -688,11 +736,33 @@ namespace Hoodrich.Paint
             return true;
         }
 
+        /// <summary>
+        /// Every frame: a few marks off the queue and onto the wall. Every second and a half:
+        /// the far ones come down and the queue is rebuilt from what is near and not up.
+        ///
+        /// THE GAME TAKES ABOUT THIRTY-TWO NEW DECALS A FRAME. The log found it: with six
+        /// thousand marks in range and one sweep asking for all of them at once, exactly
+        /// thirty-two went up per sweep and the rest were refused -- and every refusal was
+        /// read as "the pool is full", so Recycle took a far mark's slot for each one, for
+        /// nothing. Six thousand refusals a sweep was six thousand far marks wiped a sweep.
+        /// THAT is what "old tags disappear" was: the intake being full for one frame,
+        /// mistaken for the pool being full for good, and the cure tearing down paint a
+        /// street away to make room it could not use anyway.
+        ///
+        /// So the wall is fed in order -- what you are stood at first, newest first inside
+        /// that, then the ring beyond -- a few a frame, every frame. A refusal AFTER something
+        /// has gone up this frame is the intake: stop, keep the place, carry on next frame,
+        /// recycle nothing. Only a refusal with nothing placed yet this frame is the pool, and
+        /// only then is a far slot taken. Six thousand marks now come back in about five
+        /// seconds instead of five minutes, and nothing is torn down to do it.
+        ///
+        /// Sweep is called once a frame by the mod's tick, which makes it the frame clock for
+        /// everything in here that has to know how much has already gone up.
+        /// </summary>
         public void Sweep()
         {
-            var now = Game.GameTime;
-            if (now < _nextSweep) return;
-            _nextSweep = now + SweepMs;
+            _placedThisFrame = 0;
+            _throttled = false;
 
             Vector3 me;
 
@@ -707,13 +777,74 @@ namespace Hoodrich.Paint
                 return;
             }
 
-            // Squared, against squared thresholds. A full pass over fifty thousand marks is
-            // fine; fifty thousand square roots is the part that is not.
-            var drop = FarEnough * FarEnough;
+            Drain(me);
+
+            var now = Game.GameTime;
+            if (now < _nextSweep) return;
+            _nextSweep = now + SweepMs;
+
+            Rescan(me);
+        }
+
+        /// <summary>A few off the queue and onto the wall. See Sweep.</summary>
+        private void Drain(Vector3 me)
+        {
             var restore = NearEnough * NearEnough;
 
-            // THE FAR ONES COME DOWN BEFORE ANYTHING GOES UP, so the slots they were
-            // holding are free for this same pass rather than the next one.
+            while (_queueAt < _queue.Count && _placedThisFrame < PerFrame && !_throttled)
+            {
+                var m = _queue[_queueAt++];
+
+                if (!m.Away || m.Handle != 0) continue;
+                if (me.DistanceToSquared(m.At) > restore) continue;
+
+                m.Handle = Place(m);
+
+                // THE POOL, NOT THE INTAKE: a slot is taken off something far away, once.
+                // Recycle only takes from marks a good margin further away than this one, so
+                // the nearest paint wins and two marks cannot evict each other.
+                if (m.Handle == 0 && !_throttled && Recycle(m.At)) m.Handle = Place(m);
+
+                if (m.Handle != 0)
+                {
+                    m.Away = false;
+                    continue;
+                }
+
+                if (_throttled)
+                {
+                    // The intake is full for this frame. This one goes first next frame.
+                    _queueAt--;
+                    return;
+                }
+
+                _poolFull++;
+            }
+        }
+
+        /// <summary>
+        /// The far ones down, and the queue rebuilt: the wall you are stood at first, newest
+        /// first inside each ring.
+        ///
+        /// ONE PASS OVER THE WHOLE RING IN LIST ORDER IS WHY A WALL USED TO RENDER HALF-DONE.
+        /// List order is when it was painted, so walking up to a wall put you in a competition
+        /// against paint a hundred metres behind you that you cannot see, and the piece in
+        /// front of your face came out with holes in it. Everything within CloseUp is queued
+        /// before anything beyond it, so what you are LOOKING at is always complete and the
+        /// thing that goes short is a wall down the road, which is the right thing to lose.
+        /// Newest first inside each ring, which is backwards through the list -- among marks
+        /// you can equally see, the most recent work is what should survive.
+        /// </summary>
+        private void Rescan(Vector3 me)
+        {
+            // Squared, against squared thresholds. A full pass over a quarter of a million
+            // marks is fine; a quarter of a million square roots is the part that is not.
+            var drop = FarEnough * FarEnough;
+            var near = CloseUp * CloseUp;
+            var restore = NearEnough * NearEnough;
+
+            // THE FAR ONES COME DOWN BEFORE ANYTHING GOES UP, so the slots they were holding
+            // are free for the queue rather than for the next rescan.
             for (var i = _marks.Count - 1; i >= 0; i--)
             {
                 var m = _marks[i];
@@ -727,89 +858,47 @@ namespace Hoodrich.Paint
                 }
             }
 
-            // THEN TWICE, AND THE WALL YOU ARE STOOD AT GOES FIRST.
-            //
-            // ONE PASS OVER THE WHOLE RING IS WHY A WALL RENDERS HALF-DONE. The restore ring is
-            // a hundred and ten metres and a used block holds thousands of marks inside it --
-            // the log has counted three thousand near enough to want a slot at once. The pool
-            // is two thousand and forty-eight at the absolute most and shared with every bullet
-            // hole, tyre mark and blood splat in the world, so there are never enough slots for
-            // everything in the ring and there never will be. Which ones get them is therefore
-            // the whole question, and it was being answered by list order.
-            //
-            // List order is when it was painted. So walking up to a wall put you in a
-            // competition against paint a hundred metres behind you that you cannot see, the
-            // recent stuff won on age, and the piece in front of your face came out with holes
-            // in it -- permanently, because nothing about standing there changes the answer.
-            //
-            // Near ring first fixes exactly that and costs one extra walk of a list. Everything
-            // within CloseUp is asked before anything beyond it, so what you are LOOKING at is
-            // always complete and the thing that goes short is a wall down the road, which is
-            // the right thing to lose.
-            //
-            // Newest first inside each ring, which is backwards through the list -- among marks
-            // you can equally see, the most recent work is what should survive.
-            var stuck = Restore(me, 0f, CloseUp * CloseUp);
-
-            stuck += Restore(me, CloseUp * CloseUp, restore);
-
-            // SAID WHEN IT CHANGES, not every sweep. Paint that is near enough to be on the
-            // wall and is not is the one thing this class exists to prevent, and "some of my
-            // tag is missing" is impossible to act on without a number.
-            if (stuck != _stuck)
-            {
-                _stuck = stuck;
-
-                if (stuck > 0)
-                {
-                    Log.Info(stuck + " mark(s) near you cannot get on the wall -- the game's " +
-                             "decal pool is full. Nothing is lost; they go back up as you " +
-                             "move and free slots.");
-                }
-            }
-        }
-
-        /// <summary>
-        /// Put back every mark whose distance falls in a band, newest first.
-        ///
-        /// Squared distances in, like everything else in here. Returns how many wanted a slot
-        /// and did not get one.
-        /// </summary>
-        private int Restore(Vector3 me, float fromSq, float toSq)
-        {
-            var stuck = 0;
+            _queue.Clear();
+            _queueAt = 0;
 
             for (var i = _marks.Count - 1; i >= 0; i--)
             {
                 var m = _marks[i];
+                if (!m.Away) continue;
 
+                if (me.DistanceToSquared(m.At) < near) _queue.Add(m);
+            }
+
+            for (var i = _marks.Count - 1; i >= 0; i--)
+            {
+                var m = _marks[i];
                 if (!m.Away) continue;
 
                 var d = me.DistanceToSquared(m.At);
-
-                if (d < fromSq || d >= toSq) continue;
-
-                m.Handle = Place(m);
-
-                // THE SAME FALLBACK PLACING HAS ALWAYS HAD, and its absence here is why tags
-                // came back cut off and why old ones stopped coming back at all.
-                //
-                // Put asks Recycle for a slot when the pool refuses; this did not. So the
-                // restore filled the pool with whatever it reached first and then every
-                // remaining mark failed, stayed away, and failed again on the next sweep.
-                // Walking up to an old tag with a full pool did nothing at all, because
-                // nothing was ever asked to make room for it.
-                //
-                // Recycle only takes from marks a good margin further away than this one, so
-                // the nearest paint wins and two marks cannot evict each other.
-                if (m.Handle == 0 && Recycle(m.At)) m.Handle = Place(m);
-
-                m.Away = m.Handle == 0;
-
-                if (m.Away) stuck++;
+                if (d >= near && d < restore) _queue.Add(m);
             }
 
-            return stuck;
+            // SAID WHEN IT STARTS, not every sweep. Paint near enough to be on the wall and
+            // not there is the one thing this class exists to prevent, and "some of my tag is
+            // missing" is impossible to act on without a number. The queue is not a problem --
+            // it is the next few seconds' work -- but the first time a lot of it appears is
+            // worth a line, and so is the pool actually refusing.
+            if (_queue.Count >= 200 && _queueWas < 200)
+            {
+                Log.Info(_queue.Count + " mark(s) in range coming back up, " + PerFrame + " a frame.");
+            }
+
+            _queueWas = _queue.Count;
+
+            if (_poolFull > 0 && _stuck == 0)
+            {
+                Log.Info(_poolFull + " mark(s) near you could not get a slot since the last sweep " +
+                         "-- the game's decal pool is full. Nothing is lost; they go back up as " +
+                         "slots free, and the nearest paint always wins them.");
+            }
+
+            _stuck = _poolFull;
+            _poolFull = 0;
         }
 
         /// <summary>
