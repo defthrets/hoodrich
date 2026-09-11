@@ -43,8 +43,8 @@ namespace Hoodrich.UI
         /// A masthead, not a billboard -- the same call as the standalone's panel. At 0.066 the
         /// app's name was the loudest thing on a screen whose job is choosing a colour.
         /// </summary>
-        private const float LogoH = 0.034f;
-        private const float LogoAspect = 5.6517f;
+        private const float LogoH = 0.060f;
+        private const float LogoAspect = 3.7880f;
         private const float CanH = 0.052f;
         private const float CanAspect = 0.4412f;
 
@@ -347,12 +347,13 @@ namespace Hoodrich.UI
             var left = 0.5f - width * 0.5f;
             var pad = Hud.ToX(PadH);
 
-            var height = 0.340f + SwatchH + ButtonH * 5f;
+            // SIZED TO WHAT IS ON IT. A fixed height left a third of the panel empty under
+            // the last row, which is a screen that looks unfinished. Each term is a row below.
+            var height = 0.020f + LogoH + 0.008f + CanH + 0.010f + 0.026f + 0.014f
+                         + SwatchH + 0.016f + ButtonH * 5f + 0.018f + 0.0175f + 0.024f;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
 
             Theme.Panel(left, top, width, height);
-
-            _glide.Begin();
 
             var grown = Theme.Grown(_rowAt);
 
@@ -362,12 +363,11 @@ namespace Hoodrich.UI
 
             // ---- the mark ----
             //
-            // The same sprayed treatment as the standalone, in this mod's own word. A header
-            // reading OVERSPRAY inside Posted Up would be a third name for a thing that
-            // already has two -- what carries across is the look, not the wordmark.
-            //
-            // Falls back to the typed word, because a panel with a hole where its name goes is
-            // worse than a plain heading.
+            // BLACKLETTER: Overspray in a Fraktur with paint running off it, the same file the
+            // standalone draws, sprayed on when the screen opens and glowing in what is
+            // loaded. Taller than the arched block was, because a Fraktur's lowercase sits
+            // small inside its own box. Falls back to the typed word, because a panel with a
+            // hole where its name goes is worse than a plain heading.
             var logoW = Hud.ToX(LogoH) * LogoAspect;
 
             var clock = Game.GameTime;
@@ -425,7 +425,8 @@ namespace Hoodrich.UI
                          Hud.FontCursive, centre: false);
             }
 
-            Hud.TextRight(Tins[_pick].Name, right, y + 0.010f, 0.34f, Legible(Colour));
+            Hud.TextRight(Tins[_pick].Name.ToUpperInvariant(), right, y + (LogoH - 0.020f) * 0.5f, 0.30f,
+                          Legible(Colour), Hud.FontLabel);
 
             y += LogoH + 0.008f;
 
@@ -470,10 +471,14 @@ namespace Hoodrich.UI
 
                 if (on)
                 {
-                    // The frame does the pointing while the swatch row has the cursor; a quiet
-                    // ring says which colour is loaded once it has moved down to the buttons.
-                    if (focused) _glide.Target(sx - 0.0022f, sy - 0.0022f, each + 0.0044f, sh + 0.0044f);
-                    else Outline(sx - 0.0022f, sy - 0.0022f, each + 0.0044f, sh + 0.0044f, 0.0026f, Palette.TextDim);
+                    // A ring round the loaded one: bright while the cursor is on this row, quiet
+                    // once it has moved down to the buttons. No travelling frame -- the ring
+                    // and the taller swatch say it, and a glowing rim over a rack of colours
+                    // was the loudest thing on the screen.
+                    var beat = focused ? 0.78f + 0.22f * (float)Math.Sin(Game.GameTime / 260.0) : 1f;
+
+                    Outline(sx - 0.0022f, sy - 0.0022f, each + 0.0044f, sh + 0.0044f, 0.0026f,
+                            focused ? Palette.Alpha(Palette.Text, (int)(255f * beat)) : Palette.TextDim);
                 }
             }
 
@@ -520,11 +525,14 @@ namespace Hoodrich.UI
                    _armed ? "PRESS AGAIN -- THIS CANNOT BE UNDONE" : "CLEAR EVERY WALL",
                    _armed ? "SURE?" : "ENTER", _armed);
 
-            Hud.Text("UP/DOWN  MOVE      LEFT/RIGHT  CHANGE      ENTER  TAKE IT      BACKSPACE  BACK",
-                     x, top + height - 0.028f, 0.22f, Palette.TextDim, Hud.FontLabel, centre: false);
+            // The keys, drawn as keys, the way every other panel in the mod does it.
+            var ky = top + height - 0.024f - 0.0175f;
 
-            // Last, so it rides over whatever it is pointing at.
-            _glide.Draw();
+            UiKit.KeyRight(right, ky, UiKit.Back, "BACK", 1f);
+
+            var kx = UiKit.Key(x, ky, null, "arrow_updown.png", "MOVE", 1f);
+            kx = UiKit.Key(kx, ky, null, "arrow_leftright.png", "CHANGE", 1f);
+            UiKit.Key(kx, ky, UiKit.Confirm, null, "TAKE IT", 1f);
         }
 
         /// <summary>How lit a button row is: coming up under the cursor, going down where it just was.</summary>
@@ -589,8 +597,14 @@ namespace Hoodrich.UI
                 // round all three would make this row louder than the swatches above it.
                 if (on)
                 {
-                    Hud.RectFrom(left, top, wide, side,
-                                 Palette.Alpha(Palette.Brand, 46 * lit / 255));
+                    // The chosen nozzle stands on a shade with the loaded colour along its
+                    // foot -- the icon is white, and the line under it says which one is live
+                    // the same way the rail says which row is.
+                    var live = Legible(Colour);
+
+                    Hud.RectFrom(left, top, wide, side, Color.FromArgb(38 * lit / 255, 255, 255, 255));
+                    Hud.RectFrom(left, top + side - 0.0016f, wide, 0.0016f,
+                                 Color.FromArgb(live.A * lit / 255, live.R, live.G, live.B));
                 }
 
                 var chip = on ? Legible(Colour) : Palette.TextDim;
@@ -618,22 +632,22 @@ namespace Hoodrich.UI
             var bx = x - Hud.ToX(0.008f);
             var bw = (right - x) + Hud.ToX(0.016f);
 
-            // The plate comes up under the row the cursor lands on and goes down under the one
-            // it left, and the frame travels between them. The wipe is the exception: an
-            // armed, irreversible thing keeps its red, because gold under "this cannot be
-            // undone" is the wrong colour for the sentence.
-            if (warn)
-            {
-                Hud.RectFrom(bx, y, bw, ButtonH, Palette.Alpha(Palette.Danger, (int)(40f * lit)));
-                Hud.RectFrom(bx, y, 0.0022f, ButtonH, Palette.Alpha(Palette.Danger, (int)(255f * lit)));
-            }
-            else
-            {
-                Theme.Plate(bx, y, bw, ButtonH, lit);
-                Theme.Sheen(bx, y, bw, ButtonH, lit);
-            }
+            // A hairline under every row, so the list has rows without having boxes. Under
+            // the live one a soft fill and a rail in the loaded colour, rising over the same
+            // sixth of a second the plate used to; no plate, no sheen, no travelling frame --
+            // a light behind the words, not a box round them. The wipe is the exception: an
+            // armed, irreversible thing keeps its red, because the loaded colour under "this
+            // cannot be undone" is the wrong colour for the sentence.
+            Hud.RectFrom(bx, y + ButtonH - 0.0012f, bw, 0.0012f, Theme.Hairline);
 
-            if (active) _glide.Target(bx, y, bw, ButtonH);
+            if (lit > 0.01f)
+            {
+                var rail = warn ? Palette.Danger : Legible(Colour);
+
+                Hud.RectFrom(bx, y, bw, ButtonH - 0.0012f,
+                             Color.FromArgb((int)((warn ? 40f : 24f) * lit), warn ? rail.R : 255, warn ? rail.G : 255, warn ? rail.B : 255));
+                Hud.RectFrom(bx, y, Hud.ToX(0.0032f), ButtonH - 0.0012f, Palette.Alpha(rail, (int)(255f * lit)));
+            }
 
             var dark = warn ? 0f : lit;
 

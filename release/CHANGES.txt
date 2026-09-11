@@ -1,4 +1,18 @@
-﻿0.7.2 -- 11 September 2026
+﻿Since 0.7.2 -- 11 September 2026
+
+
+THE GRAFFITI APP GETS THE BLACKLETTER MARK AND THE TIDIED PANEL.
+
+The app draws its own copies of the mark, and the art tool had been writing
+files nothing read while the app went on drawing an arched block nobody
+regenerated. It draws the same Fraktur Overspray the standalone does now,
+paint running off it, sprayed on when the screen opens. The panel is sized
+to what is on it instead of leaving a third of itself empty; the rows are
+hairlines with a soft fill and a rail in the loaded colour under the live
+one, no plate, sheen or travelling frame; the chosen cap stands on a shade
+of the loaded colour; the footer is key caps. The cap icons are untouched.
+
+0.7.2 -- 11 September 2026
 
 
 YOU LOSE WHAT YOU ARE CARRYING WHEN YOU DIE. YOU DID NOT.
