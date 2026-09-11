@@ -6261,7 +6261,7 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, w.Man.Handle,
                               spot.X, spot.Y, spot.Z, 2.5f, -1, 1f, true, 0f);
                 Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, w.Man.Handle,
-                              "WORLD_HUMAN_CROUCH_INSPECT", 0, true);
+                              "WORLD_HUMAN_INSPECT_CROUCH", 0, true);
                 Function.Call(Hash.SET_PED_KEEP_TASK, w.Man.Handle, true);
 
                 _rockets.Add(new Rocket { At = now + FireSetUpMs, Spot = spot, Man = w, Prop = prop });

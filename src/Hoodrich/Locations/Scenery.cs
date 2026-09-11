@@ -780,6 +780,28 @@ namespace Hoodrich.Locations
             }
             catch (Exception ex)
             {
+                // AND IT GOES BACK, RATHER THAN STANDING THERE FOR EVER.
+                //
+                // By this point `made` may be a live ped or prop, already persistent. The
+                // caller treats Verdict.No as "nothing was built" and never adds it to
+                // scene.Up -- so Drop() and RestoreWorld() cannot find it, and one malformed
+                // item near the player's route left another one behind on every single
+                // rebuild of that scene.
+                try
+                {
+                    if (made != null && made.Exists())
+                    {
+                        made.MarkAsNoLongerNeeded();
+                        made.Delete();
+                    }
+                }
+                catch
+                {
+                    // Nothing more we can do for it.
+                }
+
+                made = null;
+
                 Log.Debug("A placement would not stand up (" + Say(item) + "): " + ex.Message);
                 return Verdict.No;
             }

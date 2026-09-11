@@ -761,6 +761,26 @@ namespace Hoodrich.Gangs
                 foreach (var ped in low.Crew)
                 {
                     if (ped == null || !ped.Exists()) continue;
+
+                    // EVERYTHING Seat() DID, UNDONE. It makes them deaf to the street, unable
+                    // to leave the car, unable to flee and impossible to drag out -- which is
+                    // right for a cruise and is not something to hand back to the world. This
+                    // released them with all five still set, so after every night's cruise
+                    // four ambient drivers were out there who would sit at a red light being
+                    // shot at. GangWar puts blocking back in four places; this was the one
+                    // release path in the mod that never did.
+                    try
+                    {
+                        Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
+                        Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, ped.Handle, true);
+                        Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 3, true);
+                        Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, false);
+                    }
+                    catch
+                    {
+                        // He drives off either way.
+                    }
+
                     ped.IsPersistent = false;
                     ped.MarkAsNoLongerNeeded();
                 }

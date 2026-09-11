@@ -628,6 +628,13 @@ namespace Hoodrich.Gangs
 
                     Function.Call(Hash.REMOVE_PED_FROM_GROUP, ped.Handle);
 
+                    // OUT OF THE MINDED SET, OR THE HANDLE HAUNTS SOMEBODY ELSE. See Minded:
+                    // the game reuses handles, so a dismissed man left on that list hands his
+                    // exemption to whoever inherits his number -- and the exemption is "does
+                    // not run from the police", so an ordinary Families ped on a corner starts
+                    // shooting at patrol cars for no reason anybody could ever trace.
+                    Minded.Forget(ped);
+
                     if (ped.IsAlive)
                     {
                         // His own walk back, not the one we gave him. A released ped keeps
@@ -755,6 +762,10 @@ namespace Hoodrich.Gangs
                         // The cigarette goes with him. An unattached prop left hanging in the
                         // air over a body is the sort of thing that outlives the session.
                         PutItOut(man);
+
+                        // Dead is done with too. See Minded.
+                        Minded.Forget(ped);
+
                         ped.IsPersistent = false;
                         ped.MarkAsNoLongerNeeded();
                     }
@@ -1277,11 +1288,18 @@ namespace Hoodrich.Gangs
                     if (ped == null || !ped.Exists()) continue;
 
                     Function.Call(Hash.REMOVE_PED_FROM_GROUP, ped.Handle);
+
+                    Minded.Forget(ped);
+
                     ped.IsPersistent = false;
                     ped.MarkAsNoLongerNeeded();
                 }
                 catch { /* teardown */ }
             }
+
+            // AND THE WHOLE LIST, in case one of them was gone before we got here. Handles
+            // outlive the peds that owned them; the set must not.
+            Minded.Clear();
 
             _men.Clear();
         }
