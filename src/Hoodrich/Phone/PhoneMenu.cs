@@ -329,6 +329,19 @@ namespace Hoodrich.Phone
                                Game.GameTime - _bootAt < BootMs;
 
         /// <summary>
+        /// Straight to the apps. A or Enter at the seal -- see PhoneController. The boot is
+        /// marked as having happened, so it does not come back on the next open either.
+        /// </summary>
+        public void SkipBoot()
+        {
+            if (!Booting) return;
+
+            _bootAt = 0;
+            _pageAt = Game.GameTime;
+            Beep("SELECT");
+        }
+
+        /// <summary>
         /// The glass wakes a beat AFTER the body arrives, and how long the waking takes. A
         /// phone taken out of a pocket is a dark object first and a lit one second; a handset
         /// that appears already glowing is a panel wearing a phone.

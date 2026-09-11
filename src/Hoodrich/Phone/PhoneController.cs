@@ -157,8 +157,19 @@ namespace Hoodrich.Phone
             HoldItUp();
 
             // A key pressed at the boot screen would act on a page nobody can see yet --
-            // and the first page is Dealing, so the mis-press is not a harmless one.
-            if (!_menu.Booting) HandleInput();
+            // and the first page is Dealing, so the mis-press is not a harmless one. The
+            // one key that does something there is the select button, and what it does is
+            // skip the boot: once is a piece of character, and a player who has seen it is
+            // entitled to press through it. The press is spent on the skip and never
+            // reaches the page underneath.
+            if (_menu.Booting)
+            {
+                if (JustPressed(Control.PhoneSelect)) _menu.SkipBoot();
+            }
+            else
+            {
+                HandleInput();
+            }
 
             _menu.Render();
         }

@@ -1,4 +1,14 @@
-﻿0.7.3 -- 11 September 2026
+﻿Since 0.7.3 -- 11 September 2026
+
+
+A SKIPS THE PHONE'S BOOT SCREEN.
+
+The seal turning on the handset's first open is a piece of character once and
+a toll booth after that. A on a pad or Enter on a keyboard cuts straight to
+the apps, the press is spent on the skip rather than on the first page, and
+the boot stays skipped for the session.
+
+0.7.3 -- 11 September 2026
 
 
 THE CAN STOPPED AFTER HALF A LETTER, AND IT WAS THE EVICTION CHECK.
