@@ -27,15 +27,25 @@ OUT = os.path.join(HERE, "data", "icons")
 
 
 def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    args = []
+    scale = 4
+    argv = sys.argv[1:]
+    i = 0
+    while i < len(argv):
+        a = argv[i]
+        if a.startswith("--scale"):
+            if "=" in a:
+                scale = int(a.split("=", 1)[1])
+            else:
+                i += 1
+                scale = int(argv[i])
+        else:
+            args.append(a)
+        i += 1
     if len(args) != 2:
         print(__doc__)
         sys.exit(2)
     src, name = args
-    scale = 4
-    for a in sys.argv[1:]:
-        if a.startswith("--scale"):
-            scale = int(a.split("=", 1)[1]) if "=" in a else int(sys.argv[sys.argv.index(a) + 1])
 
     im = Image.open(src)
     frames = getattr(im, "n_frames", 1)
