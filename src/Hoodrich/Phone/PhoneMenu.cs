@@ -2277,19 +2277,19 @@ namespace Hoodrich.Phone
         private static void Art(WheelItem item, float cx, float cy, float size, Color c,
                                 float spin = 0f, int animateFrom = -1)
         {
-            // A FLIPBOOK IS COLOUR ART, so it is never tinted -- the green of the selected
-            // tile would turn the powder green -- and the movement is what says selected.
-            // Still on the first frame the rest of the time. See WheelItem.IconFrames.
+            // A FLIPBOOK IS TINTED LIKE EVERY OTHER ICON. The frames are shades of white on
+            // their own alpha -- tools/gif2frames.py --mono -- so the grid's ink and the
+            // green under the cursor go onto them the way they go onto the line art, and
+            // ten GIFs drawn in ten palettes read as one set. Still on the first frame until
+            // the cursor lands; the movement is the selection. See WheelItem.IconFrames.
             if (item.IconFrameCount > 0 && !string.IsNullOrEmpty(item.IconFrames))
             {
-                var plain = Color.FromArgb(c.A, 255, 255, 255);
-
                 if (animateFrom >= 0)
                 {
                     if (Hud.Animated(item.IconFrames, item.IconFrameCount, item.IconFrameMs, cx, cy,
-                                     ArtWidth(item, size), size, plain, animateFrom, spin)) return;
+                                     ArtWidth(item, size), size, c, animateFrom, spin)) return;
                 }
-                else if (Hud.File(item.IconFrames + "_0.png", cx, cy, ArtWidth(item, size), size, spin, plain))
+                else if (Hud.File(item.IconFrames + "_0.png", cx, cy, ArtWidth(item, size), size, spin, c))
                 {
                     return;
                 }

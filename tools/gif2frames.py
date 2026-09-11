@@ -26,14 +26,38 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(HERE, "data", "icons")
 
 
+def monochrome(frame):
+    """The frame as shades of white on its own alpha, levelled so the brightest pixel is
+    white, so the HUD can tint it the way it tints every other icon -- dim on the grid,
+    green under the cursor -- and a set drawn in ten palettes reads as one."""
+    r, g, b, a = frame.split()
+    lum = frame.convert("L")
+    peak = 0
+    lp, ap = lum.load(), a.load()
+    for y in range(frame.height):
+        for x in range(frame.width):
+            if ap[x, y] > 8 and lp[x, y] > peak:
+                peak = lp[x, y]
+    if peak <= 0:
+        peak = 255
+    # Levelled to the peak, then lifted (gamma 0.75): pixel art is mostly mid-tones and
+    # outlines, and mid-grey on the phone's black glass reads as switched off.
+    lut = [int(round(255 * ((min(v, peak) / float(peak)) ** 0.75))) for v in range(256)]
+    lum = lum.point(lut)
+    return Image.merge("RGBA", (lum, lum, lum, a))
+
+
 def main():
     args = []
     scale = 4
+    mono = False
     argv = sys.argv[1:]
     i = 0
     while i < len(argv):
         a = argv[i]
-        if a.startswith("--scale"):
+        if a == "--mono":
+            mono = True
+        elif a.startswith("--scale"):
             if "=" in a:
                 scale = int(a.split("=", 1)[1])
             else:
@@ -56,6 +80,8 @@ def main():
         im.seek(i)
         delays.append(int(im.info.get("duration", 100)))
         frame = im.convert("RGBA")
+        if mono:
+            frame = monochrome(frame)
         if scale != 1:
             frame = frame.resize((frame.width * scale, frame.height * scale), Image.NEAREST)
         path = os.path.join(OUT, "%s_%d.png" % (name, i))
