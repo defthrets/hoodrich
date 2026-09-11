@@ -213,6 +213,12 @@ namespace Hoodrich.Paint
         private const int BudgetFloor = 128;
         private const int BudgetCeiling = 200000;
 
+        /// <summary>Whether the alive-check has been proven honest yet, and the status clock.</summary>
+        private bool _testedAlive;
+        private int _statusAt;
+        private int _deadSeen;
+        private const int StatusEveryMs = 20000;
+
         public Marks(PaintConfig cfg)
         {
             _cfg = cfg;
@@ -523,6 +529,8 @@ namespace Hoodrich.Paint
                         {
                             Log.Info("First decal is on the wall and alive: type " + type +
                                      ", " + m.Size.ToString("0.00") + "m across.");
+
+                            TestAlive(m, type);
                         }
                         else
                         {
@@ -815,6 +823,49 @@ namespace Hoodrich.Paint
         }
 
         /// <summary>
+        /// Whether IS_DECAL_ALIVE can be believed, found out once.
+        ///
+        /// Everything Verify does rests on the native saying "no" for a decal that is gone.
+        /// If it says "yes" for one this engine has just removed, evictions are invisible
+        /// to it and the log has to say so, because every other number in here would be
+        /// telling a story about a wall that is not there.
+        /// </summary>
+        private void TestAlive(Mark like, int type)
+        {
+            if (_testedAlive) return;
+            _testedAlive = true;
+
+            try
+            {
+                var probe = Function.Call<int>(Hash.ADD_DECAL, type,
+                                               like.At.X, like.At.Y, like.At.Z,
+                                               like.Into.X, like.Into.Y, like.Into.Z,
+                                               like.Side.X, like.Side.Y, like.Side.Z,
+                                               0.02f, 0.02f, like.R, like.G, like.B, 0.01f,
+                                               Forever, false, false, false);
+
+                if (probe == 0)
+                {
+                    Log.Info("Alive-check test: the probe decal would not place; nothing learned.");
+                    return;
+                }
+
+                var before = Function.Call<bool>(Hash.IS_DECAL_ALIVE, probe);
+                Function.Call(Hash.REMOVE_DECAL, probe);
+                var after = Function.Call<bool>(Hash.IS_DECAL_ALIVE, probe);
+
+                Log.Info("Alive-check test: probe " + probe + " alive before removal = " + before +
+                         ", after = " + after + ". " +
+                         (after ? "THE NATIVE LIES ABOUT REMOVED DECALS: evictions cannot be seen from here."
+                                : "The native is honest; evictions will be seen."));
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Alive-check test failed: " + ex.Message);
+            }
+        }
+
+        /// <summary>
         /// A slice of the marks believed up, asked whether they still are.
         ///
         /// THE GAME TAKES DECALS DOWN WITHOUT A WORD. Its pool is a fixed number of slots and
@@ -859,6 +910,7 @@ namespace Hoodrich.Paint
                 // when it started going is the size of it.
                 if (_evicted == 0) _upWhenEvicted = _up;
                 _evicted++;
+                _deadSeen++;
 
                 m.Handle = 0;
                 m.Away = true;
@@ -1063,6 +1115,22 @@ namespace Hoodrich.Paint
 
             _stuck = _poolFull;
             _poolFull = 0;
+
+            // THE NUMBERS, every so often while anything is up. What is up, what the engine
+            // will let be up, what is waiting, what the pool refused, what was found dead.
+            // These are what decide what gets patched next, so they go in the log as
+            // numbers rather than as a feeling that the wall looks thin.
+            var now = Game.GameTime;
+
+            if (_up > 0 && now - _statusAt >= StatusEveryMs)
+            {
+                _statusAt = now;
+
+                Log.Info("Paint: " + _up + " up, budget " + _budget + ", " +
+                         (_queue.Count - _queueAt) + " queued, " + _stuck + " refused by the pool " +
+                         "since last sweep, " + _deadSeen + " found dead so far, " +
+                         _marks.Count + " in the record.");
+            }
         }
 
         /// <summary>
