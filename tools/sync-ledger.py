@@ -1,9 +1,8 @@
 ﻿# -*- coding: utf-8 -*-
 """
 Copies the files every mod of the set shares -- UI/Ledger.cs, the machine-wide rectangle
-tally; Core/Pace.cs, the tick watchdog; and Core/Petrol.cs, which is how a mod says a car of
-its own is scenery and burns no fuel -- from this repo into the others, rewriting the
-namespace and the mod's name. Same idea as tools/sync-paint.py in Overspray: one copy is
+tally, and Core/Pace.cs, the tick watchdog -- from this repo into the others, rewriting the
+namespace and the mod's name. Core/Petrol.cs goes only where it is used; see EXTRAS. Same idea as tools/sync-paint.py in Overspray: one copy is
 edited, the rest are written, and a diff between any two is a bug.
 
     python tools/sync-ledger.py            writes what differs
@@ -25,11 +24,30 @@ MODS = {
     "overspray": ("Overspray", "Overspray"),
 }
 
+# Everybody gets these two: the rectangle tally and the tick watchdog are about the machine,
+# so a mod that draws anything or holds a tick needs them whether it knows it or not.
 FILES = [
     ("src/Hoodrich/UI/Ledger.cs", "src/{root}/UI/Ledger.cs"),
     ("src/Hoodrich/Core/Pace.cs", "src/{root}/Core/Pace.cs"),
-    ("src/Hoodrich/Core/Petrol.cs", "src/{root}/Core/Petrol.cs"),
 ]
+
+# Petrol is NOT universal, and sending it everywhere was a mistake worth naming. It is how a
+# mod says a car of its own is scenery and burns no fuel, so it is only of use to a mod that
+# spawns cars and to the fuel mod that reads the flag. It was going to all five: four of them
+# carried it as dead code, compiled into the dll, and a reader of Bloody Mess's public repo
+# found a gore mod shipping a file about drug takeovers and car meets.
+#
+# Checked rather than assumed - hoodrich has 5 call sites and fumes 2; bare-minimum,
+# five0patrol, bloodymess and overspray had none between them.
+#
+# The copies already sitting in those four repos are not removed by this script. Deleting a
+# file it once wrote is how a sync tool eats work somebody meant to keep; they come out by
+# hand, in their own repo, once.
+EXTRAS = {
+    "fumes": [
+        ("src/Hoodrich/Core/Petrol.cs", "src/{root}/Core/Petrol.cs"),
+    ],
+}
 
 
 def read(path):
@@ -59,7 +77,7 @@ def main():
         if not os.path.isdir(os.path.join(base, "src", root)):
             print("  skip  %s (no src/%s)" % (repo, root))
             continue
-        for src, dst in FILES:
+        for src, dst in FILES + EXTRAS.get(repo, []):
             want = render(os.path.join(HERE, src), root, name)
             target = os.path.join(base, dst.format(root=root))
             have = read(target) if os.path.exists(target) else None
