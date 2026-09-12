@@ -8186,6 +8186,9 @@ namespace Hoodrich.Locations
 
                         car.IsPersistent = true;
 
+                        // Ours, so it is scenery until somebody gets in it. See Core.Petrol.
+                        Core.Petrol.Spare(car);
+
                         Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, car.Handle, true, true);
                         Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, car.Handle);
                         Function.Call(Hash.SET_VEHICLE_ENGINE_ON, car.Handle, true, true, false);

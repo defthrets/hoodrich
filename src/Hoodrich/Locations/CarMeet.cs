@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -746,6 +746,10 @@ namespace Hoodrich.Locations
                 if (car == null || !car.Exists()) return null;
 
                 car.IsPersistent = true;
+
+                // Ours, so it is scenery until somebody gets in it. See Core.Petrol -- the
+                // one on juice sits there with its engine and its radio on all night.
+                Core.Petrol.Spare(car);
                 Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, car.Handle, true, true);
 
                 Dress(car, spot);

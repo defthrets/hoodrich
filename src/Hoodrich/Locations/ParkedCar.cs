@@ -101,6 +101,15 @@ namespace Hoodrich.Locations
                 if (Running)
                 {
                     Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _car.Handle, true, true, false);
+
+                    // AND IT BURNS NOTHING WHILE IT DOES. This line and a fuel mod were an
+                    // argument with no end in it: the engine is held on because the music is
+                    // the point, an idling engine burns, and the tank runs dry -- so Fumes
+                    // cut the engine, which is what Fumes is for, and the next tick turned it
+                    // straight back on, which is what this is for. Off, on, off, on, for as
+                    // long as anybody stood at Lamar's. See Core.Petrol: it is furniture with
+                    // a stereo in, and now it says so.
+                    Petrol.Spare(_car);
                 }
 
                 // Two is forced on. The engine above is what makes them light anything --
@@ -344,6 +353,8 @@ namespace Hoodrich.Locations
             {
                 if (_car != null)
                 {
+                    Petrol.Release(_car);
+
                     try { if (_car.Exists()) _car.Delete(); }
                     catch { /* it is already gone */ }
 
@@ -893,6 +904,11 @@ namespace Hoodrich.Locations
                 {
                     // Handed back rather than deleted. If the player is sitting in it, deleting
                     // it on unload drops him through the world.
+                    //
+                    // And it is a car again on the way out: whoever drives it off should be
+                    // buying petrol for it like anybody else.
+                    Petrol.Release(_car);
+
                     _car.IsPersistent = false;
                     _car.MarkAsNoLongerNeeded();
                 }

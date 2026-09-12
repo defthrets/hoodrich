@@ -1,7 +1,8 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-Copies the two files every mod of the set shares -- UI/Ledger.cs, the machine-wide rectangle
-tally, and Core/Pace.cs, the tick watchdog -- from this repo into the others, rewriting the
+Copies the files every mod of the set shares -- UI/Ledger.cs, the machine-wide rectangle
+tally; Core/Pace.cs, the tick watchdog; and Core/Petrol.cs, which is how a mod says a car of
+its own is scenery and burns no fuel -- from this repo into the others, rewriting the
 namespace and the mod's name. Same idea as tools/sync-paint.py in Overspray: one copy is
 edited, the rest are written, and a diff between any two is a bug.
 
@@ -27,6 +28,7 @@ MODS = {
 FILES = [
     ("src/Hoodrich/UI/Ledger.cs", "src/{root}/UI/Ledger.cs"),
     ("src/Hoodrich/Core/Pace.cs", "src/{root}/Core/Pace.cs"),
+    ("src/Hoodrich/Core/Petrol.cs", "src/{root}/Core/Petrol.cs"),
 ]
 
 
