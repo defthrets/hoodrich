@@ -1918,10 +1918,16 @@ namespace Hoodrich.Missions
                         continue;
                     }
 
-                    if (!model.Request(ModelWaitMs))
+                    // ASKED FOR, NOT WAITED FOR. Model.Request with a timeout yields the tick
+                    // until the model lands, and a tick that has already been held elsewhere
+                    // is then over ScriptHookVDotNet's five-second line: one player's log has
+                    // the scenery read at 4979 ms, this wait, and the script killed. Idle
+                    // comes back in two seconds and asks again; the van is a little later
+                    // and the mod is still running. See Core.Models.
+                    if (!Core.Models.Ready(model))
                     {
-                        Log.Debug("Van model " + name + " has not streamed in yet; waiting for " +
-                                  "it rather than parking a different truck.");
+                        Log.Debug("Van model " + name + " has not streamed in yet; asking again " +
+                                  "rather than parking a different truck.");
                         return;
                     }
 

@@ -193,6 +193,13 @@ namespace Hoodrich
                                    || (_search != null && _search.IsOpen);
         }
         private bool _dressed;
+
+        /// <summary>The rounds in his bought guns, written down before every save. See GunLocker.Snapshot.</summary>
+        private void SnapshotGuns()
+        {
+            try { _locker?.Snapshot(); }
+            catch { /* the save still happens */ }
+        }
         private bool _carrying;
         private int _dressedBody;
 
@@ -756,7 +763,7 @@ namespace Hoodrich
                     Log.Info("Showed the house guide.");
                     return true;
                 };
-                _sleep = new SleepSpot(_state, () => SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint, _blocks));
+                _sleep = new SleepSpot(_state, () => { SnapshotGuns(); SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint, _blocks); });
                 _market = new Market(_cfg);
                 _blocks = new BlockDemand(_cfg);
 
@@ -857,7 +864,7 @@ namespace Hoodrich
                 _ownedCars = new OwnedCars(_state)
                 {
                     // A car is too much money to leave sitting in memory for two minutes.
-                    SaveNow = () => SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint, _blocks)
+                    SaveNow = () => { SnapshotGuns(); SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint, _blocks); }
                 };
                 _hao.Owned = _ownedCars;
 
@@ -4733,6 +4740,7 @@ namespace Hoodrich
             if (_cfg.SaveIntervalSeconds > 0 && now - _lastSave >= _cfg.SaveIntervalSeconds * 1000)
             {
                 _lastSave = now;
+                SnapshotGuns();
                 SaveGame.Save(_state, _crew, _market, _stash, false, _jobs.Paint, _blocks);
             }
         }
@@ -5300,6 +5308,7 @@ namespace Hoodrich
 
             try
             {
+                SnapshotGuns();
                 SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint, _blocks);
                 Log.Info(Build.Name + " unloaded cleanly.");
             }

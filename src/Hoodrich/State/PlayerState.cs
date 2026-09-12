@@ -460,6 +460,14 @@ namespace Hoodrich.State
         public readonly List<string> GunsBought = new List<string>();
 
         /// <summary>
+        /// The rounds each bought gun had, by weapon id, written down at every save and
+        /// handed back with the gun. The locker used to hand a gun back empty, on the
+        /// reasoning that rounds are Stretch's to sell -- and the first thing anybody saw
+        /// after a load was a gun with nothing in it and a trip to buy what they already had.
+        /// </summary>
+        public readonly Dictionary<string, int> GunAmmo = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
         /// What is bolted to each of them, as "WEAPON_X|COMPONENT_A|COMPONENT_B".
         ///
         /// FLAT STRINGS RATHER THAN A SHAPE, to match GunsBought sitting next to it and because
@@ -796,6 +804,7 @@ namespace Hoodrich.State
             LeadersGreeted.Clear();
             CarsBought.Clear();
             GunsBought.Clear();
+            GunAmmo.Clear();
             GunParts.Clear();
             VoiceHeard.Clear();
             Outfit.Clear();
@@ -1116,6 +1125,17 @@ namespace Hoodrich.State
             return arr;
         }
 
+        private Json GunAmmoJson()
+        {
+            var obj = Json.Object();
+            foreach (var kv in GunAmmo)
+            {
+                if (kv.Value <= 0) continue;
+                obj.Set(kv.Key, kv.Value);
+            }
+            return obj;
+        }
+
         private Json GunPartsJson()
         {
             var arr = Json.Array();
@@ -1257,6 +1277,7 @@ namespace Hoodrich.State
                 .Set("carsBought", CarsJson())
                 .Set("gunsBought", GunsJson())
                 .Set("gunParts", GunPartsJson())
+                .Set("gunAmmo", GunAmmoJson())
                 .Set("voiceHeard", VoiceHeardJson())
                 .Set("outfit", OutfitJson())
                 .Set("outfits", OutfitsJson())
@@ -1339,6 +1360,7 @@ namespace Hoodrich.State
 
                 CarsBought.Clear();
             GunsBought.Clear();
+            GunAmmo.Clear();
             GunParts.Clear();
             VoiceHeard.Clear();
             Owned.Clear();
@@ -1393,6 +1415,14 @@ namespace Hoodrich.State
                 }
 
                 GunsBought.Clear();
+            GunAmmo.Clear();
+
+                var ammo = doc["gunAmmo"];
+                foreach (var key in ammo.Keys)
+                {
+                    var had = ammo[key].AsInt(0);
+                    if (had > 0) GunAmmo[key] = had;
+                }
 
                 foreach (var node in doc["gunsBought"].Items)
                 {

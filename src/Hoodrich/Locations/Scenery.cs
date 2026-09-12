@@ -145,6 +145,34 @@ namespace Hoodrich.Locations
         }
 
         private bool _read;
+
+        /// <summary>
+        /// The files still to be read, and which of them came from Menyoo's folder.
+        ///
+        /// READ A FEW A TICK, NOT ALL AT ONCE. One player's spooner folder held sixty-odd
+        /// downloaded maps -- a hospital with fifteen hundred props, a basement with as many,
+        /// seven versions of the same haunted city -- and reading the lot in one tick held it
+        /// for five seconds, which is ScriptHookVDotNet's timeout to the millisecond. The next
+        /// tick's first wait tipped it over and the script was killed, which the player saw
+        /// as the mod crashing on load. So the list is made in Load and worked through here,
+        /// a slice of a frame at a time, and the scenes go up as they arrive.
+        /// </summary>
+        private readonly List<string> _pending = new List<string>();
+        private readonly HashSet<string> _theirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private const int ReadBudgetMs = 20;
+
+        /// <summary>
+        /// The most a scene from MENYOO'S folder may reach or hold and still be built.
+        ///
+        /// A scene builds when you are within range of its EDGE, so one that reaches five
+        /// kilometres builds everywhere, and a folder of downloaded maps is a folder of those:
+        /// eighty peds and fifty props each, standing up all over the map the moment the game
+        /// loads. The mod's own scenery folder has no limit -- what ships was measured -- but
+        /// a street scene somebody saved in Menyoo is a corner, not a county.
+        /// </summary>
+        private const float MenyooReachMost = 250f;
+        private const int MenyooItemsMost = 200;
         private int _nextLook;
         private int _nextSolid;
         private const int SolidEveryMs = 700;
@@ -258,7 +286,6 @@ namespace Hoodrich.Locations
 
             if (_cfg != null && !_cfg.Scenery) return;
 
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var files = new List<string>();
 
             try
@@ -310,6 +337,7 @@ namespace Hoodrich.Locations
                             }
 
                             files.Add(path);
+                            _theirs.Add(path);
                         }
                     }
                 }
@@ -319,10 +347,44 @@ namespace Hoodrich.Locations
                 }
             }
 
-            foreach (var path in files)
+            _pending.Clear();
+            _seen.Clear();
+            _pending.AddRange(files);
+
+            if (_pending.Count == 0)
+            {
+                Log.Info("No scenery files. Save an Object Spooner placement in Menyoo and it is built from then on.");
+            }
+        }
+
+        /// <summary>A few of the pending files, within the tick's budget. See _pending.</summary>
+        private void ReadSome()
+        {
+            if (_pending.Count == 0) return;
+
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+
+            while (_pending.Count > 0 && clock.ElapsedMilliseconds < ReadBudgetMs)
+            {
+                var path = _pending[0];
+                _pending.RemoveAt(0);
+
+                try
+                {
+                    ReadOne(path);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn("Could not read " + Path.GetFileName(path) + ": " + ex.Message);
+                }
+            }
+        }
+
+        private void ReadOne(string path)
+        {
             {
                 var name = Path.GetFileNameWithoutExtension(path);
-                if (!seen.Add(name)) continue;
+                if (!_seen.Add(name)) return;
 
                 var items = Spooner.Read(path);
                 var gone = Spooner.Gone(path);
@@ -330,7 +392,7 @@ namespace Hoodrich.Locations
                 // A FILE MAY BE NOTHING BUT REMOVALS. That is what hidden.xml is -- the one
                 // the settings screen writes when you take a map prop out by hand -- and
                 // refusing a file with no placements in it would have thrown it away.
-                if (items.Count == 0 && gone.Count == 0) continue;
+                if (items.Count == 0 && gone.Count == 0) return;
 
                 // ANYTHING STUCK TO SOMETHING GOES UP LAST, so the thing it is stuck to is
                 // already standing when its turn comes. Sorting once here is the whole of the
@@ -339,7 +401,6 @@ namespace Hoodrich.Locations
 
                 var scene = new Scene { Name = name, Path = path, Items = items, Gone = gone };
                 Measure(scene);
-                _scenes.Add(scene);
 
                 int peds = 0, props = 0, cars = 0;
 
@@ -350,15 +411,24 @@ namespace Hoodrich.Locations
                     else props++;
                 }
 
-                Log.Info("Scene \"" + name + "\": " + peds + " ped(s), " + props + " prop(s), " + cars +
-                         " vehicle(s)" + (gone.Count > 0 ? ", " + gone.Count + " removal(s)" : "") +
+                var count = peds + " ped(s), " + props + " prop(s), " + cars + " vehicle(s)" +
+                            (gone.Count > 0 ? ", " + gone.Count + " removal(s)" : "");
+
+                // TOO BIG TO BE A STREET SCENE. Menyoo's folder only; see MenyooReachMost.
+                if (_theirs.Contains(path) && (scene.Radius > MenyooReachMost || items.Count > MenyooItemsMost))
+                {
+                    Log.Info("Scene \"" + name + "\" skipped: " + count + ", reaching " +
+                             scene.Radius.ToString("0") + " m -- too big for a street scene. The limit is " +
+                             MenyooReachMost.ToString("0") + " m and " + MenyooItemsMost +
+                             " things for a file in Menyoo's folder; the mod's own scenery folder has none.");
+                    return;
+                }
+
+                _scenes.Add(scene);
+
+                Log.Info("Scene \"" + name + "\": " + count +
                          ", around " + scene.Centre.X.ToString("0") + ", " +
                          scene.Centre.Y.ToString("0") + " and " + scene.Radius.ToString("0") + " m out.");
-            }
-
-            if (_scenes.Count == 0)
-            {
-                Log.Info("No scenery files. Save an Object Spooner placement in Menyoo and it is built from then on.");
             }
         }
 
@@ -405,6 +475,9 @@ namespace Hoodrich.Locations
             }
 
             if (!_read) Load();
+
+            ReadSome();
+
             if (_scenes.Count == 0) return;
 
             var me = Game.Player.Character;

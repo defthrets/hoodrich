@@ -18,9 +18,13 @@ namespace Hoodrich.Weapons
     ///
     /// So the mod keeps its own list and hands them back.
     ///
-    /// NOT THE AMMUNITION. Rounds are a consumable and Stretch sells those separately -- a
-    /// locker that refilled itself every load would make half his shop pointless. You get the
-    /// gun back with what a fresh one comes with and you buy your own bullets.
+    /// AND THE ROUNDS IT HAD. This used to hand the gun back empty, on the reasoning that
+    /// rounds are Stretch's to sell -- and the first thing anybody saw after a load was a gun
+    /// with nothing in it and a trip to buy what they already had. So the count is written
+    /// down with the gun, at every save and every time the locker looks, and comes back with
+    /// it. A gun he still has after a load is topped up to the count once, on the first look,
+    /// and never again: the game's own save is the truth from then on, and a locker that
+    /// refilled a magazine he had just emptied would be a cheat.
     ///
     /// And it is emptied when they are properly taken. Being searched, arrested or killed are
     /// all moments where losing everything is the point, and a locker that undid them would be
@@ -44,6 +48,56 @@ namespace Hoodrich.Weapons
         private readonly WeaponRegistry _guns;
 
         private int _next;
+
+        /// <summary>The one top-up, done. See the class note.</summary>
+        private bool _topped;
+
+        /// <summary>
+        /// Writes down what each bought gun has in it. At every save, so a shutdown a second
+        /// after buying rounds does not forget them.
+        /// </summary>
+        public void Snapshot()
+        {
+            if (_state == null || _state.GunsBought.Count == 0) return;
+
+            Ped me;
+
+            try
+            {
+                me = Game.Player.Character;
+                if (me == null || !me.Exists()) return;
+            }
+            catch
+            {
+                return;
+            }
+
+            for (var i = 0; i < _state.GunsBought.Count; i++)
+            {
+                var name = _state.GunsBought[i];
+                if (string.IsNullOrEmpty(name)) continue;
+
+                try
+                {
+                    var hash = Function.Call<uint>(Hash.GET_HASH_KEY, name);
+                    if (hash == 0) continue;
+                    if (!Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, me.Handle, hash, false)) continue;
+
+                    var rounds = Function.Call<int>(Hash.GET_AMMO_IN_PED_WEAPON, me.Handle, hash);
+
+                    int had;
+                    if (!_state.GunAmmo.TryGetValue(name, out had) || had != rounds)
+                    {
+                        _state.GunAmmo[name] = rounds;
+                        _state.Touch();
+                    }
+                }
+                catch
+                {
+                    // One that cannot be asked is left as it was.
+                }
+            }
+        }
 
         /// <summary>
         /// What was last seen bolted to a gun. Read WHILE HE STILL HAS IT -- by the time the
@@ -190,18 +244,29 @@ namespace Hoodrich.Weapons
                     var hash = Function.Call<uint>(Hash.GET_HASH_KEY, name);
                     if (hash == 0) continue;
 
+                    int rounds;
+                    if (!_state.GunAmmo.TryGetValue(name, out rounds)) rounds = 0;
+
                     if (Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, me.Handle, hash, false))
                     {
                         // He has it, so this is the moment to write down what is on it. Once the
                         // gun goes, its components go with it and there is nothing left to read.
                         Remember(name, Attachments.On(me, name));
+
+                        // THE ONE TOP-UP, on the first look after a load: a game save older
+                        // than the mod's has the gun with fewer rounds than he had. See the
+                        // class note for why never again.
+                        if (!_topped && rounds > 0)
+                        {
+                            var has = Function.Call<int>(Hash.GET_AMMO_IN_PED_WEAPON, me.Handle, hash);
+                            if (has < rounds) Function.Call(Hash.SET_PED_AMMO, me.Handle, hash, rounds);
+                        }
+
                         continue;
                     }
 
-                    // Ammunition is his problem. Zero would be a gun he cannot fire and a
-                    // trip back to Stretch for rounds he already thought he had, so it comes
-                    // with the same handful a new one does.
-                    Function.Call(Hash.GIVE_WEAPON_TO_PED, me.Handle, hash, 0, false, false);
+                    // With the rounds it had. See the class note.
+                    Function.Call(Hash.GIVE_WEAPON_TO_PED, me.Handle, hash, rounds, false, false);
 
                     // WHAT HE HAD BOLTED TO IT FIRST, THEN THE MAGAZINE -- and the magazine
                     // only if he had not chosen one himself. Components share slots: a clip
@@ -231,6 +296,11 @@ namespace Hoodrich.Weapons
                     // One that will not come back is not worth losing the others over.
                 }
             }
+
+            _topped = true;
+
+            // What they hold now is what the next save remembers.
+            Snapshot();
 
             if (back <= 0) return;
 

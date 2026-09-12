@@ -1,4 +1,33 @@
-﻿0.8.0 -- 11 September 2026
+﻿Since 0.8.0 -- 12 September 2026
+
+
+A FOLDER OF DOWNLOADED MAPS NO LONGER KILLS THE SCRIPT ON LOAD.
+
+Reading Menyoo's spooner folder happened in one tick, and one player's folder
+-- sixty-odd downloaded maps, hospitals of fifteen hundred props, seven
+haunted cities reaching five kilometres -- held it for five seconds, which is
+ScriptHookVDotNet's timeout. The files are read a slice of a frame at a time
+now, and a scene from Menyoo's folder that reaches past 250 m or holds more
+than 200 things is skipped with a line in the log saying so. The mod's own
+scenery folder has no limit. The port van's model is asked for and not waited
+for either, so no single tick can reach the line.
+
+YOUR GUNS COME BACK LOADED.
+
+The locker handed a bought gun back empty after a load, and the first thing
+anybody saw was a trip to Stretch for rounds they already had. The count is
+written down with the gun at every save and comes back with it; a gun you
+still have is topped up once, on the first look after a load, and never again.
+
+THE PHONE'S GRID IS PIXEL ART, AND THE PRODUCT IS TOO.
+
+Every app tile is a flipbook split out of a GIF: grey and still on the grid,
+in colour and moving under the cursor, with the phone's own sway and pop off
+for them. The Mask app is off the grid; the balaclava, the shop and the setting
+stay. Weed, coke, crack, meth, heroin, ecstasy, LSD and Xanax draw the pixel
+pictures Bare Minimum carries, the same file in both mods, never tinted.
+
+0.8.0 -- 11 September 2026
 
 
 A LANGUAGE SETTING, AND NINE LANGUAGES TO GO IN IT.
