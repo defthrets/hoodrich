@@ -11,6 +11,7 @@
     .\build.ps1 -Deploy         # build, then copy dll + data into the game's scripts\
     .\build.ps1 -Package        # build, then zip a public release into .\release\
     .\build.ps1 -Package -Full  # ...and bundle ScriptHookVDotNet with it
+    .\build.ps1 -Publish        # both zips, then the GitHub release with them attached
     .\build.ps1 -Configuration Debug
 #>
 [CmdletBinding()]
@@ -34,6 +35,16 @@ param(
     # Build a zip anybody can drop into their GTA V folder. Ships the dll, a DEFAULT ini and
     # the data -- never this machine's tuned ini and never a save. See the packaging section.
     [switch]$Package,
+
+    # BOTH ZIPS AND THEN GITHUB, which is the whole of cutting a release.
+    #
+    # The download on the releases page is the only copy of this mod most people will ever
+    # touch, and it used to be updated by hand -- so it sat five versions behind while every
+    # zip beside it in release\ was current. One switch, no step to forget.
+    #
+    # Needs the gh CLI signed in. It builds the notes from release\CHANGELOG-<version>.txt,
+    # makes the release if it is not there, and uploads the two zips over whatever was on it.
+    [switch]$Publish,
 
     # Bundle ScriptHookVDotNet into the release as well, so the zip merges over the GTA V
     # ROOT and the player installs one thing instead of three.
@@ -369,6 +380,17 @@ if ($Deploy) {
 # instruction nobody gets wrong. What goes in is only ever built from the repo -- never
 # from the game folder, or a release would carry whatever this machine happens to be
 # testing with, including a save.
+if ($Publish -and -not $Package) {
+    # BOTH ZIPS FIRST, each in its own run, because the packaging section below builds one
+    # zip per run and -Full is what tells it which. Then this same script comes back round
+    # with -Publish and nothing left to build.
+    & $PSCommandPath -Package
+    if ($LASTEXITCODE -ne 0 -and $null -ne $LASTEXITCODE) { throw "The plain package failed; nothing published." }
+
+    & $PSCommandPath -Package -Full
+    if ($LASTEXITCODE -ne 0 -and $null -ne $LASTEXITCODE) { throw "The full package failed; nothing published." }
+}
+
 if ($Package) {
     $version = (Select-String -Path (Join-Path $root 'src\Hoodrich\Core\Log.cs') `
                               -Pattern 'Version = "([^"]+)"').Matches[0].Groups[1].Value
@@ -527,4 +549,79 @@ if ($Package) {
     Write-Host "Packaged  $zip" -ForegroundColor Green
     Write-Host "          $files files, $size KB, version $version"
     Write-Host "          $wavs voice lines, $icons icons$(if ($Full) { ', ScriptHookVDotNet bundled' })"
+}
+
+# ======================================================================
+# The release page
+# ======================================================================
+#
+# THE DOWNLOAD IS THE MOD, for everybody who is not us. A zip sitting in release\ that
+# nobody can reach is not a release, and the page went five versions stale being updated by
+# hand -- so it is a step in the script now rather than a thing to remember.
+#
+# THE ASSETS GO UP ONE AT A TIME, AFTER THE RELEASE EXISTS. Creating a release with its
+# files attached in one call answered 404 from the upload host with a sixty-six megabyte
+# zip, and rolled the whole release back with it. Made empty and then filled, each file on
+# its own, it goes up every time.
+if ($Publish) {
+    $version = (Select-String -Path (Join-Path $root 'src\Hoodrich\Core\Log.cs') `
+                              -Pattern 'Version = "([^"]+)"').Matches[0].Groups[1].Value
+
+    $relDir = Join-Path $root 'release'
+    $zips = @("PostedUp-$version.zip", "PostedUp-$version-full.zip") |
+            ForEach-Object { Join-Path $relDir $_ }
+
+    foreach ($z in $zips) {
+        if (-not (Test-Path $z)) { throw "No $z to publish. Run -Package and -Package -Full first." }
+    }
+
+    if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+        throw "The gh CLI is not on PATH, so the release page cannot be updated."
+    }
+
+    # The tag has to be on the remote before a release can hang off it.
+    $tagged = (& git tag --list $version)
+    if (-not $tagged) { throw "No $version tag. Tag the release commit first." }
+
+    & git push -q origin $version 2>$null
+
+    $notes = Join-Path $relDir "CHANGELOG-$version.txt"
+    $body  = Join-Path ([System.IO.Path]::GetTempPath()) "postedup-$version-notes.md"
+
+    $lines = if (Test-Path $notes) { (Get-Content $notes | Select-Object -Skip 1) } else { @() }
+
+    $lines + @(
+        ''
+        '---'
+        ''
+        'Unzip and drop the contents of the scripts folder into your GTA V scripts folder.'
+        ''
+        'Requires ScriptHookV and ScriptHookVDotNet 3.'
+        ''
+        'No asset replacement, no .rpf edits. Legacy and Enhanced from one build.'
+        ''
+        "PostedUp-$version.zip is the mod. PostedUp-$version-full.zip is the same plus the papers -- the read me, the full change history and the licence."
+        ''
+        'spitmux.me'
+    ) | Set-Content -Path $body -Encoding UTF8
+
+    $already = (& gh release view $version --json tagName 2>$null)
+
+    if ($already) {
+        Write-Host "Release $version is already there; updating its notes and files." -ForegroundColor DarkGray
+        & gh release edit $version --title "Posted Up $version" --notes-file $body | Out-Null
+    } else {
+        & gh release create $version --title "Posted Up $version" --notes-file $body | Out-Null
+    }
+
+    foreach ($z in $zips) {
+        Write-Host "  uploading $(Split-Path $z -Leaf) ..." -ForegroundColor DarkGray
+        & gh release upload $version $z --clobber | Out-Null
+    }
+
+    $url = (& gh release view $version --json url --jq .url)
+
+    Write-Host ""
+    Write-Host "Published  $url" -ForegroundColor Green
+    Write-Host "           PostedUp-$version.zip and -full.zip attached"
 }
