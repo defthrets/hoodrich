@@ -1363,10 +1363,17 @@ namespace Hoodrich
                     Running = true,
                     Lights = true,
                     Radio = "RADIO_09_HIPHOP_OLD",
+
+                    // THE PARTY IS THE VOLUME, NOT THE CAR. They used to be deleted at six in
+                    // the morning and put back at eight at night, so the spot was bare tarmac
+                    // all day -- which is not what two cars somebody parked outside their own
+                    // place do. They stay, with the talk station on at ordinary volume and
+                    // the lights and neon off, and it is the music going up at night that
+                    // says the party has started.
+                    QuietRadio = Core.Radio.Talk,
                     Neon = System.Drawing.Color.FromArgb(60, 200, 80),
                     QuietFrom = 6,
-                    QuietTo = 20,
-                    GoneWhenQuiet = true
+                    QuietTo = 20
                 };
 
                 _meetTwo = new ParkedCar(new Vector3(-223.179f, -1696.639f, 33.294f), 180.686f,
@@ -1378,10 +1385,13 @@ namespace Hoodrich
                     Lights = true,
 
                     Radio = "RADIO_09_HIPHOP_OLD",
+
+                    // Same as the one beside it: parked all day with the talk on, loud at
+                    // night. See _meetOne.
+                    QuietRadio = Core.Radio.Talk,
                     Neon = System.Drawing.Color.FromArgb(60, 200, 80),
                     QuietFrom = 6,
-                    QuietTo = 20,
-                    GoneWhenQuiet = true
+                    QuietTo = 20
                 };
 
                 _cars.Add(_meetOne);

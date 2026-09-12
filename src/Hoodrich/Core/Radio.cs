@@ -45,6 +45,30 @@ namespace Hoodrich.Core
         private static readonly string[] LosSantosWanted = { "RADIO_03_HIPHOP_NEW", "RADIO_03_HIPHOP_NEW_RADIO" };
         private static string _losSantos;
 
+        /// <summary>
+        /// West Coast Talk Radio, for a parked car with nobody at it.
+        ///
+        /// Talk rather than music is the whole point of it: a car left on all day with a
+        /// station playing is somebody's car with the key in, and talk is what that sounds
+        /// like. The fallback is the classics, which is at least the right car.
+        /// </summary>
+        private static readonly string[] TalkWanted =
+        {
+            "RADIO_11_TALK_02", "RADIO_11_TALK_02_RADIO", "RADIO_09_HIPHOP_OLD"
+        };
+        private static string _talk;
+
+        public static string Talk
+        {
+            get
+            {
+                if (_talk != null) return _talk;
+
+                _talk = Find(TalkWanted);
+                return _talk;
+            }
+        }
+
         public static string LosSantos
         {
             get

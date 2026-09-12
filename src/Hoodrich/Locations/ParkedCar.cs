@@ -67,7 +67,8 @@ namespace Hoodrich.Locations
 
         private void Keep()
         {
-            if (!Running && Neon == null && !Lights && string.IsNullOrEmpty(Radio)) return;
+            if (!Running && Neon == null && !Lights &&
+                string.IsNullOrEmpty(Radio) && string.IsNullOrEmpty(QuietRadio)) return;
 
             try
             {
@@ -78,10 +79,33 @@ namespace Hoodrich.Locations
 
                 // Off hours: the key comes out. All three go together because they are one
                 // switch -- somebody turned it off and went inside.
+                //
+                // UNLESS SOMETHING IS STILL PLAYING. A car can be parked up with nobody at it
+                // and the radio still going, which is the ordinary state of a car outside a
+                // house all afternoon -- so QuietRadio is the station for the hours when
+                // there is nothing on. It plays at ordinary volume, because the loud one is
+                // what the party is; the lights and the neon stay off, because those are the
+                // party too.
                 if (Quiet)
                 {
-                    Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _car.Handle, false, true, false);
-                    Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, _car.Handle, false);
+                    if (!string.IsNullOrEmpty(QuietRadio))
+                    {
+                        // THE ENGINE, BECAUSE A RADIO NEEDS ONE. An unoccupied car with a dead
+                        // engine is treated as parked and stays silent however many times a
+                        // station is set on it.
+                        Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _car.Handle, true, true, false);
+                        Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, _car.Handle, true);
+                        Function.Call(Hash.SET_VEH_RADIO_STATION, _car.Handle, QuietRadio);
+                        Function.Call(Hash.SET_VEHICLE_RADIO_LOUD, _car.Handle, false);
+
+                        // And it is still ours, so it still burns nothing. See Core.Petrol.
+                        Petrol.Spare(_car);
+                    }
+                    else
+                    {
+                        Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _car.Handle, false, true, false);
+                        Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, _car.Handle, false);
+                    }
 
                     // One is forced off. Nought would hand them back to the game, which would
                     // switch them on again the moment it decided it was dark.
@@ -240,6 +264,12 @@ namespace Hoodrich.Locations
         /// somebody has parked up to play music out of is a van with the key still in it.
         /// </summary>
         public bool Running;
+
+        /// <summary>
+        /// What it plays during the quiet hours, at ordinary volume. Empty is silence, which
+        /// is what every car that has not asked for one does.
+        /// </summary>
+        public string QuietRadio = "";
 
         /// <summary>The station, if it is playing anything.</summary>
         public string Radio;
