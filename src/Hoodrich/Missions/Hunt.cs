@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using GTA;
@@ -118,7 +118,23 @@ namespace Hoodrich.Missions
         /// <summary>How long his first trail is, how far apart the prints are, and how many are kept.</summary>
         private const int PrintCount = 22;
         private const float PrintStride = 1.5f;
-        private const int TrailMost = 70;
+
+        /// <summary>
+        /// How many of his prints are remembered, and how many go down in one pass.
+        ///
+        /// A HUNDRED AND THIRTY BECAUSE HE ACTUALLY WALKS NOW. Seventy was a man who moved
+        /// twice in a job: his trail was the stretch he walked in on and almost nothing after
+        /// it, so there was one line to find and then nothing left to read. He wanders his
+        /// patch constantly now, and the trail has to be long enough to be a trail.
+        ///
+        /// THE PER-PASS CAP IS THE DECAL INTAKE. The game takes about thirty-two new decals
+        /// in a frame whoever asks -- see the paint engine -- and walking into range of a
+        /// long trail would otherwise ask for a hundred at once and lose most of them
+        /// silently. Twelve a pass, four hundred milliseconds apart, lays the same trail over
+        /// a couple of seconds and keeps every one of them.
+        /// </summary>
+        private const int TrailMost = 130;
+        private const int LayPerPass = 12;
 
         /// <summary>Stood this close to one of his prints and you have picked up his trail.</summary>
         private const float FoundWithin = 6f;
@@ -128,9 +144,26 @@ namespace Hoodrich.Missions
         private const float AreaSlip = 16f;
 
         /// <summary>How often one of them walks between his two spots, and how far apart they are.</summary>
-        private const int WanderMinMs = 35000;
-        private const int WanderVaryMs = 35000;
-        private const float BeatFar = 14f;
+        /// <summary>
+        /// How long he stands before moving on, and how far the next spot is.
+        ///
+        /// THIRTY-FIVE TO SEVENTY SECONDS WAS A MAN STANDING STILL. A hunt lasts a few
+        /// minutes, so at that rate each of them moved perhaps twice in the whole job, and
+        /// between moves there was nothing on the ground to read and nothing to see from
+        /// cover. Seven to fifteen is a man who is never where you last looked.
+        ///
+        /// AND HE STAYS IN HIS PATCH. Every spot is measured from his HOME rather than from
+        /// wherever he has got to, so he orbits the ground his ring covers instead of
+        /// drifting off the block -- the ring is a forty-two metre promise and a man who
+        /// walked out of it would make the map a liar.
+        /// </summary>
+        private const int WanderMinMs = 7000;
+        private const int WanderVaryMs = 8000;
+        private const float BeatNear = 11f;
+        private const float BeatFar = 28f;
+
+        /// <summary>And how far he must actually travel for it to be worth walking.</summary>
+        private const float BeatWorth = 9f;
 
         /// <summary>How far one of them can see you.</summary>
         private const float SeeRange = 42f;
@@ -231,10 +264,19 @@ namespace Hoodrich.Missions
             public Blip Area;
             public Blip Mark;
 
-            /// <summary>His two spots, which one he is at, and what he does there.</summary>
+            /// <summary>
+            /// The middle of his patch, where he is headed now, and what he does when he
+            /// gets there.
+            ///
+            /// A FRESH SPOT EVERY TIME, NOT TWO OF THEM. He used to shuttle between his home
+            /// and one other place, which is a man pacing a line -- and when the other place
+            /// could not be found the two were the same point and he never moved again for
+            /// the rest of the job. Now it is rolled each time he sets off, so the trail
+            /// meanders the way a man's does and a failed roll costs one wait rather than
+            /// the whole hunt. See Roam.
+            /// </summary>
             public Vector3 Home;
-            public Vector3 Beat;
-            public bool AtBeat;
+            public Vector3 Going;
             public string Doing = "";
 
             /// <summary>When he next walks, whether he is walking now, and where his last print went.</summary>
@@ -627,8 +669,7 @@ namespace Hoodrich.Missions
 
                 if (q.Man == null || !q.Man.Exists())
                 {
-                    q.Spooked = true;
-                    Unring(q);
+                    Vanished(q);
                     continue;
                 }
 
@@ -669,11 +710,12 @@ namespace Hoodrich.Missions
                 return;
             }
 
-            // NOTHING LEFT TO HUNT. Spooking all of them is a way to lose this, and it is the
-            // only one that is entirely your own doing.
-            if (Down + Lost >= Many && Down < Many)
+            // NOTHING LEFT TO HUNT, which by now can only mean a man who went without being
+            // spooked. Gone and Vanished both end the job where they stand, so this is the
+            // backstop rather than the rule it used to be.
+            if (Down + Lost >= Many && Down < Many && string.IsNullOrEmpty(Failure))
             {
-                Failure = "you spooked the lot of them.";
+                Failure = "there's nobody left out there.";
             }
         }
 
@@ -778,10 +820,13 @@ namespace Hoodrich.Missions
             {
                 Man = man,
                 Home = at,
-                Beat = Nearby(at),
+                Going = at,
                 Doing = doing,
                 LastStep = at,
-                WanderAt = now + WanderMinMs + _rng.Next(WanderVaryMs)
+
+                // A SHORT FIRST WAIT. The full one is for a man who has just arrived
+                // somewhere; these three have been stood there since before you turned up.
+                WanderAt = now + 2000 + _rng.Next(WanderVaryMs)
             };
 
             Walked(q, from, at);
@@ -790,21 +835,30 @@ namespace Hoodrich.Missions
             _out.Add(q);
         }
 
-        /// <summary>His second spot: a little way off along the pavement.</summary>
-        private Vector3 Nearby(Vector3 home)
+        /// <summary>
+        /// Somewhere else in his patch: a pavement spot round his home, and far enough from
+        /// where he is stood to be worth the walk.
+        ///
+        /// MEASURED FROM HOME, WALKED FROM HERE. Both distances matter and they are
+        /// different ones -- the first keeps him inside the ring on the map, the second
+        /// stops him shuffling two metres and calling it a patrol.
+        /// </summary>
+        private Vector3 Roam(Vector3 home, Vector3 from)
         {
-            for (var tries = 0; tries < 6; tries++)
+            for (var tries = 0; tries < 8; tries++)
             {
-                var probe = home + (Vector3.RandomXY() * (BeatFar * (0.7f + (float)_rng.NextDouble() * 0.6f)));
+                var far = BeatNear + (float)_rng.NextDouble() * (BeatFar - BeatNear);
+                var probe = home + (Vector3.RandomXY() * far);
 
                 var at = World.GetNextPositionOnSidewalk(probe);
                 if (at == Vector3.Zero) continue;
-                if (at.DistanceTo(home) < 6f) continue;
+                if (at.DistanceTo(home) > BeatFar + 6f) continue;
+                if (at.DistanceTo(from) < BeatWorth) continue;
 
                 return at;
             }
 
-            return home;
+            return Vector3.Zero;
         }
 
         /// <summary>
@@ -1075,17 +1129,25 @@ namespace Hoodrich.Missions
 
             if (now < q.WanderAt) return;
             if (q.LookingUntil != 0 || q.Suspicion > 0.2f) return;
-            if (q.Beat == q.Home) { q.WanderAt = now + WanderMinMs; return; }
 
-            var to = q.AtBeat ? q.Home : q.Beat;
+            // A ROLL THAT FAILS IS WORTH ANOTHER GO IN A MOMENT, and that is the whole of
+            // the standing-still bug: the old pair was worked out once, and a man whose
+            // second spot came back as his first stood there for the rest of the job.
+            var to = Roam(q.Home, q.Man.Position);
 
-            if (!Send(q.Man, to, q.Doing, 1.0f))
+            if (to == Vector3.Zero)
             {
-                q.WanderAt = now + 8000;
+                q.WanderAt = now + 4000;
                 return;
             }
 
-            q.AtBeat = !q.AtBeat;
+            if (!Send(q.Man, to, q.Doing, 1.0f))
+            {
+                q.WanderAt = now + 6000;
+                return;
+            }
+
+            q.Going = to;
             q.Walking = true;
             q.WalkFrom = now;
             q.LastStep = q.Man.Position;
@@ -1111,6 +1173,7 @@ namespace Hoodrich.Missions
 
             var me = player.Position;
             var stood = false;
+            var laid = 0;
 
             for (var i = 0; i < q.Trail.Count; i++)
             {
@@ -1127,6 +1190,10 @@ namespace Hoodrich.Missions
                 // and the far end of a trail is a piece of ground like any other.
                 if (gap > PrintRange) continue;
 
+                // And no more than a handful this pass. See LayPerPass.
+                if (laid >= LayPerPass) continue;
+
+                laid++;
                 q.Laid[i] = true;
 
                 // Oldest faintest, which is what tracking is: the fresh ones are the ones
@@ -1433,7 +1500,16 @@ namespace Hoodrich.Missions
         // Losing them, and dropping them
         // ======================================================================
 
-        /// <summary>He has had enough and he is off. That one is not coming back.</summary>
+        /// <summary>
+        /// He has had enough and he is off -- and that is the job.
+        ///
+        /// ONE IS ENOUGH, AND IT USED TO TAKE ALL THREE. The old rule failed the hunt when
+        /// nothing huntable was left, so spooking one and then stalking the other two ended
+        /// with two down, one gone, a card reading "2 of 3" and no way at all to finish it:
+        /// the third man was over the hill and the job sat there waiting for him. A stalk
+        /// you have blown is blown at the moment you blow it, which is both the honest rule
+        /// and the one that cannot hang.
+        /// </summary>
         private void Gone(Quarry q)
         {
             q.Spooked = true;
@@ -1459,7 +1535,29 @@ namespace Hoodrich.Missions
 
             Notify.Failure("he saw you. that one's gone.");
 
-            Log.Info("Hunt: one spooked. " + Down + " down, " + Lost + " lost.");
+            Log.Info("Hunt: one spooked. " + Down + " down, " + Lost + " lost. That is the job.");
+
+            Failure = "one of them got away.";
+        }
+
+        /// <summary>
+        /// The man himself has stopped existing, which is the engine and not you.
+        ///
+        /// It still ends the job -- there is nothing left to hunt and a card that can never
+        /// reach three is the hang this file has already had once -- but it does not say you
+        /// were seen, because you were not.
+        /// </summary>
+        private void Vanished(Quarry q)
+        {
+            q.Spooked = true;
+            q.LookingUntil = 0;
+
+            Unring(q);
+
+            Log.Warn("Hunt: one of them stopped existing. Ending the job rather than leaving " +
+                     "a count that cannot be finished.");
+
+            Failure = "lost one of them out there.";
         }
 
         /// <summary>
@@ -1491,7 +1589,7 @@ namespace Hoodrich.Missions
         /// </summary>
         private void Bleed(Quarry q, int now)
         {
-            if (q.Man == null || !q.Man.Exists()) { q.Spooked = true; Unring(q); return; }
+            if (q.Man == null || !q.Man.Exists()) { Vanished(q); return; }
 
             if (q.LastBlood == Vector3.Zero || q.Man.Position.DistanceTo(q.LastBlood) > 1.6f)
             {
@@ -1677,7 +1775,7 @@ namespace Hoodrich.Missions
 
             q.LookingUntil = 0;
 
-            var home = q.AtBeat ? q.Beat : q.Home;
+            var home = q.Going == Vector3.Zero ? q.Home : q.Going;
 
             if (Send(q.Man, home, q.Doing, 1.0f))
             {
@@ -1962,8 +2060,8 @@ namespace Hoodrich.Missions
             if (!IsRunning) return;
             if (Phase == HuntPhase.Riding) return;
 
-            const float w = 0.160f;
-            const float h = 0.062f;
+            const float w = 0.190f;
+            const float h = 0.080f;
 
             var left = 0.5f - w * 0.5f;
             var top = 0.795f;
@@ -1977,6 +2075,8 @@ namespace Hoodrich.Missions
 
             Hud.TextRight(Down + " / " + Many, left + w - 0.010f, top + 0.004f, 0.34f,
                           Palette.Text, Hud.FontLabel);
+
+            Compass(x, top + 0.026f, w - 0.020f);
 
             // ---- who is looking ----
             var watched = 0f;
@@ -1999,7 +2099,7 @@ namespace Hoodrich.Missions
                        : Palette.Alpha(Palette.TextDim, 190);
 
             Hud.Text(dialling ? "ON THE PHONE" : eyes > 0 ? "EYES  " + eyes : "NO EYES",
-                     x, top + 0.030f, 0.22f, eyeInk, Hud.FontLabel, centre: false);
+                     x, top + 0.048f, 0.22f, eyeInk, Hud.FontLabel, centre: false);
 
             // ---- how close the nearest one is to hearing you ----
             var worst = 0f;
@@ -2013,21 +2113,197 @@ namespace Hoodrich.Missions
             var barX = x + 0.062f;
             var barW = w - 0.068f - 0.010f;
 
-            Hud.RectFrom(barX, top + 0.034f, barW, 0.0075f,
+            Hud.RectFrom(barX, top + 0.052f, barW, 0.0075f,
                          Color.FromArgb(90, 255, 255, 255));
 
             if (worst > 0.01f)
             {
                 var ink = worst > 0.66f ? Palette.Danger : worst > 0.33f ? Palette.Warn : Palette.Brand;
 
-                Hud.RectFrom(barX, top + 0.034f, barW * Math.Min(1f, worst), 0.0075f, ink);
+                Hud.RectFrom(barX, top + 0.052f, barW * Math.Min(1f, worst), 0.0075f, ink);
             }
 
             if (!string.IsNullOrEmpty(_said) && Game.GameTime - _saidAt < 5200)
             {
-                Hud.Text(_said, left + w * 0.5f, top + 0.046f, 0.24f,
+                Hud.Text(_said, left + w * 0.5f, top + 0.064f, 0.24f,
                          Palette.Alpha(Palette.TextDim, 210), Hud.FontBody);
             }
+        }
+
+        // ======================================================================
+        // The compass
+        // ======================================================================
+
+        /// <summary>How wide a slice of the world the strip covers, each side of straight ahead.</summary>
+        private const float CompassHalfFov = 90f;
+
+        /// <summary>The strip, and the pips on it.</summary>
+        private const float CompassH = 0.013f;
+        private const float PipW = 0.0030f;
+        private const float VaguePipW = 0.0070f;
+
+        /// <summary>
+        /// Which way they are, from where you are looking.
+        ///
+        /// A HUNT ON FOOT WITH A RING ON THE MAP IS A HUNT PLAYED IN THE PAUSE MENU. The ring
+        /// says where he is to within forty metres and the trail says where he went, and
+        /// neither is any use at all while you are walking with your head up -- so the state
+        /// everybody was actually reading was the map screen, and the field was a place you
+        /// crossed between map checks. This is the same knowledge, in front of you.
+        ///
+        /// WHAT IT KNOWS IS WHAT YOU KNOW, and that is the point. Before you have his trail
+        /// the pip is wide, dim and sits on the RING'S centre -- which is slipped off him by
+        /// up to sixteen metres, so it is a direction to search in and not a solution. Once
+        /// you have stood on his prints the pip goes narrow and green and follows the man
+        /// himself. The compass sharpens as you learn, the way the map already did.
+        ///
+        /// AND IT IS THE CAMERA'S HEADING, NOT HIS. You look around far more than you turn,
+        /// and a compass that answered to his feet would sit still while you searched.
+        /// </summary>
+        private void Compass(float x, float top, float w)
+        {
+            var me = Game.Player.Character;
+            if (me == null || !me.Exists()) return;
+
+            var here = me.Position;
+
+            // ASKED ONCE A FRAME. Every pip and every letter is measured against the same
+            // heading, and a native call per mark is a native call per mark for an answer
+            // that cannot change between them.
+            float look;
+
+            try { look = Heading(GameplayCamera.Direction); }
+            catch { return; }
+
+            Hud.RectFrom(x, top, w, CompassH, Color.FromArgb(70, 0, 0, 0));
+
+            var mid = x + w * 0.5f;
+
+            // Straight ahead, so a pip in the middle means walk forward.
+            Hud.RectFrom(mid - 0.0007f, top - 0.0015f, 0.0014f, CompassH + 0.003f,
+                         Palette.Alpha(Palette.Text, 150));
+
+            // North, east, south, west, wherever they have got to. Letters rather than ticks:
+            // the map is the other half of this and it is drawn the same way up.
+            Cardinal(x, top, w, mid, look, 90f, "N");
+            Cardinal(x, top, w, mid, look, 0f, "E");
+            Cardinal(x, top, w, mid, look, 270f, "S");
+            Cardinal(x, top, w, mid, look, 180f, "W");
+
+            // ---- the men ----
+            foreach (var q in _out)
+            {
+                if (q.Down || q.Spooked) continue;
+
+                var known = q.Found && q.Man != null && q.Man.Exists() && q.Man.IsAlive;
+
+                Vector3 at;
+
+                if (known)
+                {
+                    at = q.Man.Position;
+                }
+                else if (q.Area != null && q.Area.Exists())
+                {
+                    // The ring, slipped off him when it was placed. See Ring.
+                    at = q.Area.Position;
+                }
+                else
+                {
+                    continue;
+                }
+
+                // NEARNESS IS THE PIP'S HEIGHT, and there is no number anywhere on this card
+                // for it. A range readout turns a hunt into a walk down a decreasing number;
+                // a pip that grows as you close says warmer without saying where.
+                var far = here.DistanceTo(at);
+                var near = far <= 40f ? 1f : far >= 200f ? 0.55f : 1f - (far - 40f) / 160f * 0.45f;
+
+                var tall = CompassH * near;
+                var pipTop = top + (CompassH - tall) * 0.5f;
+
+                Pip(x, pipTop, w, mid, Off(look, here, at),
+                    known ? PipW : VaguePipW, tall,
+                    known ? Palette.Brand : Palette.Alpha(Palette.TextDim, 150));
+            }
+
+            // ---- and whoever is looking at you ----
+            //
+            // Only while he is actually looking. A pip for every man on a corner would be a
+            // strip full of people who do not matter, and the one who does would be lost in
+            // them.
+            foreach (var eye in _eyes)
+            {
+                if (eye.Called) continue;
+                if (eye.Man == null || !eye.Man.Exists() || !eye.Man.IsAlive) continue;
+                if (eye.CallingFrom == 0 && eye.Spot < 0.25f) continue;
+
+                Pip(x, top, w, mid, Off(look, here, eye.Man.Position), PipW, CompassH,
+                    eye.CallingFrom != 0 ? Palette.Danger : Palette.Warn);
+            }
+        }
+
+        /// <summary>One mark on the strip, clamped to the ends when it is behind you.</summary>
+        private static void Pip(float x, float top, float w, float mid, float off,
+                                float wide, float tall, Color ink)
+        {
+            var at = mid + off / CompassHalfFov * (w * 0.5f);
+
+            // BEHIND YOU IS STILL A DIRECTION. A pip that vanished past ninety degrees would
+            // leave the strip empty exactly when you have lost him, so it holds at the end it
+            // went off and dims -- which reads as "keep turning this way".
+            var edge = Math.Abs(off) > CompassHalfFov;
+
+            if (edge)
+            {
+                at = off > 0f ? x + w - wide : x;
+                ink = Color.FromArgb(ink.A / 2, ink.R, ink.G, ink.B);
+            }
+            else
+            {
+                at -= wide * 0.5f;
+
+                if (at < x) at = x;
+                if (at + wide > x + w) at = x + w - wide;
+            }
+
+            Hud.RectFrom(at, top, wide, tall, ink);
+        }
+
+        /// <summary>A compass letter, where it has got to, or nothing when it is behind you.</summary>
+        private static void Cardinal(float x, float top, float w, float mid, float look,
+                                     float angle, string letter)
+        {
+            var off = Wrap(look - angle);
+            if (Math.Abs(off) > CompassHalfFov) return;
+
+            var at = mid + off / CompassHalfFov * (w * 0.5f);
+
+            Hud.Text(letter, at, top + 0.0005f, 0.17f,
+                     Palette.Alpha(Palette.TextDim, 120), Hud.FontLabel);
+        }
+
+        /// <summary>
+        /// How far round you would have to turn to face it: negative left, positive right.
+        /// </summary>
+        private static float Off(float look, Vector3 from, Vector3 to)
+        {
+            return Wrap(look - Heading(to - from));
+        }
+
+        /// <summary>A direction on the ground as an angle, counter-clockwise from east.</summary>
+        private static float Heading(Vector3 run)
+        {
+            return (float)(Math.Atan2(run.Y, run.X) * 180.0 / Math.PI);
+        }
+
+        /// <summary>An angle brought back inside half a turn either way.</summary>
+        private static float Wrap(float deg)
+        {
+            while (deg > 180f) deg -= 360f;
+            while (deg < -180f) deg += 360f;
+
+            return deg;
         }
 
         private static bool Crouching(Ped player)
