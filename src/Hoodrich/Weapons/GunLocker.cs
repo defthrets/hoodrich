@@ -304,11 +304,12 @@ namespace Hoodrich.Weapons
 
             if (back <= 0) return;
 
+            // THE LOG, AND NOTHING ON SCREEN. Handing his own guns back is the mod keeping a
+            // promise, not news: he bought them, he expects them, and a toast every time he
+            // loads a save is the mod congratulating itself for not losing his things. The
+            // line stays in the log, where it belongs if it ever has to be proved.
             Log.Info("Locker: handed back " + back + " gun" + (back == 1 ? "" : "s") +
                      (parts > 0 ? " with " + parts + " part(s) back on them" : "") + ".");
-
-            UI.Notify.Ticker("~g~Your pieces are still yours.~s~  " + back +
-                             (back == 1 ? " gun" : " guns") + " back off the shelf.");
         }
     }
 }
