@@ -27,6 +27,12 @@ namespace Hoodrich.Paint
         private const float Earshot = 16f;
 
         /// <summary>Roughly how often anybody pipes up, and how long before the same one does again.</summary>
+        /// <summary>
+        /// How many people are looked at in one pass. Each one that gets as far as the sight
+        /// line costs a raycast; see Gripe.
+        /// </summary>
+        private const int ProbesMost = 6;
+
         private const int GripeEveryMs = 7000;
         private const int GripeSpreadMs = 9000;
         private const int SamePersonMs = 45000;
@@ -140,9 +146,26 @@ namespace Hoodrich.Paint
             // same unlucky pedestrian narrates the entire session.
             var start = _rng.Next(near.Length);
 
-            for (var i = 0; i < near.Length; i++)
+            // A FEW OF THEM, NOT ALL OF THEM, AND THAT IS THE WHOLE OF THIS FIX.
+            //
+            // Worth ends on HAS_ENTITY_CLEAR_LOS_TO_ENTITY, which is a raycast, and this loop
+            // ran it on every ped in earshot until one passed. On a quiet street that is two
+            // casts; outside Gerald's with the block turned out it is thirty, in one tick,
+            // and the tick watchdog measured exactly that -- _street.Update holding the frame
+            // for forty-six to fifty-one milliseconds, three hundred and sixty-eight times in
+            // one session, more than every other system in the mod put together.
+            //
+            // Nothing is lost by stopping early. The point is that SOMEBODY says something,
+            // not that the most deserving candidate is found: a pass that finds nobody comes
+            // back in seven seconds and tries six different people, which from the pavement is
+            // the same thing and costs a fifth as much.
+            var tried = 0;
+
+            for (var i = 0; i < near.Length && tried < ProbesMost; i++)
             {
                 var ped = near[(start + i) % near.Length];
+
+                tried++;
 
                 if (!Worth(ped, me, now)) continue;
 

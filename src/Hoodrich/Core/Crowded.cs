@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 
 namespace Hoodrich.Core
@@ -76,6 +76,50 @@ namespace Hoodrich.Core
         {
             return Peds + " ped(s) and " + Vehicles + " vehicle(s) in the world" +
                    (Busy ? " -- FULL, ours are holding off" : "");
+        }
+
+        private static int _censusAt;
+        private const int CensusEveryMs = 60000;
+
+        /// <summary>
+        /// Everything in the world, once a minute, at INFO.
+        ///
+        /// FOR THE QUESTION NOBODY CAN ANSWER FROM A LOG OF WHAT WE MEANT TO DO. "It gets
+        /// laggy about ten minutes in" and "it crashed to desktop with nothing in any log"
+        /// are the same report twice, and the thing that would settle both is a number that
+        /// either climbs or does not. Peds, vehicles, props and blips are the four pools a
+        /// mod can fill, and none of them was ever written down.
+        ///
+        /// A minute apart, so it is four numbers an hour rather than a wall, and cheap even
+        /// so: four pool walks a minute against sixty frames a second.
+        /// </summary>
+        public static void Census()
+        {
+            int now;
+
+            try { now = Game.GameTime; }
+            catch { return; }
+
+            if (now - _censusAt < CensusEveryMs && _censusAt != 0) return;
+            _censusAt = now;
+
+            try
+            {
+                var props = World.GetAllProps().Length;
+                var blips = World.GetAllBlips().Length;
+
+                _peds = World.GetAllPeds().Length;
+                _cars = World.GetAllVehicles().Length;
+                _at = now;
+
+                Log.Info("World: " + _peds + " ped(s), " + _cars + " vehicle(s), " + props +
+                         " prop(s), " + blips + " blip(s)." +
+                         (Busy ? " Ours are holding off -- see Crowded." : ""));
+            }
+            catch
+            {
+                // A census that cannot be taken is not worth a frame.
+            }
         }
     }
 }

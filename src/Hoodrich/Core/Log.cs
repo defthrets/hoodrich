@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -73,6 +74,8 @@ namespace Hoodrich.Core
                     }
 
                     AppendLine(path, sb.ToString());
+
+                    if (Due(level)) Drain();
                 }
             }
             catch
@@ -81,9 +84,76 @@ namespace Hoodrich.Core
             }
         }
 
+        /// <summary>
+        /// Lines waiting to be written, and when the last lot went.
+        ///
+        /// A LINE USED TO BE A FILE OPENED, WRITTEN AND CLOSED, on the game's thread, inside
+        /// the lock. Ten thousand of them in a session, each one a round trip through the
+        /// filesystem with whatever the player's antivirus does to a file that keeps being
+        /// reopened bolted on the side. None of it is slow enough to see on its own and all
+        /// of it is on the frame.
+        ///
+        /// So they queue and go out together. Every half second, or when there are enough to
+        /// be worth a trip, or the moment anything at WARN or worse arrives -- because the
+        /// one log that matters is the one written just before a crash, and a buffer that
+        /// loses the last five lines to save five milliseconds has thrown away the only
+        /// evidence there was.
+        /// </summary>
+        private static readonly List<string> Waiting = new List<string>();
+        private static int _flushedAt;
+
+        private const int FlushEveryMs = 500;
+        private const int FlushAt = 24;
+
         private static void AppendLine(string path, string line)
         {
-            File.AppendAllText(path, line + Environment.NewLine, Encoding.UTF8);
+            Waiting.Add(line);
+        }
+
+        /// <summary>Writes what is waiting. Called on the clock, on a warning, and on the way out.</summary>
+        public static void Flush()
+        {
+            lock (Gate)
+            {
+                Drain();
+            }
+        }
+
+        private static void Drain()
+        {
+            if (Waiting.Count == 0) return;
+
+            try
+            {
+                var sb = new StringBuilder();
+
+                for (var i = 0; i < Waiting.Count; i++)
+                {
+                    sb.Append(Waiting[i]).Append(Environment.NewLine);
+                }
+
+                File.AppendAllText(Paths.LogFile, sb.ToString(), Encoding.UTF8);
+            }
+            catch
+            {
+                // A log that cannot be written is not a reason to stop playing. The lines go
+                // either way, or they would queue for ever on a locked file.
+            }
+
+            Waiting.Clear();
+
+            try { _flushedAt = GTA.Game.GameTime; }
+            catch { _flushedAt = 0; }
+        }
+
+        /// <summary>Whether what is waiting should go now. See Waiting.</summary>
+        private static bool Due(LogLevel level)
+        {
+            if (level <= LogLevel.Warn) return true;
+            if (Waiting.Count >= FlushAt) return true;
+
+            try { return GTA.Game.GameTime - _flushedAt >= FlushEveryMs; }
+            catch { return true; }
         }
 
         private static void RollIfLarge(string path)

@@ -3313,6 +3313,9 @@ namespace Hoodrich
             // The set's mark, for a few seconds after load. Bows out on its own and
             // costs a comparison thereafter; see UI.Splash.
             Core.Pace.Begin();
+
+            // Four numbers a minute, so a leak has somewhere to show itself.
+            Core.Crowded.Census();
             Core.Pace.At("UI.Splash.Render");
             UI.Splash.Render();
 
@@ -5334,6 +5337,11 @@ namespace Hoodrich
                 SnapshotGuns();
                 SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint, _blocks);
                 Log.Info(Build.Name + " unloaded cleanly.");
+
+                // AND THE LAST LINES ACTUALLY REACH THE FILE. They queue now; see
+                // Core.Log. A buffer that is still holding the final page when the
+                // script goes is the one page anybody would want to read.
+                Log.Flush();
             }
             catch (Exception ex)
             {
