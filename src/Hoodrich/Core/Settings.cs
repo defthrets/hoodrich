@@ -360,8 +360,17 @@ namespace Hoodrich.Core
         /// </summary>
         public bool Scenery = true;
 
-        /// <summary>Whether Menyoo's own Spooner folder is read as well as the mod's.</summary>
-        public bool SceneryFromMenyoo = true;
+        /// <summary>
+        /// Whether Menyoo's own Spooner folder is read as well as the mod's.
+        ///
+        /// OFF BY DEFAULT, because it is an authoring shortcut and not a player feature: it
+        /// lets a scene saved in Menyoo stand up in the mod without a copy step, which is
+        /// how every shipped scene was made. A player's spooner folder holds whatever they
+        /// downloaded -- horror maps, drift tracks -- and the mod was standing all of it up
+        /// as street scenery. The shipped scenes live in scripts\Hoodrich\scenery and need
+        /// nothing from Menyoo.
+        /// </summary>
+        public bool SceneryFromMenyoo = false;
 
         /// <summary>How near a scene has to be before it is stood up, in metres.</summary>
         public float SceneryRange = 220f;

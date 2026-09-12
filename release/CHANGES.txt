@@ -12,6 +12,11 @@ than 200 things is skipped with a line in the log saying so. The mod's own
 scenery folder has no limit. The port van's model is asked for and not waited
 for either, so no single tick can reach the line.
 
+AND MENYOO'S FOLDER IS NOT READ UNLESS YOU ASK. [Scenery] FromMenyoo is off by
+default now: it was an authoring shortcut -- save a scene in Menyoo and it
+stands up in the mod -- and a player's spooner folder is downloaded maps, not
+scenes. Everything the mod ships lives in its own scenery folder.
+
 YOUR GUNS COME BACK LOADED.
 
 The locker handed a bought gun back empty after a load, and the first thing
