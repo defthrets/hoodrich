@@ -90,6 +90,12 @@ The phone button opens everything. Arrows move, Enter chooses, Backspace goes ba
 
 CHANGELOG
 
+0.8.1 - 12 September 2026
+
+- A folder of downloaded maps no longer kills the script on load. Menyoo's spooner folder is not read unless you turn it on, and when it is, it is read a bit at a time with oversized maps skipped. The port van's model streams instead of holding the tick;
+- Your guns come back loaded. Bought guns were handed back empty after a load; the round count is saved with the gun now;
+- The phone's grid is pixel art, and the product is too. Every tile is an animated flipbook, still until the cursor lands, and the drugs share Bare Minimum's pictures. The Mask app is off the grid.
+
 0.8.0 - 11 September 2026
 
 - A language setting, and nine languages to go in it. First row of the settings screen: English (UK and US), Portugues (BR), Espanol, Francais, Deutsch, Russkiy, Polski, Chinese (Simplified) and Hindi in Latin letters. Each is a json with English on the left; anything untranslated shows in English;
