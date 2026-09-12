@@ -90,6 +90,12 @@ The phone button opens everything. Arrows move, Enter chooses, Backspace goes ba
 
 CHANGELOG
 
+0.8.2 - 12 September 2026
+
+- The hunt gets a compass, and the men you are after walk their patch instead of standing on it, so there is a trail to read. Spooking one ends the job rather than leaving a count that can never be finished;
+- Pills go down with a drink, a tab goes on the tongue, and the needle ends on the ground. Rituals can have a second act;
+- The cars we put on the street burn no fuel -- Lamar's party, the takeover, the car meet, the cruise and the rollers. Get in one and it is a car again.
+
 0.8.1 - 12 September 2026
 
 - A folder of downloaded maps no longer kills the script on load. Menyoo's spooner folder is not read unless you turn it on, and when it is, it is read a bit at a time with oversized maps skipped. The port van's model streams instead of holding the tick;
