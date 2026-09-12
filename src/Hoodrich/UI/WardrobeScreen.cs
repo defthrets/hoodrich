@@ -149,12 +149,28 @@ namespace Hoodrich.UI
         /// keeps is filed per body, so his wardrobe, his outfits and his masks are all still
         /// there when he comes back.
         /// </summary>
-        private static readonly PedHash[] Bodies =
-        {
-            PedHash.Franklin, PedHash.FreemodeMale01, PedHash.FreemodeFemale01
-        };
+        /// <summary>
+        /// FRANKLIN, AND NOBODY ELSE. The online bodies were on this rail and are off it.
+        ///
+        /// They cost more than they gave. Everything the mod keeps about clothes is filed
+        /// under the body it was worn on -- it has to be, because a drawable number is an
+        /// index into ONE model's wardrobe and the thirty-first jacket on Franklin is a
+        /// different object on a freemode ped -- so a wardrobe filled up on the online man
+        /// looks empty the moment you are Franklin again, and an outfit hung on a peg is
+        /// there but invisible. Reported as the wardrobe not saving, which is exactly what
+        /// it looks like from the rail.
+        ///
+        /// And this is Franklin's mod. The story talks to him, the dialogue is his, his
+        /// people know him; a freemode ped standing in his kitchen is a different game with
+        /// the wrong voice.
+        ///
+        /// The row stays, because a body this rail has never heard of still needs a way home
+        /// -- another mod can put him in anything, and the one useful thing this row does is
+        /// hand him back. See Wear.
+        /// </summary>
+        private static readonly PedHash[] Bodies = { PedHash.Franklin };
 
-        private static readonly string[] BodyNames = { "Franklin", "Online man", "Online woman" };
+        private static readonly string[] BodyNames = { "Franklin" };
 
         private int _row;
         private int _lastRow = -1;
@@ -461,6 +477,18 @@ namespace Hoodrich.UI
 
         public void Update()
         {
+            // WRITTEN DOWN AS HE CHOOSES, NOT ONLY ON THE WAY OUT.
+            //
+            // Done fires from Close, and Close is the cancel button -- so a session that
+            // ended any other way, and every minute of one that had not ended yet, was an
+            // hour of choosing that the save had never heard of. Which is what "the
+            // wardrobe does not save" is: it saved, on one exit, and that was not the exit
+            // anybody took.
+            //
+            // Two seconds apart, so it is a handful of reads a visit rather than sixty a
+            // second, and Remember is only a dozen natives and a list.
+            Keep();
+
             if (!IsOpen) return;
 
             LockControls();
@@ -804,15 +832,16 @@ namespace Hoodrich.UI
 
                 var now = BodyNow(me);
 
-                // A BODY THIS RAIL HAS NEVER HEARD OF GOES HOME. He is in something another
-                // mod put him in; the one useful thing this row can do is hand him back.
-                var next = now < 0 ? 0 : (now + by + Bodies.Length) % Bodies.Length;
-
-                if (next == now)
+                // HOME, OR NOTHING. There is one body on this rail now -- see Bodies -- so
+                // the only move this row has is putting back somebody another mod has
+                // changed. Already Franklin is not a failure, it is the answer.
+                if (now == 0)
                 {
                     Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
                     return;
                 }
+
+                var next = 0;
 
                 var model = new Model(Bodies[next]);
 
@@ -1092,5 +1121,21 @@ namespace Hoodrich.UI
                          : "UP/DOWN  SLOT      LEFT/RIGHT  CHANGE      ENTER  COLOUR      MOUSE  LOOK      BACKSPACE  DONE",
                      x, top + height - 0.030f, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
         }
+        private int _keptAt;
+        private const int KeepEveryMs = 2000;
+
+        /// <summary>What he has on, into the save, while he is still stood there.</summary>
+        private void Keep()
+        {
+            if (State == null) return;
+
+            var now = Game.GameTime;
+            if (now - _keptAt < KeepEveryMs) return;
+            _keptAt = now;
+
+            try { Locations.Wardrobe.Remember(State); }
+            catch { /* the way out still writes it */ }
+        }
+
     }
 }

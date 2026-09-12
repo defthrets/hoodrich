@@ -316,7 +316,27 @@ namespace Hoodrich.Locations
         public static bool Hang(PlayerState state, int peg, string name)
         {
             var me = Game.Player.Character;
-            if (state == null || !Him(me) || peg < 0 || peg >= Pegs) return false;
+
+            // SAID RATHER THAN BEEPED. A peg that refuses is a beep at the rail and nothing
+            // anywhere else, so "it will not save my outfits" arrived with no way to tell a
+            // missing save from a peg out of range from a body the closet will not dress.
+            if (state == null)
+            {
+                Log.Warn("Wardrobe: nothing to hang an outfit in -- the save is not wired up.");
+                return false;
+            }
+
+            if (!Him(me))
+            {
+                Log.Warn("Wardrobe: will not hang an outfit on this body.");
+                return false;
+            }
+
+            if (peg < 0 || peg >= Pegs)
+            {
+                Log.Warn("Wardrobe: peg " + peg + " is not one of the " + Pegs + " on the rail.");
+                return false;
+            }
 
             var worn = new List<string>();
 
