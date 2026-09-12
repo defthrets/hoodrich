@@ -1,4 +1,20 @@
-﻿0.8.1 -- 12 September 2026
+﻿Since 0.8.1 -- 12 September 2026
+
+
+PILLS GO DOWN, A TAB GOES ON THE TONGUE, AND THE NEEDLE ENDS ON THE GROUND.
+
+A ritual can have a second act now. Xanax and ecstasy are the one pill clip the
+game has, cut at the swallow, the bottle in the other hand, and then a bottle
+of water tipped back to get them down. LSD is the same hand to the mouth, cut
+as the tab goes in, nothing in the hand and nothing to wash down. Heroin ends
+with him slumped on his side on the ground for a while rather than in a
+ragdoll -- the game has no injection for a standing ped, and the slump is the
+half that reads. Weed, coke and meth are as they were.
+
+THE LOCKER STOPS ANNOUNCING ITSELF. Guns coming back after a load is the mod
+keeping a promise, not news; the toast is gone and the log line stays.
+
+0.8.1 -- 12 September 2026
 
 
 A FOLDER OF DOWNLOADED MAPS NO LONGER KILLS THE SCRIPT ON LOAD.

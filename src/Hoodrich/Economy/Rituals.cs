@@ -95,8 +95,27 @@ namespace Hoodrich.Economy
             /// </summary>
             public int Linger;
 
-            /// <summary>He goes down at the end of it. The junkie nod.</summary>
-            public bool Slump;
+            /// <summary>
+            /// He goes down at the end of it, as a ragdoll. Nothing sets it now -- the needle
+            /// ends on the ground as a second act instead, see Highs.Nodding -- but a recipe
+            /// that wants the old fall still can.
+            /// </summary>
+            public bool Slump = false;
+
+            /// <summary>
+            /// A second act that follows when the first lands: the sip after the pill, the
+            /// slump after the needle. Its own clip, prop, length and linger, on the same
+            /// camera. The effect has landed by the time it starts, so the second act is all
+            /// look. Null means one act, which is most of them.
+            /// </summary>
+            public Recipe Then;
+
+            /// <summary>
+            /// The clip on the whole body rather than the upper half. Every other recipe
+            /// keeps his legs his own so he can stand on a kerb; a man lying on the ground
+            /// needs the legs too.
+            /// </summary>
+            public bool FullBody;
         }
 
         private Prop _held;
@@ -118,6 +137,10 @@ namespace Hoodrich.Economy
         private int _until;
         private int _lingerUntil;
         private int _linger;
+
+        /// <summary>The recipe running now, and whether it is the second act. See Recipe.Then.</summary>
+        private Recipe _recipe;
+        private Recipe _after;
 
         /// <summary>Set while a dictionary is still streaming, so it can be asked for again.</summary>
         private Recipe _waiting;
@@ -195,6 +218,9 @@ namespace Hoodrich.Economy
             _tries = 0;
             _watchAt = 0;
             _watching = null;
+
+            _recipe = recipe;
+            _after = null;
 
             Hold(recipe, me);
 
@@ -325,6 +351,15 @@ namespace Hoodrich.Economy
 
                 var slump = _slump;
 
+                // THE SECOND ACT, where there is one. The effect is landing this tick and the
+                // caller is told so; what follows -- the sip, the slump -- is on the same
+                // camera with its own clip and prop, and ends the way a first act would.
+                if (_recipe != null && _recipe.Then != null)
+                {
+                    Second(_recipe.Then, me);
+                    return true;
+                }
+
                 if (_linger <= 0)
                 {
                     Stop();
@@ -339,6 +374,27 @@ namespace Hoodrich.Economy
 
                 if (slump) Nod(me);
                 return true;
+            }
+
+            if (_after != null)
+            {
+                if (now < _until) return false;
+
+                var slump = _slump;
+                _after = null;
+
+                if (_linger <= 0)
+                {
+                    Stop();
+
+                    if (slump) Nod(me);
+                    return false;
+                }
+
+                _lingerUntil = now + _linger;
+
+                if (slump) Nod(me);
+                return false;
             }
 
             // ---- still at it ----
@@ -367,6 +423,62 @@ namespace Hoodrich.Economy
         }
 
         private bool _slump;
+
+        /// <summary>
+        /// The first act's clip and prop go, the second's come in, on the same clock and the
+        /// same camera. See Recipe.Then.
+        /// </summary>
+        private void Second(Recipe then, Ped me)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(_dict)) Function.Call(Hash.STOP_ANIM_TASK, me.Handle, _dict, _clip, 3f);
+            }
+            catch
+            {
+                // The next clip takes over either way.
+            }
+
+            _dict = "";
+            _clip = "";
+            Drop();
+
+            _after = then;
+            _recipe = then;
+            _slump = then.Slump;
+            _linger = then.Linger;
+            _lingerUntil = 0;
+
+            _ms = (int)(then.Ms * Length);
+            if (_ms < 600) _ms = 600;
+            _until = Game.GameTime + _ms;
+
+            _rung = 0;
+            _tries = 0;
+            _watchAt = 0;
+            _watching = null;
+
+            _held = InHand(me, then.Props, then.Sits, then.Turned, then.Lefty);
+
+            RitualCam.Start(me, _ms + Math.Min(then.Linger, 2500), Cinematic);
+
+            var rungs = Rungs(then);
+
+            if (rungs.Length < 2)
+            {
+                Scenario(then, me);
+                return;
+            }
+
+            _waiting = then;
+            _giveUpAt = Game.GameTime + StreamMs;
+
+            for (var i = 0; i + 1 < rungs.Length; i += 2)
+            {
+                try { Function.Call(Hash.REQUEST_ANIM_DICT, rungs[i]); }
+                catch { }
+            }
+        }
 
         /// <summary>The prop goes in his hand before anything is played, so it is there for frame one.</summary>
         private void Hold(Recipe recipe, Ped me)
@@ -487,8 +599,9 @@ namespace Hoodrich.Economy
                 // 49 is upper body, looping, and lets the rest of him keep his footing --
                 // a full-body lock on a man stood on a kerb is a man who snaps to attention
                 // and then teleports his feet back when it ends.
+                // Or the whole of him, for a clip that puts him on the ground. See FullBody.
                 Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, dict, clip,
-                              4f, -2f, _ms, 49, 0f, false, false, false);
+                              4f, -2f, _ms, recipe.FullBody ? 1 : 49, 0f, false, false, false);
 
                 _dict = dict;
                 _clip = clip;
@@ -694,6 +807,8 @@ namespace Hoodrich.Economy
             _waiting = null;
             _watching = null;
             _watchAt = 0;
+            _recipe = null;
+            _after = null;
 
             // WHATEVER ELSE THIS IS DOING, THE CAMERA COMES BACK. Stop runs on the ritual
             // finishing, on it being cut short, on the player dying and on the mod being

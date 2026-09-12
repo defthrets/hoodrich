@@ -399,6 +399,27 @@ namespace Hoodrich.Economy
             Ms = 6600
         };
 
+        /// <summary>
+        /// The nod, as a man on the ground rather than a ragdoll.
+        ///
+        /// The game has no injection for a standing ped -- see Needle -- but it has the
+        /// slumped bum, which is the shape of the ten minutes after one: on his side, head
+        /// going, the occasional twitch. Second act of the needle, on the whole body because
+        /// the upper-body flag cannot lie a man down, and it lingers, because getting up is
+        /// the last thing he wants to do.
+        /// </summary>
+        private static readonly Ritual.Recipe Nodding = new Ritual.Recipe
+        {
+            Pairs = new[]
+            {
+                "amb@world_human_bum_slumped@male@laying_on_right_side@idle_a", "idle_a",
+                "amb@world_human_bum_slumped@male@laying_on_right_side@base",   "base",
+                "amb@world_human_bum_slumped@male@laying_on_left_side@idle_a",  "idle_b"
+            },
+            FullBody = true,
+            Ms = 2000,
+            Linger = 9000
+        };
         /// <summary>The needle, and going over at the end of it.</summary>
         private static readonly Ritual.Recipe Needle = new Ritual.Recipe
         {
@@ -424,10 +445,53 @@ namespace Hoodrich.Economy
             Scenario = "WORLD_HUMAN_DRUG_DEALER_HARD",
 
             // The nod. He goes down at the end of it, which is the half of this that nobody
-            // needs an animation dictionary to read.
-            Slump = true,
+            // needs an animation dictionary to read -- and it is a man slumped on the
+            // ground now rather than a ragdoll. See Nodding.
+            Then = Nodding,
             Ms = 7000
         };
+        /// <summary>
+        /// The drink after the pill: a bottle of water to the mouth and the head tipped back.
+        ///
+        /// The wandering drinker's idles are exactly that, and a water bottle in the hand
+        /// instead of a beer makes it what it is. Second act of Pop, so it starts the moment
+        /// the pill is down.
+        /// </summary>
+        private static readonly Ritual.Recipe Sip = new Ritual.Recipe
+        {
+            Pairs = new[]
+            {
+                "amb@code_human_wander_drinking@male@idle_a", "idle_a",
+                "amb@code_human_wander_drinking@male@idle_a", "idle_b",
+                "amb@code_human_wander_drinking@male@idle_a", "idle_c",
+                "amb@code_human_wander_drinking@male@base",   "base"
+            },
+            Props = new[]
+            {
+                "ba_prop_club_water_bottle", "h4_prop_club_water_bottle",
+                "h4_prop_battle_waterbottle_01a"
+            },
+            Sits = new Vector3(0.02f, 0.0f, 0.0f),
+            Ms = 2800
+        };
+
+        /// <summary>
+        /// A tab on the tongue. The same pill clip, cut earlier: the hand comes up, the
+        /// thing goes in, and it stops there. Nothing in the hand -- a square of blotter is
+        /// too small to be a prop -- and no drink after, because there is nothing to wash
+        /// down.
+        /// </summary>
+        private static readonly Ritual.Recipe Tab = new Ritual.Recipe
+        {
+            Pairs = new[]
+            {
+                "mp_suicide",                                      "pill",
+                "amb@code_human_wander_eating_donut@male@idle_a",  "idle_a",
+                "amb@code_human_wander_eating_donut@male@idle_a",  "idle_b"
+            },
+            Ms = 1400
+        };
+
         /// <summary>
         /// Pills go down with a drink, which is the one ritual the game already has perfectly.
         ///
@@ -488,8 +552,19 @@ namespace Hoodrich.Economy
             // is tipping two out and getting them down, and is the one thing the drinking clip
             // does not do. Drinking ends with a tip and a lower; this ends with something
             // having been consumed, and that is the difference between a swallow and a sip.
+            // THE ONE PILL CLIP THE GAME HAS IS FILED UNDER SUICIDE. mp_suicide / pill is a
+            // man looking at what is in his palm, putting it in his mouth and swallowing --
+            // and then, a second and a half later, going over. Cut at the swallow it is
+            // exactly the act, and Ms cuts it: the task is given that many milliseconds and
+            // the collapse never comes. The eating idles stay underneath for an install
+            // without it.
+            //
+            // THE BOTTLE GOES IN THE OTHER HAND. The clip takes the pill to the mouth with the
+            // right, so the bottle sits in the left, held out the way you hold the thing you
+            // just shook two out of.
             Pairs = new[]
             {
+                "mp_suicide",                                      "pill",
                 "amb@code_human_wander_eating_donut@male@idle_a",  "idle_a",
                 "amb@code_human_wander_eating_donut@male@idle_a",  "idle_b",
                 "amb@code_human_wander_eating_donut@male@idle_a",  "idle_c",
@@ -501,6 +576,10 @@ namespace Hoodrich.Economy
                 "hei_prop_pill_bag_01", "prop_cs_script_bottle"
             },
             Sits = new Vector3(0.02f, 0.01f, 0.0f),
+            Lefty = true,
+
+            // And a drink to get them down. See Sip.
+            Then = Sip,
 
             // NO SCENARIO, AND THAT IS THE FIX. WORLD_HUMAN_DRINKING was the fallback here on
             // the reasoning that a head tipped back is most of a swallow. What it actually is,
@@ -512,8 +591,9 @@ namespace Hoodrich.Economy
             // Standing still holding a bottle of pills is a worse animation and a better
             // picture, and the ladder above has four real rungs before it could ever come to
             // this.
-            Ms = 5200
+            Ms = 1500
         };
+
         // ---- what each one is ---------------------------------------------------
 
         private static readonly Recipe[] Book =
@@ -715,7 +795,7 @@ namespace Hoodrich.Economy
             new Recipe
             {
                 Drug = "lsd",
-                Doing = Pop,
+                Doing = Tab,
                 Cycles = new[] { "drug_flying_01", "drug_flying_02", "drug_flying_base", "drug_wobbly" },
 
                 // OVER ONE ON PURPOSE, WHICH NOTHING ELSE IN HERE IS.
