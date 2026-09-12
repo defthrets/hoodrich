@@ -1135,6 +1135,16 @@ namespace Hoodrich.UI
 
             try { Locations.Wardrobe.Remember(State); }
             catch { /* the way out still writes it */ }
+
+            // AND HOW HE CARRIES HIMSELF, WHICH WAS APPLIED ONCE AND NEVER AGAIN.
+            //
+            // Main asks Wardrobe.Carry until it answers true and then stops asking, which is
+            // right for dressing him on load and wrong for a man stood at the rail choosing:
+            // the walk and the gun style went into the save and nothing put them on him until
+            // the next session. "Changing the way you hold the weapon doesn't do nothing" is
+            // exactly that, and it did nothing until the game was reloaded.
+            try { Locations.Wardrobe.Carry(State); }
+            catch { /* he carries on as he was */ }
         }
 
     }
