@@ -1895,6 +1895,19 @@ namespace Hoodrich
                 // three people and a barrel fire.
                 if (_partyDecks != null) _partyDecks.Playing = () => _party.IsPartyOn;
 
+                // THE YARD DECKS FOLLOW THE PARTY RATHER THAN THE CLOCK, and until now they
+                // followed nothing at all: no Playing hook meant West Coast Classics at full
+                // volume in an empty yard at noon, every day. They live in the yard, so they
+                // stay -- but it is the talk station at ordinary volume while there is nobody
+                // there, and the classics turned up the moment the crowd arrives. The two
+                // cars along the road do the same thing, so everything at Lamar's changes
+                // over together.
+                if (_decks != null)
+                {
+                    _decks.Tuned = () => _party.IsPartyOn ? Core.Radio.WestCoast : Core.Radio.Talk;
+                    _decks.Loud = () => _party.IsPartyOn;
+                }
+
                 // The barrel IS the fire -- it burns on its own. A camp fire was stacked on
                 // top of it as well, which is two fires a metre apart and reads as a bug even
                 // before you notice the logs floating.

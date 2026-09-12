@@ -47,6 +47,50 @@ namespace Hoodrich.Locations
         private const string Station = "RADIO_09_HIPHOP_OLD";
 
         /// <summary>
+        /// What it is playing now, and whether it is turned up. Both set by the owner; both
+        /// fall back to the pair above, which is what every deck did before there was a
+        /// reason for one to change.
+        ///
+        /// THE YARD DECKS ARE NOT PA GEAR. The stack by the couch is hired in for the night
+        /// and goes when the party does -- see Playing -- but the decks in Lamar's yard live
+        /// there, and a thing that lives in a yard is on all day. What changes is what is
+        /// coming out of it: the talk station at ordinary volume while the yard is empty, and
+        /// the classics turned up when the crowd turns up. Which is what anybody's decks in
+        /// anybody's yard actually do.
+        /// </summary>
+        public System.Func<string> Tuned;
+        public System.Func<bool> Loud;
+
+        private string Now
+        {
+            get
+            {
+                if (Tuned == null) return Station;
+
+                try
+                {
+                    var want = Tuned();
+                    return string.IsNullOrEmpty(want) ? Station : want;
+                }
+                catch
+                {
+                    return Station;
+                }
+            }
+        }
+
+        private bool Up
+        {
+            get
+            {
+                if (Loud == null) return true;
+
+                try { return Loud(); }
+                catch { return true; }
+            }
+        }
+
+        /// <summary>
         /// The speaker.
         ///
         /// A CAR, and that is a fix rather than a preference. This was a moped and a bicycle,
@@ -218,8 +262,8 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _speaker.Handle, true, true, false);
 
                 Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, _speaker.Handle, true);
-                Function.Call(Hash.SET_VEH_RADIO_STATION, _speaker.Handle, Station);
-                Function.Call(Hash.SET_VEHICLE_RADIO_LOUD, _speaker.Handle, true);
+                Function.Call(Hash.SET_VEH_RADIO_STATION, _speaker.Handle, Now);
+                Function.Call(Hash.SET_VEHICLE_RADIO_LOUD, _speaker.Handle, Up);
             }
             catch (Exception ex)
             {
