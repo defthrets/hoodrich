@@ -493,6 +493,8 @@ namespace Hoodrich.Gangs
 
         public void Update()
         {
+            Heartbeat();
+
             var now = Game.GameTime;
             if (now - _lastUpdate < UpdateIntervalMs) return;
             _lastUpdate = now;
@@ -1004,6 +1006,17 @@ namespace Hoodrich.Gangs
             // current one to be dealt with, which is also better pacing than a pile-up.
             if (AliveIn(_rivals) >= MaxLive) return false;
 
+            // AND SO CAN THE GAME. Our own cap is fourteen a side and it counts only ours --
+            // the block during a war is also every ambient ped this mod stood on it, whoever
+            // the player's other mods have added, and the crowd the fight itself pulls in.
+            // A ped pool that fills does not throw: the process goes, with nothing in any
+            // log. See Core.Crowded. The carload waits, and the log says why.
+            if (Crowded.Busy)
+            {
+                Log.Info("Gang war: holding the next carload -- " + Crowded.Line() + ".");
+                return false;
+            }
+
             var model = PickCar(_attacker);
             if (model == null) return false;
 
@@ -1291,6 +1304,13 @@ namespace Hoodrich.Gangs
 
             var room = MaxLive - AliveIn(_defenders);
             if (room <= 0) return;
+
+            // Ours stop turning out into a world that is already full. See Crowded.
+            if (Crowded.Busy)
+            {
+                Log.Info("Gang war: not calling more of ours out -- " + Crowded.Line() + ".");
+                return;
+            }
 
             if (count > room) count = room;
 
@@ -2457,6 +2477,46 @@ namespace Hoodrich.Gangs
             }
             catch { /* it is being cleared up either way */ }
         }
+
+        /// <summary>
+        /// What the world looks like while a war is on, in the log, every few seconds.
+        ///
+        /// BECAUSE THE CRASH IT IS FOR LEAVES NOTHING BEHIND. A player reported the game
+        /// going to desktop mid-war twice: no error, nothing in ScriptHookVDotNet.log, and
+        /// the last lines of ours were the swarm telling thirty-nine people where to go. A
+        /// managed fault would have been logged and was not, so whatever went was in the
+        /// game itself -- and the usual reason for that during a firefight on a heavily
+        /// modded install is a pool filling up.
+        ///
+        /// None of that is provable from a log that only says what we were doing. This says
+        /// what was THERE -- ours alive on each side, and every ped and vehicle in the world
+        /// -- so the next report either shows a number climbing to a ceiling, which names
+        /// it, or shows it flat, which rules it out and points somewhere else. Either is
+        /// worth more than the guess.
+        ///
+        /// At INFO, because the point of it is to be in a log somebody sends.
+        /// </summary>
+        private void Heartbeat()
+        {
+            if (!IsRunning) return;
+
+            var now = Game.GameTime;
+            if (now - _beatAt < BeatEveryMs) return;
+            _beatAt = now;
+
+            try
+            {
+                Log.Info("Gang war: " + AliveIn(_rivals) + " of theirs and " + AliveIn(_defenders) +
+                         " of ours alive, " + _blips.Count + " blip(s) ours; " + Crowded.Line() + ".");
+            }
+            catch
+            {
+                // A line that cannot be written is not worth a war for.
+            }
+        }
+
+        private int _beatAt;
+        private const int BeatEveryMs = 5000;
 
         /// <summary>How many of one side can be on the block at once.</summary>
         private const int MaxLive = 14;
