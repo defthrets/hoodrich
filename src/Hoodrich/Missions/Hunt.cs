@@ -620,7 +620,7 @@ namespace Hoodrich.Missions
 
             MarkField();
 
-            Word("drive, nigga. and when we get close you go quiet on me");
+            Word("drive, nigga. and when we get close you betta go quiet on me");
 
             Log.Info("Hunt: on. " + Many + " corners, " + Need + " needed, " +
                      Stands[Last].Street + " last.");
@@ -909,7 +909,7 @@ namespace Hoodrich.Missions
             Phase = HuntPhase.Tracking;
             _phaseFrom = now;
 
-            Word("aight, we in they neighbourhood now. eyes open, feet quiet");
+            Word("aight, we in they neighbourhood now. eyes open and feet quiet");
         }
 
         /// <summary>
@@ -2094,7 +2094,7 @@ namespace Hoodrich.Missions
 
             q.Area = null;
 
-            Word("he seen you! that one a write-off now. do him or leave him", SpeechWorst);
+            Word("shit, he seen you! blast that fool or run, dawg", SpeechWorst);
 
             Log.Info("Hunt: number " + (q.Which + 1) + " is onto us. " + Down + " down, " +
                      Lost + " written off, " + Need + " needed.");
@@ -2138,10 +2138,10 @@ namespace Hoodrich.Missions
             // is still stood there whichever way the count got here, so this used to shout
             // "that's three, we out" at a man with a quarter of the job left to do.
             var line = Down >= Need
-                ? "that's three, we good. still gotta do grove"
+                ? "that's three. still gotta do grove"
                 : Down == 1
-                    ? (q.Knifed ? "ha! he never even turned round. that's one" : "that's one. two more")
-                    : (q.Knifed ? "two. one more, do him just like that" : "two. one more");
+                    ? (q.Knifed ? "ha! he never even turned round. that's one down" : "that's one. two more")
+                    : (q.Knifed ? "two down. do him just like that" : "two. one more");
 
             Word(line, SpeechGood);
 
@@ -2218,11 +2218,11 @@ namespace Hoodrich.Missions
 
             if (turned > 0)
             {
-                Word("ay, they seen us! go go go -- back to my yard!", SpeechWorst);
+                Word("ay, they seen us! go go -- back to the yard!", SpeechWorst);
             }
             else
             {
-                Word("that's the last one. we out, dawg", SpeechBest);
+                Word("that's the last one. we out, cuz", SpeechBest);
             }
         }
 
@@ -2581,13 +2581,20 @@ namespace Hoodrich.Missions
         /// you are crouched behind a fence is not a friend.
         ///
         /// Four of them, picked at random. See tools/voice_lines.py for the file names.
+        ///
+        /// WORDED AS RECORDED, NOT AS WRITTEN -- and that goes for every line in this file.
+        /// Voice.cs names a recording after a hash of the exact sentence, so the moment a line
+        /// has been performed the TAKE is the authority and the text here is what has to move
+        /// to meet it. Reword one of these and its recording simply stops being found, in
+        /// silence, which is the single failure mode the whole naming scheme has. Anything
+        /// changed here needs re-recording under its new name.
         /// </summary>
         private static readonly string[] Nudges =
         {
             "there he go. get round the back of him and stick him",
             "aight, let's creep up on this fool",
             "that's him right there. behind him, Frank. don't let him turn round",
-            "easy now, dawg. round the back, quick and quiet"
+            "shhhhh. easy now, dawg. round the back, quick and quiet"
         };
 
         /// <summary>How near the next one has to be before he says one. See Nudges.</summary>
