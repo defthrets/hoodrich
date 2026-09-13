@@ -227,6 +227,30 @@ namespace Hoodrich.UI
         /// An icon instead of a cap label draws the picture on the cap: the arrows, the drop
         /// mark. Either way the cap is the same height, so a row of them is a row.
         /// </summary>
+        /// <summary>
+        /// How wide a key WOULD be, without drawing it.
+        ///
+        /// So a row that flows left to right can stop before it reaches something pinned to
+        /// the right, instead of printing on top of it. See PocketScreen.Keys, which is where
+        /// that happened.
+        /// </summary>
+        public static float KeyWidth(string cap, string icon, string words)
+        {
+            var w = 0f;
+
+            if (!string.IsNullOrEmpty(cap)) w += Hud.MeasureText(cap, 0.22f, Hud.FontLabel) + 0.012f;
+            if (!string.IsNullOrEmpty(icon)) w += Hud.ToX(0.013f) + 0.004f;
+
+            return w + Hud.MeasureText(words, 0.23f, Hud.FontLabel) + 0.016f;
+        }
+
+        /// <summary>The same for a key pinned to the right. See KeyRight.</summary>
+        public static float RightWidth(string cap, string words)
+        {
+            return Hud.MeasureText(cap, 0.22f, Hud.FontLabel) + 0.008f +
+                   Hud.MeasureText(words, 0.23f, Hud.FontLabel);
+        }
+
         public static float Key(float x, float y, string cap, string icon, string words, float arrive)
         {
             var ink = (int)(255f * arrive);

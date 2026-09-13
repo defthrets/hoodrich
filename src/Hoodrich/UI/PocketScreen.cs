@@ -77,6 +77,20 @@ namespace Hoodrich.UI
         private readonly List<string> _food = new List<string>();
 
         /// <summary>
+        /// The flat index of every place, split into the two panes it is drawn in.
+        ///
+        /// ONE CURSOR, TWO SQUARES. Everything else on this screen -- the card, the drop, the
+        /// transfer -- works off one flat number, and it should keep working off one flat
+        /// number; what the panes change is where a thing is DRAWN, not what it is. So the
+        /// index stays flat and these two lists say which side each of them landed on.
+        ///
+        /// Food is on the left with the pockets, because food IS in your pockets: Bare Minimum
+        /// has one of them and the bag lends it room rather than being a second one.
+        /// </summary>
+        private readonly List<int> _left = new List<int>();
+        private readonly List<int> _right = new List<int>();
+
+        /// <summary>
         /// The food band's own height: a rule, a heading, one row of tiles, and a caption.
         ///
         /// Measured from the parts rather than guessed at. The first version reserved less
@@ -241,7 +255,70 @@ namespace Hoodrich.UI
             // other, and Strap.Room, which is why they are separate at all.
             Fill(_pockets, false);
             Fill(Bag, true);
+
+            Sides();
         }
+
+        /// <summary>Sorts every place into the pane it belongs in. See _left.</summary>
+        private void Sides()
+        {
+            _left.Clear();
+            _right.Clear();
+
+            for (var i = 0; i < _rows.Count; i++)
+            {
+                if (_rows[i].InBag) _right.Add(i);
+                else _left.Add(i);
+            }
+
+            // Food last on the left, so the pocket reads product then sandwiches rather than
+            // interleaving them.
+            for (var i = 0; i < _food.Count; i++) _left.Add(_rows.Count + i);
+        }
+
+        /// <summary>
+        /// A pane's name and its count, with a rule under them carrying the pane's own colour.
+        ///
+        /// The live side is lit and the other dimmed, which is what says where the cursor is
+        /// when it is sat on a tile you are not looking at. Taken from the boot screen, which
+        /// has been telling two containers apart this way for as long as it has existed.
+        /// </summary>
+        private void Cap(float x, float y, float w, string label, string figure, int side, float arrive)
+        {
+            var live = SideOf(_selected) == side;
+            var tint = side == 1 ? Palette.Standing : Palette.Brand;
+
+            Hud.Text(label, x, y + 0.003f, 0.26f,
+                     Palette.Alpha(live ? tint : Palette.TextDim, (int)((live ? 245f : 170f) * arrive)),
+                     Hud.FontLabel, centre: false);
+
+            Hud.TextRight(figure, x + w, y + 0.004f, 0.24f,
+                          Palette.Alpha(Palette.TextDim, (int)(215f * arrive)), Hud.FontLabel);
+
+            var ry = y + CapH - 0.005f;
+
+            Hud.RectFrom(x, ry, w, 0.0012f, Palette.Alpha(Theme.Hairline, (int)(Theme.Hairline.A * arrive)));
+            Hud.RectFrom(x, ry - 0.0004f, w * 0.14f, 0.0020f, Palette.Alpha(tint, (int)(215f * arrive)));
+        }
+
+        /// <summary>What the bag is holding, for its heading. Empty when it is not on his back.</summary>
+        private string BagFigure()
+        {
+            if (!Carrying) return "not on you";
+
+            var used = BagUsed == null ? 0 : BagUsed();
+            var slots = BagSlots == null ? 0 : BagSlots();
+
+            return used + " / " + slots;
+        }
+
+        /// <summary>Which pane a place is drawn in: 0 on you, 1 in the bag.</summary>
+        private int SideOf(int at)
+        {
+            return _right.Contains(at) ? 1 : 0;
+        }
+
+        private List<int> Pane(int side) => side == 1 ? _right : _left;
 
         /// <summary>Every lot in one container, appended to the grid.</summary>
         private void Fill(Stash from, bool inBag)
@@ -578,34 +655,31 @@ namespace Hoodrich.UI
         private const int HoldAllMs = 600;
 
         /// <summary>
-        /// Up and down, which over one grid is simply a line at a time.
+        /// Up and down, which is a line at a time inside the pane you are in.
         ///
-        /// IT USED TO BE A BORDER CROSSING. Product and food were drawn as two strips, so this
-        /// had two halves and a rule for stepping between them -- keep the column, land on the
-        /// third thing you can eat rather than the first, and back again off the top. All of
-        /// that was the drawing leaking into the navigation: the cursor has always run over one
-        /// flat list (see Places), and now the screen is drawn as one too, so a line up is a
-        /// line up and there is nothing to cross.
-        ///
-        /// THE LAST LINE IS USUALLY SHORT, which is the one case worth handling: stepping down
-        /// into a line that has three things in it from the fifth column lands on the last one
-        /// there rather than on nothing.
+        /// IT STAYS ON ITS SIDE. Left and right cross the seam because the seam is a horizontal
+        /// gap and stepping over it is what left and right look like they do; up and down move
+        /// within a container, which is what a column of a container is for.
         /// </summary>
         private void Vertical(int dir)
         {
             if (Places == 0) return;
 
-            var across = Across();
+            var side = SideOf(_selected);
+            var list = Pane(side);
 
-            var next = _selected + dir * across;
+            var at = list.IndexOf(_selected);
+            if (at < 0) { Land(First()); return; }
 
-            if (next >= 0 && next < Places) { Land(next); return; }
+            var next = at + dir * PaneAcross;
+
+            if (next >= 0 && next < list.Count) { Land(list[next]); return; }
 
             if (dir <= 0) return;
 
-            // Down off the end: the last thing there is, if we are not on it already.
-            var last = Places - 1;
-            if (_selected < last) Land(last);
+            // Down off a short last line: the last thing in this pane, if we are not on it.
+            var last = list.Count - 1;
+            if (at < last) Land(list[last]);
         }
 
         /// <summary>Puts the cursor somewhere and makes the noise. Move does the wrapping.</summary>
@@ -620,17 +694,46 @@ namespace Hoodrich.UI
             Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
+        /// <summary>
+        /// Left and right, which walks the pane you are in and then steps over the seam.
+        ///
+        /// OFF THE END OF ONE PANE IS THE START OF THE OTHER, which is what the gap down the
+        /// middle of this screen looks like it should do. It used to wrap round the whole flat
+        /// list, which with two squares drawn side by side meant walking off the right of the
+        /// bag and reappearing in your jacket having crossed nothing.
+        /// </summary>
         private void Move(int step)
         {
             if (Places == 0) return;
 
-            _lastSelected = _selected;
-            _selected = (_selected + step) % Places;
-            if (_selected < 0) _selected += Places;
+            var side = SideOf(_selected);
+            var list = Pane(side);
 
-            _pickedAt = Game.GameTime;
+            var at = list.IndexOf(_selected);
+            if (at < 0) { Land(First()); return; }
 
-            Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+            var next = at + step;
+
+            if (next >= 0 && next < list.Count) { Land(list[next]); return; }
+
+            // Over the seam, landing at the near end of the pane you are stepping into.
+            var other = Pane(1 - side);
+
+            if (other.Count == 0)
+            {
+                // Nothing over there, so wrap inside this one rather than going nowhere.
+                Land(list[next < 0 ? list.Count - 1 : 0]);
+                return;
+            }
+
+            Land(next < 0 ? other[other.Count - 1] : other[0]);
+        }
+
+        /// <summary>The first place there is, whichever pane it is in.</summary>
+        private int First()
+        {
+            if (_left.Count > 0) return _left[0];
+            return _right.Count > 0 ? _right[0] : 0;
         }
 
         /// <summary>
@@ -702,6 +805,15 @@ namespace Hoodrich.UI
         /// <summary>The card under the tiles that says what the chosen one is.</summary>
         private const float CardH = 0.072f;
 
+        /// <summary>The seam between the two panes, so they read as two things. See the boot.</summary>
+        private const float Gutter = 0.014f;
+
+        /// <summary>The heading over a pane: its name on the left, its count on the right.</summary>
+        private const float CapH = 0.026f;
+
+        /// <summary>Tiles across ONE pane. Two panes, so the panel is twice this plus the seam.</summary>
+        private const int PaneAcross = 4;
+
         /// <summary>The meter's needle, easing toward how full you are. See UI.Eased.</summary>
         private readonly Eased _meter = new Eased();
 
@@ -725,12 +837,22 @@ namespace Hoodrich.UI
             // the grid itself does -- see Lines, which both of them now call so they cannot
             // disagree about it. They used to be two copies of the arithmetic and one of them
             // only counted the product.
-            var tiles = Lines() * (Cell + CellGap) - CellGap + 0.010f;
+            var tiles = CapH + Lines() * (Cell + CellGap) - CellGap + 0.010f;
 
             var height = ContentTop + tiles + CardH + UiKit.FootH;
 
-            var panelWidth = Hud.ToX(PanelWidthH);
             var pad = Hud.ToX(PadH);
+
+            // THE PANEL IS THE WIDTH OF ITS TWO PANES, NOT THE OTHER WAY ROUND.
+            //
+            // A fixed panel with two four-wide grids inside it does not fit: four tiles and
+            // their gaps are wider than half of it, so the right-hand pane started before the
+            // left one had finished and the seam went through the middle of a tile. Measured
+            // from the tiles, both panes are exactly as wide as what goes in them and the
+            // gutter is a real gap. Lifted from the boot screen, which says the same sentence
+            // in its own comment.
+            var paneTiles = PaneAcross * Hud.ToX(Cell) + (PaneAcross - 1) * Hud.ToX(CellGap);
+            var panelWidth = paneTiles * 2f + Gutter + pad * 2f;
 
             var left = 0.5f - panelWidth * 0.5f;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
@@ -778,22 +900,31 @@ namespace Hoodrich.UI
             // Nothing wants the cursor until a tile asks for it this frame.
             _glide.Begin();
 
-            // ---- ONE GRID, AND EVERYTHING YOU ARE CARRYING IS IN IT ----
+            // ---- TWO SQUARES, AND THE SEAM BETWEEN THEM IS THE POINT ----
             //
-            // It was two bands with a rule between them, two headings, two captions and a
-            // cursor that had to be taught how to cross from one to the other -- and the two
-            // halves did not even agree with each other, because the product got a card and
-            // the food got a grey line. Product and food have ALWAYS been one list as far as
-            // the cursor is concerned (see Places, which has counted them together the whole
-            // time); only the drawing pretended otherwise.
-            //
-            // So: one grid, and one card under it that says whatever the cursor is on. The
-            // shape is the pocket screen in Bare Minimum, which is the other half of this
-            // inventory and had already worked all of this out.
-            y = Grid(x, wide, y, arrive);
+            // They were one grid with a green corner on the bag tiles, which is a thing you
+            // have to be told to look for. Two panes side by side with their own headings and
+            // their own counts is the same information as a shape: this side is on you, that
+            // side is in the bag, and the gap down the middle is the thing you are moving
+            // across. The boot screen has drawn two containers this way since it was written.
+            var paneW = paneTiles;
+            var bagX = x + paneW + Gutter;
+
+            Cap(x, y, paneW, "ON YOU", UiKit.Holding(_pockets), 0, arrive);
+            Cap(bagX, y, paneW, "IN THE BAG", BagFigure(), 1, arrive);
+
+            y += CapH;
+
+            var lines = Lines();
+
+            Square(x, y, paneW, 0, lines, arrive);
+            Square(bagX, y, paneW, 1, lines, arrive);
+
+            y += lines * (Cell + CellGap) - CellGap + 0.010f;
+
             y = Card(x, wide, y, arrive);
 
-            // ---- the keys ----
+            // ---- the keys ----            // ---- the keys ----
             var footY = top + height - UiKit.FootH + 0.006f;
 
             Theme.Rule(x, footY, wide, arrive);
@@ -811,58 +942,63 @@ namespace Hoodrich.UI
         /// </summary>
         private void Keys(float x, float right, float y, float arrive)
         {
-            // ONE DIRECTION, AND DONE IS THE ONLY THING PINNED TO THE RIGHT.
+            // DONE IS PINNED AND EVERYTHING ELSE GETS WHAT IS LEFT.
             //
-            // DROP BAG was right-aligned at a fixed inset and the rest of the row is laid out
-            // left to right, so the two ran into each other and printed on top of one another
-            // -- "DROHOLD", "TAKE ONB". Two layouts on one line is a collision waiting for
-            // somebody to add a word, and it did not have to wait long. Everything flows now
-            // and the row simply gets longer.
+            // The row flows left to right and DONE sits in the corner every screen in the mod
+            // puts it in, so the two meet somewhere in the middle -- and they were meeting ON
+            // each other, printing "ALL OF IT B" and "DONE A" over one another as soon as the
+            // bag added a key. So the corner is measured first and the flow simply stops when
+            // it would reach it. A key that does not fit is dropped, not overlapped: the last
+            // ones on the row are the least used, and a legend that lies about the layout is
+            // worse than one that is short.
+            var stop = right - UiKit.RightWidth(UiKit.Back, "DONE") - 0.012f;
+
             UiKit.KeyRight(right, y, UiKit.Back, "DONE", arrive);
 
             var kx = x;
 
             if (Places > 0)
             {
-                kx = UiKit.Key(kx, y, null, "arrow_leftright.png", "PICK", arrive);
+                kx = Fits(kx, stop, y, null, "arrow_leftright.png", "PICK", arrive);
 
                 if (OnFood)
                 {
-                    kx = UiKit.Key(kx, y, UiKit.Confirm, null, "EAT IT", arrive);
+                    kx = Fits(kx, stop, y, UiKit.Confirm, null, "EAT IT", arrive);
                 }
                 else
                 {
-                    // THE FLOOR IS THE ONE THING ABOUT THIS SCREEN NOBODY WOULD GUESS. The drop
-                    // mark -- an arrow onto a line -- rides the cap, so the key that puts things
-                    // on the pavement is the one key on the row with a picture of doing that.
-                    // While the bag is on, this key and DROP BAG are the same act -- see
-                    // Drop -- so the row says so rather than offering two names for one thing.
-                    kx = UiKit.Key(kx, y, UiKit.Drop, null,
-                                   Carrying ? "DROP THE BAG" : "PUT IT DOWN", arrive);
-
-                    // The one thing that moves anything between the two containers.
                     if (Carrying && _selected >= 0 && _selected < _rows.Count)
                     {
-                        kx = UiKit.Key(kx, y, "E", null,
-                                       _rows[_selected].InBag ? "TO POCKETS" : "TO BAG", arrive);
+                        kx = Fits(kx, stop, y, "E", null,
+                                  _rows[_selected].InBag ? "TO POCKETS" : "TO BAG", arrive);
                     }
-                    kx = UiKit.Key(kx, y, "HOLD", null, "ALL OF IT", arrive);
+
+                    kx = Fits(kx, stop, y, UiKit.Drop, null,
+                              Carrying ? "DROP THE BAG" : "PUT IT DOWN", arrive);
+
+                    if (!Carrying) kx = Fits(kx, stop, y, "HOLD", null, "ALL OF IT", arrive);
 
                     if (_selected >= 0 && _selected < _rows.Count && _rows[_selected].Bagged)
                     {
-                        kx = UiKit.Key(kx, y, UiKit.Confirm, null, "TAKE ONE", arrive);
+                        kx = Fits(kx, stop, y, UiKit.Confirm, null, "TAKE ONE", arrive);
                     }
                 }
             }
 
-            // LAST ON THE ROW AND THERE EVEN WITH EMPTY POCKETS, because an empty bag is the
-            // one you are most likely to want off your back.
-            // Only where the row above has not already offered it. On the food there is no
-            // PUT IT DOWN, so this is the only way to reach it from in here.
-            if (Carrying && (Places == 0 || OnFood)) UiKit.Key(kx, y, "B", null, "DROP BAG", arrive);
+            if (Carrying && (Places == 0 || OnFood)) Fits(kx, stop, y, "B", null, "DROP BAG", arrive);
+        }
+
+        /// <summary>One key, if there is room for it before the corner. See Keys.</summary>
+        private static float Fits(float x, float stop, float y, string cap, string icon, string words,
+                                  float arrive)
+        {
+            if (x + UiKit.KeyWidth(cap, icon, words) > stop) return x;
+
+            return UiKit.Key(x, y, cap, icon, words, arrive);
         }
 
         /// <summary>
+        /// The card under the tiles: the chosen thing, said properly.        /// <summary>
         /// The card under the tiles: the chosen thing, said properly.
         ///
         /// A tile is a glance -- a picture, a figure, a dot for how cut it is. This is where
@@ -1087,27 +1223,6 @@ namespace Hoodrich.UI
         }
 
         /// <summary>
-        /// How many tiles fit across the panel.
-        ///
-        /// Asked rather than fixed, because the panel width is a constant but the aspect ratio
-        /// is not -- Hud.ToX turns a height fraction into a width one, and on an ultrawide that
-        /// answer is different. A hardcoded four would wrap on some screens and leave a gap on
-        /// others.
-        /// </summary>
-        private static int Across()
-        {
-            var wide = Hud.ToX(PanelWidthH) - Hud.ToX(PadH) * 2f;
-            var step = Hud.ToX(Cell) + Hud.ToX(CellGap);
-
-            var many = step <= 0f ? 4 : (int)((wide + Hud.ToX(CellGap)) / step);
-
-            if (many < 1) many = 1;
-            if (many > 8) many = 8;
-
-            return many;
-        }
-
-        /// <summary>
         /// What is on you, as squares. Returns the y the next thing may start at.
         ///
         /// The picture carries the drug, the chip along the bottom carries the amount, the
@@ -1115,46 +1230,41 @@ namespace Hoodrich.UI
         /// reading.
         /// </summary>
         /// <summary>
-        /// Everything on you, as one grid of squares.
+        /// One pane's worth of squares.
         ///
-        /// CENTRED PER ROW, NOT FILLED FROM THE LEFT. The grid is a fixed number of columns
-        /// whatever you happen to be carrying, so three things used to sit in the corner of a
-        /// panel built for a dozen with the rest of it empty. The panel cannot shrink -- the
-        /// head has to fit its title and its count -- so the tiles move to the middle instead.
-        /// Lifted wholesale from the pocket next door, which had already met this problem.
-        ///
-        /// PRODUCT FIRST, THEN FOOD, which is the order Places has always counted them in.
+        /// FILLED FROM THE TOP LEFT OF ITS OWN PANE, not centred: a pane is a container with a
+        /// heading over it, and a container whose contents drift toward the middle does not
+        /// read as a container. The centring was right when this was one grid floating in a
+        /// panel; it is wrong now that each side has an edge of its own.
         /// </summary>
-        private float Grid(float x, float width, float y, float arrive)
+        private void Square(float x, float y, float w, int side, int lines, float arrive)
         {
+            var list = Pane(side);
+
             var tile = Hud.ToX(Cell);
             var gap = Hud.ToX(CellGap);
 
-            var across = Across();
-            var lines = Lines();
-
-            if (Places == 0)
+            if (list.Count == 0)
             {
-                // AN EMPTY BAG BESIDE THE SENTENCE, not above it.
-                var ex = x + (width - Hud.ToX(ArtSize) - 0.092f) * 0.5f;
+                Hud.Text(side == 1 ? (Carrying ? "Bag's empty." : "No bag on you.") : "Nothing on you.",
+                         x + w * 0.5f, y + Cell * 0.5f - 0.008f, 0.26f,
+                         Palette.Alpha(Palette.TextDim, (int)(180f * arrive)), Hud.FontBody);
 
-                if (Hud.File("baggie.png", ex + Hud.ToX(ArtSize) * 0.5f, y + Cell * 0.34f,
-                             ArtSize, 0f, Palette.Alpha(Palette.TextDim, 120)))
-                {
-                    ex += Hud.ToX(ArtSize) + 0.007f;
-                }
-
-                Hud.Text("Nothing on you.", ex, y + 0.006f, 0.28f,
-                         Palette.TextDim, Hud.FontBody, centre: false);
-
-                return y + Cell + 0.010f;
+                return;
             }
 
             var age = Game.GameTime - _shownAt;
             var grown = Theme.Grown(_pickedAt);
 
-            for (var i = 0; i < Places; i++)
+            for (var i = 0; i < list.Count; i++)
             {
+                var at = list[i];
+
+                var col = i % PaneAcross;
+                var line = i / PaneAcross;
+
+                if (line >= lines) break;
+
                 // Staggered a frame or two apart, so the pocket is unpacked rather than
                 // switched on.
                 var land = UiKit.Landed(age, i * 45, EnterMs);
@@ -1162,23 +1272,13 @@ namespace Hoodrich.UI
                 var show = arrive * land;
                 if (show <= 0.01f) continue;
 
-                var col = i % across;
-                var line = i / across;
-
-                var lineFirst = line * across;
-                var inLine = Math.Min(across, Places - lineFirst);
-
-                var tx = x + (width - (inLine * tile + (inLine - 1) * gap)) * 0.5f +
-                         col * (tile + gap);
-
+                var tx = x + col * (tile + gap);
                 var ty = y + line * (Cell + CellGap) + EnterRise * 0.5f * (1f - land);
 
-                var picked = i == _selected;
-                var lit = Theme.Lit(i, _selected, _lastSelected, grown);
+                var picked = at == _selected;
+                var lit = Theme.Lit(at, _selected, _lastSelected, grown);
 
-                // The tile that just had something taken off it flashes green and fades: a
-                // whole square lighting up, over whatever else it is doing.
-                var flashLeft = _droppedRow == i ? UiKit.Flash(_droppedAt, DropFlashMs) : 0f;
+                var flashLeft = _droppedRow == at ? UiKit.Flash(_droppedAt, DropFlashMs) : 0f;
                 var flashing = flashLeft > 0f;
 
                 Tile(tx, ty, tile, Cell, lit, show, flashing, flashLeft);
@@ -1187,18 +1287,22 @@ namespace Hoodrich.UI
 
                 var bright = flashing ? 1f : lit;
 
-                if (i < _rows.Count) Lot(_rows[i], tx, ty, tile, show, bright, picked, grown);
-                else Bite(_food[i - _rows.Count], tx, ty, tile, show, lit, picked, grown);
+                if (at < _rows.Count) Lot(_rows[at], tx, ty, tile, show, bright, picked, grown);
+                else Bite(_food[at - _rows.Count], tx, ty, tile, show, lit, picked, grown);
             }
-
-            return y + lines * (Cell + CellGap) - CellGap + 0.010f;
         }
 
-        /// <summary>How many tiles fit across, and how many rows that makes of what you have.</summary>
+        /// <summary>How many tiles fit across, and how many rows that makes of what you have.</summary>        /// <summary>How many tiles fit across, and how many rows that makes of what you have.</summary>
         private int Lines()
         {
-            var across = Across();
-            return Places == 0 ? 1 : (Places + across - 1) / across;
+            // THE TALLER OF THE TWO, because both panes share the panel and a panel sized for
+            // the left one cuts the right one off. One row minimum, so an empty screen still
+            // has somewhere to say it is empty.
+            var a = (_left.Count + PaneAcross - 1) / PaneAcross;
+            var b = (_right.Count + PaneAcross - 1) / PaneAcross;
+
+            var most = Math.Max(a, b);
+            return most < 1 ? 1 : most;
         }
 
         /// <summary>One square of product: the picture, the amount across the foot, the cut mark.</summary>
