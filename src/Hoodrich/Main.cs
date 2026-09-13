@@ -356,6 +356,9 @@ namespace Hoodrich
         /// </summary>
         private const int LottaChrome = 16;
 
+        /// <summary>The Sprunk plate. Thirteenth, counting from nought -- see UI.PlateScreen.</summary>
+        private const int SprunkPlate = 12;
+
         /// <summary>Not a colour. Tells the parked car to leave the paint alone.</summary>
         private const int LeaveThePaint = -1;
 
@@ -1352,7 +1355,19 @@ namespace Hoodrich
                     // wants people to see there is a man in there.
                     Tint = 2,
 
-                    Neon = System.Drawing.Color.FromArgb(60, 220, 70)
+                    Neon = System.Drawing.Color.FromArgb(60, 220, 70),
+
+                    // SAT DOWN AT THE BACK AND TUCKED IN, and this mod does it itself -- see
+                    // Slammed. Posted Up has no dependencies, so a car in Posted Up that only
+                    // sits right when a second mod is installed is a car that does not sit
+                    // right.
+                    Camber = -1.5f,
+                    Squat = -0.26f,
+
+                    // Sprunk, which is the thirteenth plate and the loudest one the game has.
+                    // The name is his and nobody else in Los Santos agrees with it.
+                    Plate = "OGVEE",
+                    PlateStyle = SprunkPlate
                 });
 
                 _cars.Add(new ParkedCar(new Vector3(-197.960f, -1714.836f, 31.955f), 290.056f,

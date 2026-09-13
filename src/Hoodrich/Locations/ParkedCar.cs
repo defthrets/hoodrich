@@ -204,6 +204,17 @@ namespace Hoodrich.Locations
         /// <summary>The glass, if it is not to be whatever the build gives it: 1 black, 2 dark smoke, 3 light smoke.</summary>
         public int Tint = -1;
 
+        /// <summary>Degrees of lean on the REAR wheels, negative for tucked in. See Slammed.</summary>
+        public float Camber;
+
+        /// <summary>Metres the REAR sits down by, negative to lower it. See Slammed.</summary>
+        ///
+        /// <remarks>Not Drop, which is the hydraulics putting the whole car on the floor.</remarks>
+        public float Squat;
+
+        /// <summary>Which plate the game draws, or below zero for whatever it came with.</summary>
+        public int PlateStyle = -1;
+
         /// <summary>
         /// Set by whoever owns it: whether it is locked right now.
         /// </summary>
@@ -392,6 +403,9 @@ namespace Hoodrich.Locations
         private Vehicle _car;
         private int _lastUpdate;
 
+        /// <summary>The rear axle, held down. See Camber and Drop.</summary>
+        private readonly Slammed _stance = new Slammed();
+
         public ParkedCar(Vector3 where, float heading, int paint,
                          params string[] models)
         {
@@ -427,6 +441,12 @@ namespace Hoodrich.Locations
             // is a per-frame one -- see Swing -- so it belongs here beside the radio rather
             // than behind the throttle.
             Swing();
+
+            // AND THE REAR AXLE, EVERY FRAME, FOR THE SAME REASON THE RADIO IS. The car's own
+            // code puts the camber back the frame after it is written, so a stance behind the
+            // throttle below is a wheel that is straight for fourteen frames out of fifteen.
+            // See Slammed, which does nothing at all for a car that was not asked for one.
+            if (_car != null && _car.Exists()) _stance.Hold(_car, Camber, Squat);
 
             var now = Game.GameTime;
             if (now - _lastUpdate < UpdateIntervalMs) return;
@@ -640,6 +660,11 @@ namespace Hoodrich.Locations
                 // rather than one that opens its own boot while you watch. Swing holds it from
                 // there.
                 if (BootOpen) Function.Call(Hash.SET_VEHICLE_DOOR_OPEN, _car.Handle, 5, false, true);
+
+                if (PlateStyle >= 0)
+                {
+                    Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT_INDEX, _car.Handle, PlateStyle);
+                }
 
                 if (!string.IsNullOrEmpty(Plate))
                 {
