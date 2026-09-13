@@ -452,7 +452,7 @@ namespace Hoodrich.Economy
             {
                 _puffAt = now + PuffEveryMs;
 
-                if (_puffs > 0) Exhale.Now(me, 0.18f);
+                if (_puffs > 0) Exhale.Now(me);
 
                 _puffs++;
             }

@@ -16,45 +16,59 @@ namespace Hoodrich.Economy
     /// A MAN SMOKING WITH NOTHING COMING OUT OF HIM IS A MAN HOLDING A CIGARETTE. The
     /// animation puts it to his mouth and takes it away again and the game adds nothing,
     /// because the ambient smoking scenarios carry their own effect and a script-driven
-    /// clip does not. So this does it: one small plume out of his face, once per drag.
+    /// clip does not. So this does it: one lungful out of his face, once per drag.
     ///
-    /// A PARTICLE NAME IS A NAME LIKE ANY OTHER AND THERE IS NO LIST OF THEM ON THIS
-    /// MACHINE. The animations and the props are checked against Menyoo's dumps before
-    /// they are written down -- Menyoo's PedAnimList and PropList -- and nothing dumps the
-    /// particle library, so the usual discipline is not available here.
+    /// THE NAMES ARE THE GAME'S OWN AND THEY ARE NOT GUESSES ANY MORE. The first version of
+    /// this file said no list of particles existed on this machine and wrote a ladder of
+    /// plausible names instead. There is a list: Menyoo.asi carries the whole library as
+    /// plain strings, a pretty label followed by the real name, assets and effects together
+    /// -- the same trick that gives us PedAnimList and PropList, in a binary rather than a
+    /// text file. ent_anim_cig_exhale_mth is in it, and so is the asset it lives in.
     ///
-    /// WHICH IS WHY IT IS A LADDER AND WHY IT IS VERIFIED. START_PARTICLE_FX_NON_LOOPED_ON_
-    /// PED_BONE returns whether it actually started, so a name that is not in the asset
-    /// answers false rather than lying -- the one thing the anim dictionaries do not do.
-    /// Each rung is tried until one answers true, the rung that took is remembered for the
-    /// session, and the log says which. The last rung is the one this set of mods already
-    /// sprays out of a paint can, so there is a floor under it that is known to work.
+    /// AND AN EFFECT BELONGS TO AN ASSET, which is the thing that version got wrong. It
+    /// asked for every name out of "core" -- three of them were real and none of them were
+    /// core's, so all three were refused and the ladder fell through to a fire extinguisher.
+    /// That is what the spray was, and the hiss with it, because a ptfx carries its own
+    /// audio. They are named in pairs now.
+    ///
+    /// AND AN ASSET THAT IS NOT IN MEMORY YET IS NOT AN ASSET THAT IS MISSING. The same
+    /// version judged a rung on the frame it asked for it, so whichever asset happened to be
+    /// resident already won every time -- which is the whole reason a cigarette ended up
+    /// spraying foam. A rung now keeps its place while its asset streams, and is only given
+    /// up when the game has it and still refuses the effect.
     /// </summary>
     internal static class Exhale
     {
         /// <summary>SKEL_Head. The plume comes out of his face, not his chest.</summary>
         private const int Head = 31086;
 
+        /// <summary>Puffs a rung waits for its asset before it is written off.</summary>
+        private const int WaitPuffs = 4;
+
         /// <summary>
-        /// Asset and effect, in pairs, best first.
+        /// Asset and effect, in pairs, best first. Every one of these is in Menyoo's list.
         ///
-        /// The first three are what a cigarette ought to be called if the library has one;
-        /// the fourth is steam, which is white, small and PROVEN -- Overspray's extinguisher
-        /// plume is this exact effect. Scaled right down it reads as breath in cold air,
-        /// which is near enough to a lungful of smoke at arm's length.
+        /// scr_mp_cig is the cigarette asset and it holds all three of the game's own
+        /// smoking effects; ent_anim_cig_exhale_mth is the one that comes out of a mouth,
+        /// which is exactly what this is for. The linger underneath it is the ambient one
+        /// that hangs in the air after somebody has smoked.
+        ///
+        /// NOTHING LOUD AND NOTHING SPRAYED. There is deliberately no fallback to a steam
+        /// or gas effect: those are jets, they are noisy, and a man exhaling a fire
+        /// extinguisher is worse than a man exhaling nothing.
         /// </summary>
         private static readonly string[] Plumes =
         {
-            "core", "ent_anim_cig_smoke",
-            "core", "ent_amb_smoke_general",
-            "core", "exp_grd_bzgas_smoke",
-            "core", "ent_sht_steam"
+            "scr_mp_cig", "ent_anim_cig_exhale_mth",
+            "scr_mp_cig", "ent_anim_cig_smoke",
+            "core",       "ent_amb_cig_smoke_linger"
         };
 
-        /// <summary>The rung that answered true, once one has. -1 until then.</summary>
-        private static int _rung = -1;
+        /// <summary>Which pair is being tried, or is known to work once _settled.</summary>
+        private static int _rung;
+        private static int _waited;
 
-        private static bool _said;
+        private static bool _settled;
         private static bool _gaveUp;
 
         /// <summary>
@@ -63,38 +77,43 @@ namespace Hoodrich.Economy
         /// Called on the beat the animation lowers the cigarette, which is the beat he would
         /// be breathing out on. Costs nothing when it fails and nothing when it is off.
         /// </summary>
-        public static void Now(Ped me, float scale)
+        public static void Now(Ped me)
         {
             if (_gaveUp || me == null || !me.Exists() || me.IsDead) return;
 
             try
             {
-                if (_rung >= 0)
+                var asset = Plumes[_rung];
+                var fx = Plumes[_rung + 1];
+
+                Function.Call(Hash.REQUEST_NAMED_PTFX_ASSET, asset);
+
+                if (!Function.Call<bool>(Hash.HAS_NAMED_PTFX_ASSET_LOADED, asset))
                 {
-                    Fire(me, Plumes[_rung], Plumes[_rung + 1], scale);
+                    // STREAMING IS NOT FAILING. It lands in a frame or two; this puff goes
+                    // without. Only after several drags is the asset itself in doubt.
+                    if (++_waited < WaitPuffs) return;
+
+                    Log.Info("Exhale: " + asset + " never arrived, so " + fx + " cannot be tried.");
+                    Next();
                     return;
                 }
 
-                for (var i = 0; i + 1 < Plumes.Length; i += 2)
+                if (Fire(me, asset, fx))
                 {
-                    if (!Fire(me, Plumes[i], Plumes[i + 1], scale)) continue;
-
-                    _rung = i;
-
-                    if (!_said)
+                    if (!_settled)
                     {
-                        _said = true;
-                        Log.Info("Exhale: " + Plumes[i] + " / " + Plumes[i + 1] + " -- that one plays.");
+                        _settled = true;
+                        Log.Info("Exhale: " + asset + " / " + fx + " -- that one plays.");
                     }
 
                     return;
                 }
 
-                // EVERY RUNG REFUSED, WHICH IS AN ANSWER. Asked again every drag would be a
-                // handful of failed native calls a second for the rest of the session.
-                _gaveUp = true;
-                Log.Info("Exhale: none of these particle effects exist on this install, so he " +
-                         "smokes without smoke. Tried: " + Names());
+                // THE GAME HAS THE ASSET AND WILL NOT PLAY THE EFFECT, which is the only
+                // answer that means the name is wrong.
+                Log.Info("Exhale: " + asset + " is loaded and " + fx + " does not play out of it.");
+                Next();
             }
             catch (Exception ex)
             {
@@ -103,43 +122,36 @@ namespace Hoodrich.Economy
             }
         }
 
-        private static bool Fire(Ped me, string asset, string fx, float scale)
+        private static void Next()
         {
-            Function.Call(Hash.REQUEST_NAMED_PTFX_ASSET, asset);
+            _waited = 0;
+            _rung += 2;
 
-            // NOT WAITED ON. The asset lands in a frame or two and the next drag is seconds
-            // away; blocking the frame for a puff of smoke is the wrong trade.
-            if (!Function.Call<bool>(Hash.HAS_NAMED_PTFX_ASSET_LOADED, asset)) return false;
+            if (_rung + 1 < Plumes.Length) return;
 
+            _gaveUp = true;
+            Log.Info("Exhale: none of the game's smoking effects would play on this install, " +
+                     "so he smokes without smoke. Nothing else is tried on purpose -- the " +
+                     "alternatives are jets with a hiss on them.");
+        }
+
+        private static bool Fire(Ped me, string asset, string fx)
+        {
             Function.Call(Hash.USE_PARTICLE_FX_ASSET, asset);
-
-            // Grey, and half see-through. The effects behind these names are white steam and
-            // yellow gas; smoke is neither, and both take a colour.
-            Function.Call(Hash.SET_PARTICLE_FX_NON_LOOPED_COLOUR, 0.72f, 0.72f, 0.74f);
-            Function.Call(Hash.SET_PARTICLE_FX_NON_LOOPED_ALPHA, 0.5f);
 
             var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, me.Handle, Head);
 
-            // A little in front of his mouth and a little below the eyes. The head bone sits
+            // FORWARD AND A LITTLE DOWN, which is where his mouth is. The head bone sits
             // inside the skull, so a plume at zero starts behind his own face.
+            //
+            // Scale is one. These are the game's own cigarette effects, cut for a cigarette
+            // at a mouth -- the version that scaled to a sixth was sizing down an
+            // extinguisher, which is not a thing that needs doing to this.
             return Function.Call<bool>(Hash.START_PARTICLE_FX_NON_LOOPED_ON_PED_BONE,
                                        fx, me.Handle,
-                                       0.0f, 0.11f, 0.02f,
+                                       0.0f, 0.09f, -0.02f,
                                        0f, 0f, 0f,
-                                       bone, scale, false, false, false);
-        }
-
-        private static string Names()
-        {
-            var sb = new System.Text.StringBuilder();
-
-            for (var i = 0; i + 1 < Plumes.Length; i += 2)
-            {
-                if (sb.Length > 0) sb.Append(", ");
-                sb.Append(Plumes[i]).Append('/').Append(Plumes[i + 1]);
-            }
-
-            return sb.ToString();
+                                       bone, 1.0f, false, false, false);
         }
     }
 }
