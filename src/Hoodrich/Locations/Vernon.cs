@@ -58,6 +58,34 @@ namespace Hoodrich.Locations
         /// </summary>
         private const float ShoutRange = 8.0f;
 
+        /// <summary>
+        /// Where he stands in the basement, and which way he faces while he does it.
+        ///
+        /// HE SAYS "I'M RIGHT BEHIND YOU" AND THEN HE WAS NOT. Everything about this man was
+        /// one coordinate on Strawberry -- spawned at it, settled back onto it, despawned at a
+        /// hundred and sixty metres from it -- so walking down his stairs put you in an empty
+        /// warehouse, with the whole tour, the whole pitch and the whole job waiting on a
+        /// conversation with somebody who was still outside leaning on a wall eight hundred
+        /// metres away.
+        ///
+        /// PLACED BY EYE, LIKE THE ARMOURER'S CRATES. The floor height is the room's own origin
+        /// -- the game reported it while the door was arguing about where to put people -- and
+        /// the facing looks back at the bottom of the stairs, so he is watching you come down.
+        /// Send a HUD readout from where he should actually stand and he moves.
+        /// </summary>
+        private static readonly Vector3 DownSpot = new Vector3(147.397f, -2201.349f, 3.602f);
+        private const float DownHeading = 101.1f;
+
+        /// <summary>Near enough to his post to stop walking and start standing.</summary>
+        private const float PostedRange = 1.4f;
+
+        /// <summary>How long before a walk order that has fallen off is given again.</summary>
+        private const int WalkAgainMs = 4000;
+
+        /// <summary>Standing in his own basement, which is not a wall to lean on.</summary>
+        private static readonly string[] Posted =
+            { "WORLD_HUMAN_STAND_IMPATIENT", "WORLD_HUMAN_STAND_MOBILE" };
+
         private const int UpdateIntervalMs = 700;
 
         /// <summary>
@@ -104,6 +132,10 @@ namespace Hoodrich.Locations
 
         /// <summary>Out on a job, so the wall does not despawn him and nothing here tasks him.</summary>
         private bool _lent;
+
+        /// <summary>Downstairs rather than on the wall. See Basement.</summary>
+        private bool _down;
+        private int _walkedAt;
         private Blip _blip;
         private int _lastUpdate;
         private bool _held;
@@ -149,6 +181,12 @@ namespace Hoodrich.Locations
         /// </summary>
         public Func<bool> Known;
 
+        /// <summary>Set by Main: whether the player is down in the basement. See Basement.</summary>
+        public Func<bool> Inside;
+
+        /// <summary>Set by Main: where the stairs put you, so he can arrive the same way.</summary>
+        public Func<Vector3> Landing;
+
         public bool InReach => Within(TalkRange);
 
         /// <summary>Near enough to be shouted at. See ShoutRange.</summary>
@@ -183,6 +221,22 @@ namespace Hoodrich.Locations
             // it is wrong for a man riding to La Puerta in the passenger seat. See Lend.
             if (_lent) return;
 
+            // ---- DOWNSTAIRS IS A PLACE HE CAN BE ----
+            //
+            // Checked before the wall, because the wall's rules would despawn him for being
+            // eight hundred metres from Strawberry -- which, stood in a warehouse in Banning
+            // with the player beside him, he is.
+            var below = Inside != null && Inside();
+
+            if (below) { Basement(); return; }
+
+            // Back up the stairs: he lets go of the basement and the wall takes him again.
+            if (_down)
+            {
+                _down = false;
+                Despawn();
+            }
+
             var away = player.Position.DistanceTo(Spot);
 
             if (away > DespawnRange)
@@ -199,6 +253,21 @@ namespace Hoodrich.Locations
 
         private void Spawn()
         {
+            if (!Make(Spot, Heading, "on the wall at Leroy's")) return;
+
+            Settle();
+        }
+
+        /// <summary>
+        /// Him, at a coordinate, with everything about him switched on.
+        ///
+        /// Split out of Spawn because there are two places he stands now and only one of them
+        /// is a wall. Every flag here is the same either way -- he is a fixture, not a
+        /// pedestrian, and a fixture that can be shot at, panicked, knocked over or wandered
+        /// off is not one.
+        /// </summary>
+        private bool Make(Vector3 at, float facing, string where)
+        {
             foreach (var name in Models)
             {
                 try
@@ -206,7 +275,7 @@ namespace Hoodrich.Locations
                     var model = new Model(name);
                     if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) continue;
 
-                    _ped = World.CreatePed(model, Spot, Heading);
+                    _ped = World.CreatePed(model, at, facing);
                     model.MarkAsNoLongerNeeded();
 
                     if (_ped == null || !_ped.Exists()) continue;
@@ -223,16 +292,116 @@ namespace Hoodrich.Locations
                     Function.Call(Hash.SET_PED_DIES_WHEN_INJURED, h, false);
                     Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, h, 0, false);
 
-                    Settle();
-
-                    Log.Info("Vernon is on the wall at Leroy's (" + name + ").");
-                    return;
+                    Log.Info("Vernon is " + where + " (" + name + ") at " + at + ".");
+                    return true;
                 }
                 catch (Exception ex)
                 {
                     Log.Debug("Could not put Vernon out: " + ex.Message);
                 }
             }
+
+            return false;
+        }
+
+        /// <summary>
+        /// In the basement with you: down the stairs behind you and over to his post.
+        ///
+        /// HE ARRIVES WHERE YOU ARRIVED. The landing is the one coordinate down here anybody
+        /// has stood on and proved walkable -- the door puts the player on it every time -- so
+        /// he is made a stride into the room from it and walks the rest himself. Made at his
+        /// post instead he would simply BE there, which is a man who was always in the room
+        /// rather than a man who followed you into it.
+        ///
+        /// AND HE WALKS RATHER THAN BEING PLACED because the walk is the line. "Go down them
+        /// stairs, I'm right behind you" is either true or it is a man lying on a pavement.
+        /// </summary>
+        private void Basement()
+        {
+            if (_ped == null || !_ped.Exists() || !_ped.IsAlive || !_down)
+            {
+                // Whatever the street was holding lets go of him first: one Vernon.
+                Despawn();
+
+                var from = DownSpot;
+
+                if (Landing != null)
+                {
+                    try
+                    {
+                        var top = Landing();
+
+                        // A stride into the room off the landing, so he is not stood inside
+                        // the player who just used it.
+                        if (top != Vector3.Zero) from = top + Forward(DownHeading) * -1.2f;
+                    }
+                    catch { /* the post itself, then */ }
+                }
+
+                if (!Make(from, DownHeading, "down in the basement")) return;
+
+                _down = true;
+                _held = false;
+
+                WalkToPost();
+                return;
+            }
+
+            if (_talking || _held) return;
+
+            if (_ped.Position.DistanceTo(DownSpot) <= PostedRange) { Post(); return; }
+
+            // Still on his way. A task that has fallen off him -- and they do -- looks exactly
+            // like a man standing still halfway across his own basement.
+            if (Game.GameTime - _walkedAt > WalkAgainMs) WalkToPost();
+        }
+
+        /// <summary>The way a heading points, so a spot can be measured off one.</summary>
+        private static Vector3 Forward(float heading)
+        {
+            var r = heading * (float)(Math.PI / 180.0);
+
+            return new Vector3(-(float)Math.Sin(r), (float)Math.Cos(r), 0f);
+        }
+
+        private void WalkToPost()
+        {
+            _walkedAt = Game.GameTime;
+
+            try
+            {
+                _ped.Task.ClearAll();
+
+                Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, _ped.Handle,
+                              DownSpot.X, DownSpot.Y, DownSpot.Z, 1.0f, -1, DownHeading, 0.3f);
+            }
+            catch { /* he stands where he is, which is still in the room */ }
+        }
+
+        /// <summary>Arrived: turned the right way and stood in it like he owns it.</summary>
+        private void Post()
+        {
+            try
+            {
+                _ped.Task.ClearAll();
+                _ped.Heading = DownHeading;
+
+                foreach (var name in Posted)
+                {
+                    try
+                    {
+                        Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, _ped.Handle, name, 0, true);
+                        break;
+                    }
+                    catch
+                    {
+                        // The next way of standing there.
+                    }
+                }
+
+                _held = true;
+            }
+            catch { /* stood still is stood still */ }
         }
 
         /// <summary>

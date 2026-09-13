@@ -215,6 +215,32 @@ namespace Hoodrich.Locations
         /// while he is the reason it is shut would leave you at a locked door with the one man
         /// who can unlock it stood there unaskable.
         /// </summary>
+        /// <summary>
+        /// True when he is inside and stood on the way out, so the button would leave.
+        ///
+        /// SEPARATE FROM BEING INSIDE AT ALL, and that distinction is the whole point of it.
+        /// Vernon's prompt was suppressed by IsInside -- correct while nobody was ever in the
+        /// room but him not being in it -- so the moment he started standing in his own
+        /// basement, walking up to him down there offered nothing: the door two rooms away was
+        /// still holding the button. The doorway is a metre wide. Everywhere else in the room
+        /// belongs to whoever is stood in it.
+        /// </summary>
+        public bool AtTheWayOut
+        {
+            get
+            {
+                if (_busy || !_inside) return false;
+
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists()) return false;
+
+                return player.Position.DistanceTo(Mark) <= ExitRange;
+            }
+        }
+
+        /// <summary>Where going in puts you: the ini's coordinate, or wherever he ended up.</summary>
+        public Vector3 Landing => _standing == Vector3.Zero ? Inside : _standing;
+
         public bool WantsTheButton
         {
             get

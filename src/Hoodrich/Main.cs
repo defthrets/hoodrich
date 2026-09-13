@@ -2846,8 +2846,15 @@ namespace Hoodrich
                 // in the frame you mean the door; stood anywhere else you mean him -- and
                 // while the door is still locked it wants nothing, so he keeps the button and
                 // can be asked about it. See InteriorDoor.WantsTheButton.
+                // THE DOORWAY, NOT THE WHOLE ROOM. IsInside took the button off him
+                // everywhere in the basement, which was harmless while he was never down there
+                // and is the difference between a tour and an empty warehouse now that he is.
                 _vernon.Suppressed = () => _leroys != null &&
-                                           (_leroys.IsInside || _leroys.WantsTheButton);
+                                           (_leroys.AtTheWayOut || _leroys.WantsTheButton);
+
+                // And he is down there when you are. See Vernon.Basement.
+                _vernon.Inside = () => _leroys != null && _leroys.IsInside;
+                _vernon.Landing = () => _leroys == null ? Vector3.Zero : _leroys.Landing;
 
                 // And not on the map until Gerald has started you off. See Started.
                 _vernon.Known = () => Started;

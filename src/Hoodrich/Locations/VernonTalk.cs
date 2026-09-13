@@ -253,22 +253,39 @@ namespace Hoodrich.Locations
                 "booth in the corner, 'cause a man gotta have somewhere to lay his vocals. " +
                 "Can't nobody complain about the noise 'cause ain't nobody down there but me.");
 
-            node.Say("Let me see it.", () => NotYet(), "Ask to go down");
+            node.Say("Let me see it.", () => ComeDown(), "Ask to go down");
             node.Say("Lay your what?", () => Bars(), "He has been waiting for this");
             node.Leave();
 
             return node;
         }
 
-        private DialogueNode NotYet()
+        /// <summary>
+        /// Yes, and he cannot get the word out fast enough.
+        ///
+        /// HE USED TO SAY NO HERE AND IT STOPPED BEING TRUE. The line was "do one thing for me
+        /// first and I'll walk you down there myself" -- the tape was the toll and the job was
+        /// the price of the stairs -- and the very next thing he says is "go down them stairs,
+        /// I'm right behind you". Two beats, in a row, contradicting each other, in the one
+        /// conversation the player has before they walk into the room.
+        ///
+        /// SO HE WANTS YOU DOWN THERE, AND THAT IS BETTER ANYWAY. A man who has spent six
+        /// months and his own money on a basement nobody has ever seen does not gatekeep it.
+        /// He has been waiting for somebody to stand in it. The booth joke survives as the
+        /// thing he warns you about on the way down rather than the thing he holds over you:
+        /// you are going to hear the single, that is simply what happens in that room.
+        /// </summary>
+        private DialogueNode ComeDown()
         {
             var node = Node(
-                "Ho -- nah. Nah nah nah. You don't walk in a man's booth 'fore you heard his " +
-                "single, that's disrespect. Do one thing for me first and I'll walk you down " +
-                "there myself. Hit the lights and everything.");
+                "Ho -- you wanna SEE it? ... Franklin. YEAH. Come down, man -- I been waitin' " +
+                "six months for somebody to stand in that room and tell me it's real. And while " +
+                "you down there, I'ma put somethin' to you as well. Fair warnin' though: you " +
+                "walk in a man's booth, you hearin' his single. That's manners. I don't make " +
+                "the rules.");
 
-            node.Say("What thing?", () => TheAsk(), "The work").MovesOn();
-            node.Say("Let me hear it, then.", () => Bars());
+            node.Say("Put what to me?", () => TheAsk(), "The work").MovesOn().WithIcon(Icons.Tick);
+            node.Say("Let me hear it now, then.", () => Bars());
             node.Leave();
 
             return node;
@@ -659,12 +676,27 @@ namespace Hoodrich.Locations
 
         // ---- after the first time ----------------------------------------------
 
+        /// <summary>
+        /// Coming back to him with the job still owed.
+        ///
+        /// DOWNSTAIRS THERE IS NOTHING TO INVITE YOU TO. You are stood in the room; he is stood
+        /// in it with you; "still on the wall" is a man describing a pavement he is nowhere
+        /// near. So below, this is simply the ask -- which is the tour the first time and the
+        /// pitch after it. See TheAsk.
+        ///
+        /// AND THE DOOR IS NOT A POLICY ANY MORE. He used to finish this with "that door behind
+        /// me still ain't openin' for nobody who ain't handled it", which was true when the job
+        /// was the price of the stairs and is now the opposite of true: he walks you down to
+        /// ask you in the first place.
+        /// </summary>
         private DialogueNode Owed()
         {
+            if (Below != null && Below()) return TheAsk();
+
             var node = Node(
                 "Ayy, my guy. Still on the wall. That thing I mentioned? Still standin', still " +
-                "need doin'. And that door behind me still ain't openin' for nobody who ain't " +
-                "handled it. That's just policy.");
+                "need doin' -- and it ain't a pavement conversation, so you already know where " +
+                "we goin'.");
 
             node.Say("Tell me again.", () => TheAsk(), "The work").MovesOn();
             node.Say("Spit that verse again.", () => Bars());
