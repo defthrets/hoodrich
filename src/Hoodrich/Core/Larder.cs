@@ -49,6 +49,7 @@ namespace Hoodrich.Core
 
         private static PropertyInfo _ready, _total, _slots, _extra, _menuOpen;
         private static MethodInfo _ids, _countOf, _nameOf, _iconOf, _tintOf, _consume, _mark;
+        private static MethodInfo _descOf, _categoryOf;
         private static MethodInfo _notSleep;
         private static MethodInfo _drain;
 
@@ -116,6 +117,11 @@ namespace Hoodrich.Core
                     _ids = type.GetMethod("Ids", BindingFlags.Public | BindingFlags.Static);
                     _countOf = type.GetMethod("CountOf", BindingFlags.Public | BindingFlags.Static);
                     _nameOf = type.GetMethod("NameOf", BindingFlags.Public | BindingFlags.Static);
+
+                    // Theirs already, and never asked for until the pocket screen had room
+                    // to say what a thing IS rather than only what it is called.
+                    _descOf = type.GetMethod("DescOf", BindingFlags.Public | BindingFlags.Static);
+                    _categoryOf = type.GetMethod("CategoryOf", BindingFlags.Public | BindingFlags.Static);
                     _iconOf = type.GetMethod("IconOf", BindingFlags.Public | BindingFlags.Static);
                     _tintOf = type.GetMethod("TintOf", BindingFlags.Public | BindingFlags.Static);
                     _consume = type.GetMethod("Consume", BindingFlags.Public | BindingFlags.Static);
@@ -176,6 +182,34 @@ namespace Hoodrich.Core
                 return (int)_countOf.Invoke(null, new object[] { id });
             }
             catch { return 0; }
+        }
+
+        /// <summary>What it is, in their words. Empty when they cannot say.</summary>
+        public static string DescOf(string id)
+        {
+            try
+            {
+                if (!Present || _descOf == null) return "";
+                return (string)_descOf.Invoke(null, new object[] { id }) ?? "";
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
+        /// <summary>Which shelf it came off -- drink, snack, meal. Empty when they cannot say.</summary>
+        public static string CategoryOf(string id)
+        {
+            try
+            {
+                if (!Present || _categoryOf == null) return "";
+                return (string)_categoryOf.Invoke(null, new object[] { id }) ?? "";
+            }
+            catch
+            {
+                return "";
+            }
         }
 
         public static string NameOf(string id)

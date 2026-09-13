@@ -2493,6 +2493,8 @@ namespace Hoodrich
 
                 // The bag comes off from the page that shows what is in it. See Strap.
                 _pocketScreen.BagOn = () => _state != null && _state.Bag.Worn;
+                _pocketScreen.BagUsed = () => _state == null ? 0 : _state.Bag.Used;
+                _pocketScreen.BagSlots = () => State.Satchel.Slots;
                 _pocketScreen.DropBag = () =>
                 {
                     var me = Game.Player.Character;

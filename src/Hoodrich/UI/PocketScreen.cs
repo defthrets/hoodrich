@@ -153,6 +153,10 @@ namespace Hoodrich.UI
         public Func<bool> BagOn;
         public Action DropBag;
 
+        /// <summary>Set by Main: how many of the bag's slots are spent, and how many there are.</summary>
+        public Func<int> BagUsed;
+        public Func<int> BagSlots;
+
         public bool IsOpen => _curtain.Showing;
 
         public void Open(Stash pockets, Drugs catalogue, DroppedBags bags)
@@ -623,6 +627,22 @@ namespace Hoodrich.UI
             UiKit.Meter(x, y + 0.004f, wide, "people.png", "ON YOU", UiKit.Holding(_pockets),
                       _meter.To(full), full, arrive);
 
+            // ---- and what is doing the carrying ----
+            //
+            // THE CAPACITY ALREADY MOVED AND NOTHING SAID WHY. With the bag on, the meter above
+            // reads 2400g instead of 400 -- which is correct, and is a number that appears to
+            // change on its own. A row that names the bag and counts its slots is the
+            // difference between a readout that grew and a thing you are carrying.
+            if (Carrying)
+            {
+                var slots = BagSlots == null ? 0 : BagSlots();
+                var used = BagUsed == null ? 0 : BagUsed();
+                var part = slots <= 0 ? 0f : used / (float)slots;
+
+                UiKit.Meter(x, y + 0.024f, wide, "stash.png", "BAG",
+                            used + " / " + slots, part, part, arrive);
+            }
+
             y = top + ContentTop;
 
             // Nothing wants the cursor until a tile asks for it this frame.
@@ -670,33 +690,43 @@ namespace Hoodrich.UI
         /// </summary>
         private void Keys(float x, float right, float y, float arrive)
         {
+            // ONE DIRECTION, AND DONE IS THE ONLY THING PINNED TO THE RIGHT.
+            //
+            // DROP BAG was right-aligned at a fixed inset and the rest of the row is laid out
+            // left to right, so the two ran into each other and printed on top of one another
+            // -- "DROHOLD", "TAKE ONB". Two layouts on one line is a collision waiting for
+            // somebody to add a word, and it did not have to wait long. Everything flows now
+            // and the row simply gets longer.
             UiKit.KeyRight(right, y, UiKit.Back, "DONE", arrive);
 
-            // ON THE ROW EVEN WITH EMPTY POCKETS, because an empty bag is the one you are most
-            // likely to want off, and the legend returning early on Places == 0 would have hidden
-            // it exactly then.
-            if (Carrying) UiKit.KeyRight(right - 0.086f, y, "B", "DROP BAG", arrive);
+            var kx = x;
 
-            if (Places == 0) return;
-
-            var kx = UiKit.Key(x, y, null, "arrow_leftright.png", "PICK", arrive);
-
-            if (OnFood)
+            if (Places > 0)
             {
-                UiKit.Key(kx, y, UiKit.Confirm, null, "EAT IT", arrive);
-                return;
+                kx = UiKit.Key(kx, y, null, "arrow_leftright.png", "PICK", arrive);
+
+                if (OnFood)
+                {
+                    kx = UiKit.Key(kx, y, UiKit.Confirm, null, "EAT IT", arrive);
+                }
+                else
+                {
+                    // THE FLOOR IS THE ONE THING ABOUT THIS SCREEN NOBODY WOULD GUESS. The drop
+                    // mark -- an arrow onto a line -- rides the cap, so the key that puts things
+                    // on the pavement is the one key on the row with a picture of doing that.
+                    kx = UiKit.Key(kx, y, UiKit.Drop, null, "PUT IT DOWN", arrive);
+                    kx = UiKit.Key(kx, y, "HOLD", null, "ALL OF IT", arrive);
+
+                    if (_selected >= 0 && _selected < _rows.Count && _rows[_selected].Bagged)
+                    {
+                        kx = UiKit.Key(kx, y, UiKit.Confirm, null, "TAKE ONE", arrive);
+                    }
+                }
             }
 
-            // THE FLOOR IS THE ONE THING ABOUT THIS SCREEN NOBODY WOULD GUESS. The drop mark
-            // -- an arrow onto a line -- rides the cap, so the key that puts things on the
-            // pavement is the one key on the row with a picture of doing that.
-            kx = UiKit.Key(kx, y, UiKit.Drop, null, "PUT IT DOWN", arrive);
-            kx = UiKit.Key(kx, y, "HOLD", null, "ALL OF IT", arrive);
-
-            if (_selected >= 0 && _selected < _rows.Count && _rows[_selected].Bagged)
-            {
-                UiKit.Key(kx, y, UiKit.Confirm, null, "TAKE ONE", arrive);
-            }
+            // LAST ON THE ROW AND THERE EVEN WITH EMPTY POCKETS, because an empty bag is the
+            // one you are most likely to want off your back.
+            if (Carrying) UiKit.Key(kx, y, "B", null, "DROP BAG", arrive);
         }
 
         /// <summary>
@@ -919,7 +949,7 @@ namespace Hoodrich.UI
 
                 if (at >= 0 && at < _food.Count)
                 {
-                    Theme.Caption(Core.Larder.NameOf(_food[at]), x, capY, grown);
+                    FoodCard(_food[at], x, width, capY, arrive, grown);
                     return;
                 }
             }
@@ -927,6 +957,77 @@ namespace Hoodrich.UI
             Hud.Text(_food.Count == 1 ? "1 thing to eat" : _food.Count + " things to eat",
                      x, capY, 0.26f, Palette.Alpha(Palette.TextDim, 190),
                      Hud.FontBody, centre: false);
+        }
+
+        /// <summary>
+        /// The same card the product gets, for a thing you eat.
+        ///
+        /// FOOD HAD A NAME AND NOTHING ELSE. The product rows get a plate, the picture at
+        /// size, the name, a tag saying what form it is in and a line saying how much -- and
+        /// the food got one grey caption, on the same screen, under the same cursor. Two
+        /// halves of one inventory answering the same question differently is the sort of
+        /// thing a player reads as one of them being unfinished, and they were right.
+        ///
+        /// WHAT IT SAYS COMES FROM NEXT DOOR. The name, the picture, the shelf it came off and
+        /// the line describing it are all Bare Minimum's -- see Core.Larder -- and every one
+        /// of them falls back to nothing rather than to a guess, so an install without them
+        /// gets a card with a name on it rather than a card full of empty labels.
+        /// </summary>
+        private void FoodCard(string id, float x, float wide, float y, float arrive, float grown)
+        {
+            var cardH = CardH - 0.010f;
+
+            var slide = Hud.ToX(0.012f) * (1f - grown);
+            var show = arrive * (0.6f + 0.4f * grown);
+
+            Theme.Plate(x, y, wide, cardH, 0.55f * show);
+
+            // ---- the picture, big ----
+            var file = Core.Larder.IconOf(id);
+            var ax = x + Hud.ToX(0.014f) + slide;
+            var tx = x + 0.012f + slide;
+
+            if (!string.IsNullOrEmpty(file) &&
+                Hud.File(file, ax + Hud.ToX(BigArt) * 0.5f, y + cardH * 0.5f, BigArt, 0f,
+                         Core.Larder.TintOf(id)))
+            {
+                tx = ax + Hud.ToX(BigArt) + 0.010f;
+            }
+
+            // ---- the name, and which shelf it came off ----
+            var name = Core.Larder.NameOf(id);
+            var nameY = y + 0.008f;
+
+            Hud.Text(name, tx, nameY, 0.34f, Palette.Alpha(Palette.Text, (int)(255f * show)),
+                     Hud.FontBody, centre: false);
+
+            var shelf = Core.Larder.CategoryOf(id);
+
+            if (!string.IsNullOrEmpty(shelf))
+            {
+                UiKit.Tag(tx + Hud.MeasureText(name, 0.34f, Hud.FontBody) + 0.009f, nameY + 0.005f,
+                          shelf.ToUpperInvariant(), Palette.Brand, show);
+            }
+
+            // ---- how many, and what it is ----
+            var lineY = y + 0.037f;
+
+            var many = Core.Larder.CountOf(id);
+            var count = many + (many == 1 ? " in the bag" : " in the bag");
+
+            Hud.Text(count, tx, lineY, 0.30f, Palette.Alpha(Palette.Cash, (int)(255f * show)),
+                     Hud.FontBody, centre: false);
+
+            var desc = Core.Larder.DescOf(id);
+
+            if (!string.IsNullOrEmpty(desc))
+            {
+                Hud.Text(Hud.Fit(desc, wide - (tx - x) - 0.020f -
+                                       Hud.MeasureText(count, 0.30f, Hud.FontBody), 0.27f, Hud.FontBody),
+                         tx + Hud.MeasureText(count, 0.30f, Hud.FontBody) + 0.012f, lineY + 0.001f,
+                         0.27f, Palette.Alpha(Palette.TextDim, (int)(215f * show)),
+                         Hud.FontBody, centre: false);
+            }
         }
 
         /// <summary>
