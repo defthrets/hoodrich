@@ -273,13 +273,30 @@ namespace Hoodrich.UI
         public Func<string> Meet;
 
         /// <summary>
-        /// Set by Main: whether Vee's job counts as done, and a way to say that it does.
+        /// Set by Main: whether Vernon's job counts as done, and a way to say that it does.
         ///
-        /// The basement door is locked behind that job and the job is not written yet, so
-        /// without this the room cannot be reached at all. See the row in Build.
+        /// The basement door is locked behind that job, so this is the way into the room
+        /// without doing it. See the row in Build.
         /// </summary>
         public Func<bool> VeeDone;
         public Action<bool> SetVeeDone;
+
+        /// <summary>
+        /// Set by Main: whether you have met Vernon, and a way to un-meet him.
+        ///
+        /// HE INTRODUCES HIMSELF ONCE AND THE FIRST MEETING IS A SCENE. He shouts across the
+        /// pavement at you the first time you come within three metres of him, and after that
+        /// he is somebody you know and it is the button like everybody else -- so the scene is
+        /// a thing you get exactly one of per save, and there was no way to see it twice.
+        ///
+        /// NOT BY EDITING THE SAVE, WHICH IS WHY THIS EXISTS. save.json is written FROM memory,
+        /// not read back into it: change the file under a running game and the next autosave
+        /// puts it straight back, silently, and you are left thinking the greeting is broken
+        /// when what is broken is the method. The state lives in the mod, so the switch has to
+        /// be in the mod.
+        /// </summary>
+        public Func<bool> MetVee;
+        public Action<bool> SetMetVee;
 
         private Opt _placeRow;
 
@@ -597,23 +614,18 @@ namespace Hoodrich.UI
                 }
             });
 
-            // THE DOOR VEE STANDS IN FRONT OF, until there is a job to earn it with.
-            //
-            // The lock is right -- he says out loud that nobody goes down there before they
-            // have done something for him -- and the job it waits on has not been written. A
-            // door with no key cut for it is not a gate, it is a wall. So this is the key, on
-            // a screen, rather than something quietly opened in code.
+            // THE DOOR VERNON STANDS IN FRONT OF. The lock is right -- he says out loud that
+            // nobody goes down there before they have done something for him -- and this is
+            // the row that skips the job, the way every other unlock on this screen does.
             //
             // A toggle, because being able to lock it again is what makes it safe to press.
-            // When the job exists it will mark itself done and this becomes the row that skips
-            // it, like every other unlock here.
             _rows.Add(new Opt
             {
                 Kind = OptKind.Action,
                 Label = VeeDone != null && VeeDone()
                     ? "Lock Leroy's basement again"
                     : "Count Vernon's job as done",
-                Note = "Opens the door on Strawberry. The job it waits on is not written yet",
+                Note = "Opens the door on Strawberry without doing the job at Rogers Scrap",
                 Do = () =>
                 {
                     if (VeeDone == null || SetVeeDone == null) return;
@@ -624,6 +636,32 @@ namespace Hoodrich.UI
                     Notify.Ticker(open
                         ? "~g~Vernon walked you down.~s~  the door on Strawberry opens"
                         : "~o~Locked again.~s~  Vernon wants that job doing first");
+                }
+            });
+
+            // AND A WAY BACK TO THE FIRST TIME YOU EVER SAW HIM.
+            //
+            // One row, one direction, and it says so: forgetting a man you have met is a thing
+            // you might want; pretending to have met one you have not is nothing at all, since
+            // walking up to him does that in a second and a half.
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Action,
+                Label = "Forget meeting Vernon",
+                Note = "He shouts at you across the pavement again next time you get near him",
+                Do = () =>
+                {
+                    if (MetVee == null || SetMetVee == null) return;
+
+                    if (!MetVee())
+                    {
+                        Notify.Problem("you ain't met him yet as it is.");
+                        return;
+                    }
+
+                    SetMetVee(false);
+
+                    Notify.Ticker("~g~Forgot him.~s~  walk up on Strawberry and he starts it");
                 }
             });
 

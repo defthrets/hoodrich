@@ -2596,6 +2596,30 @@ namespace Hoodrich
                 {
                     _settingsScreen.VeeDone = () => _state != null && _state.HasDone(Locations.VernonTalk.JobId);
 
+                    _settingsScreen.MetVee = () => _state != null && _state.MetVernon;
+
+                    _settingsScreen.SetMetVee = met =>
+                    {
+                        if (_state == null) return;
+
+                        _state.MetVernon = met;
+
+                        // THE TAPE GOES WITH THE MEETING. It is a record of an evening that,
+                        // as far as the save is now concerned, never happened -- and leaving
+                        // it behind would have him introduce himself to a stranger he has
+                        // already played his single to.
+                        if (met) _state.MarkDone(Locations.VernonTalk.HeardIt);
+                        else _state.Undo(Locations.VernonTalk.HeardIt);
+
+                        // WRITTEN OUT NOW, NOT AT THE NEXT AUTOSAVE. The point of this row is
+                        // to reload and watch him do it, and a reload before the next save
+                        // would take the change down with it -- which is exactly how the
+                        // hand-edited save.json went back to met the moment Insert was pressed.
+                        _state.Touch();
+                        SnapshotGuns();
+                        SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint, _blocks);
+                    };
+
                     _settingsScreen.SetVeeDone = on =>
                     {
                         if (_state == null) return;
