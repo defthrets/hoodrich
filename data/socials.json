@@ -5011,6 +5011,17 @@
       "hao's shutter down, gerald's door locked, the block ready. hold {here}",
       "already lost grove once. not losing innocence blvd to {theirs} on a tuesday"
     ],
+    "YouLeftTheBag": [
+      "put the bag down somewhere safe. i'll know it when i see it",
+      "left it. it's fine. it's fine",
+      "if a bag turns up and it ain't yours, it ain't yours",
+      "note to self: remember the alley"
+    ],
+    "YouCarryingBulk": [
+      "twenty spaces and i'm usin' all of em",
+      "carryin' more than i should be. as usual",
+      "bag's heavy. that's a good problem"
+    ],
     "YouDaily": [
       "back on the block. same block, different day",
       "long day. longer night",

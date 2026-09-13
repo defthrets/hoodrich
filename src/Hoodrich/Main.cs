@@ -622,6 +622,15 @@ namespace Hoodrich
         private readonly TrafficWatch _traffic;
 
         /// <summary>
+        /// The bag on his back, and the bag on the pavement. See Economy.Strap.
+        ///
+        /// The one container in the mod that is a THING rather than a screen: it is worn, it
+        /// is dropped where he stands, and it is still there -- with everything in it -- after
+        /// a restart.
+        /// </summary>
+        private readonly Strap _bag;
+
+        /// <summary>
         /// Lamar's yard, with our cars on it and nobody else's.
         ///
         /// THE LOT IS DRESSED AND THE GAME KEEPS REDRESSING IT. There are parked-car
@@ -2124,6 +2133,9 @@ namespace Hoodrich
 
                 _copWatch = new CopWatch();
 
+                // The buttons belong to whatever screen is up, if one is. See AnyScreenUp.
+                _bag = new Strap(_state) { Busy = () => AnyScreenUp() || _talk.IsOpen };
+
                 _traffic = new TrafficWatch()
                 {
                     // The plug is parked there because he was told to park there.
@@ -3564,6 +3576,11 @@ namespace Hoodrich
                 Core.Pace.At("InputGuard.Tick");
                 InputGuard.Tick();
 
+                // B puts it down, holding the context button takes it back. Read every frame,
+                // because a tap between two ticks is a tap that never happened.
+                Core.Pace.At("_bag.Keys");
+                _bag.Keys();
+
                 // Offered every tick and registered once. It has to be a tick rather than a
                 // line in the constructor because SHVDN does not order script construction --
                 // on roughly half of all launches Precinct 88 does not exist yet at the moment
@@ -4244,6 +4261,8 @@ namespace Hoodrich
                     foreach (var door in _doors) door.Update();
                     Core.Pace.At("_traffic.Update");
                     _traffic.Update();
+                    Core.Pace.At("_bag.Update");
+                    _bag.Update();
                     Core.Pace.At("_yard.Update");
                     _yard.Update();
                     Core.Pace.At("_payback.Update");
@@ -5528,6 +5547,7 @@ namespace Hoodrich
             try { Core.Mask.RestoreWorld(_cfg); } catch { /* teardown */ }
             try { Locations.RideCam.Sweep(); } catch { /* teardown */ }
             try { UI.TalkCam.Stop(); } catch { /* teardown */ }
+            try { _bag?.RestoreWorld(); } catch { /* teardown */ }
             try { _garage.RestoreWorld(); } catch { /* teardown */ }
             try { _gunScreen?.RestoreWorld(); } catch { /* teardown */ }
             try { _scenes?.RestoreWorld(); } catch { /* teardown */ }

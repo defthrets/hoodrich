@@ -553,6 +553,15 @@ namespace Hoodrich.State
         public readonly Dictionary<string, Trunk> Trunks =
             new Dictionary<string, Trunk>(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// The bag, and whatever is in it. There is only ever one. See State.Satchel.
+        ///
+        /// Not a dictionary and not owned by anything, because it is not attached to a car or
+        /// a building -- it is the one container in the mod that follows the player around and
+        /// can be put down in an alley, and both of those facts are saved with it.
+        /// </summary>
+        public readonly Satchel Bag = new Satchel();
+
         /// <summary>The boot of one car, made empty the first time it is asked for.</summary>
         public Trunk TrunkOf(string carId)
         {
@@ -822,6 +831,13 @@ namespace Hoodrich.State
             _offered.Clear();
             Stash.Clear();
             Trunks.Clear();
+
+            Bag.Stash.Clear();
+            Bag.Food.Clear();
+            Bag.Worn = true;
+            Bag.DownX = Bag.DownY = Bag.DownZ = 0f;
+            Bag.WasVest = -1;
+            Bag.WasVestTexture = 0;
 
             Touch();
             Log.Info("Mod state reset: everything forgotten but the money and the guns.");
@@ -1289,6 +1305,7 @@ namespace Hoodrich.State
                 .Set("missionsOffered", OfferedJson())
                 .Set("stash", Stash.ToJson())
                 .Set("trunks", TrunksJson())
+                .Set("bag", Bag.ToJson())
                 .Set("bests", BestsJson());
         }
 
@@ -1506,6 +1523,8 @@ namespace Hoodrich.State
                     var t = Trunk.From(trunks[key]);
                     if (!t.IsEmpty) Trunks[key] = t;
                 }
+
+                Bag.FromJson(doc["bag"]);
 
                 Log.Info("State loaded: rank " + Rank + " (" + RankName + "), " +
                          Respect.ToString("F0") + " respect, " +
