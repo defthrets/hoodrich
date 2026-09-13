@@ -208,6 +208,49 @@ namespace Hoodrich.Economy
         };
 
         /// <summary>
+        /// THE BONG, WHICH IS BACK, AND THE NOTE BELOW IS WHY IT WAS EVER GONE.
+        ///
+        /// The old attempt bolted a bong to his fist and played a smoking idle over the top,
+        /// which is as bad as it sounds, and the conclusion drawn was that no motion in the
+        /// base game reads as leaning over a bong. That conclusion was wrong, and so was the
+        /// reason given for it -- anim@safehouse@bong was called a guess and it is in
+        /// menyooStuff/PedAnimList.txt, along with a better one.
+        ///
+        /// safe@franklin@ig_10 is Franklin's own bong, cut as three tracks from one take:
+        /// bong_fra is him, bong_bong is the bong, bong_lighter is the lighter. Played as a
+        /// SYNCHRONISED SCENE they hold their positions against each other, so the bong is
+        /// where his hands are going rather than welded to one of them. See Ritual.Scene.
+        ///
+        /// AND IT IS ONLY OFFERED TO A MAN WHO OWNS ONE. The bong is an item in the other
+        /// mod's shops -- kit rather than food, bought once and carried -- and that mod leaves
+        /// word in the AppDomain when there is one in his pocket. No bong, no bong ritual, and
+        /// weed goes back to being a joint or a blunt. See Weed.
+        /// </summary>
+        private static readonly Ritual.Recipe Bong = new Ritual.Recipe
+        {
+            SceneDict = "safe@franklin@ig_10",
+            SceneHim = "bong_fra",
+            ScenePropClip = "bong_bong",
+
+            // Every bong model this game has, in the order of how ordinary they look. The
+            // first the install carries is the one that gets used. Checked against PropList.
+            SceneProps = new[]
+            {
+                "prop_bong_01", "prop_sh_bong_01", "hei_heist_sh_bong_01",
+                "sf_prop_sf_bong_01a", "sf_prop_sf_g_bong_01a", "xm3_prop_xm3_bong_01a"
+            },
+
+            // The take was cut around a coffee table in his front room. On a pavement the
+            // origin is all there is to aim, and under his own feet is where it starts.
+            SceneAt = new Vector3(0f, 0f, 0f),
+
+            // A bong is not a quick one. The clip runs the best part of eight seconds and the
+            // hit lands at the end of it, which is the whole argument of this file.
+            Ms = 7800,
+            Linger = SmokeMs
+        };
+
+        /// <summary>
         /// A blunt. The same scenario as the joint, and that is the honest version.
         ///
         /// THE BONG IS GONE AND IT WAS NEVER GOING TO WORK. anim@safehouse@bong was a guess,
@@ -1026,10 +1069,7 @@ namespace Hoodrich.Economy
 
             _said = what;
 
-            // A joint or a blunt. Same motion, different word -- see Blunt.
-            var rolled = recipe.Drug == "weed" && _rng.Next(2) == 0;
-
-            var doing = recipe.Drug != "weed" ? recipe.Doing : (rolled ? Joint : Blunt);
+            var doing = recipe.Drug != "weed" ? recipe.Doing : Smoking();
 
             // THE EFFECT DOES NOT LAND UNTIL HE HAS TAKEN IT. He stops, he does it, and THEN
             // the world changes -- which is the entire difference between a habit and a cheat
@@ -1046,6 +1086,54 @@ namespace Hoodrich.Economy
             Land(recipe, what);
 
             return null;
+        }
+
+        /// <summary>
+        /// How he smokes his weed: out of the bong if he owns one, and rolled if he does not.
+        ///
+        /// THE BONG IS THE OTHER MOD'S ITEM AND THE ANIMATION IS THIS ONE'S, so the fact is
+        /// passed and nothing else. Bare Minimum sells it, keeps it in its pocket and leaves
+        /// a bool in the AppDomain -- the same channel the rectangle tally uses, because SHVDN
+        /// puts every script in one domain and neither mod has to reference the other. With
+        /// that mod absent nobody ever writes the key, the answer is no, and this file does
+        /// what it always did.
+        ///
+        /// NOT IN A CAR. The scene puts him on the floor of his front room; in a driver's seat
+        /// it would put him through the dashboard. A joint is fine at the wheel and always was.
+        /// </summary>
+        private Ritual.Recipe Smoking()
+        {
+            if (Carrying() && !InCar()) return Bong;
+
+            // A joint or a blunt. Same motion, different word -- see Blunt.
+            return _rng.Next(2) == 0 ? Joint : Blunt;
+        }
+
+        /// <summary>Whether the other mod says there is a bong in his pocket. See Smoking.</summary>
+        private static bool Carrying()
+        {
+            try
+            {
+                var said = AppDomain.CurrentDomain.GetData("spitmux.kit.bong");
+                return said is bool && (bool)said;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool InCar()
+        {
+            try
+            {
+                var me = Game.Player.Character;
+                return me != null && me.Exists() && me.IsInVehicle();
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>The moment it actually hits.</summary>

@@ -81,6 +81,47 @@ namespace Hoodrich.Economy
             /// <summary>What to fall back on when no dictionary loads. Brings its own prop.</summary>
             public string Scenario = "";
 
+            /// <summary>
+            /// A SYNCHRONISED SCENE, for the things that are not held in a hand.
+            ///
+            /// THIS IS WHY THE BONG WAS GIVEN UP ON, AND IT WAS THE RIGHT CALL AT THE TIME.
+            /// Every other recipe in this file is one animation with a prop bolted to a fist,
+            /// and a bong is not a thing you hold -- it stands on a table and you lean over
+            /// it. A prop welded to a hand with no motion behind it points nowhere, which is
+            /// exactly what was tried and exactly what it looked like.
+            ///
+            /// The game does it another way, and the animation was there all along:
+            /// safe@franklin@ig_10 carries THREE tracks cut from one take -- bong_fra is the
+            /// man, bong_bong is the bong, bong_lighter is the lighter -- and a synchronised
+            /// scene plays them from one origin so they stay in register with each other.
+            /// Nothing is attached to anything. He reaches for a bong that is already where
+            /// his hand is going.
+            ///
+            /// Checked against menyooStuff/PedAnimList.txt, which is every dictionary and clip
+            /// this install has: safe@franklin@ig_10 and anim@safehouse@bong are both in it,
+            /// with their prop tracks. The earlier attempt called the name a guess. It is not.
+            /// </summary>
+            public string SceneDict = "";
+
+            /// <summary>His track in the scene.</summary>
+            public string SceneHim = "";
+
+            /// <summary>The prop's track in the same scene, played on SceneProps.</summary>
+            public string ScenePropClip = "";
+
+            /// <summary>The prop that track drives. The first one this install has.</summary>
+            public string[] SceneProps = new string[0];
+
+            /// <summary>
+            /// Where the scene's origin sits relative to him: right, forward, up, in metres.
+            ///
+            /// THE ANIMATION WAS CUT IN A ROOM. Its origin is where the furniture was and
+            /// everything in the take is placed against it -- so the origin is the one thing
+            /// there is to aim, and aiming it is how a scene made for a sofa is made to work
+            /// on a pavement. Zero puts it under his feet, facing where he faces.
+            /// </summary>
+            public Vector3 SceneAt = new Vector3(0f, 0f, 0f);
+
             /// <summary>How long it takes before the effect lands.</summary>
             public int Ms = 2600;
 
@@ -122,6 +163,9 @@ namespace Hoodrich.Economy
         private string _dict = "";
         private string _clip = "";
         private bool _scenario;
+
+        /// <summary>Whether what is playing is a synchronised scene. See Scene.</summary>
+        private bool _scene;
 
         public bool Busy { get; private set; }
 
@@ -249,7 +293,20 @@ namespace Hoodrich.Economy
             // being a man standing still holding something.
             var rungs = Rungs(recipe);
 
-            if (rungs.Length < 2)
+            // A SCENE'S DICTIONARY IS STREAMED LIKE ANY OTHER, and a scene recipe has no
+            // ladder to ask on its behalf -- so it is asked for here, beside them. Without
+            // this the bong waited for a dictionary nobody had requested, gave up, and went
+            // to the scenario with the rest of the ritual's time already spent.
+            if (!string.IsNullOrEmpty(recipe.SceneDict))
+            {
+                try { Function.Call(Hash.REQUEST_ANIM_DICT, recipe.SceneDict); }
+                catch { }
+
+                _waiting = recipe;
+                _giveUpAt = Game.GameTime + StreamMs;
+            }
+
+            if (rungs.Length < 2 && string.IsNullOrEmpty(recipe.SceneDict))
             {
                 Scenario(recipe, me);
                 return true;
@@ -579,6 +636,12 @@ namespace Hoodrich.Economy
         /// </summary>
         private bool Play(Recipe recipe, Ped me)
         {
+            // A SCENE IS NOT A RUNG ON THE LADDER. It is one take with the props in it, and
+            // either it plays or this was the wrong recipe -- there is no second-choice bong.
+            // False walks on to the ladder below, which is how a man with a bong on an install
+            // missing the dictionary still gets his joint.
+            if (!string.IsNullOrEmpty(recipe.SceneDict) && Scene(recipe, me)) return true;
+
             var pairs = Rungs(recipe);
             if (_rung + 1 >= pairs.Length) return false;
 
@@ -616,6 +679,100 @@ namespace Hoodrich.Economy
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// One take, several tracks, one origin -- see Recipe.SceneDict.
+        ///
+        /// The scene is built where he stands, facing where he faces, and the prop is made
+        /// unattached and handed to the same scene. It is kept in _held, so Stop takes it
+        /// away with everything else.
+        /// </summary>
+        private bool Scene(Recipe recipe, Ped me)
+        {
+            try
+            {
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, recipe.SceneDict)) return false;
+
+                var at = me.Position
+                       + me.RightVector * recipe.SceneAt.X
+                       + me.ForwardVector * recipe.SceneAt.Y;
+
+                at.Z += recipe.SceneAt.Z;
+
+                var scene = Function.Call<int>(Hash.CREATE_SYNCHRONIZED_SCENE,
+                                               at.X, at.Y, at.Z, 0f, 0f, me.Heading, 2);
+
+                Function.Call(Hash.SET_SYNCHRONIZED_SCENE_LOOPED, scene, false);
+
+                Function.Call(Hash.TASK_SYNCHRONIZED_SCENE, me.Handle, scene,
+                              recipe.SceneDict, recipe.SceneHim, 4f, -4f, 0, 0, 1000f, 0);
+
+                _held = Standing(recipe.SceneProps, at);
+
+                if (_held != null && !string.IsNullOrEmpty(recipe.ScenePropClip))
+                {
+                    Function.Call(Hash.PLAY_SYNCHRONIZED_ENTITY_ANIM, _held.Handle, scene,
+                                  recipe.ScenePropClip, recipe.SceneDict, 4f, -4f, 0, 1000f);
+                }
+
+                _dict = recipe.SceneDict;
+                _clip = recipe.SceneHim;
+                _scene = true;
+
+                // Accepted still says nothing about playing, the same as any other clip. The
+                // ladder is not walked on a scene, but the log is worth having. See Watch.
+                _watchAt = Game.GameTime + WatchMs;
+
+                Log.Info("Ritual scene: " + recipe.SceneDict + " / " + recipe.SceneHim +
+                         (_held != null ? ", with the prop" : ", with no prop") + ".");
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// The first of these props this install has, standing where it is put rather than
+        /// held in a hand. For a scene, which drives it itself -- see Scene.
+        /// </summary>
+        private static Prop Standing(string[] names, Vector3 at)
+        {
+            if (names == null) return null;
+
+            foreach (var name in names)
+            {
+                try
+                {
+                    var model = new Model(name);
+
+                    if (!model.IsValid || !model.IsInCdImage) continue;
+                    if (!model.Request(600)) continue;
+
+                    var prop = World.CreateProp(model, at, false, false);
+
+                    model.MarkAsNoLongerNeeded();
+
+                    if (prop == null || !prop.Exists()) continue;
+
+                    Log.Info("Scene prop: " + name + ".");
+                    return prop;
+                }
+                catch
+                {
+                    // Next one.
+                }
+            }
+
+            if (names.Length > 0)
+            {
+                Log.Info("None of these props exist on this install: " + string.Join(", ", names));
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -833,7 +990,10 @@ namespace Hoodrich.Economy
                     // ONLY OURS. ClearPedTasks on a man who has walked away and started doing
                     // something else takes THAT off him too, and from the pavement a mod that
                     // interrupts you four seconds after you did something is a bug.
-                    if (_scenario) Function.Call(Hash.CLEAR_PED_TASKS, me.Handle);
+                    // A SCENE GOES THE WAY A SCENARIO DOES. Stopping an anim task by name
+                    // does not end a synchronised scene: he stays in it, holding the last
+                    // frame, until something takes it off him.
+                    if (_scenario || _scene) Function.Call(Hash.CLEAR_PED_TASKS, me.Handle);
                 }
             }
             catch
@@ -844,6 +1004,7 @@ namespace Hoodrich.Economy
             _dict = "";
             _clip = "";
             _scenario = false;
+            _scene = false;
             _checkAt = 0;
             _checking = "";
 
