@@ -273,10 +273,30 @@ namespace Hoodrich.Locations
             if (!InReach) return;
             if (Suppressed != null && Suppressed()) return;
 
-            Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to talk to " +
-                               (Knows ? "OG Vee" : "the man on the wall") + ".");
+            // ---- THE FIRST TIME, HE STARTS IT ----
+            //
+            // A stranger on a wall with a button floating over him is a quest marker. Vernon
+            // shouting "Ayy -- FRANKLIN!" at you the second you get within three metres is a
+            // man who has been waiting all day for somebody he knows to walk past, which is
+            // exactly who he is and exactly what the first line says.
+            //
+            // ONCE. After he has introduced himself he is somebody you know, and somebody you
+            // know does not restart his own conversation every time you walk past his shop --
+            // that is a man you would begin to avoid. So from the second time on it is the
+            // prompt and the button like everybody else in the mod.
+            //
+            // Knows is MetVernon, which Root sets as it builds the meeting -- so the handover
+            // between the two happens on its own, in one place, and cannot disagree with the
+            // greeting he actually gives.
+            var greeting = !Knows && WillingToBeGreeted();
 
-            if (!WantsToTalk()) return;
+            if (!greeting)
+            {
+                Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to talk to " +
+                                   (Knows ? "OG Vee" : "the man on the wall") + ".");
+
+                if (!WantsToTalk()) return;
+            }
 
             var root = TalkBuilder == null ? null : TalkBuilder();
             if (root == null) return;
@@ -297,6 +317,32 @@ namespace Hoodrich.Locations
 
         /// <summary>Whether you have been introduced, which is the only thing the prompt knows.</summary>
         private bool Knows => _state != null && _state.MetVernon;
+
+        /// <summary>
+        /// Whether a conversation that nobody asked for would be welcome right now.
+        ///
+        /// EVERY GUARD HERE EXISTS BECAUSE THE BUTTON IS GONE. Walking up and pressing E is its
+        /// own proof that a man wants to talk and has the hands free to do it; three metres is
+        /// not. Three metres is also a car going past the shop, a man face down on the pavement
+        /// after a ragdoll, and a firefight in the street outside -- and a full-screen
+        /// conversation opening in the middle of any of those is the mod taking the controller
+        /// off you.
+        ///
+        /// And not while he is out on the job: riding to La Puerta he sits a foot from your
+        /// shoulder for the whole drive. See Lend.
+        /// </summary>
+        private bool WillingToBeGreeted()
+        {
+            if (_lent) return false;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists() || !player.IsAlive) return false;
+
+            if (player.IsInVehicle() || player.IsRagdoll || player.IsInAir) return false;
+            if (player.IsInCombat || player.IsShooting || Game.Player.IsAiming) return false;
+
+            return Game.Player.Wanted.WantedLevel <= 0;
+        }
 
         private bool WantsToTalk()
         {
