@@ -379,6 +379,21 @@ namespace Hoodrich.Locations
             {
                 if (Function.Call<int>(Hash.GET_INTERIOR_AT_COORDS, first.X, first.Y, first.Z) != 0) return first;
 
+                // AND AGAIN, THREE METRES DOWN, BEFORE GIVING UP ON IT.
+                //
+                // GET_INTERIOR_AT_COORDS samples a volume, and a GANTRY -- a walkway up under
+                // the roof, which is exactly where somebody stands when they are picking a spot
+                // to arrive in -- can sit above the top of that volume while the floor directly
+                // beneath it is well inside. So a coordinate that was stood on came back as
+                // nothing, the ini's own answer was thrown away, and the player was dropped at
+                // whatever fallback happened to be listed instead. Which is how entering Leroy's
+                // put you in the basement every single time with a perfectly good gantry
+                // coordinate sat in the file.
+                if (Function.Call<int>(Hash.GET_INTERIOR_AT_COORDS, first.X, first.Y, first.Z - 3f) != 0)
+                {
+                    return first;
+                }
+
                 foreach (var maybe in _spec.Elsewhere)
                 {
                     if (Function.Call<int>(Hash.GET_INTERIOR_AT_COORDS, maybe.X, maybe.Y, maybe.Z) == 0) continue;
