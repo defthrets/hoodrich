@@ -183,16 +183,16 @@
       "id": "hunt_davis",
       "kind": "Hunt",
       "name": "We goin' huntin'.",
-      "brief": "Aight. So Trevor got me watchin' this show about elk. ELK, Frank. Man crouchin' in a bush for six hours breathin' through his nose, and when he finally get one everybody at home clappin'. And I'm sittin' there thinkin' -- that's it. That's the ENERGY we been missin'. We been rollin' up on these fools with four cars and a horn like we announcin' a parade.",
-      "done": "You SEEN that? Three of 'em and not one of 'em got a look at us. That's the elk thing, cuz. That's exactly it. Man on the show would've cried. I nearly did.",
-      "briefAgain": "Same thing as before. Rifle, quiet feet, and stay out of sight. Three of 'em and don't let none of 'em run.",
-      "doneAgain": "Three more and nobody heard nothin'. That's the way it's supposed to go every time and it never do.",
+      "brief": "Aight, so I finished that elk show. The rifle episodes was cool, Frank, but then they done one about the BOW. Man crawlin' on his belly through wet grass for two hours just to get within thirty feet of somethin' that can smell him. And when he finally got it? Didn't make a sound. Herd never even looked up, still stood there eatin'. And I sat straight up in my chair, cuz, 'cause that's the whole thing right there. A gun is just tellin' everybody what you did.",
+      "done": "You SEEN that? Man never even turned round. Not one of them corners knew we was on it -- no shots, no shoutin', nothin' for nobody to phone in about. That's the bow episode, cuz. That's exactly it. Dude on the show would've cried. I nearly did.",
+      "briefAgain": "Same as before. Four corners, blade only, get round the back of 'em where they can't see you. Three out the four is a pass. Grove Street last, and then we run.",
+      "doneAgain": "Four corners, quiet feet, and we walked out of it. That's how it's supposed to go every single time and it never do.",
       "targetGang": "ballas",
       "zone": "DAVIS",
       "x": 115.921,
       "y": -1949.503,
       "z": 20.698,
-      "targets": 3,
+      "targets": 4,
       "homies": 0,
       "escapeHeat": false,
       "heatStars": 0,
@@ -201,9 +201,10 @@
       "rep": 80,
       "minRank": 3,
       "briefMore": [
-        "Here's how it go, nigga. I'm comin' with you -- don't argue, I'm the one seen the show. You takin' a rifle, a proper one with the glass on it, and we goin' down Davis on FOOT. Not the car. The car is the horn. The car is the parade.",
-        "Three of 'em out there and they don't know nothin' yet. You gon' find where they walked -- they leave marks, cuz, everybody leave marks -- and you follow them marks til you got eyes on one. Then you get low, and you take your time, and you do it from a long way off.",
-        "And DON'T GET SEEN. I'm serious. It ain't just them three out there -- they got dudes stood on the corners with nothin' to do all day but look, and the second one of 'em clock you he's on his phone, and then one of ours walk off and we never had him. So you drop the lookout or you don't let him see you, one or the other. You spook all three of 'em we goin' home with nothin' and I ain't never mentionin' this again as long as I live."
+        "So here's the play, and I'm comin' with you, don't argue, I'm the one seen the show. You ain't takin' that rifle out the bag neither. You takin' a BLADE. Four of 'em, Frank -- four Ballas stood on four different corners doin' absolutely nothin' with they day. We work 'em one at a time and I'ma tell you which one we on.",
+        "They walk about a bit, they stand there on they phone, they smoke somethin', they drink somethin', they walk somewhere else. You let 'em. You stay low and you come up on his BACK, where he ain't got no chance of seein' you, and then you stick him -- and he's gone before he even knew somebody was on the street with him. And they leave marks where they been walkin'. Everybody leave marks. You find them marks, them marks take you straight to him.",
+        "Now hear me. One of 'em turn round and clock you, he ain't runnin' nowhere -- he comin' straight at you. And whatever happen after that, that one don't count for us no more. We need THREE out the four, so you got exactly one to waste and not a single one after it. And that rifle stays in the bag. A blade don't tell nobody nothin'. You let off one shot on a street like that and the whole block know what we doin' and who did it.",
+        "And we savin' Grove Street for last, on purpose. Them other three is corners -- ain't nobody out there but him. Grove is somebody's BLOCK. So we do him last, and the second he drop, that street gon' work out real quick what just happened, and we ain't stayin' to explain it. We get back to my yard and we don't stop. That's the job."
       ]
     },
     {
