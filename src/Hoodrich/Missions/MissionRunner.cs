@@ -210,6 +210,10 @@ namespace Hoodrich.Missions
         private readonly Hunt _hunt;
         private readonly Deal _deal;
 
+        /// <summary>Set by Main: Vernon, lent off his wall for the one job that is his.</summary>
+        public Func<Ped> Vee;
+        public Action VeeBack;
+
         /// <summary>
         /// The paint engine, on its way to the tag run.
         ///
@@ -276,6 +280,10 @@ namespace Hoodrich.Missions
             _bike = new BikeRide(crew, gangs);
             _hunt = new Hunt(crew, gangs);
             _deal = new Deal(crew, gangs);
+
+            // Vernon rides to his own job, and goes back on his wall after it.
+            _deal.Fixer = () => Vee == null ? null : Vee();
+            _deal.GiveBack = () => { if (VeeBack != null) VeeBack(); };
             _tags = new TagRun(gangs) { Crew = crew };
             _walls = TagRun.Load();
         }

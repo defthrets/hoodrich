@@ -91,6 +91,9 @@ namespace Hoodrich.Locations
         private const int Sprite = 497;
 
         private Ped _ped;
+
+        /// <summary>Out on a job, so the wall does not despawn him and nothing here tasks him.</summary>
+        private bool _lent;
         private Blip _blip;
         private int _lastUpdate;
         private bool _held;
@@ -161,6 +164,12 @@ namespace Hoodrich.Locations
             if (player == null || !player.Exists() || !player.IsAlive) return;
 
             if (Known == null || Known()) EnsureBlip(); else DropBlip();
+
+            // OUT ON THE JOB, SO THE WALL LETS GO OF HIM. Everything below is about a man
+            // stood in one place in Strawberry -- it despawns him at a hundred and sixty
+            // metres and settles him back into his scenario whenever he drifts -- and all of
+            // it is wrong for a man riding to La Puerta in the passenger seat. See Lend.
+            if (_lent) return;
 
             var away = player.Position.DistanceTo(Spot);
 
@@ -751,6 +760,84 @@ namespace Hoodrich.Locations
         }
 
         // ---- teardown ----------------------------------------------------------
+
+        /// <summary>
+        /// Hands him to a job. Null if he is not stood there to be handed over.
+        ///
+        /// THE SAME LOAN LAMAR IS, and for the same reason -- see Fixer.Lend. He has one job
+        /// in the mod and he goes to it, which is a decision the brief makes funny: a man who
+        /// has told you he cannot leave the store, in the passenger seat, on the way to a drug
+        /// deal he arranged on the shop phone.
+        ///
+        /// Nothing here follows him. The mission that borrowed him owns him until it gives him
+        /// back, and Update stands down for the whole of it.
+        /// </summary>
+        public Ped Lend()
+        {
+            if (_ped == null || !_ped.Exists() || !_ped.IsAlive) return null;
+
+            _lent = true;
+            _held = false;
+            _talking = false;
+
+            try
+            {
+                _ped.Task.ClearAll();
+
+                // HE CAN BE SHOT AT NOW, because the whole point of him being there is that
+                // three men turn up with rifles and go for both of you. On the wall he is
+                // untargetable so a stray round on Strawberry Avenue cannot kill the only man
+                // who knows where the basement key is.
+                Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, _ped.Handle, true);
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _ped.Handle, false);
+            }
+            catch
+            {
+                // The job is about to task him anyway.
+            }
+
+            return _ped;
+        }
+
+        /// <summary>
+        /// Takes him back off a job.
+        ///
+        /// Near the shop he goes back to leaning on his wall. Anywhere else he is let go --
+        /// walking him home across the city is a man the player would have to watch, and a
+        /// fresh one is on that wall the next time they come round. Dead is the same case.
+        /// </summary>
+        public void TakeBack()
+        {
+            if (!_lent) return;
+
+            _lent = false;
+
+            if (_ped == null || !_ped.Exists() || !_ped.IsAlive)
+            {
+                Despawn();
+                return;
+            }
+
+            try
+            {
+                Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, _ped.Handle, false);
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _ped.Handle, true);
+
+                if (_ped.Position.DistanceTo(Spot) > DespawnRange)
+                {
+                    Despawn();
+                    return;
+                }
+
+                _ped.Task.ClearAll();
+                _ped.Position = Spot;
+                _ped.Heading = Heading;
+            }
+            catch
+            {
+                Despawn();
+            }
+        }
 
         private void Despawn()
         {

@@ -860,6 +860,11 @@ namespace Hoodrich
 
                 // The bike ride borrows him off his corner and rides him out with the rest.
                 _jobs.Boss = _fixer;
+
+                // AND VERNON GOES TO HIS OWN JOB. He told you he could not leave the store,
+                // and then he gets in the car -- see Deal, where the ambush wants both of you.
+                _jobs.Vee = () => _vernon == null ? null : _vernon.Lend();
+                _jobs.VeeBack = () => { if (_vernon != null) _vernon.TakeBack(); };
                 _jobs.Book = _missions;
 
                 // How long he wants to himself between jobs, read live so the settings screen
@@ -1133,7 +1138,16 @@ namespace Hoodrich
                     {
                         _leroys = new InteriorDoor(spec)
                         {
-                            Shut = () => _state == null || !_state.HasDone(VernonTalk.JobId),
+                            // HEARD THE VERSE, NOT DONE THE JOB.
+                            //
+                            // It used to be locked until the job was finished, which was a
+                            // circle with nothing in it the moment the job moved downstairs:
+                            // he briefs you in the basement, and you could not get into the
+                            // basement until you had done the thing he briefs you on. It opens
+                            // when he has played you the tape now -- which is the toll he
+                            // actually names ("you don't walk in a man's booth 'fore you heard
+                            // his single") and always was.
+                            Shut = () => _state == null || !_state.HasDone(VernonTalk.HeardIt),
                             ShutWhy = "Vee ain't walking you down there yet.",
 
                             // And it says nothing at all while he is stood in it. See Hush.
@@ -2550,8 +2564,20 @@ namespace Hoodrich
                     {
                         if (_state == null) return;
 
-                        if (on) _state.MarkDone(Locations.VernonTalk.JobId);
-                        else _state.Undo(Locations.VernonTalk.JobId);
+                        // THE TAPE AS WELL AS THE JOB. The basement is locked behind having
+                        // heard the verse now, not behind the job -- see VernonTalk.HeardIt --
+                        // so a switch that only set the job left the stairs shut and the debug
+                        // toggle unable to reach the room it exists to reach.
+                        if (on)
+                        {
+                            _state.MarkDone(Locations.VernonTalk.JobId);
+                            _state.MarkDone(Locations.VernonTalk.HeardIt);
+                        }
+                        else
+                        {
+                            _state.Undo(Locations.VernonTalk.JobId);
+                            _state.Undo(Locations.VernonTalk.HeardIt);
+                        }
                     };
                 }
 
@@ -2716,6 +2742,9 @@ namespace Hoodrich
                 // book -- see MissionDef.Giver, without which the man in Strawberry asks you
                 // to go and buy a kilo and then Lamar texts you about it.
                 _vernonTalk = new VernonTalk(_state);
+
+                // He will not pitch it on the pavement. See VernonTalk.TheAsk.
+                _vernonTalk.Below = () => _leroys != null && _leroys.IsInside;
 
                 _vernonTalk.Brief = () =>
                 {

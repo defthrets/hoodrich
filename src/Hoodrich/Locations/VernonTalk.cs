@@ -29,8 +29,19 @@ namespace Hoodrich.Locations
     /// </summary>
     internal sealed class VernonTalk
     {
-        /// <summary>The id the basement door is locked behind. See Main.</summary>
+        /// <summary>The id of his job, which is also the id his door used to be locked behind.</summary>
         public const string JobId = "vernon_intro";
+
+        /// <summary>
+        /// The toll he actually charges, and what the basement door is locked behind now.
+        ///
+        /// HE NAMES IT HIMSELF AND HE NAMES IT FIRST: you don't walk in a man's booth before
+        /// you've heard his single, that's disrespect. So the tape is the price of the stairs
+        /// -- which is both funnier and the only arrangement that works, because the job is
+        /// briefed DOWN there now and a door locked behind the job would be a door locked
+        /// behind itself.
+        /// </summary>
+        public const string HeardIt = "vernon_tape";
 
         private readonly PlayerState _state;
 
@@ -61,6 +72,9 @@ namespace Hoodrich.Locations
         /// complete sentence, so a job with no beats on it is a terse man rather than a hole.
         /// </summary>
         public Func<string[]> Brief { get; set; }
+
+        /// <summary>Set by Main: whether the pair of you are down in the basement. See TheAsk.</summary>
+        public Func<bool> Below { get; set; }
 
         /// <summary>
         /// What he sounds like between sentences.
@@ -250,8 +264,17 @@ namespace Hoodrich.Locations
                        .Beat(() => VerseTwo());
         }
 
+        /// <summary>He has played you the whole thing, so the stairs are open. See HeardIt.</summary>
+        private void Heard()
+        {
+            try { if (_state != null) _state.MarkDone(HeardIt); }
+            catch { /* then he plays it again, which he would rather do anyway */ }
+        }
+
         private DialogueNode VerseTwo()
         {
+            Heard();
+
             var node = Verse(
                 "V-E-E, that's the letter I be,\n" +
                 "Leroy's Electrical, that's my legacy.\n" +
@@ -291,8 +314,31 @@ namespace Hoodrich.Locations
 
         // ---- the job -----------------------------------------------------------
 
+        /// <summary>
+        /// The ask -- upstairs it is an invitation, downstairs it is the pitch.
+        ///
+        /// HE WILL NOT DO BUSINESS ON THE PAVEMENT. Every hole in this arrangement is a thing
+        /// he has to SHOW you: the empty shelf, the scales still in the box, the square
+        /// footage he keeps saying the word about. Stood on Strawberry Avenue he can only
+        /// describe it, and a man describing a basement is a man reading you a list. So on the
+        /// street he sends you down the stairs, and the whole of it happens in the room it is
+        /// about. See Downstairs, which is where Below comes from.
+        /// </summary>
         private DialogueNode TheAsk()
         {
+            if (Below == null || !Below())
+            {
+                var up = Node(
+                    "Ho -- nah, not out here. Not on the pavement with the whole of Strawberry " +
+                    "walkin' past. Go down them stairs, I'm right behind you. I gotta SHOW " +
+                    "you somethin' anyway.");
+
+                up.Say("Aight.", () => null, "Head downstairs").WithIcon(Icons.Tick);
+                up.Leave("Later, Vee.");
+
+                return up;
+            }
+
             var node = Node(
                 "Aight, real talk though. You busy? 'Cause I got a situation, and you look like " +
                 "a man who handle situations. It ain't nothin' crazy. It's just somethin' I " +
