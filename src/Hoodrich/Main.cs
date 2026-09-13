@@ -620,6 +620,21 @@ namespace Hoodrich
 
         /// <summary>Keeps the street outside the house from silting up with stopped cars.</summary>
         private readonly TrafficWatch _traffic;
+
+        /// <summary>
+        /// Lamar's yard, with our cars on it and nobody else's.
+        ///
+        /// THE LOT IS DRESSED AND THE GAME KEEPS REDRESSING IT. There are parked-car
+        /// generators over that concrete and the back alley behind it, so the scene somebody
+        /// placed -- two cars, a couch, a set of decks, a party round them -- came with a taxi
+        /// and a Blista nobody asked for, usually parked across the bit you walk through.
+        ///
+        /// See KeepClear for how it is held. What matters here is the radius: it is drawn
+        /// round the yard and the alley spots behind it and stops there, because Forum Drive
+        /// is the city's and a street with no parked cars on it looks more wrong than a yard
+        /// with too many.
+        /// </summary>
+        private readonly KeepClear _yard;
         private readonly Payback _payback;
         private readonly TweetToast _toasts;
         private readonly Random _rng = new Random();
@@ -2109,6 +2124,22 @@ namespace Hoodrich
                                   || OwnedByPlayer(car)
                                   || (_decks != null && _decks.Owns(car))
                                   || (_partyDecks != null && _partyDecks.Owns(car))
+                };
+
+                // Twelve metres from the middle of the yard: the concrete, the couch, the
+                // decks, and the three spots in the back alley behind them. Our own two cars
+                // on the lot are inside it and stay -- Ours is the same answer the traffic
+                // watch uses, so a car he bought and left there is as safe as one we placed.
+                _yard = new KeepClear(new Vector3(-202.5f, -1730.0f, 32.664f), 12f, "Lamar's yard")
+                {
+                    Ours = car => OurParkedCar(car)
+                                  || OwnedByPlayer(car)
+                                  || (_decks != null && _decks.Owns(car))
+                                  || (_partyDecks != null && _partyDecks.Owns(car))
+                                  || (_payback != null && _payback.Owns(car))
+                                  || (_delivery != null && _delivery.IsActive &&
+                                      _delivery.Car != null && car != null &&
+                                      car.Handle == _delivery.Car.Handle)
                 };
 
                 _payback = new Payback(_gangs);
@@ -4147,6 +4178,8 @@ namespace Hoodrich
                     foreach (var door in _doors) door.Update();
                     Core.Pace.At("_traffic.Update");
                     _traffic.Update();
+                    Core.Pace.At("_yard.Update");
+                    _yard.Update();
                     Core.Pace.At("_payback.Update");
                     _payback.Update();
                     Core.Pace.At("_rollers.Update");
@@ -5457,6 +5490,7 @@ namespace Hoodrich
             try { _search?.RestoreWorld(); } catch { /* teardown */ }
             try { _socialScreen?.RestoreWorld(); } catch { /* teardown */ }
             try { _block?.RestoreWorld(); } catch { /* teardown */ }
+            try { _yard?.RestoreWorld(); } catch { /* teardown */ }
             try { _couch?.RestoreWorld(); } catch { /* teardown */ }
             try { _stove?.RestoreWorld(); } catch { /* teardown */ }
             try { _bags?.RestoreWorld(); } catch { /* teardown */ }
