@@ -22,9 +22,6 @@ namespace Hoodrich.Missions
         /// <summary>On foot, following tracks, looking for the next one.</summary>
         Tracking,
 
-        /// <summary>One of them is wounded and running. Follow the blood.</summary>
-        Bleeding,
-
         /// <summary>Three down. Back to the car.</summary>
         Leaving
     }
@@ -32,80 +29,102 @@ namespace Hoodrich.Missions
     /// <summary>
     /// THE HUNT.
     ///
-    /// The game already has a hunting minigame and it is the best thing in it: a rifle, a set
-    /// of tracks on the ground, something that gives you away, and an animal that leaves if
-    /// you are loud or careless. This is that, with Lamar in the passenger seat, Ballas instead
-    /// of elk, and lookouts on the corners instead of the wind.
+    /// FOUR MEN ON FOUR CORNERS AND A KNIFE. Franklin and Lamar work a list: four Ballas who
+    /// stand about on four fixed corners of Davis and Rancho, taken in order, ending on Grove
+    /// Street. You need THREE of them. The fourth is the spare, and what the spare is for is
+    /// the one you get wrong.
     ///
-    /// EVERY PIECE OF IT IS THE MINIGAME'S PIECE, in the same order:
+    ///   THE CORNERS ARE REAL PLACES. See Stands. They were rolled at random inside one
+    ///   fifty-five metre field until now, which produced three men in a car park -- no route,
+    ///   no reason to be anywhere, nothing to learn between one hunt and the next. Fixed spots
+    ///   mean the drive between them is part of the job and the second playthrough is faster
+    ///   than the first.
     ///
-    ///   THE RIDE OUT. A yellow ring on the map, the size of the ground, with a route to it,
-    ///   and a blade in his hand before he sets off.
-    ///   Lamar gets in whatever you get in and gets out when you do; on foot he walks behind
-    ///   you, crouches when you crouch, and stands still when you are looking down the glass,
-    ///   because a man wandering across a sniper scope is the end of a hunt.
+    ///   ONE AT A TIME, AND YOU ARE TOLD WHICH. Only the next man is ringed on the map and
+    ///   only his street is named on the card. He is put out when you get near his corner and
+    ///   not before, so nothing appears in front of you.
     ///
-    ///   THE GROUND. Three of them, put down out of your sight somewhere in the block, each
-    ///   with a purple ring on the map that says roughly where and not exactly. They do not
-    ///   stand still: every so often one walks between his two spots, and every step of that
-    ///   is a fresh print.
+    ///   HE LOITERS. Walk thirty metres, stand about scrolling his phone or smoking or
+    ///   drinking for a while, walk somewhere else. A man rooted to one scenario is a puzzle
+    ///   with one answer; a man who keeps turning round is a stalk. Every step of it is a
+    ///   fresh print on the ground.
     ///
-    ///   THE TRACKS. Every target has a trail of prints from where he walked in to where he
-    ///   is now, oldest faintest, and they only go down when you are close enough to be
-    ///   reading the ground. Stand on his trail and you have picked it up: the ring comes off
-    ///   the map and a mark goes on the man, so from there it is a stalk.
-    ///
-    ///   THE LOOKOUTS. What the wind was, and better, because you can see them coming. Other
-    ///   Ballas who are not the job, on the corners, looking. A clear look at you for three
-    ///   seconds and the phone comes out; four seconds after that the call lands and the one
-    ///   nearest him walks off. Drop the lookout before the call lands and it never does --
-    ///   but a shot is a shot, and everybody within earshot looks up.
+    ///   THE TRACKS. He has a trail of prints from where he walked in to where he is now,
+    ///   oldest faintest, laid only when you are near enough to be reading the ground. Stand
+    ///   on it and you have picked him up: the ring comes off the map and a mark goes on the
+    ///   man.
     ///
     ///   THE STEALTH. Crouched is quiet, walking is not much worse, sprinting is a man
-    ///   arriving. Line of sight matters more than anything else. It all feeds one number per
-    ///   target, and when that number fills he is gone for good.
+    ///   arriving, and a clear line of sight is worse than all of it. One number per man.
     ///
-    ///   THE CLEAN KILL, AND IT IS A KNIFE NOW. Get behind a man who has not noticed you
-    ///   and the card offers you a takedown: a hand over the mouth, the blade in, and nobody
-    ///   on the block hears a thing. That is what all the rest of this is FOR -- the tracks,
-    ///   the crouch, the line of sight and the men on the corners were built to answer "has
-    ///   he noticed you", and through a scope four hundred metres away the answer did not
-    ///   cost anything. Being close enough to touch him is what makes it cost something.
+    ///   THE KILL IS A KNIFE. Get behind one who has not noticed you and the card offers a
+    ///   takedown: a hand over the mouth, the blade in, and NOBODY ELSE HEARS IT -- the dead
+    ///   body events are switched off on these four, so a clean one costs you nothing at all.
+    ///   The rifle is in the bag and it is the wrong answer: a shot is a shot and the street
+    ///   is a street.
     ///
-    ///   The rifle is still in the bag and it still works, and it is the WRONG answer: a shot
-    ///   is a shot, everybody within earshot looks up, and a man you only wound runs bleeding
-    ///   -- and then you follow the blood the same way you followed the tracks. Grab at a man
-    ///   who is already listening and he gets a hand up, which is the same as being seen,
-    ///   because it is being seen with your hands on him.
+    ///   FILL HIS NUMBER AND HE TURNS ROUND. He does not run any more and it does not fail
+    ///   the job any more -- he comes at you and tries to kill you, and he stops counting.
+    ///   That is the entire cost of blowing one, and with three needed out of four you can
+    ///   afford it exactly once.
     ///
-    ///   THE CALL. When you are crouched and still with one of them somewhere out of sight
-    ///   and not too far, Lamar shouts something across the block, and that one comes to
-    ///   look -- to a place a rifle's length short of you, where he stands and looks about
-    ///   for a while and then goes back. That is the elk call: it does not make him safe, it
-    ///   makes him COME, and a man walking toward you is a man who will see you sooner.
+    ///   AND GROVE STREET IS LAST. It is the only one of the four that is somebody's block
+    ///   rather than somebody's corner. Settle him and whoever is stood on that street works
+    ///   it out, and the job ends with a run back to Lamar's yard rather than a fourth quiet
+    ///   exit. Nobody is spawned to make that happen -- if the block is empty at four in the
+    ///   morning then it is empty and you walk home.
     ///
     /// NOBODY IN THIS JOB IS EVER TASKED TWICE ON ONE FRAME. The first version of it sent
     /// Lamar a fresh follow task every frame, which is a man who never finishes starting to
-    /// walk; and its call sent the quarry to your exact coordinate, where he arrived and stood
-    /// in your face for the rest of the job. Every task here is issued once, on a change, or
-    /// on a clock.
+    /// walk. Every task here is issued once, on a change, or on a clock.
     ///
-    /// The three Ballas and the three lookouts have their permanent events blocked, which is
-    /// what stops the game's own gang hatred turning a stalk into a shootout the moment one
-    /// of them sees a Families man. Only this job moves them.
-    /// </summary>
+    /// The four have their permanent events blocked, which is what stops the game's own gang
+    /// hatred turning a stalk into a shootout the moment one of them glances at a Families
+    /// man. Only this job moves them -- until one of them notices you, and then the block
+    /// comes off and the game can have him back.
+        /// </summary>
     internal sealed class Hunt
     {
         // ======================================================================
         // Measures
         // ======================================================================
 
-        /// <summary>How many of them, and how far apart they start.</summary>
-        private const int Many = 3;
-        private const float Spread = 55f;
+        /// <summary>
+        /// The four of them, where they stand, and how many you have to get.
+        ///
+        /// FIXED SPOTS IN A FIXED ORDER, which is the whole shape of the job now. They used to
+        /// be rolled into one fifty-five metre field on whatever pavement the dice found, and
+        /// what that produced was three men in a car park: no route, no reason to be anywhere,
+        /// and nothing to learn between one hunt and the next. These are four corners of
+        /// Davis and Rancho that somebody stood on and wrote down, and you work them in order.
+        ///
+        /// GROVE STREET IS LAST AND THAT IS NOT ARBITRARY. It is the only one of the four
+        /// that is somebody's block rather than somebody's corner, so it is the only one where
+        /// killing a man in the street has anybody to answer to -- see Grove. Doing it last
+        /// means the escape is the end of the job instead of the middle of it.
+        ///
+        /// THREE OF FOUR. One blown stalk is survivable and two are not, which is the
+        /// difference between a job you can play and a job you can only replay.
+        /// </summary>
+        private static readonly Stand[] Stands =
+        {
+            new Stand(233.930f, -1741.552f, 29.175f, "BROUGE AVE"),
+            new Stand(309.951f, -1713.605f, 29.287f, "RANCHO"),
+            new Stand(225.839f, -1847.848f, 26.986f, "CARSON AVE"),
+            new Stand(89.797f, -1962.165f, 20.747f, "GROVE ST"),
+        };
+
+        private static int Many => Stands.Length;
+        private const int Need = 3;
+
+        /// <summary>The last one is the one with a block attached to it. See Grove.</summary>
+        private static int Last => Stands.Length - 1;
+
+        /// <summary>How far he wanders off his spot. Thirty metres, which is what was asked for.</summary>
+        private const float Beat = 30f;
 
         /// <summary>How far out the ground itself is, from where he takes the job.</summary>
-        private const float FieldRadius = 90f;
+        private const float FieldRadius = 40f;
 
         /// <summary>Near enough to the ground to put the men down, and how long that is given.</summary>
         private const float LayFrom = 150f;
@@ -230,8 +249,7 @@ namespace Hoodrich.Missions
         private const float BladeWound = 3.2f;
 
         /// <summary>The ring on the map for each of them: this big, and slipped off him by up to this.</summary>
-        private const float AreaRadius = 42f;
-        private const float AreaSlip = 16f;
+        private const float AreaRadius = Beat + 6f;
 
         /// <summary>How often one of them walks between his two spots, and how far apart they are.</summary>
         /// <summary>
@@ -249,33 +267,14 @@ namespace Hoodrich.Missions
         /// </summary>
         private const int WanderMinMs = 7000;
         private const int WanderVaryMs = 8000;
-        private const float BeatNear = 11f;
-        private const float BeatFar = 28f;
+        private const float BeatNear = 8f;
+        private const float BeatFar = Beat;
 
         /// <summary>And how far he must actually travel for it to be worth walking.</summary>
         private const float BeatWorth = 9f;
 
         /// <summary>How far one of them can see you.</summary>
         private const float SeeRange = 42f;
-
-        /// <summary>
-        /// The lookouts: how many, how far they can see, how long a look takes and how long
-        /// the call takes once he has started making it.
-        ///
-        /// FURTHER THAN THE QUARRY CAN SEE, ON PURPOSE. A lookout is doing nothing else. The
-        /// three you are here for are stood about smoking and are not expecting anybody; the
-        /// man on the corner is the reason the other three feel safe enough to do that.
-        ///
-        /// SpotSeconds is a LOOK, not a glance -- three seconds of clear line of sight, which
-        /// is long enough to cross a gap between two walls without paying for it and far too
-        /// short to stand in the open. A look he has half-finished drains away again at the
-        /// same rate as the quarry's, so breaking line of sight is a real answer. CallMs is
-        /// the window you have to do something about it.
-        /// </summary>
-        private const int Eyes = 3;
-        private const float EyeRange = 65f;
-        private const float SpotSeconds = 3.0f;
-        private const int CallMs = 4200;
 
         /// <summary>What fills his suspicion per second, at the worst of it.</summary>
         private const float SeenPerSecond = 0.55f;
@@ -290,19 +289,6 @@ namespace Hoodrich.Missions
 
         /// <summary>How often a line of sight is actually asked for. Six raycasts a frame was the old figure.</summary>
         private const int LosEveryMs = 150;
-
-        /// <summary>
-        /// The call: how long he looks, how long between calls, how far short of you he
-        /// stops, and how near and how far he can be for Lamar to bother.
-        /// </summary>
-        private const int CallLookMs = 9000;
-        private const int CallEveryMs = 30000;
-        private const float LookShort = 26f;
-        private const float CallNear = 28f;
-        private const float CallFar = 90f;
-
-        /// <summary>How far the blood trail runs before he drops on his own.</summary>
-        private const int BleedMs = 22000;
 
         /// <summary>Lamar, on foot: how far behind, and how often he is re-tasked if he is lagging.</summary>
         private const float LamarBehind = 4.5f;
@@ -339,29 +325,53 @@ namespace Hoodrich.Missions
         };
 
         /// <summary>
-        /// What the three are doing when you find them, and what the corners are doing.
+        /// What a man on a corner does with an afternoon.
         ///
-        /// A dealer, a smoker and a man on his phone: three men on a block who are not
-        /// expecting anybody. The lookouts stand like men whose job is standing. Every name
-        /// is in Scenarios.txt on this machine.
+        /// WALK, STAND ABOUT DOING SOMETHING, WALK AGAIN. Each of these is the tail of a
+        /// sequence -- see Send -- so he strolls thirty metres, gets his phone out or lights
+        /// something for ten or twenty seconds, and then goes somewhere else. The point is
+        /// that his BACK is a moving target: a man rooted to one scenario is a puzzle with one
+        /// answer, and a man who keeps turning round is a stalk.
+        ///
+        /// A FRESH ONE EVERY TIME HE SETS OFF rather than one picked when he spawned. Six
+        /// clips on four men is not much variety if each man only ever has the one.
+        ///
+        /// Every name is in Scenarios.txt on this machine.
         /// </summary>
         private static readonly string[] QuarryDoing =
         {
-            "WORLD_HUMAN_DRUG_DEALER", "WORLD_HUMAN_SMOKING", "WORLD_HUMAN_STAND_MOBILE",
-            "WORLD_HUMAN_HANG_OUT_STREET"
-        };
-
-        private static readonly string[] LookoutDoing =
-        {
-            "WORLD_HUMAN_GUARD_STAND", "WORLD_HUMAN_STAND_IMPATIENT", "WORLD_HUMAN_SMOKING"
+            "WORLD_HUMAN_STAND_MOBILE",          // scrolling
+            "WORLD_HUMAN_STAND_MOBILE_UPRIGHT",  // on a call
+            "WORLD_HUMAN_SMOKING",
+            "WORLD_HUMAN_SMOKING_POT",
+            "WORLD_HUMAN_DRINKING",
+            "WORLD_HUMAN_HANG_OUT_STREET",
+            "WORLD_HUMAN_LEANING",
+            "WORLD_HUMAN_DRUG_DEALER"
         };
 
         // ======================================================================
         // The people in it
         // ======================================================================
 
+        /// <summary>One of the four corners, and what the street it is on is called.</summary>
+        private sealed class Stand
+        {
+            public readonly Vector3 At;
+            public readonly string Street;
+
+            public Stand(float x, float y, float z, string street)
+            {
+                At = new Vector3(x, y, z);
+                Street = street;
+            }
+        }
+
         private sealed class Quarry
         {
+            /// <summary>Which of the four he is. See Stands.</summary>
+            public int Which;
+
             public Ped Man;
 
             /// <summary>The ring on the map before you have his trail, and the mark on him after.</summary>
@@ -397,15 +407,20 @@ namespace Hoodrich.Missions
             public int LosAt;
 
             public bool Down;
-            public bool Spooked;
+
+            /// <summary>
+            /// He noticed, and he is coming. Not a kill, and not a failure either.
+            ///
+            /// HE USED TO RUN AND IT USED TO END THE WHOLE JOB. One man spotting you failed
+            /// the hunt outright, which meant the only way to play it was perfectly or not at
+            /// all. Now he turns round and tries to kill you, he stops counting toward the
+            /// three you need, and the job carries on -- so a blown stalk costs you the one
+            /// man you blew it on and the noise of the fight, which is plenty.
+            /// </summary>
+            public bool Blown;
 
             /// <summary>You stood on his trail. See Prints.</summary>
             public bool Found;
-
-            /// <summary>Hit and running. The blood is the trail now.</summary>
-            public bool Bleeding;
-            public int BleedFrom;
-            public Vector3 LastBlood;
 
             /// <summary>
             /// Every print he has left, and which of them are on the ground yet.
@@ -421,9 +436,6 @@ namespace Hoodrich.Missions
             /// <summary>When the trail was last looked over, so it is not walked every frame.</summary>
             public int PrintedAt;
 
-            /// <summary>Coming to look because Lamar shouted, and until when. See Called.</summary>
-            public int LookingUntil;
-
             /// <summary>Stuck, and the clip is still playing. See Blade.</summary>
             public bool Sticking;
 
@@ -431,32 +443,9 @@ namespace Hoodrich.Missions
             public bool Knifed;
         }
 
-        /// <summary>
-        /// One man on a corner who is not the job.
-        ///
-        /// He never fights and he is never worth points. All he does is look, and then tell
-        /// somebody. See Watching.
-        /// </summary>
-        private sealed class Lookout
-        {
-            public Ped Man;
-            public Blip Mark;
-
-            /// <summary>Nought to one, filling while he has a clear look at you.</summary>
-            public float Spot;
-
-            public bool Seen;
-            public int LosAt;
-
-            /// <summary>When he started dialling, and whether it went through.</summary>
-            public int CallingFrom;
-            public bool Called;
-        }
-
         /// <summary>What Lamar is doing, so he is only re-tasked when it changes.</summary>
         private enum Walk { None, Follow, Run, Still, Boarding, Riding, Leaving }
 
-        private readonly List<Lookout> _eyes = new List<Lookout>();
         private readonly List<Quarry> _out = new List<Quarry>();
 
         private readonly Affiliation _crew;
@@ -464,7 +453,6 @@ namespace Hoodrich.Missions
         private readonly Random _rng = new Random();
 
         private MissionDef _def;
-        private Vector3 _field;
         private Blip _fieldMark;
         private int _layFrom;
 
@@ -474,7 +462,6 @@ namespace Hoodrich.Missions
         private bool _lamarStealth;
 
         private int _phaseFrom;
-        private int _nextCall;
         private int _shotAt;
 
         /// <summary>Who is in reach right now, and whether it is a clean chance. See Blade.</summary>
@@ -531,12 +518,44 @@ namespace Hoodrich.Missions
             get
             {
                 var n = 0;
-                foreach (var q in _out) if (q.Spooked) n++;
+                foreach (var q in _out) if (q.Blown) n++;
                 return n;
             }
         }
 
-        public float Advance => Many <= 0 ? 0f : Down / (float)Many;
+        public float Advance => Down / (float)Need;
+
+        /// <summary>
+        /// Which of the four is next, or -1 when they have all been settled one way or another.
+        ///
+        /// IN ORDER, AND ONE AT A TIME. Only this one is ringed and only this one is named on
+        /// the card, because "four men are out there somewhere" is a map screen and "the one
+        /// on Carson Ave" is a plan.
+        /// </summary>
+        private int Next
+        {
+            get
+            {
+                for (var i = 0; i < Stands.Length; i++)
+                {
+                    var q = Of(i);
+                    if (q == null) return i;
+                    if (!q.Down && !q.Blown) return i;
+                }
+
+                return -1;
+            }
+        }
+
+        /// <summary>The man standing at one of the four, if he has been put out yet.</summary>
+        private Quarry Of(int which)
+        {
+            foreach (var q in _out) if (q.Which == which) return q;
+            return null;
+        }
+
+        /// <summary>Whether all four have been settled, however they went.</summary>
+        private bool Settled => Next < 0;
 
         public string Objective
         {
@@ -545,11 +564,17 @@ namespace Hoodrich.Missions
                 switch (Phase)
                 {
                     case HuntPhase.Riding: return "Get out to the block with Lamar";
-                    case HuntPhase.Bleeding: return "Follow the blood";
-                    case HuntPhase.Leaving: return "Get out of there";
+                    case HuntPhase.Leaving: return "Get back to Lamar's";
 
                     default:
-                        return "Take them out quiet  --  " + Down + " of " + Many;
+                    {
+                        var i = Next;
+
+                        return i < 0
+                            ? "Take them out quiet  --  " + Down + " of " + Need
+                            : "Take out the one on " + Stands[i].Street +
+                              "  --  " + Down + " of " + Need;
+                    }
                 }
             }
         }
@@ -573,10 +598,12 @@ namespace Hoodrich.Missions
 
             Clear();
 
+            // THE BRIEF'S COORDINATE IS NOT USED AND THAT IS DELIBERATE. The hunt has four
+            // fixed corners of its own -- see Stands -- and a mission definition that could
+            // move the job somewhere else would move it away from the only four places it
+            // makes sense. The definition is still the thing that decides whether the job is
+            // offered, what it is called and what it pays.
             _def = def;
-            _field = new Vector3(def.X, def.Y, def.Z);
-
-            if (_field == Vector3.Zero) _field = player.Position.Around(220f);
 
             Failure = null;
             ReadyToCollect = false;
@@ -585,7 +612,6 @@ namespace Hoodrich.Missions
 
             Phase = HuntPhase.Riding;
             _phaseFrom = Game.GameTime;
-            _nextCall = Game.GameTime + CallEveryMs;
             _layFrom = 0;
             _lamarDoing = Walk.None;
             _lamarAt = 0;
@@ -595,7 +621,8 @@ namespace Hoodrich.Missions
 
             Word("get us out there. and go quiet when we're close");
 
-            Log.Info("Hunt: on, at " + _field.X.ToString("0") + ", " + _field.Y.ToString("0") + ".");
+            Log.Info("Hunt: on. " + Many + " corners, " + Need + " needed, " +
+                     Stands[Last].Street + " last.");
 
             return null;
         }
@@ -610,21 +637,47 @@ namespace Hoodrich.Missions
         /// </summary>
         private void MarkField()
         {
+            var which = Next;
+
+            // The one you are walking at, or Lamar's yard once they are all settled. See Home.
+            var at = which < 0 ? Home : Stands[which].At;
+            var name = which < 0 ? "Back to Lamar's" : "The one on " + Stands[which].Street;
+
+            if (_fieldMark != null && _fieldMark.Exists() && _fieldAt == which)
+            {
+                return;
+            }
+
+            UnmarkField();
+            _fieldAt = which;
+
             try
             {
-                _fieldMark = World.CreateBlip(_field, FieldRadius);
+                _fieldMark = World.CreateBlip(at, which < 0 ? FieldRadius : AreaRadius);
                 if (_fieldMark == null || !_fieldMark.Exists()) return;
 
-                _fieldMark.Color = BlipColor.Yellow;
+                _fieldMark.Color = which < 0 ? BlipColor.Green : BlipColor.Yellow;
                 _fieldMark.Alpha = 90;
                 _fieldMark.ShowRoute = true;
-                _fieldMark.Name = _def != null && !string.IsNullOrEmpty(_def.Name) ? _def.Name : "The hunt";
+                _fieldMark.Name = name;
             }
             catch (Exception ex)
             {
                 Log.Debug("Could not mark the hunt: " + ex.Message);
             }
         }
+
+        /// <summary>Which stand the ring is currently drawn round, so it is not redrawn every frame.</summary>
+        private int _fieldAt = -2;
+
+        /// <summary>
+        /// Lamar's yard, which is where the job starts and where it has to end.
+        ///
+        /// Written here rather than read off Main, because the hunt is handed a mission
+        /// definition and a fixer and nothing else -- and the one place in the city this crew
+        /// runs back to is not a thing that varies.
+        /// </summary>
+        private static readonly Vector3 Home = new Vector3(-202.5f, -1730.0f, 32.664f);
 
         private void UnmarkField()
         {
@@ -818,7 +871,6 @@ namespace Hoodrich.Missions
                 {
                     case HuntPhase.Riding: Riding(player, now); break;
                     case HuntPhase.Tracking: Tracking(player, now); break;
-                    case HuntPhase.Bleeding: Tracking(player, now); break;
                     case HuntPhase.Leaving: Leaving(player, now); break;
                 }
             }
@@ -836,29 +888,25 @@ namespace Hoodrich.Missions
         /// </summary>
         private void Riding(Ped player, int now)
         {
-            if (player.Position.DistanceTo(_field) > LayFrom) return;
+            if (player.Position.DistanceTo(Stands[0].At) > LayFrom) return;
 
             if (_layFrom == 0) _layFrom = now;
 
             Lay(player, now);
 
-            var waited = now - _layFrom;
-
-            if (_out.Count < Many && waited < LayPatienceMs) return;
-
+            // THE JOB STARTS WHEN THE FIRST ONE IS OUT, not when all of them are. They are
+            // laid a corner at a time as you reach them -- see Lay -- so waiting for four
+            // would be waiting for the end of the job before letting it begin.
             if (_out.Count == 0)
             {
+                if (now - _layFrom < LayPatienceMs) return;
+
                 Failure = "there was nobody out there.";
                 return;
             }
 
-            Post(player);
-            UnmarkField();
-
             Phase = HuntPhase.Tracking;
             _phaseFrom = now;
-
-            Log.Info("Hunt: " + _out.Count + " of them on the ground, " + _eyes.Count + " lookout(s) on the corners.");
 
             Word("they're out here somewhere. get close and do em quiet");
         }
@@ -872,11 +920,9 @@ namespace Hoodrich.Missions
             var crouched = Crouching(player);
             var sprinting = player.IsSprinting;
 
-            var anyBleeding = false;
-
             foreach (var q in _out)
             {
-                if (q.Down || q.Spooked) continue;
+                if (q.Down || q.Blown) continue;
 
                 if (q.Man == null || !q.Man.Exists())
                 {
@@ -890,23 +936,13 @@ namespace Hoodrich.Missions
                     continue;
                 }
 
-                // HIT AND STILL UP. The minigame's wounded elk: he runs, and the blood is
-                // the trail from here on.
-                //
-                // A RIFLE ONLY. A man you are stood on top of with a knife in your hand has
-                // not been winged from four hundred metres, and turning the first swing of a
-                // stabbing into a blood trail meant the quiet way of doing this ended in the
-                // same chase as the loud one. See BladeWound.
-                if (!q.Bleeding && q.Man.Health < q.Man.MaxHealth - 20 &&
+                // HIT AND STILL UP, AND HE KNOWS WHO DID IT. He used to run bleeding and
+                // you followed the blood; he turns round now. A wound taken from outside
+                // arm's reach can only have come from the rifle, and the rifle is a decision.
+                if (q.Man.Health < q.Man.MaxHealth - 20 &&
                     q.Man.Position.DistanceTo(player.Position) > BladeWound)
                 {
-                    Hurt(q, now);
-                }
-
-                if (q.Bleeding)
-                {
-                    anyBleeding = true;
-                    Bleed(q, now);
+                    Blown(q);
                     continue;
                 }
 
@@ -915,35 +951,35 @@ namespace Hoodrich.Missions
                 // two men doing different animations a foot apart.
                 if (q == _sticking) continue;
 
-                Looking(q, now);
                 Wander(q, now);
                 Watch(q, player, crouched, sprinting, now);
                 Prints(q, player, now);
             }
 
-            Phase = anyBleeding ? HuntPhase.Bleeding : HuntPhase.Tracking;
-
-            Watching(player, crouched, now);
-
             Blade(player, now);
 
-            Called(player, crouched, sprinting, now);
+            Lay(player, now);
 
-            if (Down >= Many)
+            // The ring moves to whichever one is next the moment this one is settled.
+            MarkField();
+
+            if (!Settled) return;
+
+            // ALL FOUR ARE SETTLED. Three of them down is the job; fewer is not, and the
+            // difference is one sentence rather than a rule that could hang -- which is what
+            // the old "nothing left to hunt" backstop was papering over.
+            if (Down < Need)
             {
-                Phase = HuntPhase.Leaving;
-                _phaseFrom = now;
-                Word("that's the three. we out", SpeechBest);
+                Failure = "we only got " + Down + " of them.";
                 return;
             }
 
-            // NOTHING LEFT TO HUNT, which by now can only mean a man who went without being
-            // spooked. Gone and Vanished both end the job where they stand, so this is the
-            // backstop rather than the rule it used to be.
-            if (Down + Lost >= Many && Down < Many && string.IsNullOrEmpty(Failure))
-            {
-                Failure = "there's nobody left out there.";
-            }
+            Grove(player);
+
+            Phase = HuntPhase.Leaving;
+            _phaseFrom = now;
+
+            MarkField();
         }
 
         /// <summary>
@@ -1013,7 +1049,7 @@ namespace Hoodrich.Missions
 
             if (q.Suspicion < 1f) return;
 
-            Gone(q);
+            Blown(q);
         }
 
         // ======================================================================
@@ -1031,12 +1067,40 @@ namespace Hoodrich.Missions
         /// </summary>
         private void Lay(Ped player, int now)
         {
-            if (_out.Count >= Many) return;
+            // ONE AT A TIME AND ONLY THE ONE YOU ARE WALKING AT. Four men three hundred metres
+            // apart cannot all be put out at the start -- a ped created on ground the streamer
+            // has not loaded falls through the world -- and there is no reason to: you work
+            // the corners in order, so the only one that has to exist is the next one.
+            var which = Next;
+            if (which < 0) return;
+            if (Of(which) != null) return;
 
-            var at = Somewhere(player);
-            if (at == Vector3.Zero) return;
+            var stand = Stands[which];
 
-            var doing = QuarryDoing[_out.Count % QuarryDoing.Length];
+            if (player.Position.DistanceTo(stand.At) > LayFrom) return;
+
+            // NOT WHILE YOU ARE LOOKING AT THE SPOT. A man appearing on a corner you can see
+            // is the end of it, and the corner is a fixed place now, so this is the only thing
+            // standing between the job and that.
+            try
+            {
+                if (Function.Call<bool>(Hash.IS_SPHERE_VISIBLE, stand.At.X, stand.At.Y, stand.At.Z, 4f) &&
+                    player.Position.DistanceTo(stand.At) < SpawnClear)
+                {
+                    return;
+                }
+            }
+            catch
+            {
+                // Then distance will have to do.
+            }
+
+            // Put down on the pavement rather than on the coordinate, which was read off a man
+            // stood in a road and is a foot or two out either way.
+            var at = World.GetNextPositionOnSidewalk(stand.At);
+            if (at == Vector3.Zero || at.DistanceTo(stand.At) > 12f) at = stand.At;
+
+            var doing = QuarryDoing[_rng.Next(QuarryDoing.Length)];
 
             var man = Make(at, doing, SeeRange);
             if (man == null) return;
@@ -1045,6 +1109,7 @@ namespace Hoodrich.Missions
 
             var q = new Quarry
             {
+                Which = which,
                 Man = man,
                 Home = at,
                 Going = at,
@@ -1052,7 +1117,7 @@ namespace Hoodrich.Missions
                 LastStep = at,
 
                 // A SHORT FIRST WAIT. The full one is for a man who has just arrived
-                // somewhere; these three have been stood there since before you turned up.
+                // somewhere; this one has been stood there since before you turned up.
                 WanderAt = now + 2000 + _rng.Next(WanderVaryMs)
             };
 
@@ -1060,6 +1125,8 @@ namespace Hoodrich.Missions
             Ring(q);
 
             _out.Add(q);
+
+            Log.Info("Hunt: number " + (which + 1) + " is out on " + stand.Street + ".");
         }
 
         /// <summary>
@@ -1100,9 +1167,11 @@ namespace Hoodrich.Missions
         {
             try
             {
-                var slip = Vector3.RandomXY() * ((float)_rng.NextDouble() * AreaSlip);
-
-                q.Area = World.CreateBlip(q.Home + slip, AreaRadius);
+                // ON THE CORNER, not slipped off it. The spot is a real place now and you
+                // were told which street it is on, so pretending not to know where it is would
+                // be a lie the card already contradicts. The ring is the size of his BEAT: he
+                // is somewhere inside it, and inside it is thirty metres of pavement.
+                q.Area = World.CreateBlip(Stands[q.Which].At, AreaRadius);
                 if (q.Area == null || !q.Area.Exists()) return;
 
                 q.Area.Color = BlipColor.Purple;
@@ -1161,61 +1230,6 @@ namespace Hoodrich.Missions
         private const float PrintSide = 0.16f;
 
         /// <summary>
-        /// A place on the block for one of them, or nothing this tick.
-        ///
-        /// ON A PAVEMENT, out of the camera's sight, not close to you, and not on top of
-        /// anybody already out. Nothing here is guaranteed on the first ask; the callers
-        /// ask again next tick.
-        /// </summary>
-        private Vector3 Somewhere(Ped player)
-        {
-            var me = player.Position;
-
-            for (var tries = 0; tries < 24; tries++)
-            {
-                var probe = _field + (Vector3.RandomXY() * (Spread + (float)_rng.NextDouble() * Spread));
-
-                var at = World.GetNextPositionOnSidewalk(probe);
-                if (at == Vector3.Zero) continue;
-
-                if (at.DistanceTo(me) < SpawnClear) continue;
-
-                try
-                {
-                    if (Function.Call<bool>(Hash.IS_SPHERE_VISIBLE, at.X, at.Y, at.Z, 2.5f)) continue;
-                }
-                catch
-                {
-                    // Then out of sight cannot be checked, and distance will have to do.
-                }
-
-                if (!Clear(at)) continue;
-
-                return at;
-            }
-
-            return Vector3.Zero;
-        }
-
-        /// <summary>Whether nobody of ours is already stood near there.</summary>
-        private bool Clear(Vector3 at)
-        {
-            foreach (var q in _out)
-            {
-                if (q.Man == null || !q.Man.Exists()) continue;
-                if (q.Home.DistanceTo(at) < Spread * 0.5f) return false;
-            }
-
-            foreach (var eye in _eyes)
-            {
-                if (eye.Man == null || !eye.Man.Exists()) continue;
-                if (eye.Man.Position.DistanceTo(at) < Spread * 0.4f) return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
         /// One Balla, stood somewhere doing something, who reacts to nothing but this job.
         ///
         /// PERMANENT EVENTS BLOCKED. Without that the game's own gang hatred is in charge:
@@ -1241,6 +1255,18 @@ namespace Hoodrich.Missions
 
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, man.Handle, true, true);
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, man.Handle, true);
+
+                    // AND NOBODY FINDS THE BODY. A corpse throws a shocking event every few
+                    // seconds for as long as it is lying there, and every Balla in earshot of
+                    // it reacts -- so doing the first one perfectly quietly still turned the
+                    // block on you about twenty seconds later, from a corner you had already
+                    // left. Switched off here, which leaves exactly one thing that can raise
+                    // the street: a gunshot, which makes its own noise and is nothing to do
+                    // with this flag. That is the rule as asked for -- the knife costs you
+                    // nothing, the rifle costs you the block.
+                    //
+                    // It goes back ON the moment he notices you. See Blown.
+                    Function.Call(Hash.SET_PED_GENERATES_DEAD_BODY_EVENTS, man.Handle, false);
 
                     Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, man.Handle, doing, 0, true);
 
@@ -1355,11 +1381,14 @@ namespace Hoodrich.Missions
             }
 
             if (now < q.WanderAt) return;
-            if (q.LookingUntil != 0 || q.Suspicion > 0.2f) return;
+            if (q.Suspicion > 0.2f) return;
 
             // A ROLL THAT FAILS IS WORTH ANOTHER GO IN A MOMENT, and that is the whole of
             // the standing-still bug: the old pair was worked out once, and a man whose
             // second spot came back as his first stood there for the rest of the job.
+            // SOMETHING ELSE TO DO WHEN HE GETS THERE. See QuarryDoing.
+            q.Doing = QuarryDoing[_rng.Next(QuarryDoing.Length)];
+
             var to = Roam(q.Home, q.Man.Position);
 
             if (to == Vector3.Zero)
@@ -1570,7 +1599,7 @@ namespace Hoodrich.Missions
 
             foreach (var q in _out)
             {
-                if (q.Down || q.Spooked || q.Bleeding) continue;
+                if (q.Down || q.Blown) continue;
                 if (q.Man == null || !q.Man.Exists() || !q.Man.IsAlive) continue;
 
                 var gap = q.Man.Position.DistanceTo(player.Position);
@@ -1842,218 +1871,7 @@ namespace Hoodrich.Missions
         /// </summary>
         private void Botched(Quarry q)
         {
-            Gone(q);
-        }
-
-        // ======================================================================
-        // The lookouts
-        // ======================================================================
-
-        /// <summary>
-        /// Men on the corners who are not the job, put out once the three are.
-        ///
-        /// Blipped, because a rule you cannot see coming is not a rule, it is a punishment.
-        /// That was the wind's real problem: an arrow on a card is not the same as knowing
-        /// where the danger is stood.
-        /// </summary>
-        private void Post(Ped player)
-        {
-            for (var i = 0; i < Eyes; i++)
-            {
-                var at = Somewhere(player);
-                if (at == Vector3.Zero) continue;
-
-                var man = Make(at, LookoutDoing[i % LookoutDoing.Length], EyeRange);
-                if (man == null) continue;
-
-                var eye = new Lookout { Man = man };
-
-                try
-                {
-                    eye.Mark = man.AddBlip();
-
-                    if (eye.Mark != null && eye.Mark.Exists())
-                    {
-                        eye.Mark.Sprite = (BlipSprite)1;
-                        eye.Mark.Color = BlipColor.Purple;
-                        eye.Mark.Scale = 0.6f;
-                        eye.Mark.Name = "Lookout";
-                        eye.Mark.IsShortRange = true;
-                    }
-                }
-                catch
-                {
-                    // He still watches.
-                }
-
-                _eyes.Add(eye);
-            }
-        }
-
-        /// <summary>
-        /// The lookouts, looking.
-        ///
-        /// A CLEAR LINE FOR THREE SECONDS, then the phone. Not proximity -- you can walk past
-        /// one at ten metres with a wall between you and he never knows. What he needs is to
-        /// actually see you, and what you need is for him not to.
-        ///
-        /// Crouching helps here the same as it does everywhere else, and it is the same number,
-        /// because there is one idea in this job about being careful and it should not mean
-        /// two different things depending on who is looking at you.
-        ///
-        /// ONCE HE IS DIALLING, ONLY A BULLET STOPS IT. Breaking line of sight after he has
-        /// the phone out is too late -- he has already decided, and the whole point of the call
-        /// is that it reaches somebody who is not here. So there is a window, and there is one
-        /// thing you can do in it, and that thing is loud.
-        /// </summary>
-        private void Watching(Ped player, bool crouched, int now)
-        {
-            var dt = Game.LastFrameTime;
-            if (dt <= 0f || dt > 0.25f) dt = 1f / 60f;
-
-            foreach (var eye in _eyes)
-            {
-                if (eye.Called) continue;
-
-                if (eye.Man == null || !eye.Man.Exists() || !eye.Man.IsAlive)
-                {
-                    // Dropped mid-call, or before it. The call goes with him.
-                    eye.Called = true;
-                    Strip(eye);
-                    continue;
-                }
-
-                if (eye.CallingFrom != 0)
-                {
-                    if (now - eye.CallingFrom >= CallMs) Told(eye);
-                    continue;
-                }
-
-                var gap = eye.Man.Position.DistanceTo(player.Position);
-
-                if (gap < EyeRange)
-                {
-                    if (now - eye.LosAt >= LosEveryMs)
-                    {
-                        eye.LosAt = now;
-
-                        try
-                        {
-                            eye.Seen = Function.Call<bool>(Hash.HAS_ENTITY_CLEAR_LOS_TO_ENTITY,
-                                                           eye.Man.Handle, player.Handle, 17);
-                        }
-                        catch
-                        {
-                            eye.Seen = gap < EyeRange * 0.4f;
-                        }
-                    }
-                }
-                else
-                {
-                    eye.Seen = false;
-                }
-
-                if (eye.Seen)
-                {
-                    var rate = 1f / SpotSeconds;
-                    if (crouched) rate *= CrouchQuiet;
-
-                    eye.Spot += rate * dt;
-                }
-                else
-                {
-                    eye.Spot -= CalmPerSecond * dt;
-                }
-
-                if (eye.Spot < 0f) eye.Spot = 0f;
-                if (eye.Spot < 1f) continue;
-
-                Dial(eye, now);
-            }
-        }
-
-        /// <summary>Phone out. Four seconds, and then somebody knows.</summary>
-        private void Dial(Lookout eye, int now)
-        {
-            eye.CallingFrom = now;
-            eye.Spot = 1f;
-
-            try
-            {
-                Function.Call(Hash.CLEAR_PED_TASKS, eye.Man.Handle);
-                Function.Call(Hash.TASK_USE_MOBILE_PHONE_TIMED, eye.Man.Handle, CallMs + 1500);
-            }
-            catch
-            {
-                // The clock runs either way.
-            }
-
-            if (eye.Mark != null && eye.Mark.Exists()) eye.Mark.Color = BlipColor.Red;
-
-            Word("somebody's on the phone. shut him up", SpeechSeen);
-            Log.Info("Hunt: a lookout is making the call.");
-        }
-
-        /// <summary>
-        /// The call went through, and the nearest one to him walks off.
-        ///
-        /// NEAREST TO THE LOOKOUT, not to you. He rang the man he can see, and the man he can
-        /// see is the one who leaves -- which means where you get spotted decides which of the
-        /// three you lose, and that is worth knowing before you cross a road.
-        /// </summary>
-        private void Told(Lookout eye)
-        {
-            eye.Called = true;
-
-            Quarry nearest = null;
-            var best = float.MaxValue;
-
-            foreach (var q in _out)
-            {
-                if (q.Down || q.Spooked) continue;
-                if (q.Man == null || !q.Man.Exists()) continue;
-
-                var gap = q.Man.Position.DistanceTo(eye.Man.Position);
-
-                if (gap >= best) continue;
-
-                best = gap;
-                nearest = q;
-            }
-
-            Strip(eye);
-
-            // Back to standing about. His job is done.
-            try
-            {
-                Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, eye.Man.Handle,
-                              LookoutDoing[0], 0, true);
-            }
-            catch
-            {
-                // He stands there anyway.
-            }
-
-            if (nearest == null) return;
-
-            Gone(nearest);
-            Word("that's one gone. somebody told him", SpeechWorst);
-            Log.Info("Hunt: the call landed and one of them walked.");
-        }
-
-        /// <summary>A lookout who has finished being one.</summary>
-        private static void Strip(Lookout eye)
-        {
-            try
-            {
-                if (eye.Mark != null && eye.Mark.Exists()) eye.Mark.Delete();
-            }
-            catch
-            {
-                // It goes with the mission.
-            }
-
-            eye.Mark = null;
+            Blown(q);
         }
 
         // ======================================================================
@@ -2061,299 +1879,202 @@ namespace Hoodrich.Missions
         // ======================================================================
 
         /// <summary>
-        /// He has had enough and he is off -- and that is the job.
+        /// He noticed you, and now he is coming.
         ///
-        /// ONE IS ENOUGH, AND IT USED TO TAKE ALL THREE. The old rule failed the hunt when
-        /// nothing huntable was left, so spooking one and then stalking the other two ended
-        /// with two down, one gone, a card reading "2 of 3" and no way at all to finish it:
-        /// the third man was over the hill and the job sat there waiting for him. A stalk
-        /// you have blown is blown at the moment you blow it, which is both the honest rule
-        /// and the one that cannot hang.
+        /// HE USED TO RUN AND IT USED TO END THE JOB. One man spotting you failed the hunt
+        /// outright -- which meant the only way to play it was perfectly, and a stalk you had
+        /// half blown was a reload rather than a decision. He turns round now: the events
+        /// block comes off, he is handed back to the game's own gang hatred, and he tries to
+        /// kill you. He stops counting toward the three, and that is the whole of the cost.
+        ///
+        /// AND HE IS LOUD, which is the rest of the cost. A fight in the street is a fight in
+        /// the street: everybody nearby hears it, so blowing the first one makes the second
+        /// one harder without a single rule being written to say so.
+        ///
+        /// THE MARK STAYS ON HIM. You are allowed to finish what you started -- it will not
+        /// count, but leaving an armed man behind you on the way to the next corner is worse.
         /// </summary>
-        private void Gone(Quarry q)
+        private void Blown(Quarry q)
         {
-            q.Spooked = true;
-            q.LookingUntil = 0;
+            if (q.Down || q.Blown) return;
+
+            q.Blown = true;
 
             try
             {
+                // HANDED BACK TO THE GAME. Make blocks his permanent events so the engine's
+                // own gang hatred cannot turn a stalk into a shootout; a man who has seen you
+                // is exactly the case where that hatred is what you want.
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, q.Man.Handle, false);
+                Function.Call(Hash.SET_PED_GENERATES_DEAD_BODY_EVENTS, q.Man.Handle, true);
+                Function.Call(Hash.SET_PED_ALERTNESS, q.Man.Handle, 3);
                 Function.Call(Hash.SET_PED_KEEP_TASK, q.Man.Handle, true);
                 Function.Call(Hash.CLEAR_PED_TASKS, q.Man.Handle);
-                Function.Call(Hash.TASK_SMART_FLEE_PED, q.Man.Handle,
-                              Game.Player.Character.Handle, 300f, -1, false, false);
-
-                q.Man.MarkAsNoLongerNeeded();
+                Function.Call(Hash.TASK_COMBAT_PED, q.Man.Handle,
+                              Game.Player.Character.Handle, 0, 16);
             }
             catch
             {
-                // He runs on his own.
+                // Then he stands there looking at you, which is its own warning.
             }
 
-            Unring(q);
+            try { if (q.Area != null && q.Area.Exists()) q.Area.Delete(); }
+            catch { /* it goes with the job */ }
 
-            Word("he's gone man. you was too loud", SpeechWorst);
+            q.Area = null;
 
-            Log.Info("Hunt: one spooked. " + Down + " down, " + Lost + " lost. That is the job.");
+            Word("he's seen us. do him or leave him", SpeechWorst);
 
-            Failure = "one of them got away.";
+            Log.Info("Hunt: number " + (q.Which + 1) + " is onto us. " + Down + " down, " +
+                     Lost + " written off, " + Need + " needed.");
         }
 
         /// <summary>
         /// The man himself has stopped existing, which is the engine and not you.
         ///
-        /// It still ends the job -- there is nothing left to hunt and a card that can never
-        /// reach three is the hang this file has already had once -- but it does not say you
-        /// were seen, because you were not.
+        /// Written off the same as a blown one, and for the same reason: the count has to be
+        /// able to finish. It does not say you were seen, because you were not.
         /// </summary>
         private void Vanished(Quarry q)
         {
-            q.Spooked = true;
-            q.LookingUntil = 0;
+            q.Blown = true;
 
             Unring(q);
 
-            Log.Warn("Hunt: one of them stopped existing. Ending the job rather than leaving " +
-                     "a count that cannot be finished.");
-
-            Failure = "lost one of them out there.";
+            Log.Warn("Hunt: number " + (q.Which + 1) + " stopped existing. Written off.");
         }
 
         /// <summary>
         /// Down, and how he went down.
         ///
-        /// A HEAD SHOT IS A CLEAN KILL and anything else is a wounded man running, which is
-        /// the minigame's own rule and the reason it has a blood trail in it at all.
+        /// HE DIED WITHOUT NOTICING OR HE DIED KNOWING. That is the only distinction left
+        /// -- a man who spots you stops counting before he can be dropped, so everything that
+        /// reaches here is a kill that worked -- and it is worth a different sentence, because
+        /// the whole point of the blade is that the quiet one is the one to aim for.
         /// </summary>
         private void Dropped(Quarry q, int now)
         {
             q.Down = true;
-            q.Bleeding = false;
-            q.LookingUntil = 0;
 
             Unring(q);
 
-            // HOW HE WENT DOWN IS WORTH A DIFFERENT SENTENCE. A man shot off a roof and a
-            // man who never heard you coming are not the same result, and the whole point of
-            // the blade is that the second one is the one to aim for -- so the job says so.
-            var line = Down >= Many
-                ? "that's three. let's move"
+            // COUNTED AGAINST THREE, which is what passes the job. A fourth is a bonus and
+            // ought not to be announced as though it were the finish line.
+            var line = Down >= Need
+                ? "that's three. we out"
                 : Down == 1
                     ? (q.Knifed ? "one down. he never even turned round" : "one down. two more")
-                    : (q.Knifed ? "two. one left, do him the same way" : "two. one left");
+                    : (q.Knifed ? "two. one more, do him the same way" : "two. one more");
 
-            Word(line, Down >= Many ? SpeechBest : SpeechGood);
+            Word(line, Down >= Need ? SpeechBest : SpeechGood);
 
-            Log.Info("Hunt: one down. " + Down + " of " + Many + ".");
-        }
-
-        /// <summary>
-        /// Wounded and running, leaving blood behind him.
-        ///
-        /// The same trail the tracks are, in a different colour and laid as he goes rather
-        /// than in advance. He drops on his own at the end of it, which is what stops a
-        /// wounded man running to the far side of the map with the job attached to him.
-        /// </summary>
-        private void Bleed(Quarry q, int now)
-        {
-            if (q.Man == null || !q.Man.Exists()) { Vanished(q); return; }
-
-            if (q.LastBlood == Vector3.Zero || q.Man.Position.DistanceTo(q.LastBlood) > 1.6f)
-            {
-                // ALONG HIS OWN HEADING. A print in advance knows where the next one is; a
-                // drop of blood is left behind a man who is still running, so the only
-                // direction there is to point it is the way he is facing.
-                Spot(q.Man.Position, q.Man.ForwardVector, 0.55f, 0.06f, 0.05f,
-                     PrintSize * 1.5f, q.LastBlood == Vector3.Zero);
-
-                q.LastBlood = q.Man.Position;
-            }
-
-            if (now - q.BleedFrom < BleedMs) return;
-
-            try
-            {
-                Function.Call(Hash.APPLY_DAMAGE_TO_PED, q.Man.Handle, 400, true, 0, 0);
-            }
-            catch
-            {
-                // He is written off either way.
-            }
-
-            Dropped(q, now);
-        }
-
-        /// <summary>Hit but not dropped: he runs, and the blood starts.</summary>
-        private void Hurt(Quarry q, int now)
-        {
-            if (q.Down || q.Spooked || q.Bleeding) return;
-
-            q.Bleeding = true;
-            q.BleedFrom = now;
-            q.LastBlood = Vector3.Zero;
-            q.LookingUntil = 0;
-            q.Walking = false;
-
-            try
-            {
-                Function.Call(Hash.SET_PED_KEEP_TASK, q.Man.Handle, true);
-                Function.Call(Hash.CLEAR_PED_TASKS, q.Man.Handle);
-                Function.Call(Hash.TASK_SMART_FLEE_PED, q.Man.Handle,
-                              Game.Player.Character.Handle, 200f, -1, false, false);
-            }
-            catch
-            {
-                // He limps off on his own.
-            }
-
-            // The mark stays on a running man, so the blood has somewhere to be leading.
-            if (q.Mark == null || !q.Mark.Exists())
-            {
-                try { if (q.Area != null && q.Area.Exists()) q.Area.Delete(); }
-                catch { /* it goes with the job */ }
-
-                q.Area = null;
-            }
-
-            Word("you winged him. follow the blood", SpeechBad);
+            Log.Info("Hunt: number " + (q.Which + 1) + " down" + (q.Knifed ? ", quietly" : "") +
+                     ". " + Down + " of " + Need + " needed.");
         }
 
         // ======================================================================
-        // The call
+        // Grove Street, and getting out
         // ======================================================================
 
-        /// <summary>
-        /// Lamar shouts, and one of them comes to look.
-        ///
-        /// WHEN IT IS WORTH SHOUTING, not on a clock. The old call went every thirty seconds
-        /// whatever you were doing, and it sent the man to your exact coordinate, where he
-        /// arrived and stood in your face for the rest of the job. It goes when you are
-        /// crouched and still with one of them somewhere between a rifle's length and a
-        /// block away who has not got a look at you -- and it brings him to a place short
-        /// of you, not to you. He stands there and looks about for a while and then walks
-        /// back. That is the elk call: it does not make him safe, it makes him COME, which
-        /// is the trade, because a man walking toward you is a man who will see you sooner.
-        /// </summary>
-        private void Called(Ped player, bool crouched, bool sprinting, int now)
+        /// <summary>How far from the last corner a Balla has to be to have noticed.</summary>
+        private const float GroveHears = 70f;
+
+        /// <summary>Near enough to Lamar's to call it getting back.</summary>
+        private const float HomeWithin = 28f;
+
+        /// <summary>Every Balla model the block might be wearing. See Grove.</summary>
+        private static readonly string[] Ballas =
         {
-            if (now < _nextCall) return;
-            if (Phase != HuntPhase.Tracking) return;
-            if (!crouched || sprinting) return;
-            if (_lamar == null || !_lamar.Exists() || !_lamar.IsAlive) return;
+            "g_m_y_ballaeast_01", "g_m_y_ballaorig_01", "g_m_y_ballasout_01",
+            "g_f_y_ballas_01", "csb_ballasog", "g_m_y_ballablazer_01"
+        };
 
-            var still = false;
-            try { still = player.Velocity.Length() < 0.4f; } catch { still = true; }
-            if (!still) return;
+        /// <summary>
+        /// The last one is on somebody's block, and the block works it out.
+        ///
+        /// THE OTHER THREE ARE CORNERS AND THIS ONE IS A STREET. Three men stood on their own
+        /// outside a liquor store can be taken quietly and nobody is any the wiser -- which is
+        /// the whole point of the knife and is enforced everywhere else by switching the dead
+        /// body events off. Grove Street is the exception on purpose: it is the only one of
+        /// the four with people on it who would notice, so the job ends with a street turning
+        /// round rather than with a fourth quiet exit.
+        ///
+        /// WHOEVER IS ACTUALLY THERE, which is the honest version of it. Nobody is spawned to
+        /// make this happen. If the block is empty at four in the morning then the block is
+        /// empty and you walk home, and that is a better answer than a scripted ambush that
+        /// arrives whatever the street looks like.
+        /// </summary>
+        private void Grove(Ped player)
+        {
+            var turned = 0;
 
-            Quarry near = null;
-            var closest = CallFar;
+            try
+            {
+                var at = Stands[Last].At;
 
+                foreach (var man in World.GetNearbyPeds(at, GroveHears))
+                {
+                    if (man == null || !man.Exists() || !man.IsAlive) continue;
+                    if (man.Handle == player.Handle) continue;
+                    if (_lamar != null && _lamar.Exists() && man.Handle == _lamar.Handle) continue;
+                    if (Mine(man)) continue;
+                    if (!Balla(man)) continue;
+
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, man.Handle, false);
+                    Function.Call(Hash.SET_PED_ALERTNESS, man.Handle, 3);
+                    Function.Call(Hash.SET_PED_KEEP_TASK, man.Handle, true);
+                    Function.Call(Hash.CLEAR_PED_TASKS, man.Handle);
+                    Function.Call(Hash.TASK_COMBAT_PED, man.Handle, player.Handle, 0, 16);
+
+                    turned++;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Hunt: could not turn the block: " + ex.Message);
+            }
+
+            Log.Info("Hunt: Grove Street -- " + turned + " of them turned. " +
+                     Down + " of " + Many + " down, " + Need + " needed.");
+
+            if (turned > 0)
+            {
+                Word("grove seen us. get back to lamar's", SpeechWorst);
+            }
+            else
+            {
+                Word("that's the last one. we out", SpeechBest);
+            }
+        }
+
+        /// <summary>One of ours, in this job. Not to be turned on us by the last kill.</summary>
+        private bool Mine(Ped man)
+        {
             foreach (var q in _out)
             {
-                if (q.Down || q.Spooked || q.Bleeding || q.Walking || q.LookingUntil != 0) continue;
-                if (q.Man == null || !q.Man.Exists()) continue;
-                if (q.Seen || q.Suspicion > 0.25f) continue;
-
-                var gap = q.Man.Position.DistanceTo(player.Position);
-                if (gap > closest || gap < CallNear) continue;
-
-                closest = gap;
-                near = q;
+                if (q.Man != null && q.Man.Exists() && q.Man.Handle == man.Handle) return true;
             }
 
-            if (near == null) return;
-
-            _nextCall = now + CallEveryMs;
-
-            // Short of you along the line between you, on the pavement if there is one.
-            var d = player.Position - near.Man.Position;
-            var far = d.Length();
-            var toward = far < 0.01f ? new Vector3(1f, 0f, 0f) : d / far;
-
-            var stop = player.Position - toward * LookShort;
-            var on = World.GetNextPositionOnSidewalk(stop);
-            if (on != Vector3.Zero && on.DistanceTo(stop) < 8f) stop = on;
-
-            try
-            {
-                Function.Call(Hash.SET_PED_KEEP_TASK, near.Man.Handle, false);
-                Function.Call(Hash.CLEAR_PED_TASKS, near.Man.Handle);
-                Function.Call(Hash.TASK_GO_TO_COORD_ANY_MEANS, near.Man.Handle,
-                              stop.X, stop.Y, stop.Z, 1.2f, 0, false, 786603, 0f);
-                Function.Call(Hash.SET_PED_KEEP_TASK, near.Man.Handle, true);
-            }
-            catch
-            {
-                // He stays where he is.
-            }
-
-            near.LookingUntil = now + CallLookMs;
-            near.Walking = false;
-
-            try
-            {
-                // NAMED, BECAUSE IT WAS SILENT. GENERIC_INSULT_HIGH is a LAMAR_2_NORMAL
-                // line and this ped is not on that bank, so the one moment in the job that is
-                // supposed to be loud made no sound whatever. See LamarVoice.
-                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_WITH_VOICE_NATIVE, _lamar.Handle,
-                              "GENERIC_FUCK_YOU", LamarVoice, "SPEECH_PARAMS_FORCE_SHOUTED", 0);
-            }
-            catch
-            {
-                // The text says it.
-            }
-
-            Word("watch -- he's coming to look", SpeechSeen);
+            return false;
         }
 
-        /// <summary>
-        /// The man who came to look, looking, and then going home.
-        ///
-        /// Turned to face you when he gets there, which is what a man who has walked over
-        /// to see about a noise does -- and it is the trade, because facing you is how he
-        /// gets his clear line. When the look is over he walks back to his spot and picks
-        /// up what he was doing, and every step of that is a print.
-        /// </summary>
-        private void Looking(Quarry q, int now)
+        private static bool Balla(Ped man)
         {
-            if (q.LookingUntil == 0) return;
-
-            if (now < q.LookingUntil)
+            try
             {
-                var player = Game.Player.Character;
-                if (player == null || !player.Exists()) return;
+                var hash = man.Model.Hash;
 
-                // Arrived: face the noise. Once, near the end of the walk.
-                if (!q.Walking && now > q.LookingUntil - CallLookMs + 2500 &&
-                    q.Man.Position.DistanceTo(player.Position) < LookShort + 6f)
+                foreach (var name in Ballas)
                 {
-                    try
-                    {
-                        if (!Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, q.Man.Handle, 224))
-                        {
-                            Function.Call(Hash.TASK_LOOK_AT_ENTITY, q.Man.Handle, player.Handle, 4000, 0, 2);
-                        }
-                    }
-                    catch
-                    {
-                        // He looks about on his own.
-                    }
+                    if (hash == Function.Call<int>(Hash.GET_HASH_KEY, name)) return true;
                 }
-
-                return;
             }
-
-            q.LookingUntil = 0;
-
-            var home = q.Going == Vector3.Zero ? q.Home : q.Going;
-
-            if (Send(q.Man, home, q.Doing, 1.0f))
+            catch
             {
-                q.Walking = true;
-                q.WalkFrom = now;
-                q.LastStep = q.Man.Position;
+                // Then he is somebody else's problem.
             }
 
-            q.WanderAt = now + WanderMinMs + _rng.Next(WanderVaryMs);
+            return false;
         }
 
         // ======================================================================
@@ -2677,9 +2398,18 @@ namespace Hoodrich.Missions
         // Leaving
         // ======================================================================
 
+        /// <summary>
+        /// Back to Lamar's.
+        ///
+        /// IT USED TO BE "GET FORTY METRES AWAY FROM WHERE YOU WERE STOOD", which is not
+        /// leaving, it is stepping back. The job started in that yard and it ends there, and
+        /// with the last block behind you it is a run rather than a formality.
+        /// </summary>
         private void Leaving(Ped player, int now)
         {
-            if (player.Position.DistanceTo(_field) < FieldRadius) return;
+            MarkField();
+
+            if (player.Position.DistanceTo(Home) > HomeWithin) return;
 
             ReadyToCollect = true;
         }
@@ -2704,10 +2434,10 @@ namespace Hoodrich.Missions
             if (Phase == HuntPhase.Riding) return;
 
             const float w = 0.206f;
-            const float h = 0.100f;
+            const float h = 0.108f;
 
             var left = 0.5f - w * 0.5f;
-            var top = 0.778f;
+            var top = 0.770f;
 
             Theme.Panel(left, top, w, h);
 
@@ -2717,54 +2447,58 @@ namespace Hoodrich.Missions
             Hud.Text("THE HUNT", x, top + 0.005f, 0.25f,
                      Palette.Alpha(Palette.TextDim, 200), Hud.FontLabel, centre: false);
 
-            Hud.TextRight(Down + " / " + Many, right, top + 0.003f, 0.34f,
-                          Palette.Text, Hud.FontLabel);
+            // AGAINST THREE, NOT AGAINST FOUR. Three is what passes the job -- see Need --
+            // and a counter that reads "2 / 4" while you are one man from finishing is a
+            // counter lying about the only number anybody cares about. The fourth is the
+            // spare, and losing him is what it is for.
+            var count = Down + " / " + Need;
+            var countInk = Down >= Need ? Palette.Brand : Palette.Text;
+
+            Hud.TextRight(count, right, top + 0.003f, 0.34f, countInk, Hud.FontLabel);
 
             Compass(x, top + 0.030f, w - 0.022f);
 
-            // ---- who is looking ----
-            var watched = 0f;
-            var dialling = false;
-            var eyes = 0;
+            // ---- which corner is next, and who is written off ----
+            var which = Next;
+            var lost = Lost;
 
-            foreach (var eye in _eyes)
+            var where = Phase == HuntPhase.Leaving
+                ? "LAMAR'S"
+                : which < 0 ? "" : Stands[which].Street;
+
+            if (!string.IsNullOrEmpty(where))
             {
-                if (eye.Called) continue;
-                if (eye.Man == null || !eye.Man.Exists() || !eye.Man.IsAlive) continue;
-
-                eyes++;
-
-                if (eye.CallingFrom != 0) dialling = true;
-                if (eye.Spot > watched) watched = eye.Spot;
+                Hud.Text(where, x, top + 0.058f, 0.22f,
+                         Palette.Alpha(Phase == HuntPhase.Leaving ? Palette.Brand : Palette.Warn, 235),
+                         Hud.FontLabel, centre: false);
             }
 
-            var eyeInk = dialling ? Palette.Danger
-                       : watched > 0.35f ? Palette.Warn
-                       : Palette.Alpha(Palette.TextDim, 190);
-
-            Hud.Text(dialling ? "ON THE PHONE" : eyes > 0 ? "EYES  " + eyes : "NO EYES",
-                     x, top + 0.058f, 0.22f, eyeInk, Hud.FontLabel, centre: false);
+            if (lost > 0)
+            {
+                Hud.TextRight(lost + " BLOWN", right, top + 0.058f, 0.20f,
+                              Palette.Alpha(Palette.Danger, 200), Hud.FontLabel);
+            }
 
             // ---- how close the nearest one is to hearing you ----
             var worst = 0f;
 
             foreach (var q in _out)
             {
-                if (q.Down || q.Spooked) continue;
+                if (q.Down || q.Blown) continue;
                 if (q.Suspicion > worst) worst = q.Suspicion;
             }
 
-            var barX = x + 0.064f;
+            var barX = x;
             var barW = right - barX;
 
-            Hud.RectFrom(barX, top + 0.0615f, barW, 0.0075f,
+            Hud.RectFrom(barX, top + 0.0705f, barW, 0.0055f,
                          Color.FromArgb(90, 255, 255, 255));
 
             if (worst > 0.01f)
             {
                 var ink = worst > 0.66f ? Palette.Danger : worst > 0.33f ? Palette.Warn : Palette.Brand;
 
-                Hud.RectFrom(barX, top + 0.0615f, barW * Math.Min(1f, worst), 0.0075f, ink);
+                Hud.RectFrom(barX, top + 0.0705f, barW * Math.Min(1f, worst), 0.0055f, ink);
             }
 
             // ---- and what to do about all of it ----
@@ -2796,20 +2530,15 @@ namespace Hoodrich.Missions
             {
                 return;
             }
-            else if (Dialling)
-            {
-                words = "DROP THE LOOKOUT -- HE'S CALLING IT IN";
-                ink = Palette.Danger;
-            }
-            else if (Phase == HuntPhase.Bleeding)
-            {
-                words = "FOLLOW THE BLOOD";
-                ink = Palette.Danger;
-            }
             else if (Phase == HuntPhase.Leaving)
             {
-                words = "GET BACK TO THE CAR";
+                words = "GET BACK TO LAMAR'S";
                 ink = Palette.Brand;
+            }
+            else if (Fighting)
+            {
+                words = "HE'S ON YOU -- HE WON'T COUNT NOW";
+                ink = Palette.Danger;
             }
             else if (_within != null && !_armed)
             {
@@ -2830,6 +2559,10 @@ namespace Hoodrich.Missions
             {
                 words = "STAY LOW AND GET ROUND THE BACK OF HIM";
             }
+            else if (Next >= 0 && Of(Next) == null)
+            {
+                words = "GET DOWN TO " + Stands[Next].Street;
+            }
             else
             {
                 words = "READ THE GROUND -- FIND HIS TRACKS";
@@ -2849,16 +2582,17 @@ namespace Hoodrich.Missions
         /// <summary>What to press, in the words of whatever he is holding it with.</summary>
         private static string Key => Hud.OnPad ? "[RB]" : "[E]";
 
-        /// <summary>Somebody has the phone out and the call has not landed yet.</summary>
-        private bool Dialling
+        /// <summary>One of them has noticed and is coming, and he is still on his feet.</summary>
+        private bool Fighting
         {
             get
             {
-                foreach (var eye in _eyes)
+                foreach (var q in _out)
                 {
-                    if (eye.Called) continue;
-                    if (eye.Man == null || !eye.Man.Exists() || !eye.Man.IsAlive) continue;
-                    if (eye.CallingFrom != 0) return true;
+                    if (!q.Blown) continue;
+                    if (q.Man == null || !q.Man.Exists() || !q.Man.IsAlive) continue;
+
+                    return true;
                 }
 
                 return false;
@@ -2872,7 +2606,7 @@ namespace Hoodrich.Missions
             {
                 foreach (var q in _out)
                 {
-                    if (q.Down || q.Spooked) continue;
+                    if (q.Down || q.Blown) continue;
                     if (q.Found) return true;
                 }
 
@@ -2993,9 +2727,15 @@ namespace Hoodrich.Missions
 
             foreach (var q in _out)
             {
-                if (q.Down || q.Spooked) continue;
+                // A BLOWN ONE STILL GETS A PIP, IN RED. He does not count any more, but he is
+                // walking at you with a bat and he is the single most important thing on this
+                // strip while he does it.
+                var fighting = q.Blown && q.Man != null && q.Man.Exists() && q.Man.IsAlive;
 
-                var known = q.Found && q.Man != null && q.Man.Exists() && q.Man.IsAlive;
+                if (q.Down || (q.Blown && !fighting)) continue;
+
+                var known = fighting ||
+                            (q.Found && q.Man != null && q.Man.Exists() && q.Man.IsAlive);
 
                 Vector3 at;
 
@@ -3028,9 +2768,10 @@ namespace Hoodrich.Missions
 
                 Pip(x, top + CompassH - tall, w, mid, off,
                     known ? PipW : VaguePipW, tall,
-                    known ? Palette.Brand : Palette.Alpha(Palette.TextDim, 150));
+                    fighting ? Palette.Danger
+                             : known ? Palette.Brand : Palette.Alpha(Palette.TextDim, 150));
 
-                if (!known || far >= fixGap) continue;
+                if (fighting || !known || far >= fixGap) continue;
 
                 fix = q;
                 fixOff = off;
@@ -3049,20 +2790,6 @@ namespace Hoodrich.Missions
                       Palette.Alpha(Palette.Brand, (int)(225f * Edge(fixOff))), false);
             }
 
-            // ---- and whoever is looking at you ----
-            //
-            // Only while he is actually looking. A pip for every man on a corner would be a
-            // strip full of people who do not matter, and the one who does would be lost in
-            // them.
-            foreach (var eye in _eyes)
-            {
-                if (eye.Called) continue;
-                if (eye.Man == null || !eye.Man.Exists() || !eye.Man.IsAlive) continue;
-                if (eye.CallingFrom == 0 && eye.Spot < 0.25f) continue;
-
-                Pip(x, top, w, mid, Off(look, here, eye.Man.Position), PipW, CompassH,
-                    eye.CallingFrom != 0 ? Palette.Danger : Palette.Warn);
-            }
         }
 
         /// <summary>How much of its colour a mark keeps this near the end of the strip.</summary>
@@ -3205,26 +2932,6 @@ namespace Hoodrich.Missions
 
             _out.Clear();
 
-            foreach (var eye in _eyes)
-            {
-                try
-                {
-                    Strip(eye);
-
-                    if (eye.Man != null && eye.Man.Exists())
-                    {
-                        Function.Call(Hash.SET_PED_KEEP_TASK, eye.Man.Handle, false);
-                        Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, eye.Man.Handle, false);
-                        eye.Man.MarkAsNoLongerNeeded();
-                    }
-                }
-                catch
-                {
-                    // The game takes them back.
-                }
-            }
-
-            _eyes.Clear();
 
             try
             {
@@ -3280,6 +2987,7 @@ namespace Hoodrich.Missions
             _def = null;
             _shotAt = 0;
             _layFrom = 0;
+            _fieldAt = -2;
 
             Phase = HuntPhase.None;
             ReadyToCollect = false;
