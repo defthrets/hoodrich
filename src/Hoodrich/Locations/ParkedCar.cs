@@ -415,6 +415,9 @@ namespace Hoodrich.Locations
             _models = models;
         }
 
+        /// <summary>The car itself, for anybody who needs to get into it. Null until it is made.</summary>
+        public Vehicle Parked => _car != null && _car.Exists() ? _car : null;
+
         /// <summary>Whether this is our car, for the traffic watchdog.</summary>
         public bool Owns(Vehicle car)
         {

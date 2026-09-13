@@ -76,6 +76,16 @@ namespace Hoodrich.Locations
         private static readonly Vector3 DownSpot = new Vector3(147.397f, -2201.349f, 3.602f);
         private const float DownHeading = 101.1f;
 
+        /// <summary>
+        /// Where he is standing when he comes out of the shop.
+        ///
+        /// STOOD ON AND READ OFF A HUD, like everything else out here, and it is the pavement
+        /// outside the door rather than a point worked out from it -- the door's own coordinate
+        /// is the frame, and a man made in a doorway is a man made inside whoever just used it.
+        /// </summary>
+        private static readonly Vector3 OutSpot = new Vector3(46.763f, -1451.599f, 29.314f);
+        private const float OutHeading = 292.388f;
+
         /// <summary>Near enough to his post to stop walking and start standing.</summary>
         private const float PostedRange = 1.4f;
 
@@ -190,8 +200,11 @@ namespace Hoodrich.Locations
         /// <summary>Set by Main: where the stairs put you, so he can arrive the same way.</summary>
         public Func<Vector3> Landing;
 
-        /// <summary>Set by Main: the door on Strawberry, so he can come out of it after you.</summary>
-        public Func<Vector3> Doorway;
+        /// <summary>Set by Main: whether his job is on, so he gets in rather than leaning.</summary>
+        public Func<bool> OnTheJob;
+
+        /// <summary>Set by Main: his Dorado, for the passenger seat. See Board.</summary>
+        public Func<Vehicle> Ride;
 
         public bool InReach => Within(TalkRange);
 
@@ -227,8 +240,6 @@ namespace Hoodrich.Locations
             // stood in one place in Strawberry -- it despawns him at a hundred and sixty
             // metres and settles him back into his scenario whenever he drifts -- and all of
             // it is wrong for a man riding to La Puerta in the passenger seat. See Lend.
-            if (_lent) return;
-
             // ---- DOWNSTAIRS IS A PLACE HE CAN BE ----
             //
             // Checked before the wall, because the wall's rules would despawn him for being
@@ -236,25 +247,31 @@ namespace Hoodrich.Locations
             // with the player beside him, he is.
             var below = Inside != null && Inside();
 
-            if (below) { Basement(); return; }
+            if (below && !_lent) { Basement(); return; }
 
-            // ---- BACK UP THE STAIRS, BEHIND YOU ----
+            // ---- BACK UP THE STAIRS, AND THIS RUNS EVEN WHEN THE JOB HAS HIM ----
             //
-            // He used to be ON THE WALL ALREADY. The basement copy was deleted, the street
-            // rules noticed a missing Vernon and put one back at his coordinate, leaning, mid
-            // cigarette -- so a man who had spent the last ten minutes stood beside you in his
-            // own basement was outside smoking before you had finished coming up his stairs.
+            // THE JOB TAKES HIM WHILE HE IS STILL DOWN THERE. You accept in the basement, the
+            // mission starts on the next tick and asks for him -- see Lend -- and from that
+            // moment the wall's rules are skipped entirely. So the man the job was holding was
+            // a man stood in a warehouse in Banning, and the first thing the job does is tell
+            // him to walk to your car: eight hundred metres away, up a staircase that does not
+            // exist from where he is standing.
             //
-            // He comes out of the door instead and walks to the wall, which is the same trick
-            // as going down and for the same reason: the walk is what makes him a man who was
-            // with you rather than a fixture that respawns.
-            if (_down)
+            // MOVED, NOT REMADE, for the same reason: the job is holding THAT ped. Despawning
+            // it and making a new one out here leaves the mission pointing at a dead handle.
+            if (_down && !below)
             {
                 _down = false;
-                _returning = true;
-
-                Despawn();
+                Out();
+                return;
             }
+
+            // OUT ON THE JOB, SO THE WALL LETS GO OF HIM. Everything below is about a man
+            // stood in one place in Strawberry -- it despawns him at a hundred and sixty
+            // metres and settles him back into his scenario whenever he drifts -- and all of
+            // it is wrong for a man riding to La Puerta in the passenger seat. See Lend.
+            if (_lent) return;
 
             var away = player.Position.DistanceTo(Spot);
 
@@ -390,22 +407,7 @@ namespace Hoodrich.Locations
         /// </summary>
         private void OutAfterYou()
         {
-            var from = Spot;
-
-            if (Doorway != null)
-            {
-                try
-                {
-                    var step = Doorway();
-
-                    // Off the doorway rather than in it, so he is not made inside the man who
-                    // has just used it.
-                    if (step != Vector3.Zero) from = step + Forward(Heading) * -1.0f;
-                }
-                catch { /* the wall itself, then */ }
-            }
-
-            if (!Make(from, Heading, "out of the door after you"))
+            if (!Make(OutSpot, OutHeading, "out of the door after you"))
             {
                 _returning = false;
                 return;
@@ -460,6 +462,79 @@ namespace Hoodrich.Locations
 
             try { GTA.UI.Screen.ShowSubtitle(Core.Lang.T("~y~VERNON:~s~ " + RoundTheSide), 5000); }
             catch { /* the audio still carries it */ }
+        }
+
+        /// <summary>
+        /// Out of the shop, and then one of two things.
+        ///
+        /// FOR THE JOB HE GETS IN; OTHERWISE HE GOES BACK TO HIS WALL. They are the only two
+        /// reasons he has ever been through that door, and which one it is is a question the
+        /// mission can answer -- see OnTheJob.
+        /// </summary>
+        private void Out()
+        {
+            if (_ped == null || !_ped.Exists() || !_ped.IsAlive)
+            {
+                // Nothing to move. The wall makes one out here in a moment. See OutAfterYou.
+                _returning = true;
+                return;
+            }
+
+            try
+            {
+                _ped.Task.ClearAll();
+                _ped.Position = OutSpot;
+                _ped.Heading = OutHeading;
+            }
+            catch
+            {
+                // Wherever he is, then, which is at least the right side of the door.
+            }
+
+            _held = false;
+
+            Log.Info("Vernon is out of the shop at " + OutSpot + ".");
+
+            Keys();
+
+            if (Board()) return;
+
+            _returning = true;
+            WalkTo(Spot, Heading);
+        }
+
+        /// <summary>
+        /// Into the passenger seat of his own car, if that is what this is.
+        ///
+        /// SEAT NOUGHT IS THE ONE BESIDE THE DRIVER. He is not driving -- he says so himself --
+        /// and he is not sitting in the back of his own Dorado like a man being taken somewhere.
+        /// The job puts him into whatever car you get into after this, see Deal.Vee; this is
+        /// only about which one he walks to on the way out of the door, and the answer is his,
+        /// because he has just finished telling you that is what you are taking.
+        /// </summary>
+        private bool Board()
+        {
+            if (OnTheJob == null || Ride == null) return false;
+
+            try
+            {
+                if (!OnTheJob()) return false;
+
+                var car = Ride();
+                if (car == null || !car.Exists()) return false;
+
+                Function.Call(Hash.TASK_ENTER_VEHICLE, _ped.Handle, car.Handle, 20000, 0, 2f, 1, 0);
+
+                _returning = false;
+                _held = true;
+
+                Log.Info("Vernon is getting in the Dorado for the job.");
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>On his way to the wall. Gets there, or is talked to on the way.</summary>

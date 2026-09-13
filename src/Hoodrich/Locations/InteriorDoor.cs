@@ -308,9 +308,6 @@ namespace Hoodrich.Locations
         }
 
         private Vector3 Door => new Vector3(_spec.DoorX, _spec.DoorY, _spec.DoorZ);
-
-        /// <summary>The doorway itself, for anybody who has to come out of it behind you.</summary>
-        public Vector3 Outside => Door;
         private Vector3 Inside => new Vector3(_spec.InsideX, _spec.InsideY, _spec.InsideZ);
 
         /// <summary>The mark to leave from: where he was actually stood, or the ini's guess.</summary>

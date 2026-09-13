@@ -359,6 +359,9 @@ namespace Hoodrich
         /// <summary>The Sprunk plate. Thirteenth, counting from nought -- see UI.PlateScreen.</summary>
         private const int SprunkPlate = 12;
 
+        /// <summary>Vernon's car, held onto so he can be put in the passenger seat of it.</summary>
+        private ParkedCar _dorado;
+
         /// <summary>Not a colour. Tells the parked car to leave the paint alone.</summary>
         private const int LeaveThePaint = -1;
 
@@ -1340,7 +1343,7 @@ namespace Hoodrich
                 // HUD and a HUD reports a man's PELVIS -- the same metre that had four Ballas
                 // loitering in mid-air in the hunt and the bag floating over Denise's carpet.
                 // ParkedCar settles what it makes, so the number here is the reading as taken.
-                _cars.Add(new ParkedCar(new Vector3(38.751f, -1450.349f, 28.934f), 320.177f,
+                _dorado = new ParkedCar(new Vector3(38.751f, -1450.349f, 28.934f), 320.177f,
                                         GlossBlack, "dorado")
                 {
                     // His, and shut, unless the job has the keys. See Deal.
@@ -1368,7 +1371,9 @@ namespace Hoodrich
                     // The name is his and nobody else in Los Santos agrees with it.
                     Plate = "OGVEE",
                     PlateStyle = SprunkPlate
-                });
+                };
+
+                _cars.Add(_dorado);
 
                 _cars.Add(new ParkedCar(new Vector3(-197.960f, -1714.836f, 31.955f), 290.056f,
                                         MetallicDarkGreen,
@@ -2916,7 +2921,10 @@ namespace Hoodrich
                 // And he is down there when you are. See Vernon.Basement.
                 _vernon.Inside = () => _leroys != null && _leroys.IsInside;
                 _vernon.Landing = () => _leroys == null ? Vector3.Zero : _leroys.Landing;
-                _vernon.Doorway = () => _leroys == null ? Vector3.Zero : _leroys.Outside;
+
+                // Out of the door for the job means into the Dorado. See Vernon.Board.
+                _vernon.OnTheJob = () => _jobs != null && _jobs.OnVernonsJob;
+                _vernon.Ride = () => _dorado == null ? null : _dorado.Parked;
 
                 // And not on the map until Gerald has started you off. See Started.
                 _vernon.Known = () => Started;
