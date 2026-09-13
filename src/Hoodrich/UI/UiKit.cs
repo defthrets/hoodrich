@@ -310,6 +310,9 @@ namespace Hoodrich.UI
         /// </summary>
         public static string Swap => Hud.OnPad ? "Y" : "E";
 
+        /// <summary>Taking the bag off: LB on a pad, because all four face buttons are spoken for.</summary>
+        public static string Sling => Hud.OnPad ? "LB" : "B";
+
         /// <summary>
         /// The same button held, for a screen whose "everything" is a LONG PRESS of the take
         /// button rather than a second button alongside it.

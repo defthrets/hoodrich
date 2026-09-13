@@ -512,7 +512,7 @@ namespace Hoodrich.UI
                     return;
                 }
 
-                if (Game.IsControlJustPressed(Control.Cover) && Carrying)
+                if (DroppingBag() && Carrying)
                 {
                     try { if (DropBag != null) DropBag(); }
                     catch { /* the key in the street still works */ }
@@ -563,7 +563,7 @@ namespace Hoodrich.UI
             // one key, whether or not a screen happens to be open. It is checked before
             // anything else on this screen because it is the only action here that is not about
             // the row under the cursor, and a player pressing it means it whatever is selected.
-            if (Game.IsControlJustPressed(Control.Cover) && Carrying)
+            if (DroppingBag() && Carrying)
             {
                 try { if (DropBag != null) DropBag(); }
                 catch { /* the key in the street still works */ }
@@ -827,16 +827,78 @@ namespace Hoodrich.UI
         {
             try
             {
-                return Game.IsControlJustPressed(Control.Context)
-                    || Game.IsControlJustPressed(Control.FrontendY)
-                    || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_JUST_PRESSED, 0,
-                                           (int)Control.FrontendY);
+                if (Game.IsControlJustPressed(Control.FrontendY)) return true;
+
+                if (Function.Call<bool>(Hash.IS_DISABLED_CONTROL_JUST_PRESSED, 0,
+                                        (int)Control.FrontendY))
+                {
+                    return true;
+                }
+
+                if (!Game.IsControlJustPressed(Control.Context)) return false;
+
+                // ---- AND NOT WHEN THE D-PAD SAID IT ----
+                //
+                // INPUT_CONTEXT IS D-PAD RIGHT. Not a button near it, the same one -- the mod
+                // prints "D-PAD RIGHT" for this control at Hao's muffler shop and has done for
+                // months. INPUT_CELLPHONE_RIGHT is also d-pad right, and that is how the cursor
+                // moves along a row of tiles.
+                //
+                // So on a pad, one press of right did both: the cursor stepped, and the thing
+                // it stepped off went into the bag. Walk along a row of eight sandwiches and
+                // four of them are in the bag before you have pressed anything else -- which
+                // from the other side of the screen is indistinguishable from the mod eating
+                // your shopping. (It was not. They were in the bag, whole.)
+                //
+                // Asked as "was this the same press" rather than "is he on a pad", because that
+                // is the actual question and it needs no guess about the device: a keyboard E
+                // does not move the cursor, so nothing on a keyboard changes.
+                return !Game.IsControlJustPressed(Control.PhoneRight) &&
+                       !Function.Call<bool>(Hash.IS_DISABLED_CONTROL_JUST_PRESSED, 0,
+                                            (int)Control.PhoneRight);
             }
             catch
             {
                 return false;
             }
         }
+
+        /// <summary>
+        /// The bag off the shoulder: B on a keyboard, LB on a pad.
+        ///
+        /// THE FOOTER USED TO PRINT B TWICE, and neither of them was this. It is INPUT_COVER,
+        /// which is Q on a keyboard -- so the label was wrong there -- and on a pad B is
+        /// INPUT_CELLPHONE_CANCEL, which is DONE, sat two keys along in the same row saying the
+        /// same letter. Pressing B on a pad closed the screen.
+        ///
+        /// B is read directly, the way Strap reads it in the street, so the key that drops the
+        /// bag standing in a road is the key that drops it standing in this screen. Its own
+        /// edge is tracked here because this build of ScriptHookVDotNet has no just-pressed for
+        /// a raw key and a held B would otherwise drop the bag on every frame of the press.
+        /// </summary>
+        private bool DroppingBag()
+        {
+            var down = false;
+
+            try
+            {
+                down = Game.IsControlJustPressed(Control.FrontendLb)
+                    || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_JUST_PRESSED, 0,
+                                           (int)Control.FrontendLb)
+                    || Game.IsKeyPressed(System.Windows.Forms.Keys.B);
+            }
+            catch
+            {
+                // Unreadable is not pressed.
+            }
+
+            var pressed = down && !_bagKeyHeld;
+            _bagKeyHeld = down;
+
+            return pressed;
+        }
+
+        private bool _bagKeyHeld;
 
         /// <summary>Grams moved by one press. The lot goes on a hold.</summary>
         private const float ShiftGrams = 100f;
@@ -1238,8 +1300,12 @@ namespace Hoodrich.UI
                                   _rows[_selected].InBag ? "TO POCKETS" : "TO BAG", arrive);
                     }
 
-                    kx = Fits(kx, stop, y, UiKit.Drop, null,
-                              Carrying ? "DROP THE BAG" : "PUT IT DOWN", arrive);
+                    // NOT "DROP THE BAG". This is the jump key and it puts the LOT under the
+                    // cursor on the pavement -- a hundred grams of it, or all of it on a hold.
+                    // It has never had anything to do with the bag, and saying so on a footer
+                    // one key along from the bag's own row is how a man loses a kilo learning
+                    // what a button does.
+                    kx = Fits(kx, stop, y, UiKit.Drop, null, "PUT IT DOWN", arrive);
 
                     if (!Carrying) kx = Fits(kx, stop, y, "HOLD", null, "ALL OF IT", arrive);
 
@@ -1250,7 +1316,12 @@ namespace Hoodrich.UI
                 }
             }
 
-            if (Carrying && (Places == 0 || OnFood)) Fits(kx, stop, y, "B", null, "DROP BAG", arrive);
+            // OFFERED WHEREVER THE CURSOR IS. It was only printed on a food tile or an empty
+            // screen, so the one row where a player is most likely to want the bag off -- stood
+            // on a lot of product, deciding what he is carrying -- was the row that never
+            // mentioned it. Fits drops it if the row has run out of width, which is the honest
+            // way to be short of room.
+            if (Carrying) Fits(kx, stop, y, UiKit.Sling, null, "DROP BAG", arrive);
         }
 
         /// <summary>One key, if there is room for it before the corner. See Keys.</summary>
