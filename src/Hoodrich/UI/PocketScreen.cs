@@ -141,6 +141,18 @@ namespace Hoodrich.UI
         /// <summary>How this panel arrives and how it leaves. See UI.Curtain.</summary>
         private readonly Curtain _curtain = new Curtain();
 
+        /// <summary>
+        /// Set by Main: the bag, and taking it off from in here.
+        ///
+        /// THE PLACE YOU LOOK AT WHAT YOU ARE CARRYING IS THE PLACE YOU PUT IT DOWN. The B key
+        /// works anywhere and always will, but a player who has just opened this screen to see
+        /// how full he is should not have to close it, remember a key and do it in the street.
+        /// Null until Main wires it, and every use is guarded, so the screen is still a screen
+        /// on a build where the bag does not exist.
+        /// </summary>
+        public Func<bool> BagOn;
+        public Action DropBag;
+
         public bool IsOpen => _curtain.Showing;
 
         public void Open(Stash pockets, Drugs catalogue, DroppedBags bags)
@@ -291,6 +303,21 @@ namespace Hoodrich.UI
                 return;
             }
 
+            // ---- the bag off the shoulder ----
+            //
+            // COVER, WHICH IS B, which is the same key that drops it in the street -- one idea,
+            // one key, whether or not a screen happens to be open. It is checked before
+            // anything else on this screen because it is the only action here that is not about
+            // the row under the cursor, and a player pressing it means it whatever is selected.
+            if (Game.IsControlJustPressed(Control.Cover) && Carrying)
+            {
+                try { if (DropBag != null) DropBag(); }
+                catch { /* the key in the street still works */ }
+
+                Close();
+                return;
+            }
+
             // ---- taking some of it yourself ----
             //
             // SELECT, the same key that eats a burger one row down. Both are "put this in your
@@ -393,6 +420,18 @@ namespace Hoodrich.UI
 
         /// <summary>Product rows first, then one place per food tile.</summary>
         private int Places => _rows.Count + _food.Count;
+
+        /// <summary>Whether the bag is on his back, and therefore able to come off.</summary>
+        private bool Carrying
+        {
+            get
+            {
+                if (BagOn == null) return false;
+
+                try { return BagOn(); }
+                catch { return false; }
+            }
+        }
 
         private bool OnFood => _selected >= _rows.Count;
 
@@ -632,6 +671,11 @@ namespace Hoodrich.UI
         private void Keys(float x, float right, float y, float arrive)
         {
             UiKit.KeyRight(right, y, UiKit.Back, "DONE", arrive);
+
+            // ON THE ROW EVEN WITH EMPTY POCKETS, because an empty bag is the one you are most
+            // likely to want off, and the legend returning early on Places == 0 would have hidden
+            // it exactly then.
+            if (Carrying) UiKit.KeyRight(right - 0.086f, y, "B", "DROP BAG", arrive);
 
             if (Places == 0) return;
 

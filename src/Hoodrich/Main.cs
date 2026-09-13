@@ -2491,6 +2491,14 @@ namespace Hoodrich
                 _stashScreen = new StashScreen();
                 _pocketScreen = new PocketScreen();
 
+                // The bag comes off from the page that shows what is in it. See Strap.
+                _pocketScreen.BagOn = () => _state != null && _state.Bag.Worn;
+                _pocketScreen.DropBag = () =>
+                {
+                    var me = Game.Player.Character;
+                    if (_bag != null && me != null && me.Exists()) _bag.Drop(me);
+                };
+
                 // The pocket is the only place you can take some of it, because it is the only
                 // place that already knows what is on you and what each line of it is.
                 _pocketScreen.Highs = _highs;

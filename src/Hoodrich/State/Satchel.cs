@@ -35,6 +35,18 @@ namespace Hoodrich.State
         public const int Slots = 20;
         public const float SlotGrams = 100f;
 
+        /// <summary>What the bag is worth in grams when it is on his back.</summary>
+        public const float Grams = Slots * SlotGrams;
+
+        /// <summary>
+        /// What his pockets hold on their own, with no bag.
+        ///
+        /// Read off Stash's own default rather than a number typed twice, so the two cannot
+        /// drift apart -- the pockets are what they always were and the bag is what is added
+        /// to them. See Strap.Room.
+        /// </summary>
+        public const float Pockets = 400f;
+
         /// <summary>Product, in the same shape as the pockets, the boot and the house.</summary>
         public readonly Stash Stash = new Stash { Capacity = Slots * SlotGrams };
 
@@ -59,6 +71,19 @@ namespace Hoodrich.State
         public float DownX = StartX;
         public float DownY = StartY;
         public float DownZ = StartZ;
+
+        /// <summary>
+        /// Which way round it is lying.
+        ///
+        /// A HOLDALL IS A FLAT THING AND IT HAS TO LOOK LIKE ONE. Created with no rotation at
+        /// all it takes whatever the model's own axes give it and sits on the carpet at an
+        /// angle, corner down, like something thrown. Kept here rather than worked out at spawn
+        /// so the bag is lying the same way round after a restart as it was when it was put
+        /// there. See Strap.Make.
+        /// </summary>
+        public float DownHeading = StartHeading;
+
+        private const float StartHeading = 173.989f;
 
         /// <summary>
         /// Denise's front room, on the carpet, as stood on.
@@ -154,6 +179,7 @@ namespace Hoodrich.State
             DownX = StartX;
             DownY = StartY;
             DownZ = StartZ;
+            DownHeading = StartHeading;
 
             WasVest = -1;
             WasVestTexture = 0;
@@ -167,6 +193,7 @@ namespace Hoodrich.State
                 .Set("x", DownX)
                 .Set("y", DownY)
                 .Set("z", DownZ)
+                .Set("h", DownHeading)
                 .Set("wasVest", WasVest)
                 .Set("wasVestTex", WasVestTexture);
 
@@ -190,6 +217,7 @@ namespace Hoodrich.State
             DownX = node["x"].AsFloat(0f);
             DownY = node["y"].AsFloat(0f);
             DownZ = node["z"].AsFloat(0f);
+            DownHeading = node["h"].AsFloat(StartHeading);
 
             WasVest = node["wasVest"].AsInt(-1);
             WasVestTexture = node["wasVestTex"].AsInt(0);

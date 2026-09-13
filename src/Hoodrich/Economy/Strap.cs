@@ -65,6 +65,9 @@ namespace Hoodrich.Economy
         private int _at;
         private int _holdFrom;
 
+        /// <summary>Said once. A body with fewer drawables is a fact, not an event.</summary>
+        private bool _moaned;
+
         /// <summary>Set by Main: whether some screen is up and the buttons belong to it.</summary>
         public Func<bool> Busy;
 
@@ -105,6 +108,8 @@ namespace Hoodrich.Economy
             var bag = Bag;
             if (bag == null) return;
 
+            Room(bag);
+
             if (bag.Worn)
             {
                 Clear();
@@ -113,6 +118,30 @@ namespace Hoodrich.Economy
             }
 
             Down(me, now);
+        }
+
+        /// <summary>
+        /// Carrying the bag means carrying more, and putting it down means carrying less.
+        ///
+        /// THE POCKETS ARE THE POCKETS AND THE BAG IS ON TOP. Four hundred grams is what a
+        /// jacket has always held in this mod; the bag adds its twenty slots to that, so the
+        /// readout everywhere -- the phone, the wheel, every capacity check in the economy --
+        /// grows by exactly what is on his back and shrinks the moment it is not.
+        ///
+        /// SET RATHER THAN ADDED TO, on purpose. Adding would compound every pass and a player
+        /// who walked round for ten minutes would be carrying a warehouse. The answer is
+        /// computed from scratch from one fact -- is it on him -- so there is no way for it to
+        /// drift, and no state to get out of step with the bag.
+        /// </summary>
+        private void Room(Satchel bag)
+        {
+            if (_state.Stash == null) return;
+
+            var want = Satchel.Pockets + (bag.Worn ? Satchel.Grams : 0f);
+
+            if (Math.Abs(_state.Stash.Capacity - want) < 0.5f) return;
+
+            _state.Stash.Capacity = want;
         }
 
         // ======================================================================
@@ -131,9 +160,40 @@ namespace Hoodrich.Economy
         {
             try
             {
+                // WHICH STRAP THIS BODY ACTUALLY HAS.
+                //
+                // Drawable seven is the strap on the outfit it was found on, and the number of
+                // drawables in a component CHANGES WITH THE TORSO -- a different top and there
+                // may be five, in which case asking for seven is asking for nothing and the
+                // game quietly leaves him as he was. Which is exactly what "he doesn't wear it"
+                // looks like: no error, no strap, a bag that is definitely on him according to
+                // every other part of the mod.
+                //
+                // So the wanted one if it exists, and the last one this body has if it does
+                // not. A strap that is not quite the right strap beats no strap at all, and
+                // either way there is something on his chest that says he is carrying it.
+                var most = Function.Call<int>(Hash.GET_NUMBER_OF_PED_DRAWABLE_VARIATIONS,
+                                              me.Handle, VestSlot);
+
+                var want = BagDrawable;
+
+                if (most > 0 && want > most - 1)
+                {
+                    want = most - 1;
+
+                    if (!_moaned)
+                    {
+                        _moaned = true;
+                        Log.Info("Bag: this body has " + most + " vest drawable(s), so the strap is " +
+                                 want + " rather than " + BagDrawable + ".");
+                    }
+                }
+
+                if (want < 0) return;
+
                 var on = Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, me.Handle, VestSlot);
 
-                if (on == BagDrawable) return;
+                if (on == want) return;
 
                 // WHAT WAS THERE, WRITTEN DOWN ONCE. Only the first time it takes the slot
                 // over -- re-asserting after a wardrobe change would record the bag as the
@@ -146,7 +206,7 @@ namespace Hoodrich.Economy
                 }
 
                 Function.Call(Hash.SET_PED_COMPONENT_VARIATION, me.Handle,
-                              VestSlot, BagDrawable, 0, 0);
+                              VestSlot, want, 0, 0);
             }
             catch
             {
@@ -215,7 +275,20 @@ namespace Hoodrich.Economy
                     _thing.IsPersistent = true;
 
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, _thing.Handle, true, true);
+
+                    // FLAT FIRST, THEN DOWN. Created with no rotation the holdall takes
+                    // whatever the model's own axes give it and ends up corner-down on the
+                    // carpet like something thrown -- and PLACE_OBJECT_ON_GROUND_PROPERLY only
+                    // settles the height, it does not level anything. Pitch and roll are set to
+                    // nothing and only the heading is kept, so it lies the way a bag lies.
+                    _thing.Rotation = new Vector3(0f, 0f, Bag.DownHeading);
+
                     Function.Call(Hash.PLACE_OBJECT_ON_GROUND_PROPERLY, _thing.Handle);
+
+                    // AND LEVELLED AGAIN AFTERWARDS. The settle can tip it to follow a slope,
+                    // which is right for a crate on a hill and wrong for this on a rug.
+                    _thing.Rotation = new Vector3(0f, 0f, Bag.DownHeading);
+
                     Function.Call(Hash.FREEZE_ENTITY_POSITION, _thing.Handle, true);
 
                     return;
@@ -308,7 +381,7 @@ namespace Hoodrich.Economy
 
             if (Bag.Worn)
             {
-                if (!Tapped(Control.Cover)) return;
+                if (!Tapped()) return;
                 if (me.IsInVehicle()) return;
 
                 Drop(me);
@@ -321,7 +394,7 @@ namespace Hoodrich.Economy
                 return;
             }
 
-            Hud.Hint(null, (Hud.OnPad ? "HOLD DPAD LEFT" : "HOLD E") + "   PICK UP THE BAG",
+            Hud.Hint(null, (Hud.OnPad ? "HOLD DPAD LEFT / E" : "HOLD E") + "   PICK UP THE BAG",
                      0.5f - 0.09f, 0.84f, 0.26f, Palette.Alpha(Palette.Text, 225));
 
             if (!Holding())
@@ -344,17 +417,21 @@ namespace Hoodrich.Economy
             Take(me);
         }
 
-        private static bool Tapped(Control what)
+        /// <summary>
+        /// B, and it does not care what the mod thinks you are holding.
+        ///
+        /// OnPad IS A GUESS ABOUT THE LAST THING YOU TOUCHED, and it was gating this -- so a
+        /// player who had nudged a stick could not drop the bag with the key at all, silently,
+        /// with no way to tell that from the feature being broken. The key is read directly and
+        /// always; a keyboard B is a keyboard B whatever the wheel last saw.
+        /// </summary>
+        private static bool Tapped()
         {
             try
             {
-                // KEYBOARD B, AND NOT THE PAD'S COVER BUTTON. Control.Cover is B on a keyboard
-                // and a stick click on a pad, where it is already taking cover -- so the pad
-                // gets the drop off the wheel rather than off a button it is using.
-                if (Hud.OnPad) return false;
-
                 return Game.IsKeyPressed(System.Windows.Forms.Keys.B) &&
-                       !Game.IsKeyPressed(System.Windows.Forms.Keys.ShiftKey);
+                       !Game.IsKeyPressed(System.Windows.Forms.Keys.ShiftKey) &&
+                       !Game.IsKeyPressed(System.Windows.Forms.Keys.ControlKey);
             }
             catch
             {
@@ -362,17 +439,21 @@ namespace Hoodrich.Economy
             }
         }
 
+        /// <summary>
+        /// Either hand, always, and that is the fix.
+        ///
+        /// This asked OnPad which control to watch and then watched ONLY that one -- so the
+        /// prompt said HOLD DPAD LEFT, the player held E, and nothing happened. Both are
+        /// checked now. There is no reading of the situation in which somebody holding either
+        /// of these, stood over their own bag, wanted something else to happen.
+        /// </summary>
         private static bool Holding()
         {
             try
             {
-                if (Hud.OnPad)
-                {
-                    return Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0,
-                                               (int)Control.ScriptPadLeft);
-                }
-
-                return Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.Context);
+                return Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.Context) ||
+                       Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 0, (int)Control.ScriptPadLeft) ||
+                       Game.IsKeyPressed(System.Windows.Forms.Keys.E);
             }
             catch
             {
@@ -400,6 +481,11 @@ namespace Hoodrich.Economy
             bag.DownX = where.X;
             bag.DownY = where.Y;
             bag.DownZ = where.Z;
+
+            // Lying across his path rather than pointing away down it, which is how a bag put
+            // down in a hurry actually ends up.
+            try { bag.DownHeading = me.Heading + 90f; }
+            catch { /* whatever it was lying at before */ }
 
             Unwear(me);
 
