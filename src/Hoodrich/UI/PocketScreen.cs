@@ -461,7 +461,7 @@ namespace Hoodrich.UI
                 // E ACROSS THE SEAM, the same key that carries product across it. A food tile
                 // used to swallow every key but SELECT, which is why the bag key printed in the
                 // legend while standing on a sandwich did nothing at all.
-                if (Game.IsControlJustPressed(Control.Context) && Carrying)
+                if (Swapping() && Carrying)
                 {
                     ShiftFood(Game.IsControlPressed(Control.Sprint));
                     return;
@@ -531,7 +531,7 @@ namespace Hoodrich.UI
             //
             // CONTEXT, WHICH IS E, and is the same key that picks the bag up off the pavement.
             // One idea -- this thing and that bag -- on one key wherever you are standing.
-            if (Game.IsControlJustPressed(Control.Context) && Carrying && !OnFood)
+            if (Swapping() && Carrying && !OnFood)
             {
                 Shift(Game.IsControlPressed(Control.Sprint));
                 return;
@@ -759,6 +759,38 @@ namespace Hoodrich.UI
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
 
             Rebuild();
+        }
+
+        /// <summary>
+        /// Y on a pad, E on a keyboard, and BOTH are watched whatever the mod thinks you are on.
+        ///
+        /// THE SAME LESSON THE BAG LEARNED IN THE STREET. OnPad is a guess about the last thing
+        /// you touched, and a control that is only watched when the guess agrees is a control
+        /// that silently does nothing for anybody who nudged a stick an hour ago. Nobody
+        /// pressing either of these, on this screen, with the cursor on a thing, wanted
+        /// something else to happen. See Strap.Holding, which is the same three lines for the
+        /// same reason.
+        ///
+        /// AND THE DISABLED READ AS WELL. The phone is up and the guard has hold of the pad;
+        /// a control the guard has switched off answers no to the ordinary question forever.
+        ///
+        /// The keyboard E is INPUT_CONTEXT itself and needs no line of its own -- and could not
+        /// have one, since this build of ScriptHookVDotNet has IsKeyPressed but no edge-read to
+        /// go with it, and a held key on a menu key is a row of transfers.
+        /// </summary>
+        private static bool Swapping()
+        {
+            try
+            {
+                return Game.IsControlJustPressed(Control.Context)
+                    || Game.IsControlJustPressed(Control.FrontendY)
+                    || Function.Call<bool>(Hash.IS_DISABLED_CONTROL_JUST_PRESSED, 0,
+                                           (int)Control.FrontendY);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>Grams moved by one press. The lot goes on a hold.</summary>
@@ -1149,7 +1181,7 @@ namespace Hoodrich.UI
 
                     if (Carrying)
                     {
-                        kx = Fits(kx, stop, y, "E", null,
+                        kx = Fits(kx, stop, y, UiKit.Swap, null,
                                   FoodInBag(_selected) ? "TO POCKETS" : "TO BAG", arrive);
                     }
                 }
@@ -1157,7 +1189,7 @@ namespace Hoodrich.UI
                 {
                     if (Carrying && _selected >= 0 && _selected < _rows.Count)
                     {
-                        kx = Fits(kx, stop, y, "E", null,
+                        kx = Fits(kx, stop, y, UiKit.Swap, null,
                                   _rows[_selected].InBag ? "TO POCKETS" : "TO BAG", arrive);
                     }
 

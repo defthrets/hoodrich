@@ -301,6 +301,16 @@ namespace Hoodrich.UI
         public static string All => Hud.OnPad ? "HOLD A" : "SHIFT";
 
         /// <summary>
+        /// Moving one thing from one container to the other: Y on a pad, E on a keyboard.
+        ///
+        /// Y BECAUSE IT IS THE ONE FACE BUTTON NOTHING ELSE ON THIS SCREEN WANTS. A takes the
+        /// thing, B closes the screen, X puts it on the floor -- and the fourth corner of the
+        /// pad was sat there unused while the transfer was on whatever INPUT_CONTEXT happens to
+        /// be, which is a d-pad direction and reads as navigation.
+        /// </summary>
+        public static string Swap => Hud.OnPad ? "Y" : "E";
+
+        /// <summary>
         /// The same button held, for a screen whose "everything" is a LONG PRESS of the take
         /// button rather than a second button alongside it.
         ///
