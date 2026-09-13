@@ -445,6 +445,9 @@ namespace Hoodrich.Missions
 
             /// <summary>He went down to the blade rather than to the rifle. See Dropped.</summary>
             public bool Knifed;
+
+            /// <summary>Lamar has already told you how to take this one. See Nudges.</summary>
+            public bool Nudged;
         }
 
         /// <summary>What Lamar is doing, so he is only re-tasked when it changes.</summary>
@@ -962,6 +965,8 @@ namespace Hoodrich.Missions
 
             Blade(player, now);
 
+            Nudge(player);
+
             Lay(player, now);
 
             // The ring moves to whichever one is next the moment this one is settled.
@@ -984,6 +989,29 @@ namespace Hoodrich.Missions
             _phaseFrom = now;
 
             MarkField();
+        }
+
+        /// <summary>
+        /// Lamar, on the one you are walking at, once you are near enough for it to be a plan.
+        ///
+        /// THE ONE THAT IS NEXT, not the nearest. You work the corners in order and the card
+        /// names the street; a line about whichever Balla happens to be closest would be about
+        /// a man you are not going to touch for another ten minutes.
+        /// </summary>
+        private void Nudge(Ped player)
+        {
+            var which = Next;
+            if (which < 0) return;
+
+            var q = Of(which);
+            if (q == null || q.Nudged) return;
+            if (q.Man == null || !q.Man.Exists() || !q.Man.IsAlive) return;
+
+            if (q.Man.Position.DistanceTo(player.Position) > NudgeRange) return;
+
+            q.Nudged = true;
+
+            Word(Nudges[_rng.Next(Nudges.Length)], SpeechSeen);
         }
 
         /// <summary>
@@ -1113,7 +1141,18 @@ namespace Hoodrich.Missions
             var man = Make(at, doing, SeeRange);
             if (man == null) return;
 
+            // WHERE HE WALKED IN FROM, ON THE PAVEMENT. A straight line out of a random
+            // compass bearing runs through walls as often as not, and a trail of prints laid
+            // inside a house is a trail nobody can follow. The far end is snapped to a
+            // walkable spot; every print along the way is put on the floor as it is laid --
+            // see Spot -- so the line between them can cross a kerb without disappearing
+            // into it.
             var from = at + (Vector3.RandomXY() * (PrintCount * PrintStride));
+
+            var walkable = World.GetNextPositionOnSidewalk(from);
+            if (walkable != Vector3.Zero && walkable.DistanceTo(at) > PrintStride * 4f) from = walkable;
+
+            from = Ground(from);
 
             var q = new Quarry
             {
@@ -1523,7 +1562,6 @@ namespace Hoodrich.Missions
                 if (laid >= LayPerPass) continue;
 
                 laid++;
-                q.Laid[i] = true;
 
                 // OLDEST NEARLY GONE, FRESHEST ALMOST WHITE, and that ramp is the whole of
                 // tracking: the bright end of a trail is the end pointing at him, and you
@@ -1544,13 +1582,56 @@ namespace Hoodrich.Missions
 
                 // Warm rather than white. A neutral print reads as paint; a print with the
                 // dust of the street in it reads as a foot.
-                Spot(at, step, lit, lit * 0.96f, lit * 0.86f, PrintSize, i % 2 == 0,
-                     0.45f + 0.50f * fresh);
+                //
+                // AND IT IS ONLY WRITTEN OFF ONCE IT ACTUALLY WENT DOWN. It used to be marked
+                // laid BEFORE the attempt, so a decal the engine refused -- because its pool
+                // happened to be full that frame, which with the blood mod running is most
+                // frames -- was never tried again. Two passes of that on arrival and the whole
+                // trail was permanently spent without a single print existing. Marked after,
+                // it simply comes back round in four hundred milliseconds.
+                if (!Spot(at, step, lit, lit * 0.96f, lit * 0.86f, PrintSize, i % 2 == 0,
+                          0.45f + 0.50f * fresh))
+                {
+                    _refused++;
+                    continue;
+                }
+
+                q.Laid[i] = true;
 
                 if (gap < FoundWithin) stood = true;
             }
 
             if (stood && !q.Found) Found(q);
+
+            Moan(now);
+        }
+
+        /// <summary>How many prints the engine would not take, and when that was last said.</summary>
+        private int _refused;
+        private int _moanedAt;
+
+        private const int MoanEveryMs = 20000;
+
+        /// <summary>
+        /// Says when the tracks are not landing, because otherwise nothing does.
+        ///
+        /// A refused decal is the one failure in this file with no symptom other than the
+        /// feature quietly not happening, and it is not our bug when it happens -- the pool
+        /// belongs to the whole machine. A line every twenty seconds with a count in it is
+        /// the difference between "the mod does not lay tracks" and "your decal pool is full,
+        /// and here is by how much".
+        /// </summary>
+        private void Moan(int now)
+        {
+            if (_refused <= 0) return;
+            if (now - _moanedAt < MoanEveryMs && _moanedAt != 0) return;
+
+            _moanedAt = now;
+
+            Log.Warn("Hunt: the game refused " + _refused + " footprint(s) -- its decal pool is " +
+                     "full. Other mods share it; see the blood mod's budget.");
+
+            _refused = 0;
         }
 
         /// <summary>The trail is picked up: the ring off, a mark on him.</summary>
@@ -1595,7 +1676,7 @@ namespace Hoodrich.Missions
         /// thirty percent grey on wet asphalt was a print nobody could see. The side vector
         /// turns it across the direction of travel, so the toe points the way he went.
         /// </summary>
-        private static void Spot(Vector3 at, Vector3 step, float r, float g, float b,
+        private static bool Spot(Vector3 at, Vector3 step, float r, float g, float b,
                                  float size, bool left, float alpha = 0.9f)
         {
             var flat = new Vector3(step.X, step.Y, 0f);
@@ -1605,19 +1686,42 @@ namespace Hoodrich.Missions
 
             var side = new Vector3(-flat.Y, flat.X, 0f);
 
+            // ON THE PAVEMENT, WHEREVER THE POINT CAME FROM.
+            //
+            // THIS IS WHY THERE WERE NO TRACKS. A trail point is either a ped's Position --
+            // which is his PELVIS, a metre up -- or a straight line interpolated between two
+            // of them across ground that is not flat. So the prints were being asked for a
+            // metre in the air and a decal projects a short way, not a long one: most of them
+            // hit nothing at all and the rest landed on a kerb or inside it.
+            //
+            // Snapped here rather than at the point they are recorded, because a trail is
+            // recorded once and drawn once, and doing it here means every caller gets it --
+            // the blood from a takedown included.
+            at = Ground(at);
+
             try
             {
-                Function.Call(Hash.ADD_DECAL, left ? PrintDecal : PrintDecalAlt,
-                              at.X, at.Y, at.Z + 0.15f,
-                              0f, 0f, -1f,
-                              side.X, side.Y, 0f,
-                              size, size * 1.55f,
-                              r, g, b, alpha,
-                              600000f, false, false, false);
+                // THE HANDLE IS THE ANSWER TO "WHY IS NOTHING APPEARING". ADD_DECAL returns
+                // nought when the ENGINE's decal pool is full, and that pool is shared with
+                // every other script on the machine -- the blood mod and the paint engine
+                // both live in it. Thrown away, as it was, a mod competing for a full pool
+                // and a mod calling the native wrongly look exactly the same from the outside:
+                // no tracks, no error, nothing in any log.
+                var handle = Function.Call<int>(
+                    Hash.ADD_DECAL, left ? PrintDecal : PrintDecalAlt,
+                    at.X, at.Y, at.Z + 0.06f,
+                    0f, 0f, -1f,
+                    side.X, side.Y, 0f,
+                    size, size * 1.55f,
+                    r, g, b, alpha,
+                    600000f, false, false, false);
+
+                return handle != 0;
             }
             catch
             {
                 // No tracks, then. The rings still say where to look.
+                return false;
             }
         }
 
@@ -2461,6 +2565,31 @@ namespace Hoodrich.Missions
         /// <summary>Good: a man down, the job finished.</summary>
         private const string SpeechGood = "GAME_GOOD_SELF";
         private const string SpeechBest = "GAME_WIN_SELF";
+
+        /// <summary>
+        /// What he says when the next one is close enough to start working out.
+        ///
+        /// SIXTY METRES IS THE RANGE AT WHICH IT IS STILL A PLAN. Closer and he is telling you
+        /// something you have already done; further and it is a man narrating a map. This is
+        /// the beat between arriving on the street and picking your approach, and it is the
+        /// only one in the job that was silent.
+        ///
+        /// ONCE PER MAN, NOT ON A CLOCK. He says it when you first get near this one and then
+        /// leaves you alone, because a friend who repeats the plan every twenty seconds while
+        /// you are crouched behind a fence is not a friend.
+        ///
+        /// Four of them, picked at random. See tools/voice_lines.py for the file names.
+        /// </summary>
+        private static readonly string[] Nudges =
+        {
+            "there he go. let's go round the back of him and jump him",
+            "alright, let's sneak round and get this fool",
+            "that's him. get behind him and don't let him turn round",
+            "easy now. round the back of him, quick and quiet"
+        };
+
+        /// <summary>How near the next one has to be before he says one. See Nudges.</summary>
+        private const float NudgeRange = 60f;
 
         /// <summary>Bad: winged him, lost him, somebody is on the phone.</summary>
         private const string SpeechBad = "GENERIC_CURSE_MED";
