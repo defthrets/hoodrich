@@ -293,7 +293,7 @@ namespace Hoodrich.Locations
             if (!greeting)
             {
                 Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to talk to " +
-                                   (Knows ? "OG Vee" : "the man on the wall") + ".");
+                                   (Knows ? "Vernon" : "the man on the wall") + ".");
 
                 if (!WantsToTalk()) return;
             }
@@ -772,7 +772,7 @@ namespace Hoodrich.Locations
         {
             if (_blip != null && _blip.Exists())
             {
-                var should = Knows ? "OG Vee" : "Leroy's Electrical";
+                var should = Knows ? "Vernon" : "Leroy's Electrical";
                 if (_blip.Name != should) _blip.Name = should;
                 return;
             }
@@ -786,7 +786,7 @@ namespace Hoodrich.Locations
                 _blip.Color = BlipColor.Green;
                 _blip.Scale = 0.8f;
                 _blip.IsShortRange = true;
-                _blip.Name = Knows ? "OG Vee" : "Leroy's Electrical";
+                _blip.Name = Knows ? "Vernon" : "Leroy's Electrical";
             }
             catch (Exception ex)
             {

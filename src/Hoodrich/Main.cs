@@ -1169,7 +1169,7 @@ namespace Hoodrich
                                          (!_state.HasDone(VernonTalk.JobId) &&
                                           (_vernonTalk == null || !_vernonTalk.WalkingYouDown)),
 
-                            ShutWhy = "Vee walks you down them stairs or you don't go down.",
+                            ShutWhy = "Vernon walks you down them stairs or you don't go down.",
 
                             // And it says nothing at all while he is stood in it. See Hush.
                             Hush = () => _vernon != null && _vernon.InReach

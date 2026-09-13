@@ -612,7 +612,7 @@ namespace Hoodrich.UI
                 Kind = OptKind.Action,
                 Label = VeeDone != null && VeeDone()
                     ? "Lock Leroy's basement again"
-                    : "Count Vee's job as done",
+                    : "Count Vernon's job as done",
                 Note = "Opens the door on Strawberry. The job it waits on is not written yet",
                 Do = () =>
                 {
@@ -622,8 +622,8 @@ namespace Hoodrich.UI
                     SetVeeDone(open);
 
                     Notify.Ticker(open
-                        ? "~g~Vee walked you down.~s~  the door on Strawberry opens"
-                        : "~o~Locked again.~s~  Vee wants that job doing first");
+                        ? "~g~Vernon walked you down.~s~  the door on Strawberry opens"
+                        : "~o~Locked again.~s~  Vernon wants that job doing first");
                 }
             });
 
