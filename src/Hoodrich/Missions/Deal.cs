@@ -963,7 +963,7 @@ namespace Hoodrich.Missions
             "arm:You brought somebody.",
             "vee:That's my head of security. He with me. So -- we good? You got it?",
             "arm:Put the case down.",
-            "vee:...I mean I will, but that's four hundred dollars of -- Franklin, is that a"
+            "vee:...I mean I will, but that's fourteen and a half in there, so -- Franklin, is that a"
         };
 
         /// <summary>Whoever is doing the talking, saying the last thing anybody says politely.</summary>

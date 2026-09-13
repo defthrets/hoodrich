@@ -350,8 +350,8 @@ namespace Hoodrich.Locations
             {
                 case 0:
                     return Step(beat,
-                        "AY -- watch that third step, it's a whole situation, I got a man comin' " +
-                        "for it. ... Nah. Nah, don't say nothin' yet. Just look at it. LOOK, " +
+                        "AY -- I said watch that third step, I got a man comin' for it. ... Nah. " +
+                        "Nah, don't say nothin' yet. Just look at it. LOOK, " +
                         "Frank. Six months of a grown man's own money, right there.");
 
                 case 1:
