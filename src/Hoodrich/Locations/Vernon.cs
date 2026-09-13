@@ -48,6 +48,16 @@ namespace Hoodrich.Locations
         private const float DespawnRange = 160f;
         private const float TalkRange = 3.0f;
 
+        /// <summary>
+        /// How far his greeting carries, which is further than a conversation does.
+        ///
+        /// TALKING TO A MAN IS THREE METRES. SHOUTING AT ONE IS NOT. The first time he sees
+        /// you he is not waiting to be spoken to, he is spotting a face he knows across the
+        /// front of the shop and going off like a firework about it -- and a man you have to
+        /// walk up to and stand on the toes of before he notices you is not that man.
+        /// </summary>
+        private const float ShoutRange = 8.0f;
+
         private const int UpdateIntervalMs = 700;
 
         /// <summary>
@@ -139,17 +149,19 @@ namespace Hoodrich.Locations
         /// </summary>
         public Func<bool> Known;
 
-        public bool InReach
+        public bool InReach => Within(TalkRange);
+
+        /// <summary>Near enough to be shouted at. See ShoutRange.</summary>
+        private bool InEarshot => Within(ShoutRange);
+
+        private bool Within(float metres)
         {
-            get
-            {
-                if (_ped == null || !_ped.Exists() || !_ped.IsAlive) return false;
+            if (_ped == null || !_ped.Exists() || !_ped.IsAlive) return false;
 
-                var player = Game.Player.Character;
-                if (player == null || !player.Exists()) return false;
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists()) return false;
 
-                return player.Position.DistanceTo(_ped.Position) <= TalkRange;
-            }
+            return player.Position.DistanceTo(_ped.Position) <= metres;
         }
 
         // ---- per frame ---------------------------------------------------------
@@ -270,7 +282,6 @@ namespace Hoodrich.Locations
             if (Talk.IsOpen) { TickAct(); return; }
             if (_talking) ReleaseFromTalk();
 
-            if (!InReach) return;
             if (Suppressed != null && Suppressed()) return;
 
             // ---- THE FIRST TIME, HE STARTS IT ----
@@ -288,10 +299,14 @@ namespace Hoodrich.Locations
             // Knows is MetVernon, which Root sets as it builds the meeting -- so the handover
             // between the two happens on its own, in one place, and cannot disagree with the
             // greeting he actually gives.
-            var greeting = !Knows && WillingToBeGreeted();
+            var greeting = !Knows && InEarshot && WillingToBeGreeted();
 
             if (!greeting)
             {
+                // The button is still three metres, and it should be: a prompt you can read
+                // from across the street is a prompt on a man you are walking past.
+                if (!InReach) return;
+
                 Help.ShowThisFrame("Press ~INPUT_CELLPHONE_RIGHT~ to talk to " +
                                    (Knows ? "Vernon" : "the man on the wall") + ".");
 
