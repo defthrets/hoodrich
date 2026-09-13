@@ -57,11 +57,11 @@ namespace Hoodrich.Missions
     ///   THE STEALTH. Crouched is quiet, walking is not much worse, sprinting is a man
     ///   arriving, and a clear line of sight is worse than all of it. One number per man.
     ///
-    ///   THE KILL IS A KNIFE. Get behind one who has not noticed you and the card offers a
-    ///   takedown: a hand over the mouth, the blade in, and NOBODY ELSE HEARS IT -- the dead
-    ///   body events are switched off on these four, so a clean one costs you nothing at all.
-    ///   The rifle is in the bag and it is the wrong answer: a shot is a shot and the street
-    ///   is a street.
+    ///   THE KILL IS A KNIFE, AND THE KNIFE IS THE WHOLE KIT. Get behind one who has not
+    ///   noticed you and the card offers a takedown: a hand over the mouth, the blade in, and
+    ///   NOBODY ELSE HEARS IT -- the dead body events are switched off on these four, so a
+    ///   clean one costs you nothing at all. Nothing is lent but the blade. Anything you fire
+    ///   out here is something you brought yourself, and a shot is still a shot.
     ///
     ///   FILL HIS NUMBER AND HE TURNS ROUND. He does not run any more and it does not fail
     ///   the job any more -- he comes at you and tries to kill you, and he stops counting.
@@ -241,10 +241,11 @@ namespace Hoodrich.Missions
         /// <summary>
         /// How near the player has to be for a wound to read as the knife rather than a shot.
         ///
-        /// A SHOT SENDS HIM RUNNING AND A STAB MUST NOT. Hurt is the minigame's wounded elk
-        /// and it is right for a rifle -- you winged him, follow the blood -- but a man you
-        /// are stood on top of with a blade does not get to become a blood trail after the
-        /// first swing. Slightly wider than the reach, because he moves while you swing.
+        /// A MAN HURT FROM ACROSS THE STREET WAS SHOT, and being shot is the one thing in
+        /// this job that is unambiguously your fault: the kit is a knife, so a bullet came
+        /// out of something you brought yourself. A man you are stood on top of with a blade
+        /// is a different event and must not be read as the same one. Slightly wider than the
+        /// reach, because he moves while you swing.
         /// </summary>
         private const float BladeWound = 3.2f;
 
@@ -309,14 +310,6 @@ namespace Hoodrich.Missions
         {
             "WEAPON_KNIFE", "WEAPON_SWITCHBLADE", "WEAPON_DAGGER", "WEAPON_MACHETE"
         };
-
-        /// <summary>The rifle he is lent, in the order an install has them.</summary>
-        private static readonly string[] Rifles =
-        {
-            "WEAPON_SNIPERRIFLE", "WEAPON_MARKSMANRIFLE", "WEAPON_HEAVYSNIPER"
-        };
-
-        private const int Rounds = 20;
 
         /// <summary>Who is out there.</summary>
         private static readonly string[] Models =
@@ -484,7 +477,6 @@ namespace Hoodrich.Missions
         private bool _killed;
 
         /// <summary>What he was lent, so it can be taken back. Nought for a thing he already owned.</summary>
-        private uint _lent;
         private uint _lentBlade;
 
         /// <summary>The blade he is meant to be using, whether it was lent or his own.</summary>
@@ -695,24 +687,26 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>
-        /// What he is lent for the job: a blade to do it with, and a rifle for when it goes
-        /// wrong.
+        /// What he is lent for the job, which is a blade and nothing else.
         ///
-        /// THE BLADE IS THE JOB AND IT GOES IN HIS HAND. A rifle in a stalk is the loud
-        /// option, and it stays in the bag so it is a decision rather than the default -- a
-        /// shot brings every corner on the block round, which is a rule this job has always
-        /// had and never gave you a reason to care about.
+        /// THERE IS NO RIFLE. There used to be one in the bag "for when it goes wrong", and
+        /// handing somebody a sniper rifle at the start of a stealth job is not an option, it
+        /// is a suggestion -- the job was still half about the gun because the job still gave
+        /// you the gun. Now it gives you a knife and that is the entire kit.
         ///
-        /// Both are written down so they can be taken back at the end. A job that hands out a
-        /// sniper rifle and forgets about it is a job that has changed the rest of the save.
+        /// WHICH DOES NOT MEAN NOBODY EVER FIRES ONE. Whatever the player already owns is
+        /// still on him and still works, and the street still reacts to a gunshot the way it
+        /// always did -- see Make, where the dead body events go off and the gunfire events
+        /// deliberately do not. The difference is that shooting is now something he brought
+        /// with him rather than something the job suggested.
+        ///
+        /// What is lent is written down so it can be taken back. A job that hands out a
+        /// weapon and forgets about it is a job that has changed the rest of the save.
         /// </summary>
         private void Kit(Ped player)
         {
             _blade = Lend(player, Blades, 1, out _lentBlade);
 
-            Lend(player, Rifles, Rounds, out _lent);
-
-            // The blade last, because the blade is what he is meant to be holding.
             if (_blade == 0) return;
 
             try { Function.Call(Hash.SET_CURRENT_PED_WEAPON, player.Handle, _blade, true); }
@@ -812,7 +806,6 @@ namespace Hoodrich.Missions
 
                 if (player != null && player.Exists())
                 {
-                    if (_lent != 0) Function.Call(Hash.REMOVE_WEAPON_FROM_PED, player.Handle, _lent);
                     if (_lentBlade != 0) Function.Call(Hash.REMOVE_WEAPON_FROM_PED, player.Handle, _lentBlade);
                 }
             }
@@ -821,7 +814,6 @@ namespace Hoodrich.Missions
                 // He keeps them, then.
             }
 
-            _lent = 0;
             _lentBlade = 0;
             _blade = 0;
         }
@@ -945,7 +937,7 @@ namespace Hoodrich.Missions
 
                 // HIT AND STILL UP, AND HE KNOWS WHO DID IT. He used to run bleeding and
                 // you followed the blood; he turns round now. A wound taken from outside
-                // arm's reach can only have come from the rifle, and the rifle is a decision.
+                // arm's reach was a shot, and the shot was yours to not take.
                 if (q.Man.Health < q.Man.MaxHealth - 20 &&
                     q.Man.Position.DistanceTo(player.Position) > BladeWound)
                 {
