@@ -1385,7 +1385,7 @@ namespace Hoodrich
                     // place do. They stay, with the talk station on at ordinary volume and
                     // the lights and neon off, and it is the music going up at night that
                     // says the party has started.
-                    QuietRadio = Core.Radio.Talk,
+                    QuietTuned = () => Core.Radio.Talk,
                     Neon = System.Drawing.Color.FromArgb(60, 200, 80),
                     QuietFrom = 6,
                     QuietTo = 20
@@ -1403,7 +1403,7 @@ namespace Hoodrich
 
                     // Same as the one beside it: parked all day with the talk on, loud at
                     // night. See _meetOne.
-                    QuietRadio = Core.Radio.Talk,
+                    QuietTuned = () => Core.Radio.Talk,
                     Neon = System.Drawing.Color.FromArgb(60, 200, 80),
                     QuietFrom = 6,
                     QuietTo = 20

@@ -37,6 +37,9 @@ namespace Hoodrich.Core
 
         private static string _found;
 
+        /// <summary>Whether the install's station list has been written down. See Find.</summary>
+        private static bool _listed;
+
         /// <summary>West Coast Classics, which is what a lowrider is for.</summary>
         private static readonly string[] WestCoastWanted = { "RADIO_09_HIPHOP_OLD", "RADIO_09_HIPHOP_OLD_RADIO" };
         private static string _westCoast;
@@ -51,10 +54,19 @@ namespace Hoodrich.Core
         /// Talk rather than music is the whole point of it: a car left on all day with a
         /// station playing is somebody's car with the key in, and talk is what that sounds
         /// like. The fallback is the classics, which is at least the right car.
+        ///
+        /// IT WAS ASKING FOR THE WRONG STATION AND GETTING IT. West Coast Talk Radio is
+        /// RADIO_05_TALK_01. RADIO_11_TALK_02 -- which is what this asked for -- is BLAINE
+        /// COUNTY RADIO, the one out of Sandy Shores, and it is a real station that really
+        /// exists, so the lookup matched, the log said it had found what it wanted, and what
+        /// came out of Lamar's yard all day was hillbilly talk radio. A name that is wrong
+        /// and VALID is worse than one that is wrong and missing: nothing anywhere reports
+        /// it. Blaine County stays on the list one place down, because it is at least talk.
         /// </summary>
         private static readonly string[] TalkWanted =
         {
-            "RADIO_11_TALK_02", "RADIO_11_TALK_02_RADIO", "RADIO_09_HIPHOP_OLD"
+            "RADIO_05_TALK_01", "RADIO_05_TALK_01_RADIO",
+            "RADIO_11_TALK_02", "RADIO_09_HIPHOP_OLD"
         };
         private static string _talk;
 
@@ -65,7 +77,9 @@ namespace Hoodrich.Core
                 if (_talk != null) return _talk;
 
                 _talk = Find(TalkWanted);
-                return _talk;
+
+                // A LOOKUP THAT FOUND NOTHING IS NOT AN ANSWER TO KEEP. See Find.
+                return _talk ?? TalkWanted[TalkWanted.Length - 1];
             }
         }
 
@@ -76,7 +90,9 @@ namespace Hoodrich.Core
                 if (_losSantos != null) return _losSantos;
 
                 _losSantos = Find(LosSantosWanted);
-                return _losSantos;
+
+                // A LOOKUP THAT FOUND NOTHING IS NOT AN ANSWER TO KEEP. See Find.
+                return _losSantos ?? LosSantosWanted[LosSantosWanted.Length - 1];
             }
         }
 
@@ -87,7 +103,9 @@ namespace Hoodrich.Core
                 if (_westCoast != null) return _westCoast;
 
                 _westCoast = Find(WestCoastWanted);
-                return _westCoast;
+
+                // A LOOKUP THAT FOUND NOTHING IS NOT AN ANSWER TO KEEP. See Find.
+                return _westCoast ?? WestCoastWanted[WestCoastWanted.Length - 1];
             }
         }
 
@@ -99,10 +117,25 @@ namespace Hoodrich.Core
                 if (_found != null) return _found;
 
                 _found = Find(Wanted);
-                return _found;
+
+                // A LOOKUP THAT FOUND NOTHING IS NOT AN ANSWER TO KEEP. See Find.
+                return _found ?? Wanted[Wanted.Length - 1];
             }
         }
 
+        /// <summary>
+        /// The first of these this install really has, or NULL.
+        ///
+        /// NULL RATHER THAN THE FALLBACK, and that is the whole of the second bug in here.
+        /// It used to hand back the last of the wanted list whenever the enumeration came up
+        /// empty -- and the callers CACHE what this returns for the life of the session. The
+        /// station list is not populated the instant a script loads, so a mod that asked
+        /// during its constructor could get a count of nought, cache West Coast Classics as
+        /// the answer to "what is the talk station", and play music in that yard from then
+        /// until the game was restarted. Returning null leaves the caller's cache empty, so
+        /// the next ask tries again, and the caller still has the fallback to play in the
+        /// meantime.
+        /// </summary>
         private static string Find(string[] wanted)
         {
             try
@@ -122,29 +155,39 @@ namespace Hoodrich.Core
                     if (!string.IsNullOrEmpty(name)) have.Add(name);
                 }
 
+                // ONCE A SESSION, THE WHOLE LIST. Every failure this thing has is a name
+                // that is not on it, and until now the only way to find that out was to guess
+                // again. Printed at INFO because it is four lines a session and it is the
+                // answer to every radio question anybody will ever ask about this mod.
+                if (!_listed && have.Count > 0)
+                {
+                    _listed = true;
+                    Log.Info("Radio: " + count + " station(s) on this build -- " +
+                             string.Join(", ", have.ToArray()));
+                }
+
                 foreach (var want in wanted)
                 {
                     foreach (var name in have)
                     {
                         if (!string.Equals(name, want, StringComparison.OrdinalIgnoreCase)) continue;
 
-                        Log.Info("Radio: the block is on " + name + ".");
+                        Log.Info("Radio: wanted " + wanted[0] + ", playing " + name + ".");
                         return name;
                     }
                 }
 
                 Log.Info("Radio: none of the wanted stations are in this build (" + count +
-                         " available); leaving it to the game.");
+                         " available); falling back to " + wanted[wanted.Length - 1] + ".");
             }
             catch (Exception ex)
             {
                 Log.Debug("Could not read the radio list: " + ex.Message);
             }
 
-            // Nothing matched. The last of the wanted list is the old default and is safe to
-            // ask for even if the enumeration failed -- at worst it does nothing, which is
-            // exactly where this started.
-            return wanted[wanted.Length - 1];
+            // Nothing matched, and nothing is what that is worth saying. The caller plays
+            // the last of its wanted list in the meantime and asks again next time.
+            return null;
         }
     }
 }

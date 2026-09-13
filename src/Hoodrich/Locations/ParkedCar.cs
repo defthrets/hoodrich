@@ -67,7 +67,7 @@ namespace Hoodrich.Locations
 
         private void Keep()
         {
-            if (!Running && Neon == null && !Lights &&
+            if (!Running && Neon == null && !Lights && QuietTuned == null &&
                 string.IsNullOrEmpty(Radio) && string.IsNullOrEmpty(QuietRadio)) return;
 
             try
@@ -88,14 +88,16 @@ namespace Hoodrich.Locations
                 // party too.
                 if (Quiet)
                 {
-                    if (!string.IsNullOrEmpty(QuietRadio))
+                    var quietly = Quietly;
+
+                    if (!string.IsNullOrEmpty(quietly))
                     {
                         // THE ENGINE, BECAUSE A RADIO NEEDS ONE. An unoccupied car with a dead
                         // engine is treated as parked and stays silent however many times a
                         // station is set on it.
                         Function.Call(Hash.SET_VEHICLE_ENGINE_ON, _car.Handle, true, true, false);
                         Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, _car.Handle, true);
-                        Function.Call(Hash.SET_VEH_RADIO_STATION, _car.Handle, QuietRadio);
+                        Function.Call(Hash.SET_VEH_RADIO_STATION, _car.Handle, quietly);
                         Function.Call(Hash.SET_VEHICLE_RADIO_LOUD, _car.Handle, false);
 
                         // And it is still ours, so it still burns nothing. See Core.Petrol.
@@ -270,6 +272,42 @@ namespace Hoodrich.Locations
         /// is what every car that has not asked for one does.
         /// </summary>
         public string QuietRadio = "";
+
+        /// <summary>
+        /// The same thing, asked for when it is wanted rather than when the car was built.
+        ///
+        /// BECAUSE A STATION NAME IS NOT KNOWN AT CONSTRUCTION TIME. Core.Radio reads the
+        /// install's real station list out of the game, and that list is not populated the
+        /// instant a script loads -- so a car built in Main's constructor with
+        /// QuietRadio = Core.Radio.Talk could bake in the FALLBACK and play it for the rest
+        /// of the session. Which is what the two cars outside Lamar's were doing: West Coast
+        /// Classics all day, in a yard that was supposed to have the talk on, with nothing
+        /// anywhere saying why.
+        ///
+        /// A delegate is asked on the pass that uses it, by which time the game has an
+        /// answer. Boombox.Tuned is the same fix for the same reason, which is why the yard
+        /// decks were right and these two were not.
+        /// </summary>
+        public Func<string> QuietTuned;
+
+        /// <summary>The station for the quiet hours, however it was given.</summary>
+        private string Quietly
+        {
+            get
+            {
+                if (QuietTuned == null) return QuietRadio;
+
+                try
+                {
+                    var want = QuietTuned();
+                    return string.IsNullOrEmpty(want) ? QuietRadio : want;
+                }
+                catch
+                {
+                    return QuietRadio;
+                }
+            }
+        }
 
         /// <summary>The station, if it is playing anything.</summary>
         public string Radio;
