@@ -278,7 +278,7 @@ namespace Hoodrich.Locations
         private DialogueNode ComeDown()
         {
             var node = Node(
-                "Ho -- you wanna SEE it? ... Franklin. YEAH. Come down, man -- I been waitin' " +
+                "Oh -- you wanna SEE it? ... Franklin. YEAH. Come down, man -- I been waitin' " +
                 "six months for somebody to stand in that room and tell me it's real. And while " +
                 "you down there, I'ma put somethin' to you as well. Fair warnin' though: you " +
                 "walk in a man's booth, you hearin' his single. That's manners. I don't make " +
@@ -440,7 +440,7 @@ namespace Hoodrich.Locations
 
                 case 4:
                     return Step(beat,
-                        "And this is the booth. Duvet on that wall, egg boxes on that one -- " +
+                        "And this the booth. Duvet on that wall, egg boxes on that one -- " +
                         "that's treatment, that's what treatment IS. And that right there is a " +
                         "hundred and ninety dollar condenser microphone. Hundred and ninety, " +
                         "Frank. Come with the arm and everything. Arm droop a little bit, I got " +
