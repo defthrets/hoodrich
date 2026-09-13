@@ -312,11 +312,14 @@ SPEECH = [
     (r"src\Hoodrich\Supply\Stoop.cs",           []),
 ]
 
-CALL = re.compile(r'\b(?:Node|Nothing)\(\s*(?:[A-Za-z_][\w.]*\s*,\s*){0,2}((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+)', re.S)
+CALL = re.compile(r'\b(?:Node|Nothing|Step)\(\s*(?:[A-Za-z_][\w.]*\s*,\s*){0,2}((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+)', re.S)
 ASSIGN = re.compile(r'\bline\s*=\s*((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+);', re.S)
 EXPLICIT = re.compile(r'new DialogueNode\(\s*"([^"]+)"\s*,\s*((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+)', re.S)
 PIECE = re.compile(r'"((?:[^"\\]|\\.)*)"')
 
+# Step is Vernon's tour of his own basement -- one stop per node, built through a helper
+# rather than through Node directly, which made every line of it invisible to this file
+# while sitting in plain sight in VernonTalk. A helper that wraps Node is still dialogue.
 # LINES NOBODY READS OFF A SCREEN.
 #
 # Everything above finds dialogue attached to a conversation NODE, because for most of

@@ -43,6 +43,9 @@ namespace Hoodrich.Locations
         /// </summary>
         public const string HeardIt = "vernon_tape";
 
+        /// <summary>He has walked you round the operation once. See Tour.</summary>
+        public const string SawIt = "vernon_setup";
+
         private readonly PlayerState _state;
 
         public VernonTalk(PlayerState state)
@@ -315,6 +318,141 @@ namespace Hoodrich.Locations
         // ---- the job -----------------------------------------------------------
 
         /// <summary>
+        /// The operation, shown to you by the man who built it, one proud beat at a time.
+        ///
+        /// HE IS NOT WRONG ABOUT ANY OF IT, HE IS JUST WRONG ABOUT ALL OF IT. Every single
+        /// thing he points at is real and correct and belongs to a different trade. The
+        /// lighting is genuinely excellent -- three circuits, daylight tubes, zoned -- because
+        /// lighting is the one subject in this room he has forty years of family knowledge
+        /// about. Everything else is retail logic applied to a business that has none: a cut
+        /// station that is a card table, extraction that is a fan pointed up the stairs, a
+        /// vault that is a filing cabinet, forty-one dollars of school chemistry glassware he
+        /// has never once touched, and a hundred-and-ninety-dollar microphone held up by a tin
+        /// of beans.
+        ///
+        /// THE TWO THINGS HE SPENT REAL MONEY ON ARE THE MICROPHONE AND THE LIGHTS, which is
+        /// the whole man in one sentence. One of them is for the rapping and one of them is
+        /// his father's trade, and neither has anything to do with the business he thinks he
+        /// is running.
+        ///
+        /// AND THE JOKE ONLY WORKS IF HE NEVER WINKS, which is the same rule his verses run
+        /// on. There is no line here where he admits any of it. He is showing a man round a
+        /// facility. The shelf at the end is the only thing he concedes, and he concedes it as
+        /// a supply problem rather than as an indictment -- which is exactly how he gets to
+        /// the job.
+        ///
+        /// ONCE, AND THEN IT IS A CHOICE. Nobody wants the tour twice on the way to work; it
+        /// stays on the menu for anybody who does.
+        /// </summary>
+        private DialogueNode Tour(int beat)
+        {
+            switch (beat)
+            {
+                case 0:
+                    return Step(beat,
+                        "AY -- watch that third step, it's a whole situation, I got a man comin' " +
+                        "for it. ... Nah. Nah, don't say nothin' yet. Just look at it. LOOK, " +
+                        "Frank. Six months of a grown man's own money, right there.");
+
+                case 1:
+                    return Step(beat,
+                        "First thing. Look UP. Four-foot daylight tubes, five thousand kelvin, " +
+                        "and they wired on three separate circuits so I can kill the front two " +
+                        "and keep the booth lit. You ever been in a basement that got ZONES? " +
+                        "You ain't. 'Cause don't nobody do it. I did it.");
+
+                case 2:
+                    return Step(beat,
+                        "Cut station. Now that's a card table, but it's a GOOD one, it locks. " +
+                        "Scales still boxed 'cause I'm waitin' on a stand for 'em. Extraction " +
+                        "-- that fan right there. Points straight up them stairs, pulls the " +
+                        "whole room out into the shop. Health and safety, Franklin.");
+
+                case 3:
+                    return Step(beat,
+                        "And check the DESK. That's laboratory glass, that. Borosilicate. Got " +
+                        "the flasks, got the beakers, got a hotplate and one of them digital " +
+                        "thermometers -- forty-one dollars, whole lot, off a school supply " +
+                        "catalogue. ... Nah, I ain't used none of it yet. I'm still readin' " +
+                        "about it. But when I DO need it, Franklin? It's there.");
+
+                case 4:
+                    return Step(beat,
+                        "And this is the booth. Duvet on that wall, egg boxes on that one -- " +
+                        "that's treatment, that's what treatment IS. And that right there is a " +
+                        "hundred and ninety dollar condenser microphone. Hundred and ninety, " +
+                        "Frank. Come with the arm and everything. Arm droop a little bit, I got " +
+                        "a can of beans holdin' it up, but that's temporary. You stand where I'm " +
+                        "stood right now and it sound EXPENSIVE.");
+
+                case 5:
+                    return Step(beat,
+                        "And that's the vault. ... It's a filin' cabinet, but it's a four-drawer " +
+                        "and it got a KEY, and I'm the only one got the key. Two of them drawers " +
+                        "is just paperwork for the shop. Ain't nobody lookin' in there for " +
+                        "nothin'. That's called hidin' in plain sight, that's a technique.");
+
+                default:
+                    return Shelf();
+            }
+        }
+
+        /// <summary>One stop on the tour, with a way out for anybody who has seen it.</summary>
+        private DialogueNode Step(int beat, string line)
+        {
+            var node = Node(line);
+
+            node.Say("Go on.", () => Tour(beat + 1)).WithIcon(Icons.Tick);
+            node.Say("Vee. The job.", () => Shelf(), "Skip to it");
+            node.Leave("Later, Vee.");
+
+            return node;
+        }
+
+        /// <summary>
+        /// The one empty thing in the room, and the reason you are stood in it.
+        ///
+        /// The turn from proud to asking, and he does it without changing register -- the
+        /// shelf is not a failure, it is a supply-side issue. That is the sentence that gets
+        /// him from the tour into the job, and it is also the offer: he is not hiring you, he
+        /// is cutting you in, because a partner is cheaper than a wage and he has read that
+        /// somewhere.
+        /// </summary>
+        private DialogueNode Shelf()
+        {
+            try { if (_state != null) _state.MarkDone(SawIt); }
+            catch { /* he shows you again next time, happily */ }
+
+            var node = Node(
+                "And that's the shelf. ... Yeah. I know what's on it. That's exactly why we " +
+                "talkin'. See I got the room, I got the lights, I got a SYSTEM -- every gram " +
+                "come through here is in that notebook with a date on it and who took it -- and " +
+                "I ain't got nothin' to put on the shelf. That's the only thing wrong with this " +
+                "whole operation, Franklin. One thing.");
+
+            node.Say("So fix it.", () => Offer(), "Hear him out").MovesOn().WithIcon(Icons.Tick);
+            node.Say("Not today.", () => Decline());
+            node.Leave("Not today.");
+
+            return node;
+        }
+
+        private DialogueNode Offer()
+        {
+            var node = Node(
+                "And listen -- you do this with me, you ain't payin' street no more. Not never " +
+                "again. You in on the ground floor, so you get it at what I get it at, and I'm " +
+                "'bout to be gettin' it at a number that ain't decent. Franklin, I will do you a " +
+                "price that make you emotional. You gon' be angry at how good it is.");
+
+            node.Say("I'm listening.", () => Pitch(0), "The job").MovesOn().WithIcon(Icons.Tick);
+            node.Say("Not today.", () => Decline());
+            node.Leave("Not today.");
+
+            return node;
+        }
+
+        /// <summary>
         /// The ask -- upstairs it is an invitation, downstairs it is the pitch.
         ///
         /// HE WILL NOT DO BUSINESS ON THE PAVEMENT. Every hole in this arrangement is a thing
@@ -339,12 +477,17 @@ namespace Hoodrich.Locations
                 return up;
             }
 
+            // THE TOUR FIRST, AND ONLY THE FIRST TIME. See Tour -- the job comes out of the
+            // shelf being empty, so being shown the shelf IS the setup for it.
+            if (_state == null || !_state.HasDone(SawIt)) return Tour(0);
+
             var node = Node(
                 "Aight, real talk though. You busy? 'Cause I got a situation, and you look like " +
                 "a man who handle situations. It ain't nothin' crazy. It's just somethin' I " +
                 "can't do myself, and I can't ask nobody 'round here to do it neither.");
 
             node.Say("I'm listening.", () => Pitch(0), "Take the job").MovesOn();
+            node.Say("Walk me round it again.", () => Tour(0), "The tour");
             node.Say("Not today.", () => Decline());
             node.Leave("Not today.");
 
