@@ -832,12 +832,11 @@ namespace Hoodrich.State
             Stash.Clear();
             Trunks.Clear();
 
+            // AND BACK ON THE FLOOR AT HIS AUNT'S, where it starts. A new game does not hand
+            // him one -- see Satchel, which owns where that is.
             Bag.Stash.Clear();
             Bag.Food.Clear();
-            Bag.Worn = true;
-            Bag.DownX = Bag.DownY = Bag.DownZ = 0f;
-            Bag.WasVest = -1;
-            Bag.WasVestTexture = 0;
+            Bag.Reset();
 
             Touch();
             Log.Info("Mod state reset: everything forgotten but the money and the guns.");

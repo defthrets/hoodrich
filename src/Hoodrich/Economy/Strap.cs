@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -244,9 +244,13 @@ namespace Hoodrich.Economy
                 _mark = World.CreateBlip(where);
                 if (_mark == null || !_mark.Exists()) return;
 
-                _mark.Sprite = (BlipSprite)175;
+                // 175 IS BODY ARMOUR, which is what it was and is not what this is. The
+                // plug's drop already wears Package -- see DeadDrop -- and the two must not
+                // look alike on a minimap, so the bag takes the drugs-package sprite and a
+                // colour of its own. See BLIPS.md.
+                _mark.Sprite = (BlipSprite)514;
                 _mark.Color = BlipColor.Yellow;
-                _mark.Scale = 0.8f;
+                _mark.Scale = 0.85f;
                 _mark.Name = "Your bag";
                 _mark.IsShortRange = false;
             }

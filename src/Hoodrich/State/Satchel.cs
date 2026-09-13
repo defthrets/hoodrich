@@ -48,12 +48,30 @@ namespace Hoodrich.State
         /// A bag is never nowhere. Either he is wearing it or it is a real object at a real
         /// coordinate, and those are the only two states there are -- which is what makes
         /// losing it possible and makes finding it again just a matter of remembering.
+        ///
+        /// AND IT STARTS ON THE FLOOR AT HIS AUNT'S, not on his shoulder. A bag you are handed
+        /// is a stat; a bag lying in the room you already live in is a thing you picked up.
+        /// It is the only time the game ever decides where it is -- from the first time it is
+        /// lifted, where it is is wherever it was last put down, for the rest of the save.
         /// </summary>
-        public bool Worn = true;
+        public bool Worn;
 
-        public float DownX;
-        public float DownY;
-        public float DownZ;
+        public float DownX = StartX;
+        public float DownY = StartY;
+        public float DownZ = StartZ;
+
+        /// <summary>
+        /// Denise's front room, on the carpet, as stood on.
+        ///
+        /// A METRE OFF THE READING. The coordinate came off a HUD and a HUD reports a man's
+        /// PELVIS -- the same thing that had four Ballas loitering in mid-air in the hunt --
+        /// so the floor is about a metre under the number. The prop is settled properly on top
+        /// of that when it is made; this is what the blip and the reach are measured from, and
+        /// both of those want the floor rather than a point in the air above it.
+        /// </summary>
+        private const float StartX = -10.800f;
+        private const float StartY = -1433.230f;
+        private const float StartZ = 31.117f - 1.0f;
 
         /// <summary>
         /// What was in the vest slot before the bag took it over.
@@ -125,6 +143,22 @@ namespace Hoodrich.State
             }
         }
 
+        /// <summary>Back to the floor at the house, with nothing in it.</summary>
+        public void Reset()
+        {
+            Stash.Clear();
+            Food.Clear();
+
+            Worn = false;
+
+            DownX = StartX;
+            DownY = StartY;
+            DownZ = StartZ;
+
+            WasVest = -1;
+            WasVestTexture = 0;
+        }
+
         public Json ToJson()
         {
             var obj = Json.Object()
@@ -173,13 +207,17 @@ namespace Hoodrich.State
                 }
             }
 
-            // A BAG THAT IS NEITHER WORN NOR ANYWHERE IS A BAG THAT IS GONE. An old save, or a
-            // write that went in halfway, would leave it down at the origin -- under the map,
-            // out at sea -- with everything in it. It goes back on his shoulder instead.
+            // A BAG THAT IS NEITHER WORN NOR ANYWHERE IS A BAG THAT IS GONE. A write that went
+            // in halfway would leave it down at the origin -- under the map, out at sea -- with
+            // everything in it. It goes back where it started instead, which is a room the
+            // player can walk into rather than a shoulder he has to notice.
             if (!Worn && DownX == 0f && DownY == 0f && DownZ == 0f)
             {
-                Worn = true;
-                Log.Warn("Bag: it was down at nowhere in the save. Put it back on him.");
+                DownX = StartX;
+                DownY = StartY;
+                DownZ = StartZ;
+
+                Log.Warn("Bag: it was down at nowhere in the save. Put it back at the house.");
             }
         }
     }
