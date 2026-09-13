@@ -231,16 +231,18 @@ namespace Hoodrich.Economy
         /// So the pockets are left exactly as they always were and the bag holds what you PUT
         /// in it. See PocketScreen, which is where you put things in it.
         ///
-        /// THE FOOD POCKET IS STILL LENT ROOM, and that is not the same mistake. Food is Bare
-        /// Minimum's and it has one pocket, not two -- there is nowhere else for a sandwich to
-        /// be -- so the bag genuinely is extra room there rather than a second container
-        /// pretending to be one.
+        /// AND THE FOOD POCKET IS NOT LENT ROOM EITHER, not any more. It was, and that was
+        /// the right answer while the bag had nowhere to put a sandwich -- Bare Minimum has one
+        /// pocket and lending it slots was the only way a bag could hold food at all. The bag
+        /// has a shelf of its own now (see Satchel.Food), so lending as well would be the same
+        /// twenty slots counted in two places: their pocket would grow AND the bag would fill,
+        /// for one bag.
         /// </summary>
         private void Room(Satchel bag)
         {
             if (_state.Stash == null) return;
 
-            Core.Larder.Lending = bag.Worn ? Satchel.Slots : 0;
+            Core.Larder.Lending = 0;
 
             if (Math.Abs(_state.Stash.Capacity - Satchel.Pockets) < 0.5f) return;
 

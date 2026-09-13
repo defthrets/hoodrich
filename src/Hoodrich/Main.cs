@@ -2496,6 +2496,7 @@ namespace Hoodrich
                 _pocketScreen.BagUsed = () => _state == null ? 0 : _state.Bag.Used;
                 _pocketScreen.BagSlots = () => State.Satchel.Slots;
                 _pocketScreen.BagStash = () => _state == null ? null : _state.Bag.Stash;
+                _pocketScreen.BagFood = () => _state == null ? null : _state.Bag.Food;
                 _pocketScreen.DropBag = () =>
                 {
                     var me = Game.Player.Character;
@@ -3300,6 +3301,16 @@ namespace Hoodrich
                 // being read -- and two channels saying one sentence is noise.
 
                 pages.PaybackDue = () => _payback != null && _payback.IsOwed;
+
+                // What the Fam app's three new pages need and this class already had.
+                pages.HomiesOut = () => _homies == null ? 0 : _homies.Standing;
+                pages.ZoneCalled = code =>
+                {
+                    if (_zoneMap == null || string.IsNullOrEmpty(code)) return code;
+
+                    var zone = _zoneMap.Get(code);
+                    return zone == null || string.IsNullOrEmpty(zone.Name) ? code : zone.Name;
+                };
 
 
 

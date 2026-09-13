@@ -91,6 +91,22 @@ namespace Hoodrich.UI
         private readonly List<int> _right = new List<int>();
 
         /// <summary>
+        /// What the bag has to eat, which is a different shelf from what his pockets have.
+        ///
+        /// FOOD USED TO HAVE NOWHERE TO GO. Bare Minimum owns one pocket and the bag simply
+        /// lent it slots, so a sandwich showed on the left and stayed there for ever: the bag
+        /// was extra room rather than a second container, and there was no "over there" to
+        /// move it to. The bag has a shelf of its own now -- see Satchel.Food, which has been
+        /// saved with everything else since the day it was written -- and these are the ids
+        /// sitting on it. Core.Larder's Give and Take are how one crosses the seam without
+        /// being eaten on the way.
+        /// </summary>
+        private readonly List<string> _bagFood = new List<string>();
+
+        /// <summary>Set by Main: the bag's own food shelf, so it can be shown and moved.</summary>
+        public Func<Dictionary<string, int>> BagFood;
+
+        /// <summary>
         /// The food band's own height: a rule, a heading, one row of tiles, and a caption.
         ///
         /// Measured from the parts rather than guessed at. The first version reserved less
@@ -188,6 +204,28 @@ namespace Hoodrich.UI
             }
         }
 
+        /// <summary>The bag's food shelf, or null when there is no bag on him.</summary>
+        private Dictionary<string, int> Shelf
+        {
+            get
+            {
+                if (!Carrying || BagFood == null) return null;
+
+                try { return BagFood(); }
+                catch { return null; }
+            }
+        }
+
+        /// <summary>How many of one thing the bag is carrying.</summary>
+        private int Held(string id)
+        {
+            var shelf = Shelf;
+
+            if (shelf == null || string.IsNullOrEmpty(id)) return 0;
+
+            return shelf.TryGetValue(id, out var many) ? many : 0;
+        }
+
         public bool IsOpen => _curtain.Showing;
 
         public void Open(Stash pockets, Drugs catalogue, DroppedBags bags)
@@ -245,6 +283,20 @@ namespace Hoodrich.UI
             _food.Clear();
             foreach (var id in Core.Larder.Ids()) _food.Add(id);
 
+            // And whatever is on the bag's own shelf, which is only ever a handful of ids --
+            // the ones actually in there, not the whole catalogue the way the pocket lists it.
+            _bagFood.Clear();
+
+            var shelf = Shelf;
+
+            if (shelf != null)
+            {
+                foreach (var id in Core.Larder.Ids())
+                {
+                    if (shelf.TryGetValue(id, out var many) && many > 0) _bagFood.Add(id);
+                }
+            }
+
             if (_pockets == null || _catalogue == null) return;
 
             // ---- HIS POCKETS, THEN THE BAG, AND THEY ARE NOT THE SAME PLACE ----
@@ -271,9 +323,10 @@ namespace Hoodrich.UI
                 else _left.Add(i);
             }
 
-            // Food last on the left, so the pocket reads product then sandwiches rather than
-            // interleaving them.
+            // Food last in each pane, so a side reads product and then sandwiches rather than
+            // interleaving the two.
             for (var i = 0; i < _food.Count; i++) _left.Add(_rows.Count + i);
+            for (var i = 0; i < _bagFood.Count; i++) _right.Add(_rows.Count + _food.Count + i);
         }
 
         /// <summary>
@@ -402,15 +455,56 @@ namespace Hoodrich.UI
             // of control nobody trusts twice.
             if (OnFood)
             {
+                var id = FoodAt(_selected);
+                if (string.IsNullOrEmpty(id)) return;
+
+                // E ACROSS THE SEAM, the same key that carries product across it. A food tile
+                // used to swallow every key but SELECT, which is why the bag key printed in the
+                // legend while standing on a sandwich did nothing at all.
+                if (Game.IsControlJustPressed(Control.Context) && Carrying)
+                {
+                    ShiftFood(Game.IsControlPressed(Control.Sprint));
+                    return;
+                }
+
+                if (Game.IsControlJustPressed(Control.Cover) && Carrying)
+                {
+                    try { if (DropBag != null) DropBag(); }
+                    catch { /* the key in the street still works */ }
+
+                    Close();
+                    return;
+                }
+
                 if (!Game.IsControlJustPressed(Control.PhoneSelect)) return;
 
-                var at = _selected - _rows.Count;
-                if (at < 0 || at >= _food.Count) return;
+                // OUT OF THE BAG FIRST, because eating is Bare Minimum's and Bare Minimum only
+                // knows about a pocket. A meal out of the bag is therefore a transfer and then
+                // a meal -- and if the pocket will not take it, nothing is eaten and nothing is
+                // lost, rather than a burger disappearing on the way to his mouth.
+                if (FoodInBag(_selected))
+                {
+                    var shelf = Shelf;
+
+                    if (shelf == null || Held(id) <= 0) return;
+
+                    if (!Core.Larder.Give(id))
+                    {
+                        Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                        Notify.Problem("no room in your pockets.");
+                        return;
+                    }
+
+                    var left = Held(id) - 1;
+
+                    if (left <= 0) shelf.Remove(id);
+                    else shelf[id] = left;
+                }
 
                 // QUEUED, NOT EATEN HERE. The phone is an animation as well as a screen, and
                 // starting a meal underneath it is two clips claiming one player. Larder waits
                 // for the handset to be down and then does it -- see EatWhenPhoneIsAway.
-                Core.Larder.EatWhenPhoneIsAway(_food[at]);
+                Core.Larder.EatWhenPhoneIsAway(id);
 
                 Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
 
@@ -595,6 +689,78 @@ namespace Hoodrich.UI
             Rebuild();
         }
 
+        /// <summary>
+        /// The same key, on food: this shelf to that one.
+        ///
+        /// ONE AT A TIME, OR THE LOT ON A HOLD, which is what the product row does and there is
+        /// no reason a burger should be a different gesture. Food is counted rather than
+        /// weighed, so the unit is an item instead of a hundred grams.
+        ///
+        /// TAKEN FROM THE FAR SIDE FIRST, again for the same reason -- add to the destination,
+        /// see what it took, and only then remove that much. A pocket that would not accept the
+        /// fourth burger leaves the fourth burger in the bag rather than eating it in transit.
+        /// </summary>
+        private void ShiftFood(bool everything)
+        {
+            var shelf = Shelf;
+            var id = FoodAt(_selected);
+
+            if (shelf == null || string.IsNullOrEmpty(id)) return;
+
+            var toBag = !FoodInBag(_selected);
+
+            var have = toBag ? Core.Larder.CountOf(id) : Held(id);
+            if (have <= 0) return;
+
+            var want = everything ? have : 1;
+            var moved = 0;
+
+            for (var i = 0; i < want; i++)
+            {
+                if (toBag)
+                {
+                    // Into the bag: is there a slot, does their pocket actually give it up.
+                    // The slot count is asked of the bag rather than worked out here, because
+                    // product and food spend the same twenty between them -- see Satchel.Used.
+                    var slots = BagSlots == null ? 0 : BagSlots();
+                    var used = BagUsed == null ? 0 : BagUsed();
+
+                    if (used >= slots) break;
+
+                    if (!Core.Larder.Take(id)) break;
+
+                    shelf[id] = Held(id) + 1;
+                }
+                else
+                {
+                    if (Held(id) <= 0) break;
+                    if (!Core.Larder.Give(id)) break;
+
+                    var left = Held(id) - 1;
+
+                    if (left <= 0) shelf.Remove(id);
+                    else shelf[id] = left;
+                }
+
+                moved++;
+            }
+
+            if (moved == 0)
+            {
+                Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                Notify.Problem(toBag ? "the bag's full." : "no room in your pockets.");
+                return;
+            }
+
+            _nextRepeat = Game.GameTime + RepeatMs;
+            _droppedAt = Game.GameTime;
+            _droppedRow = _selected;
+
+            Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+
+            Rebuild();
+        }
+
         /// <summary>Grams moved by one press. The lot goes on a hold.</summary>
         private const float ShiftGrams = 100f;
 
@@ -631,8 +797,24 @@ namespace Hoodrich.UI
             return gone;
         }
 
-        /// <summary>Product rows first, then one place per food tile.</summary>
-        private int Places => _rows.Count + _food.Count;
+        /// <summary>Product rows first, then his food, then the bag's.</summary>
+        private int Places => _rows.Count + _food.Count + _bagFood.Count;
+
+        /// <summary>The id under a food place, whichever shelf it is on.</summary>
+        private string FoodAt(int at)
+        {
+            var i = at - _rows.Count;
+
+            if (i < 0) return null;
+            if (i < _food.Count) return _food[i];
+
+            i -= _food.Count;
+
+            return i < _bagFood.Count ? _bagFood[i] : null;
+        }
+
+        /// <summary>Whether a food place is the bag's shelf rather than his pockets.</summary>
+        private bool FoodInBag(int at) => at >= _rows.Count + _food.Count;
 
         /// <summary>Whether the bag is on his back, and therefore able to come off.</summary>
         private bool Carrying
@@ -964,6 +1146,12 @@ namespace Hoodrich.UI
                 if (OnFood)
                 {
                     kx = Fits(kx, stop, y, UiKit.Confirm, null, "EAT IT", arrive);
+
+                    if (Carrying)
+                    {
+                        kx = Fits(kx, stop, y, "E", null,
+                                  FoodInBag(_selected) ? "TO POCKETS" : "TO BAG", arrive);
+                    }
                 }
                 else
                 {
@@ -1022,11 +1210,11 @@ namespace Hoodrich.UI
             // is one band now, so the card answers for all of it.
             if (OnFood)
             {
-                var at = _selected - _rows.Count;
+                var id = FoodAt(_selected);
 
-                if (at >= 0 && at < _food.Count)
+                if (!string.IsNullOrEmpty(id))
                 {
-                    FoodCard(_food[at], x, wide, y, arrive, grown);
+                    FoodCard(id, x, wide, y, arrive, grown, FoodInBag(_selected));
                     return y + CardH;
                 }
             }
@@ -1140,7 +1328,8 @@ namespace Hoodrich.UI
         /// of them falls back to nothing rather than to a guess, so an install without them
         /// gets a card with a name on it rather than a card full of empty labels.
         /// </summary>
-        private void FoodCard(string id, float x, float wide, float y, float arrive, float grown)
+        private void FoodCard(string id, float x, float wide, float y, float arrive, float grown,
+                              bool inBag)
         {
             var cardH = CardH - 0.010f;
 
@@ -1182,8 +1371,8 @@ namespace Hoodrich.UI
             // ---- how many, and what it is ----
             var lineY = y + 0.037f;
 
-            var many = Core.Larder.CountOf(id);
-            var count = many + (many == 1 ? " in the bag" : " in the bag");
+            var many = inBag ? Held(id) : Core.Larder.CountOf(id);
+            var count = many + (inBag ? " in the bag" : " on you");
 
             Hud.Text(count, tx, lineY, 0.30f, Palette.Alpha(Palette.Cash, (int)(255f * show)),
                      Hud.FontBody, centre: false);
@@ -1288,11 +1477,11 @@ namespace Hoodrich.UI
                 var bright = flashing ? 1f : lit;
 
                 if (at < _rows.Count) Lot(_rows[at], tx, ty, tile, show, bright, picked, grown);
-                else Bite(_food[at - _rows.Count], tx, ty, tile, show, lit, picked, grown);
+                else Bite(FoodAt(at), tx, ty, tile, show, lit, picked, grown, FoodInBag(at));
             }
         }
 
-        /// <summary>How many tiles fit across, and how many rows that makes of what you have.</summary>        /// <summary>How many tiles fit across, and how many rows that makes of what you have.</summary>
+        /// <summary>How many rows the panel needs: the taller of the two panes.</summary>
         private int Lines()
         {
             // THE TALLER OF THE TWO, because both panes share the panel and a panel sized for
@@ -1349,8 +1538,10 @@ namespace Hoodrich.UI
 
         /// <summary>One square of food: the picture in its own colour, and a count if there is more than one.</summary>
         private void Bite(string id, float tx, float ty, float tile, float show, float lit,
-                          bool picked, float grown)
+                          bool picked, float grown, bool inBag)
         {
+            if (string.IsNullOrEmpty(id)) return;
+
             var art = Core.Larder.IconOf(id);
 
             if (!string.IsNullOrEmpty(art))
@@ -1364,7 +1555,7 @@ namespace Hoodrich.UI
                 Hud.File(art, tx + tile * 0.5f, ty + Cell * 0.44f, Cell * 0.56f * swell, 0f, ink);
             }
 
-            var many = Core.Larder.CountOf(id);
+            var many = inBag ? Held(id) : Core.Larder.CountOf(id);
             if (many <= 1) return;
 
             var chip = Hud.ToX(0.013f);

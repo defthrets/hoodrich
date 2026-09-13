@@ -50,6 +50,7 @@ namespace Hoodrich.Core
         private static PropertyInfo _ready, _total, _slots, _extra, _menuOpen;
         private static MethodInfo _ids, _countOf, _nameOf, _iconOf, _tintOf, _consume, _mark;
         private static MethodInfo _descOf, _categoryOf;
+        private static MethodInfo _give, _take;
         private static MethodInfo _notSleep;
         private static MethodInfo _drain;
 
@@ -125,6 +126,12 @@ namespace Hoodrich.Core
                     _iconOf = type.GetMethod("IconOf", BindingFlags.Public | BindingFlags.Static);
                     _tintOf = type.GetMethod("TintOf", BindingFlags.Public | BindingFlags.Static);
                     _consume = type.GetMethod("Consume", BindingFlags.Public | BindingFlags.Static);
+
+                    // Moving food WITHOUT eating it, which is what a bag is for. Both have
+                    // been on their API for a while and nothing over here had a reason to ask
+                    // until the bag got a shelf of its own.
+                    _give = type.GetMethod("Give", BindingFlags.Public | BindingFlags.Static);
+                    _take = type.GetMethod("Take", BindingFlags.Public | BindingFlags.Static);
 
                     // Optional: an older Bare Minimum on the same API version will not
                     // have it, and a null here just means no mark beside the heading.
@@ -443,6 +450,28 @@ namespace Hoodrich.Core
         }
 
         /// <summary>Eats, drinks or smokes one. True when it actually started.</summary>
+        /// <summary>Puts one back in their pocket. False if it would not fit or they are not here.</summary>
+        public static bool Give(string id, int many = 1)
+        {
+            try
+            {
+                if (!Present || _give == null) return false;
+                return (bool)_give.Invoke(null, new object[] { id, many });
+            }
+            catch { return false; }
+        }
+
+        /// <summary>Takes one out of their pocket without eating it. False if there is not one.</summary>
+        public static bool Take(string id, int many = 1)
+        {
+            try
+            {
+                if (!Present || _take == null) return false;
+                return (bool)_take.Invoke(null, new object[] { id, many });
+            }
+            catch { return false; }
+        }
+
         public static bool Consume(string id)
         {
             try

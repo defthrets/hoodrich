@@ -141,6 +141,12 @@ namespace Hoodrich.Wheel
 
         /// <summary>Whether somebody is already on their way about something you said.</summary>
         public Func<bool> PaybackDue;
+
+        /// <summary>Set by Main: how many of yours are on their feet beside you. See Gangs.Homies.</summary>
+        public Func<int> HomiesOut;
+
+        /// <summary>Set by Main: a zone code into the name people call it. See Territory.ZoneMap.</summary>
+        public Func<string, string> ZoneCalled;
         public Func<int> Followers;
 
         /// <summary>Set by Main: clears the feed and the follower count.</summary>
@@ -2382,6 +2388,26 @@ namespace Hoodrich.Wheel
                 value: _turf.ZoneName);
             page.WithIcon(Icons.Garage);
 
+            if (_crew.IsAffiliated)
+            {
+                var out_ = HomiesOut == null ? 0 : HomiesOut();
+
+                page.AddSub("Your set", "@", BuildSetPage,
+                    detail: "Who is out with you, and what you are worth to them",
+                    value: out_ > 0 ? out_ + " out" : _state.RankName);
+                page.WithIcon(Icons.Gang);
+            }
+
+            page.AddSub("The map", "$", BuildMapPage,
+                detail: "Every block, and whose it is",
+                value: Held());
+            page.WithIcon(Icons.Garage);
+
+            page.AddSub("Beef", "&", BuildBeefPage,
+                detail: "Who wants you, and who is owed",
+                value: BeefNames());
+            page.WithIcon(Icons.Guns);
+
             // Two wedges used to live here that could not be pressed: one saying work comes
             // from Lamar, one saying go and find a leader. Both true, both already in the panel
             // above, and both taking a slot on a wheel where a slot is the scarcest thing
@@ -2751,6 +2777,207 @@ namespace Hoodrich.Wheel
         }
 
         // ---- turf --------------------------------------------------------------
+
+        /// <summary>
+        /// Your set: who is beside you, and what you are worth to them.
+        ///
+        /// NOT A LIST OF NAMES, BECAUSE THERE IS NOT ONE. The homies are people who come out
+        /// with you and go home again -- see Gangs.Homies -- so a roster of named men with
+        /// little portraits would be a screen inventing a thing the game does not have. What
+        /// it CAN say is true and is the part you would actually check: how many are on their
+        /// feet right now, whether you can call for more, and what the set thinks you are
+        /// worth, which is four separate numbers the mod has been keeping the whole time and
+        /// has never once shown together.
+        /// </summary>
+        private WheelPage BuildSetPage()
+        {
+            var page = new WheelPage("Your set", _crew.IsAffiliated ? _crew.Current.Name : "Nobody");
+
+            page.PanelTitle = _crew.IsAffiliated ? _crew.Current.Name : "Not with anybody";
+
+            if (!_crew.IsAffiliated)
+            {
+                page.Row("Running with", "nobody", Palette.TextDim, "mask.png");
+                return page;
+            }
+
+            var out_ = HomiesOut == null ? 0 : HomiesOut();
+            var near = _crew.NearbyAllies;
+
+            page.Row("Out with you", out_ == 0 ? "on your own" : out_ + (out_ == 1 ? " homie" : " homies"),
+                     out_ > 0 ? Palette.Cash : (Color?)Palette.TextDim, "people.png");
+
+            // Allies who happen to be around are not the same thing as men you brought, and
+            // they are worth knowing about because they are what makes a corner safe to stand
+            // on -- see Affiliation.LookoutMultiplier, which is this number doing work.
+            page.Row("Set nearby", near == 0 ? "none on this block" : near.ToString(),
+                     near > 0 ? Palette.Cash : (Color?)Palette.TextDim, "pin.png");
+
+            var mine = _crew.CurrentStanding;
+
+            page.Row("Your rank", _state.RankName, Palette.Text, "rank.png");
+            page.Row("Rep with them", mine == null ? "0" : mine.Rep.ToString("0"),
+                     mine != null && mine.Rep < 0 ? Palette.Danger : (Color?)Palette.Cash, "star.png");
+            page.Row("Bodies for them", mine == null ? "0" : mine.Kills.ToString("N0"), null, "skull.png");
+            page.Row("Made them", mine == null ? "$0" : "$" + mine.MoneyEarned.ToString("N0"),
+                     Palette.Cash, "cash.png");
+            page.Row("Deals closed", mine == null ? "0" : mine.Deals.ToString("N0"), null, "baggie.png");
+
+            return page;
+        }
+
+        /// <summary>
+        /// Every block in the city and whose it is.
+        ///
+        /// THE MAP ALREADY KNEW ALL OF THIS AND THE PHONE DID NOT. Ownership is in gangs.json,
+        /// contested blocks are in the registry, and the only way to read any of it was to
+        /// stand on a street and look at one row about the street you were standing on. This
+        /// is the same information as a list you can walk down before you set off.
+        ///
+        /// YOURS FIRST, THEN THEIRS. A player opens this to answer one of two questions --
+        /// what have I got, and where should I not be -- and both are answered faster by a
+        /// list that leads with his own set.
+        /// </summary>
+        private WheelPage BuildMapPage()
+        {
+            var page = new WheelPage("The map", Held());
+
+            page.PanelTitle = "Who holds what";
+
+            if (_gangs == null)
+            {
+                page.Row("Blocks", "nothing loaded", Palette.TextDim, "pin.png");
+                return page;
+            }
+
+            var mine = _crew.IsAffiliated ? _crew.Current : null;
+
+            if (mine != null) Blocks(page, mine, true);
+
+            foreach (var gang in _gangs.All)
+            {
+                if (gang == null || gang == mine) continue;
+                if (gang.Turf.Count == 0) continue;
+
+                Blocks(page, gang, false);
+            }
+
+            return page;
+        }
+
+        /// <summary>One gang's blocks, one row each, with the contested ones called out.</summary>
+        private void Blocks(WheelPage page, GangDef gang, bool ours)
+        {
+            foreach (var code in gang.Turf)
+            {
+                if (string.IsNullOrEmpty(code)) continue;
+
+                var name = Called(code);
+
+                var fought = _gangs.IsContested(code);
+                var other = fought ? _gangs.ContenderForZone(code) : null;
+
+                // STANDING ON IT IS WORTH SAYING. The one block the player can see out of the
+                // window is the one he most wants to find in a list of thirty.
+                var here = string.Equals(code, _turf.ZoneCode, StringComparison.OrdinalIgnoreCase);
+
+                var says = fought && other != null
+                    ? "contested -- " + other.Name
+                    : gang.Name;
+
+                page.Row(name + (here ? "  (here)" : ""), says,
+                         fought ? Palette.Warn : ours ? (Color?)Palette.Cash : gang.Colour,
+                         fought ? "warning.png" : "mask.png");
+            }
+        }
+
+        /// <summary>A zone code as people say it, or the code when nobody has a better word.</summary>
+        private string Called(string code)
+        {
+            if (ZoneCalled == null) return code;
+
+            try
+            {
+                var name = ZoneCalled(code);
+                return string.IsNullOrEmpty(name) ? code : name;
+            }
+            catch
+            {
+                return code;
+            }
+        }
+
+        /// <summary>How many blocks your set holds, for the row that opens the map.</summary>
+        private string Held()
+        {
+            if (!_crew.IsAffiliated || _crew.Current == null) return "whose is whose";
+
+            var n = _crew.Current.Turf.Count;
+            return n == 1 ? "1 block" : n + " blocks";
+        }
+
+        /// <summary>
+        /// Who wants you, how badly, and whether anybody is owed.
+        ///
+        /// STANDING IS A NUMBER PER GANG AND IT HAS ALWAYS BEEN ONE. Every set in the registry
+        /// keeps a figure for what it thinks of you and a count of its people you have put
+        /// down -- see GangStanding -- and the whole of it was reported as one line on another
+        /// page listing the names of whoever happened to be under the beef threshold. The
+        /// figure is the interesting part: a set at minus twenty-eight is not at war with you
+        /// and is two bodies away from it.
+        /// </summary>
+        private WheelPage BuildBeefPage()
+        {
+            var page = new WheelPage("Beef", BeefNames());
+
+            page.PanelTitle = "Who wants you";
+
+            // Payback is a debt with a clock on it, so it goes at the top where a thing that is
+            // about to happen belongs.
+            var owed = false;
+
+            try { owed = PaybackDue != null && PaybackDue(); }
+            catch { /* then it is not owed as far as this screen knows */ }
+
+            if (owed)
+            {
+                page.Row("Owed", "somebody is coming for you", Palette.Danger, "warning.png");
+            }
+
+            if (_gangs == null || _crew == null) return page;
+
+            var mine = _crew.IsAffiliated ? _crew.Current : null;
+            var any = false;
+
+            foreach (var gang in _gangs.All)
+            {
+                if (gang == null || gang == mine) continue;
+
+                var with = _crew.StandingFor(gang.Id);
+                var rep = with == null ? 0f : with.Rep;
+
+                var atWar = _crew.Beefing(gang.Id);
+
+                // Everything, not only the ones at war. A set you have never touched reading
+                // zero is the baseline that makes minus twenty mean something.
+                var says = atWar ? "at war" : rep.ToString("0");
+
+                if (with != null && with.Kills > 0)
+                {
+                    says += "  ·  " + with.Kills + (with.Kills == 1 ? " body" : " bodies");
+                }
+
+                page.Row(gang.Name, says,
+                         atWar ? Palette.Danger : rep < 0f ? Palette.Warn : gang.Colour,
+                         atWar ? "guns.png" : "mask.png");
+
+                any = true;
+            }
+
+            if (!any) page.Row("Nobody", "you have not upset anybody yet", Palette.TextDim, "mask.png");
+
+            return page;
+        }
 
         private WheelPage BuildTurfPage()
         {
