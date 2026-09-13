@@ -317,6 +317,24 @@ ASSIGN = re.compile(r'\bline\s*=\s*((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+);', re.S)
 EXPLICIT = re.compile(r'new DialogueNode\(\s*"([^"]+)"\s*,\s*((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+)', re.S)
 PIECE = re.compile(r'"((?:[^"\\]|\\.)*)"')
 
+# LINES NOBODY READS OFF A SCREEN.
+#
+# Everything above finds dialogue attached to a conversation NODE, because for most of
+# this mod that is what dialogue is. The hunt is the exception: Lamar talks to you while
+# you are crouched behind a fence, with no panel open and no text anywhere -- see
+# Hunt.Word -- and those lines were invisible to both halves of this tool. They never
+# appeared in a to-record list, and when they WERE recorded anyway, take_voice.py could
+# not place the files because it did not know the words existed.
+#
+# WORD is the call itself. NAMED covers the arrays of interchangeable lines the same file
+# picks from at random, listed by name rather than matched by shape, because "a string
+# array in a C# file" is also every model name and every scenario in the mod. TERNARY
+# catches the one shape that assigns a spoken line through a conditional before handing
+# it over -- "var line = down >= need ? this : that" -- which ASSIGN cannot see.
+WORD = re.compile(r'\bWord\(\s*((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+)', re.S)
+NAMED = re.compile(r'\bstring\[\]\s+(?:Nudges)\s*=\s*\{(.*?)\};', re.S)
+TERNARY = re.compile(r'\bvar\s+line\s*=\s*([^;]*?"[^;]*?);', re.S)
+
 
 def from_source(root):
     rows, seen = [], set()
@@ -369,7 +387,7 @@ def from_source(root):
             if whole(m, 2):
                 add(m.group(1), joined(m.group(2)))
 
-        for rx in (CALL, ASSIGN):
+        for rx in (CALL, ASSIGN, WORD):
             for m in rx.finditer(body):
                 if not whole(m, 1):
                     continue
@@ -378,6 +396,15 @@ def from_source(root):
 
                 for who in speakers:
                     add(who, line)
+
+        # A run of interchangeable lines, and a line chosen by a conditional. Each literal in
+        # the region stands on its own rather than being joined to its neighbours -- these are
+        # alternatives, not one sentence split across lines. See NAMED and TERNARY.
+        for rx in (NAMED, TERNARY):
+            for m in rx.finditer(body):
+                for piece in PIECE.findall(m.group(1)):
+                    for who in speakers:
+                        add(who, joined('"' + piece + '"'))
 
         # And the helpers that stamp a different name. See SPEECH.
         for helper, who in helpers.items():
