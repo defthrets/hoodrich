@@ -2495,6 +2495,7 @@ namespace Hoodrich
                 _pocketScreen.BagOn = () => _state != null && _state.Bag.Worn;
                 _pocketScreen.BagUsed = () => _state == null ? 0 : _state.Bag.Used;
                 _pocketScreen.BagSlots = () => State.Satchel.Slots;
+                _pocketScreen.BagStash = () => _state == null ? null : _state.Bag.Stash;
                 _pocketScreen.DropBag = () =>
                 {
                     var me = Game.Player.Character;

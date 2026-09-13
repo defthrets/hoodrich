@@ -21,6 +21,9 @@ namespace Hoodrich.UI
         public float Held;
         public float Purity = 1f;
 
+        /// <summary>In the bag rather than in his pockets. See PocketScreen.Shift.</summary>
+        public bool InBag;
+
         public string Label => Drug.Name + (Bagged ? "" : "  (weight)");
     }
 
@@ -157,6 +160,20 @@ namespace Hoodrich.UI
         public Func<int> BagUsed;
         public Func<int> BagSlots;
 
+        /// <summary>Set by Main: what is in the bag, so things can be moved into and out of it.</summary>
+        public Func<Stash> BagStash;
+
+        private Stash Bag
+        {
+            get
+            {
+                if (!Carrying || BagStash == null) return null;
+
+                try { return BagStash(); }
+                catch { return null; }
+            }
+        }
+
         public bool IsOpen => _curtain.Showing;
 
         public void Open(Stash pockets, Drugs catalogue, DroppedBags bags)
@@ -216,11 +233,26 @@ namespace Hoodrich.UI
 
             if (_pockets == null || _catalogue == null) return;
 
+            // ---- HIS POCKETS, THEN THE BAG, AND THEY ARE NOT THE SAME PLACE ----
+            //
+            // Two containers, one grid, and every tile says which of them it is in -- so the
+            // screen is the whole of what you are carrying without hiding half of it behind a
+            // toggle nobody would find. See Shift, which is how a thing gets from one to the
+            // other, and Strap.Room, which is why they are separate at all.
+            Fill(_pockets, false);
+            Fill(Bag, true);
+        }
+
+        /// <summary>Every lot in one container, appended to the grid.</summary>
+        private void Fill(Stash from, bool inBag)
+        {
+            if (from == null) return;
+
             foreach (var drug in _catalogue.All)
             {
                 if (drug == null) continue;
 
-                var bagged = _pockets.PackagedOf(drug.Id);
+                var bagged = from.PackagedOf(drug.Id);
                 if (bagged > 0.005f)
                 {
                     _rows.Add(new PocketRow
@@ -228,11 +260,12 @@ namespace Hoodrich.UI
                         Drug = drug,
                         Bagged = true,
                         Held = bagged,
-                        Purity = _pockets.PurityOf(drug.Id)
+                        InBag = inBag,
+                        Purity = from.PurityOf(drug.Id)
                     });
                 }
 
-                var weight = _pockets.BulkOf(drug.Id);
+                var weight = from.BulkOf(drug.Id);
                 if (weight > 0.005f)
                 {
                     _rows.Add(new PocketRow
@@ -240,7 +273,8 @@ namespace Hoodrich.UI
                         Drug = drug,
                         Bagged = false,
                         Held = weight,
-                        Purity = _pockets.BulkPurityOf(drug.Id)
+                        InBag = inBag,
+                        Purity = from.BulkPurityOf(drug.Id)
                     });
                 }
             }
@@ -319,6 +353,16 @@ namespace Hoodrich.UI
                 catch { /* the key in the street still works */ }
 
                 Close();
+                return;
+            }
+
+            // ---- between the jacket and the bag ----
+            //
+            // CONTEXT, WHICH IS E, and is the same key that picks the bag up off the pavement.
+            // One idea -- this thing and that bag -- on one key wherever you are standing.
+            if (Game.IsControlJustPressed(Control.Context) && Carrying && !OnFood)
+            {
+                Shift(Game.IsControlPressed(Control.Sprint));
                 return;
             }
 
@@ -421,6 +465,94 @@ namespace Hoodrich.UI
 
         /// <summary>One of whatever it counts itself in.</summary>
         private const float UseUnit = 1f;
+
+        /// <summary>
+        /// Moves the chosen lot the other way: jacket to bag, or bag to jacket.
+        ///
+        /// NOTHING MOVES ON ITS OWN AND THAT IS THE WHOLE POINT. The bag used to simply make
+        /// the pockets bigger, so everything bought went into the jacket and the bag was a
+        /// number that never changed -- see Strap.Room. They are two containers now, and this
+        /// is the only thing in the mod that carries anything between them.
+        ///
+        /// A HUNDRED GRAMS A PRESS, OR THE LOT ON A HOLD. The same escalation the drop key
+        /// uses, on the same idea: a tap is a decision about some of it, holding is a decision
+        /// about all of it, and nobody has to learn a second gesture.
+        ///
+        /// TAKEN FROM THE FAR SIDE FIRST. Add to the destination, see what it actually
+        /// accepted, and only then remove that much from the source -- so a bag with room for
+        /// sixty grams takes sixty and the other forty stay where they were, rather than
+        /// vanishing into a container that was never going to hold them.
+        /// </summary>
+        private void Shift(bool everything)
+        {
+            var bag = Bag;
+
+            if (bag == null || _pockets == null) return;
+            if (_selected < 0 || _selected >= _rows.Count) return;
+
+            var row = _rows[_selected];
+
+            var from = row.InBag ? bag : _pockets;
+            var to = row.InBag ? _pockets : bag;
+
+            var want = everything ? row.Held : Math.Min(ShiftGrams, row.Held);
+            if (want <= 0.005f) return;
+
+            var moved = row.Bagged
+                ? Carry(from, to, row.Drug.Id, want, true)
+                : Carry(from, to, row.Drug.Id, want, false);
+
+            if (moved <= 0.005f)
+            {
+                Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                Notify.Problem(row.InBag ? "no room in your pockets." : "the bag's full.");
+                return;
+            }
+
+            _nextRepeat = Game.GameTime + RepeatMs;
+            _droppedAt = Game.GameTime;
+            _droppedRow = _selected;
+
+            Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+
+            Rebuild();
+        }
+
+        /// <summary>Grams moved by one press. The lot goes on a hold.</summary>
+        private const float ShiftGrams = 100f;
+
+        /// <summary>
+        /// One lot across, and it never leaves more than it takes.
+        ///
+        /// The same order the stash and the boot use: offer it to the destination, ask what
+        /// went in, take exactly that much out of the source, and put back anything the source
+        /// could not actually give up. Product that goes missing between two containers is the
+        /// one bug in an inventory nobody ever forgives.
+        /// </summary>
+        private static float Carry(Stash from, Stash to, string id, float grams, bool bagged)
+        {
+            if (from == null || to == null || grams <= 0.005f) return 0f;
+
+            var purity = bagged ? from.PurityOf(id) : from.BulkPurityOf(id);
+
+            var took = bagged
+                ? to.AddPackaged(id, grams, purity)
+                : to.AddBulk(id, grams, purity);
+
+            if (took <= 0.005f) return 0f;
+
+            var gone = bagged ? from.RemovePackaged(id, took) : from.RemoveBulk(id, took);
+
+            if (gone < took - 0.005f)
+            {
+                // The source had less than it said. Hand the difference back rather than
+                // minting it.
+                if (bagged) to.RemovePackaged(id, took - gone);
+                else to.RemoveBulk(id, took - gone);
+            }
+
+            return gone;
+        }
 
         /// <summary>Product rows first, then one place per food tile.</summary>
         private int Places => _rows.Count + _food.Count;
@@ -706,7 +838,14 @@ namespace Hoodrich.UI
                     // While the bag is on, this key and DROP BAG are the same act -- see
                     // Drop -- so the row says so rather than offering two names for one thing.
                     kx = UiKit.Key(kx, y, UiKit.Drop, null,
-                                   Carrying ? "PUT THE BAG DOWN" : "PUT IT DOWN", arrive);
+                                   Carrying ? "DROP THE BAG" : "PUT IT DOWN", arrive);
+
+                    // The one thing that moves anything between the two containers.
+                    if (Carrying && _selected >= 0 && _selected < _rows.Count)
+                    {
+                        kx = UiKit.Key(kx, y, "E", null,
+                                       _rows[_selected].InBag ? "TO POCKETS" : "TO BAG", arrive);
+                    }
                     kx = UiKit.Key(kx, y, "HOLD", null, "ALL OF IT", arrive);
 
                     if (_selected >= 0 && _selected < _rows.Count && _rows[_selected].Bagged)
@@ -809,8 +948,11 @@ namespace Hoodrich.UI
 
             var afterName = tx + Hud.MeasureText(row.Drug.Name, 0.34f, Hud.FontBody) + 0.009f;
 
-            UiKit.Tag(afterName, nameY + 0.005f, row.Bagged ? "BAGGED" : "WEIGHT",
-                    row.Bagged ? Palette.Brand : Palette.TextDim, show);
+            var form = UiKit.Tag(afterName, nameY + 0.005f, row.Bagged ? "BAGGED" : "WEIGHT",
+                                 row.Bagged ? Palette.Brand : Palette.TextDim, show);
+
+            UiKit.Tag(form, nameY + 0.005f, row.InBag ? "IN THE BAG" : "ON YOU",
+                      row.InBag ? Palette.Brand : Palette.TextDim, show);
 
             // ---- how much, and how cut ----
             var lineY = y + 0.037f;
@@ -1085,6 +1227,15 @@ namespace Hoodrich.UI
                      tx + tile * 0.5f, ty + Cell - ChipHeight - 0.0005f, 0.22f,
                      Palette.Alpha(picked ? Palette.Text : Palette.TextDim, (int)(255f * show)),
                      Hud.FontLabel);
+
+            // WHICH SIDE IT IS ON, in the corner the cut mark does not use. A grid holding
+            // two containers has to say which is which on every tile or it is one container
+            // drawn wrong.
+            if (row.InBag)
+            {
+                Hud.RectFrom(tx + 0.0015f, ty + 0.0015f, Hud.ToX(0.009f), 0.009f,
+                             Palette.Alpha(Palette.Brand, (int)(200f * show)));
+            }
 
             if (row.Purity <= 0f) return;
 

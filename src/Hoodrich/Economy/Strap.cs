@@ -219,32 +219,32 @@ namespace Hoodrich.Economy
         }
 
         /// <summary>
-        /// Carrying the bag means carrying more, and putting it down means carrying less.
+        /// The pockets are the pockets. The bag is a different container.
         ///
-        /// THE POCKETS ARE THE POCKETS AND THE BAG IS ON TOP. Four hundred grams is what a
-        /// jacket has always held in this mod; the bag adds its twenty slots to that, so the
-        /// readout everywhere -- the phone, the wheel, every capacity check in the economy --
-        /// grows by exactly what is on his back and shrinks the moment it is not.
+        /// IT USED TO INFLATE THEM AND THAT WAS WRONG. Carrying the bag moved the pocket
+        /// capacity from four hundred grams to two thousand four hundred, which made the two
+        /// of them ONE pool -- so everything you bought went straight into your jacket, the
+        /// bag read nought of twenty forever, and putting it down did nothing because there
+        /// was never anything in it. A bag that is a number added to a different number is not
+        /// a bag.
         ///
-        /// SET RATHER THAN ADDED TO, on purpose. Adding would compound every pass and a player
-        /// who walked round for ten minutes would be carrying a warehouse. The answer is
-        /// computed from scratch from one fact -- is it on him -- so there is no way for it to
-        /// drift, and no state to get out of step with the bag.
+        /// So the pockets are left exactly as they always were and the bag holds what you PUT
+        /// in it. See PocketScreen, which is where you put things in it.
+        ///
+        /// THE FOOD POCKET IS STILL LENT ROOM, and that is not the same mistake. Food is Bare
+        /// Minimum's and it has one pocket, not two -- there is nowhere else for a sandwich to
+        /// be -- so the bag genuinely is extra room there rather than a second container
+        /// pretending to be one.
         /// </summary>
         private void Room(Satchel bag)
         {
             if (_state.Stash == null) return;
 
-            // AND THE FOOD POCKET NEXT DOOR GROWS WITH IT. Food is Bare Minimum's, so the
-            // bag has to say so over the bridge or it is a bag that holds drugs and lies about
-            // holding sandwiches. See Core.Larder.Lending.
             Core.Larder.Lending = bag.Worn ? Satchel.Slots : 0;
 
-            var want = Satchel.Pockets + (bag.Worn ? Satchel.Grams : 0f);
+            if (Math.Abs(_state.Stash.Capacity - Satchel.Pockets) < 0.5f) return;
 
-            if (Math.Abs(_state.Stash.Capacity - want) < 0.5f) return;
-
-            _state.Stash.Capacity = want;
+            _state.Stash.Capacity = Satchel.Pockets;
         }
 
         // ======================================================================
