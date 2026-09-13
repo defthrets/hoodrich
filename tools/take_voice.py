@@ -73,7 +73,47 @@ def candidates(slug, order):
     if starts:
         return starts, "head"
 
-    return [f for f in order if slug in f], "inside"
+    inside = [f for f in order if slug in f]
+    if inside:
+        return inside, "inside"
+
+    return one_word_off(slug, order), "near"
+
+
+def one_word_off(slug, order):
+    """
+    Lines the take matches except for a single word.
+
+    A WORD SPELLED FOR THE READER IS NOT A DIFFERENT LINE. Some words have to be misspelled to
+    be pronounced: "Ballas" is read as BAL-azz and has to go to the recorder as "ballers" to
+    come back sounding like the gang. The screen keeps the real spelling -- it is the thing
+    anybody actually reads -- so the take's name and the line's name disagree by exactly one
+    word and every test above fails on it. That take then has to be converted and placed by
+    hand against a hash, which is the one job this tool exists to abolish.
+
+    THE LAST WORD IS IGNORED, ALWAYS. Recorders cut the name at a fixed length, so a spelling
+    that is a character longer shifts where the cut lands and leaves a fragment of a word at
+    the end -- "rancho-li" against "rancho-l". That is not a difference, it is the scissors.
+
+    ONE WORD, AND ENOUGH WORDS AROUND IT TO BE SURE. Six-odd words agreeing and one not is a
+    spelling; three words agreeing and one not is a coincidence. And a near match is never
+    quiet: it is reported as near so somebody can look at it once.
+    """
+    want = slug.split("-")
+    hits = []
+
+    for f in order:
+        got = f.split("-")
+
+        # Both truncated to the shorter, less the last word, which is the scissors.
+        n = min(len(want), len(got)) - 1
+        if n < 6:
+            continue
+
+        if sum(1 for i in range(n) if want[i] != got[i]) == 1:
+            hits.append(f)
+
+    return hits
 
 
 def main():
@@ -142,6 +182,8 @@ def main():
         # ONE ANSWER, OR A LONG ENOUGH NAME TO TRUST THE LONGEST. order is sorted longest
         # first, so the old behaviour is the second branch -- a full-length take whose head
         # happens to open two lines lands on the longer of them, the way it always did.
+        # A NEAR MATCH IS NEVER TAKEN ON TRUST WHEN THERE IS MORE THAN ONE OF THEM. One word
+        # different from two separate lines is not a spelling, it is a guess.
         if len(found) > 1 and not (how == "head" and len(slug) >= SURE_NAME):
             stuck.append((path, "could be %d different lines -- put more of the sentence "
                                 "in the name" % len(found)))
@@ -165,6 +207,11 @@ def main():
         hit = picks[0]
 
         key, speaker, text = hit
+
+        if how == "near":
+            print("  near  %-22s %-15s <- %s" % (key + ".wav", speaker,
+                                                 os.path.basename(path)[:52]))
+            print("        one word differs -- a pronunciation spelling, or the wrong take")
         dest = os.path.join(args.into, key + ".wav")
 
         if os.path.exists(dest):
