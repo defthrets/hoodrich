@@ -241,7 +241,14 @@ namespace Hoodrich.Core
         /// Returns whether anything is playing, which callers are free to ignore -- the screen
         /// draws its text either way and nothing about the conversation waits on audio.
         /// </summary>
-        public static bool Say(string speaker, string line, string named = null)
+        /// <param name="again">
+        /// Say it even if this save has heard it. For lines that are a REACTION rather than a
+        /// performance: a man calling across a block that you have dropped one of them is not
+        /// a speech you get once per save, it is the sound the job makes, and going silent on
+        /// the second hunt because the first hunt used it up is a bug wearing a feature's
+        /// coat. Conversation nodes leave this alone -- see Repeat for why they are once-only.
+        /// </param>
+        public static bool Say(string speaker, string line, string named = null, bool again = false)
         {
             Hush();
 
@@ -265,7 +272,7 @@ namespace Hoodrich.Core
                 var asked = key;
 
                 // Once. The text stays on screen either way; only the performance is spent.
-                if (!Repeat && Heard != null && Heard(key)) return false;
+                if (!again && !Repeat && Heard != null && Heard(key)) return false;
 
                 var path = Find(key);
 

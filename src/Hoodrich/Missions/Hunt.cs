@@ -39,7 +39,8 @@ namespace Hoodrich.Missions
     ///
     /// EVERY PIECE OF IT IS THE MINIGAME'S PIECE, in the same order:
     ///
-    ///   THE RIDE OUT. A yellow ring on the map, the size of the ground, with a route to it.
+    ///   THE RIDE OUT. A yellow ring on the map, the size of the ground, with a route to it,
+    ///   and a blade in his hand before he sets off.
     ///   Lamar gets in whatever you get in and gets out when you do; on foot he walks behind
     ///   you, crouches when you crouch, and stands still when you are looking down the glass,
     ///   because a man wandering across a sniper scope is the end of a hunt.
@@ -64,8 +65,18 @@ namespace Hoodrich.Missions
     ///   arriving. Line of sight matters more than anything else. It all feeds one number per
     ///   target, and when that number fills he is gone for good.
     ///
-    ///   THE CLEAN KILL. A head shot drops him where he stands. Anything else and he runs
-    ///   bleeding, and you follow the blood the same way you followed the tracks.
+    ///   THE CLEAN KILL, AND IT IS A KNIFE NOW. Get behind a man who has not noticed you
+    ///   and the card offers you a takedown: a hand over the mouth, the blade in, and nobody
+    ///   on the block hears a thing. That is what all the rest of this is FOR -- the tracks,
+    ///   the crouch, the line of sight and the men on the corners were built to answer "has
+    ///   he noticed you", and through a scope four hundred metres away the answer did not
+    ///   cost anything. Being close enough to touch him is what makes it cost something.
+    ///
+    ///   The rifle is still in the bag and it still works, and it is the WRONG answer: a shot
+    ///   is a shot, everybody within earshot looks up, and a man you only wound runs bleeding
+    ///   -- and then you follow the blood the same way you followed the tracks. Grab at a man
+    ///   who is already listening and he gets a hand up, which is the same as being seen,
+    ///   because it is being seen with your hands on him.
     ///
     ///   THE CALL. When you are crouched and still with one of them somewhere out of sight
     ///   and not too far, Lamar shouts something across the block, and that one comes to
@@ -112,8 +123,16 @@ namespace Hoodrich.Missions
         /// <summary>How far off he can be and still be tracked at all.</summary>
         private const float TrackRange = 180f;
 
-        /// <summary>Prints are only drawn when you are near enough to be reading the ground.</summary>
-        private const float PrintRange = 30f;
+        /// <summary>
+        /// Prints are only drawn when you are near enough to be reading the ground.
+        ///
+        /// A TRAIL HAS TO LEAD SOMEWHERE YOU CAN SEE. At thirty metres the line of prints
+        /// ended about as far ahead as you could make one out, so what you were following was
+        /// always a short piece of ground with nothing beyond it -- which is a breadcrumb,
+        /// not a track. A little further and the trail runs off toward him instead of
+        /// stopping in front of you.
+        /// </summary>
+        private const float PrintRange = 38f;
 
         /// <summary>How long his first trail is, how far apart the prints are, and how many are kept.</summary>
         private const int PrintCount = 22;
@@ -138,6 +157,77 @@ namespace Hoodrich.Missions
 
         /// <summary>Stood this close to one of his prints and you have picked up his trail.</summary>
         private const float FoundWithin = 6f;
+
+        /// <summary>
+        /// Close enough to put the knife in him.
+        ///
+        /// A ARM'S LENGTH AND A BIT. The takedown clips carry both men a short way as they
+        /// play, so the grab does not have to start touching him -- but it does have to start
+        /// close enough that the snap into the animation's own spacing is not a man sliding
+        /// half a metre sideways. This is about where the game's own stealth kill offers
+        /// itself.
+        /// </summary>
+        private const float StickRange = 1.5f;
+
+        /// <summary>
+        /// How far round the back of him counts as behind him.
+        ///
+        /// The dot of HIS forward against the direction from him to you. Straight behind is
+        /// minus one, level with his shoulders is nought, in his face is plus one -- so this
+        /// is a hair past his shoulder each way: a hundred and ten degrees of back, which is
+        /// what you can walk into without crossing his eyeline.
+        /// </summary>
+        private const float BehindDot = -0.34f;
+
+        /// <summary>
+        /// Above this he is alert enough that grabbing him goes wrong.
+        ///
+        /// Not "has he seen you" -- that ends the job on its own. This is the middle ground:
+        /// something has him half-turned and listening, and a man in that state gets a hand
+        /// up. See Botched.
+        /// </summary>
+        private const float AlertAt = 0.5f;
+
+        /// <summary>
+        /// The takedown clips, and the one dictionary they all live in.
+        ///
+        /// CHECKED AGAINST THE INSTALL'S OWN LIST, not remembered. melee@knife@streamed_core
+        /// carries a matched pair for each of these -- a plyr_ and a victim_ cut against each
+        /// other frame for frame -- which is what makes the whole thing possible without a
+        /// synchronised scene: play both at ONE origin with TASK_PLAY_ANIM_ADVANCED and they
+        /// line up exactly as they were animated to.
+        ///
+        /// stealth_kill is the execution: a hand over the mouth and the blade in under the
+        /// ribs, and it is the one you get for doing it properly. front_takedown is for the
+        /// rare case of a man who has not noticed you standing in front of him. And
+        /// failed_takedown is what a man who HAS noticed does about it.
+        /// </summary>
+        private const string BladeDict = "melee@knife@streamed_core";
+
+        private const string StealthPlayer = "plyr_knife_stealth_kill";
+        private const string StealthVictim = "victim_knife_stealth_kill";
+
+        private const string FrontPlayer = "plyr_knife_front_takedown";
+        private const string FrontVictim = "victim_knife_front_takedown";
+
+        private const string BotchPlayer = "plyr_knife_failed_takedown_rear";
+        private const string BotchVictim = "victim_knife_failed_takedown_rear";
+
+        /// <summary>How far through the clip he stops being a man who is being stabbed.</summary>
+        private const float DiesAt = 0.86f;
+
+        /// <summary>A takedown that somehow never ends is still over by now.</summary>
+        private const int StickMostMs = 9000;
+
+        /// <summary>
+        /// How near the player has to be for a wound to read as the knife rather than a shot.
+        ///
+        /// A SHOT SENDS HIM RUNNING AND A STAB MUST NOT. Hurt is the minigame's wounded elk
+        /// and it is right for a rifle -- you winged him, follow the blood -- but a man you
+        /// are stood on top of with a blade does not get to become a blood trail after the
+        /// first swing. Slightly wider than the reach, because he moves while you swing.
+        /// </summary>
+        private const float BladeWound = 3.2f;
 
         /// <summary>The ring on the map for each of them: this big, and slipped off him by up to this.</summary>
         private const float AreaRadius = 42f;
@@ -219,6 +309,20 @@ namespace Hoodrich.Missions
         private const float LamarRunFrom = 12f;
         private const float LamarWalkFrom = 6f;
         private const int LamarRetaskMs = 4000;
+
+        /// <summary>
+        /// The blade, in the order an install has them. THIS is the job now -- see Blade.
+        ///
+        /// A knife first because a knife is what the takedown animations are cut for: the
+        /// clips live in melee@knife@streamed_core and the model in his hand during them is
+        /// whatever he is holding, so a machete reads fine and a hammer would not. Every one
+        /// of these is a stock weapon on every install; the ladder is there for the one that
+        /// is not rather than because any of them is likely to be missing.
+        /// </summary>
+        private static readonly string[] Blades =
+        {
+            "WEAPON_KNIFE", "WEAPON_SWITCHBLADE", "WEAPON_DAGGER", "WEAPON_MACHETE"
+        };
 
         /// <summary>The rifle he is lent, in the order an install has them.</summary>
         private static readonly string[] Rifles =
@@ -319,6 +423,12 @@ namespace Hoodrich.Missions
 
             /// <summary>Coming to look because Lamar shouted, and until when. See Called.</summary>
             public int LookingUntil;
+
+            /// <summary>Stuck, and the clip is still playing. See Blade.</summary>
+            public bool Sticking;
+
+            /// <summary>He went down to the blade rather than to the rifle. See Dropped.</summary>
+            public bool Knifed;
         }
 
         /// <summary>
@@ -366,11 +476,25 @@ namespace Hoodrich.Missions
         private int _phaseFrom;
         private int _nextCall;
         private int _shotAt;
-        private string _said = "";
-        private int _saidAt;
 
-        /// <summary>The rifle he was lent, so it can be taken back.</summary>
+        /// <summary>Who is in reach right now, and whether it is a clean chance. See Blade.</summary>
+        private Quarry _within;
+        private bool _clean;
+        private bool _armed;
+
+        /// <summary>Who is being stuck, when it started, how long the clip runs, and whether it took.</summary>
+        private Quarry _sticking;
+        private int _stickFrom;
+        private int _stickMs;
+        private bool _stuck;
+        private bool _killed;
+
+        /// <summary>What he was lent, so it can be taken back. Nought for a thing he already owned.</summary>
         private uint _lent;
+        private uint _lentBlade;
+
+        /// <summary>The blade he is meant to be using, whether it was lent or his own.</summary>
+        private uint _blade;
 
         public HuntPhase Phase { get; private set; }
 
@@ -425,7 +549,7 @@ namespace Hoodrich.Missions
                     case HuntPhase.Leaving: return "Get out of there";
 
                     default:
-                        return "Track them down  --  " + Down + " of " + Many;
+                        return "Take them out quiet  --  " + Down + " of " + Many;
                 }
             }
         }
@@ -457,7 +581,7 @@ namespace Hoodrich.Missions
             Failure = null;
             ReadyToCollect = false;
 
-            Rifle(player);
+            Kit(player);
 
             Phase = HuntPhase.Riding;
             _phaseFrom = Game.GameTime;
@@ -469,7 +593,7 @@ namespace Hoodrich.Missions
 
             MarkField();
 
-            Say("get us out there. and go quiet when we're close");
+            Word("get us out there. and go quiet when we're close");
 
             Log.Info("Hunt: on, at " + _field.X.ToString("0") + ", " + _field.Y.ToString("0") + ".");
 
@@ -511,61 +635,135 @@ namespace Hoodrich.Missions
         }
 
         /// <summary>
-        /// The rifle, and it is a loan.
+        /// What he is lent for the job: a blade to do it with, and a rifle for when it goes
+        /// wrong.
         ///
-        /// Written down so it can be taken back at the end. A job that hands out a sniper
-        /// rifle and forgets about it is a job that has changed the rest of the save.
+        /// THE BLADE IS THE JOB AND IT GOES IN HIS HAND. A rifle in a stalk is the loud
+        /// option, and it stays in the bag so it is a decision rather than the default -- a
+        /// shot brings every corner on the block round, which is a rule this job has always
+        /// had and never gave you a reason to care about.
+        ///
+        /// Both are written down so they can be taken back at the end. A job that hands out a
+        /// sniper rifle and forgets about it is a job that has changed the rest of the save.
         /// </summary>
-        private void Rifle(Ped player)
+        private void Kit(Ped player)
         {
-            foreach (var name in Rifles)
+            _blade = Lend(player, Blades, 1, out _lentBlade);
+
+            Lend(player, Rifles, Rounds, out _lent);
+
+            // The blade last, because the blade is what he is meant to be holding.
+            if (_blade == 0) return;
+
+            try { Function.Call(Hash.SET_CURRENT_PED_WEAPON, player.Handle, _blade, true); }
+            catch { /* he can pick it himself */ }
+        }
+
+        /// <summary>
+        /// Gives him one of these with rounds in it, and says which one he ended up holding.
+        ///
+        /// AMMO IS NOT SO MUCH A PARAMETER OF GIVE_WEAPON_TO_PED AS A SUGGESTION TO IT.
+        /// Handing a ped a weapon he ALREADY OWNS adds nothing whatever -- not the weapon and
+        /// not the rounds -- so a player who happened to own a sniper rifle with an empty
+        /// magazine was sent out on a hunt with an empty magazine, and the old code took that
+        /// branch deliberately and called it "he has his own". Reported as exactly that: no
+        /// ammo with the rifle.
+        ///
+        /// SET_PED_AMMO is the call that is actually obeyed, so it goes in either way, and
+        /// the magazine is filled from it so the first shot is not a reload. The count is
+        /// only ever raised: a man who turned up with sixty rounds keeps sixty.
+        ///
+        /// WHAT IS LENT IS ONLY WHAT HE DID NOT ALREADY HAVE. A job lends things, it does not
+        /// confiscate a gun somebody brought with him -- and the rounds are his to keep
+        /// whichever it was, because taking ammo back off a man's own rifle at the end of an
+        /// errand would be worse than giving him none.
+        /// </summary>
+        private static uint Lend(Ped player, string[] names, int rounds, out uint lent)
+        {
+            lent = 0;
+
+            foreach (var name in names)
             {
                 try
                 {
                     var hash = Function.Call<uint>(Hash.GET_HASH_KEY, name);
                     if (hash == 0) continue;
 
-                    if (Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, player.Handle, hash, false))
+                    var had = Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, player.Handle, hash, false);
+
+                    if (!had)
                     {
-                        // He has his own. Nothing is lent and nothing will be taken.
-                        _lent = 0;
-                        Function.Call(Hash.SET_CURRENT_PED_WEAPON, player.Handle, hash, true);
-                        return;
+                        Function.Call(Hash.GIVE_WEAPON_TO_PED, player.Handle, hash, rounds, false, false);
+
+                        // A name the install does not carry is accepted in silence, like every
+                        // other name in this game. Asking again is the only way to tell.
+                        if (!Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, player.Handle, hash, false)) continue;
+
+                        lent = hash;
                     }
 
-                    Function.Call(Hash.GIVE_WEAPON_TO_PED, player.Handle, hash, Rounds, false, false);
-                    Function.Call(Hash.SET_CURRENT_PED_WEAPON, player.Handle, hash, true);
+                    Fill(player, hash, rounds);
 
-                    _lent = hash;
-                    Log.Info("Hunt: lent him a " + name + ".");
-                    return;
+                    Log.Info("Hunt: " + (had ? "he has his own " : "lent him a ") + name + ", " +
+                             Function.Call<int>(Hash.GET_AMMO_IN_PED_WEAPON, player.Handle, hash) +
+                             " round(s).");
+
+                    return hash;
                 }
                 catch
                 {
                     // Next name.
                 }
             }
+
+            return 0;
+        }
+
+        /// <summary>Tops a weapon up to at least this many rounds, magazine included.</summary>
+        private static void Fill(Ped player, uint hash, int rounds)
+        {
+            if (rounds <= 1) return;
+
+            try
+            {
+                var have = Function.Call<int>(Hash.GET_AMMO_IN_PED_WEAPON, player.Handle, hash);
+
+                if (have < rounds) Function.Call(Hash.SET_PED_AMMO, player.Handle, hash, rounds);
+
+                // AND INTO THE MAGAZINE. Total ammo and the rounds actually in the gun are two
+                // different numbers, and setting only the first is a full pouch behind an empty
+                // chamber -- which on a sniper rifle is a reload at the exact moment you have
+                // finally got somebody in the glass.
+                var clip = Function.Call<int>(Hash.GET_MAX_AMMO_IN_CLIP, player.Handle, hash, true);
+
+                if (clip > 0) Function.Call(Hash.SET_AMMO_IN_CLIP, player.Handle, hash, clip);
+            }
+            catch
+            {
+                // Then he has whatever the give left him.
+            }
         }
 
         private void HandItBack()
         {
-            if (_lent == 0) return;
-
             try
             {
                 var player = Game.Player.Character;
 
                 if (player != null && player.Exists())
                 {
-                    Function.Call(Hash.REMOVE_WEAPON_FROM_PED, player.Handle, _lent);
+                    if (_lent != 0) Function.Call(Hash.REMOVE_WEAPON_FROM_PED, player.Handle, _lent);
+                    if (_lentBlade != 0) Function.Call(Hash.REMOVE_WEAPON_FROM_PED, player.Handle, _lentBlade);
                 }
             }
             catch
             {
-                // He keeps it, then.
+                // He keeps them, then.
             }
 
             _lent = 0;
+            _lentBlade = 0;
+            _blade = 0;
         }
 
         // ======================================================================
@@ -590,6 +788,12 @@ namespace Hoodrich.Missions
 
                 Lamar(player, now);
 
+                // A MAN WHOSE VOICE COMES OUT OF NOWHERE. Lips runs the chatter facial for as
+                // long as a recording is playing, which is what the conversation screens use --
+                // and there is no screen open out here, so nothing else was going to do it.
+                try { Core.Lips.Update(_lamar); }
+                catch { /* his face stays still, which is the old behaviour */ }
+
                 // A SHOT IS NOTICED HERE rather than reported from outside. Everything the
                 // hunt needs to know about is either the player firing or a target losing
                 // blood, and both can be read off the world every tick -- so nothing else in
@@ -601,6 +805,13 @@ namespace Hoodrich.Missions
                 catch
                 {
                     // Then the only thing that gives him away is being seen.
+                }
+
+                // BEFORE THE PHASES, AND WHATEVER THEY ARE. See Sticking.
+                if (_sticking != null)
+                {
+                    Sticking(player, now);
+                    return;
                 }
 
                 switch (Phase)
@@ -649,7 +860,7 @@ namespace Hoodrich.Missions
 
             Log.Info("Hunt: " + _out.Count + " of them on the ground, " + _eyes.Count + " lookout(s) on the corners.");
 
-            Say("they're out here somewhere. read the ground");
+            Word("they're out here somewhere. get close and do em quiet");
         }
 
         /// <summary>
@@ -681,7 +892,16 @@ namespace Hoodrich.Missions
 
                 // HIT AND STILL UP. The minigame's wounded elk: he runs, and the blood is
                 // the trail from here on.
-                if (!q.Bleeding && q.Man.Health < q.Man.MaxHealth - 20) Hurt(q, now);
+                //
+                // A RIFLE ONLY. A man you are stood on top of with a knife in your hand has
+                // not been winged from four hundred metres, and turning the first swing of a
+                // stabbing into a blood trail meant the quiet way of doing this ended in the
+                // same chase as the loud one. See BladeWound.
+                if (!q.Bleeding && q.Man.Health < q.Man.MaxHealth - 20 &&
+                    q.Man.Position.DistanceTo(player.Position) > BladeWound)
+                {
+                    Hurt(q, now);
+                }
 
                 if (q.Bleeding)
                 {
@@ -689,6 +909,11 @@ namespace Hoodrich.Missions
                     Bleed(q, now);
                     continue;
                 }
+
+                // A MAN IN THE MIDDLE OF BEING STABBED IS NOT TAKING ORDERS. Everything
+                // below re-tasks him, and one TASK_TURN_TO_FACE in the middle of a takedown is
+                // two men doing different animations a foot apart.
+                if (q == _sticking) continue;
 
                 Looking(q, now);
                 Wander(q, now);
@@ -700,13 +925,15 @@ namespace Hoodrich.Missions
 
             Watching(player, crouched, now);
 
+            Blade(player, now);
+
             Called(player, crouched, sprinting, now);
 
             if (Down >= Many)
             {
                 Phase = HuntPhase.Leaving;
                 _phaseFrom = now;
-                Say("that's the three. we out");
+                Word("that's the three. we out", SpeechBest);
                 return;
             }
 
@@ -1196,15 +1423,27 @@ namespace Hoodrich.Missions
                 laid++;
                 q.Laid[i] = true;
 
-                // Oldest faintest, which is what tracking is: the fresh ones are the ones
-                // pointing at him.
-                var age = 0.35f + 0.65f * (i / (float)Math.Max(1, q.Trail.Count - 1));
+                // OLDEST NEARLY GONE, FRESHEST ALMOST WHITE, and that ramp is the whole of
+                // tracking: the bright end of a trail is the end pointing at him, and you
+                // read which way to walk off the brightness rather than off a marker.
+                //
+                // THEY USED TO BE INVISIBLE AND THAT IS NOT AN EXAGGERATION. The tint topped
+                // out at a 46 percent grey-brown and the oldest were at 16 percent -- a dark
+                // smudge, on asphalt, in a city that is mostly asphalt. Reported as the
+                // targets not leaving any tracks at all, which is exactly what a print you
+                // cannot see is. The mission everybody remembers this from has tracks you can
+                // follow at a walk without stopping, and that is the bar.
+                var fresh = i / (float)Math.Max(1, q.Trail.Count - 1);
+                var lit = 0.34f + 0.66f * fresh;
 
                 var step = i + 1 < q.Trail.Count
                     ? q.Trail[i + 1] - at
                     : at - q.Trail[Math.Max(0, i - 1)];
 
-                Spot(at, step, 0.46f * age, 0.40f * age, 0.30f * age, PrintSize, i % 2 == 0);
+                // Warm rather than white. A neutral print reads as paint; a print with the
+                // dust of the street in it reads as a foot.
+                Spot(at, step, lit, lit * 0.96f, lit * 0.86f, PrintSize, i % 2 == 0,
+                     0.45f + 0.50f * fresh);
 
                 if (gap < FoundWithin) stood = true;
             }
@@ -1255,7 +1494,7 @@ namespace Hoodrich.Missions
         /// turns it across the direction of travel, so the toe points the way he went.
         /// </summary>
         private static void Spot(Vector3 at, Vector3 step, float r, float g, float b,
-                                 float size, bool left)
+                                 float size, bool left, float alpha = 0.9f)
         {
             var flat = new Vector3(step.X, step.Y, 0f);
 
@@ -1270,8 +1509,8 @@ namespace Hoodrich.Missions
                               at.X, at.Y, at.Z + 0.15f,
                               0f, 0f, -1f,
                               side.X, side.Y, 0f,
-                              size, size * 1.6f,
-                              r, g, b, 0.9f,
+                              size, size * 1.55f,
+                              r, g, b, alpha,
                               600000f, false, false, false);
             }
             catch
@@ -1283,7 +1522,328 @@ namespace Hoodrich.Missions
         /// <summary>The two soles, and how big a print is. Taller than it is wide, because a foot is.</summary>
         private const int PrintDecal = 2040;
         private const int PrintDecalAlt = 2140;
-        private const float PrintSize = 0.21f;
+        private const float PrintSize = 0.26f;
+
+        // ======================================================================
+        // The blade
+        // ======================================================================
+
+        /// <summary>
+        /// Getting behind a man and putting a knife in him.
+        ///
+        /// THIS IS THE JOB NOW, AND THE RIFLE IS THE MISTAKE. Everything the hunt already had
+        /// -- the tracks, the crouch, the line of sight, the lookouts on the corners -- was
+        /// built to answer one question, "has he noticed you", and then the answer did not
+        /// matter, because four hundred metres away through a scope he could not have done
+        /// anything about it either way. Getting close enough to touch him is what makes all
+        /// of that cost something.
+        ///
+        /// IT IS OFFERED, NOT TAKEN. The prompt only appears when it would actually work, and
+        /// pressing it when it would not is a decision the card has warned you about in
+        /// words. Nothing here fires off a swing you did not ask for: the ordinary knife is
+        /// still under the attack button and it still kills people, slower and messier and
+        /// without the rest of the block staying asleep.
+        ///
+        /// ONE ORIGIN, TWO ANIMATIONS, NO SYNCHRONISED SCENE. The clips come in matched pairs
+        /// cut against each other, so playing both through TASK_PLAY_ANIM_ADVANCED at the SAME
+        /// world position and heading puts each man exactly where the animator put him,
+        /// relative to the other. It is the player's own position and heading, so he does not
+        /// move and the target snaps the short distance into place. A synchronised scene would
+        /// do the same thing with a handle to leak.
+        /// </summary>
+        private void Blade(Ped player, int now)
+        {
+            _within = null;
+            _clean = false;
+            _armed = false;
+
+            if (_sticking != null) return;
+            if (Phase != HuntPhase.Tracking) return;
+
+            // STREAMED BEFORE IT IS WANTED. An animation dictionary takes a moment to arrive
+            // and the moment it is wanted is the one frame a man has his back to you, so it is
+            // asked for on every pass of the hunt rather than at the press.
+            var ready = Loaded();
+
+            Quarry near = null;
+            var best = StickRange;
+
+            foreach (var q in _out)
+            {
+                if (q.Down || q.Spooked || q.Bleeding) continue;
+                if (q.Man == null || !q.Man.Exists() || !q.Man.IsAlive) continue;
+
+                var gap = q.Man.Position.DistanceTo(player.Position);
+                if (gap > best) continue;
+
+                near = q;
+                best = gap;
+            }
+
+            if (near == null) return;
+
+            _within = near;
+            _armed = Armed(player);
+            _clean = Unaware(near) && _armed && ready;
+
+            if (!Pressed()) return;
+
+            if (!ready)
+            {
+                Log.Debug("Hunt: the takedown clips were not streamed in yet.");
+                return;
+            }
+
+            Stick(player, near, now);
+        }
+
+        /// <summary>Whether he has no idea you are there. Being SEEN ends the job on its own.</summary>
+        private static bool Unaware(Quarry q)
+        {
+            return !q.Seen && q.Suspicion < AlertAt;
+        }
+
+        /// <summary>Whether the blade is the thing in his hand, rather than in the bag.</summary>
+        private bool Armed(Ped player)
+        {
+            if (_blade == 0) return true;
+
+            try { return Function.Call<uint>(Hash.GET_SELECTED_PED_WEAPON, player.Handle) == _blade; }
+            catch { return true; }
+        }
+
+        /// <summary>
+        /// Whether you are round the back of him.
+        ///
+        /// Only picks which animation plays -- there is a front takedown for the rare man who
+        /// has not noticed somebody standing in front of him. Staying out of his eyeline is
+        /// enforced by the suspicion, not by this. See BehindDot.
+        /// </summary>
+        private static bool Behind(Ped man, Ped player)
+        {
+            try
+            {
+                var fwd = man.ForwardVector;
+                var to = player.Position - man.Position;
+
+                var fl = (float)Math.Sqrt(fwd.X * fwd.X + fwd.Y * fwd.Y);
+                var tl = (float)Math.Sqrt(to.X * to.X + to.Y * to.Y);
+
+                if (fl < 0.001f || tl < 0.001f) return false;
+
+                return (fwd.X * to.X + fwd.Y * to.Y) / (fl * tl) < BehindDot;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool Pressed()
+        {
+            try { return Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 0, (int)Control.Context); }
+            catch { return false; }
+        }
+
+        private static bool Loaded()
+        {
+            try
+            {
+                Function.Call(Hash.REQUEST_ANIM_DICT, BladeDict);
+                return Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, BladeDict);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Starts it: both men, one origin, and the clock that finishes it.</summary>
+        private void Stick(Ped player, Quarry q, int now)
+        {
+            var clean = Unaware(q) && Armed(player);
+            var behind = Behind(q.Man, player);
+
+            var mine = !clean ? BotchPlayer : behind ? StealthPlayer : FrontPlayer;
+            var his = !clean ? BotchVictim : behind ? StealthVictim : FrontVictim;
+
+            var origin = player.Position;
+            var heading = player.Heading;
+
+            try
+            {
+                // NOTHING ELSE IS IN CHARGE OF EITHER OF THEM FOR THE NEXT COUPLE OF SECONDS.
+                // A ragdoll halfway through is two men on the floor in the wrong poses, and a
+                // leftover task is the target trying to walk to his next spot with a knife in
+                // his neck.
+                Function.Call(Hash.CLEAR_PED_TASKS_IMMEDIATELY, q.Man.Handle);
+                Function.Call(Hash.SET_PED_CAN_RAGDOLL, q.Man.Handle, false);
+                Function.Call(Hash.SET_PED_CAN_RAGDOLL, player.Handle, false);
+
+                Lay(player, mine, origin, heading);
+                Lay(q.Man, his, origin, heading);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Hunt: the takedown would not start: " + ex.Message);
+                return;
+            }
+
+            _sticking = q;
+            q.Sticking = true;
+
+            _stickFrom = now;
+            _stickMs = Length(mine);
+            _stuck = clean;
+            _killed = false;
+
+            Log.Info("Hunt: " + (clean ? "a clean one" : "a botched grab") + " -- " + mine + ".");
+        }
+
+        /// <summary>One half of the pair, played at the scene's origin rather than the ped's.</summary>
+        private static void Lay(Ped who, string clip, Vector3 at, float heading)
+        {
+            Function.Call(Hash.TASK_PLAY_ANIM_ADVANCED, who.Handle, BladeDict, clip,
+                          at.X, at.Y, at.Z,
+                          0f, 0f, heading,
+                          4f, -4f, -1, 0, 0f, 2, 0);
+        }
+
+        /// <summary>How long the clip runs, or a sensible couple of seconds if it will not say.</summary>
+        private static int Length(string clip)
+        {
+            try
+            {
+                var ms = (int)(Function.Call<float>(Hash.GET_ANIM_DURATION, BladeDict, clip) * 1000f);
+
+                return ms > 200 && ms < StickMostMs ? ms : 2600;
+            }
+            catch
+            {
+                return 2600;
+            }
+        }
+
+        /// <summary>
+        /// The takedown, frame by frame, until it is over.
+        ///
+        /// RUN FROM THE TICK ITSELF rather than from the tracking phase. A man being stuck can
+        /// be the third man, and the third man going down moves the hunt to Leaving on the
+        /// same frame -- so a version of this that lived inside Tracking would drop the clip
+        /// halfway through and leave the player permanently unable to ragdoll.
+        /// </summary>
+        private void Sticking(Ped player, int now)
+        {
+            var q = _sticking;
+            var gone = now - _stickFrom;
+
+            Hold();
+
+            if (q.Man == null || !q.Man.Exists())
+            {
+                Let(player);
+                Vanished(q);
+                return;
+            }
+
+            // HE DIES NEAR THE END OF IT, NOT AT THE START. Killing him on the first frame
+            // ragdolls him out of the animation and the two of them finish the scene apart;
+            // killing him at the end lets the clip put him on the floor and then makes it
+            // true. See DiesAt.
+            if (_stuck && !_killed && gone >= (int)(_stickMs * DiesAt))
+            {
+                _killed = true;
+                q.Knifed = true;
+
+                // What is left on the pavement. The same mark the blood trail uses.
+                Spot(q.Man.Position, q.Man.ForwardVector, 0.55f, 0.06f, 0.05f, PrintSize * 1.8f, true);
+
+                try { Function.Call(Hash.SET_ENTITY_HEALTH, q.Man.Handle, 0); }
+                catch { /* the clip still played */ }
+            }
+
+            if (gone < _stickMs && gone < StickMostMs) return;
+
+            var clean = _stuck;
+
+            Let(player);
+
+            if (clean)
+            {
+                // Dropped comes off !IsAlive on the next pass of the hunt, which is where the
+                // count and the line live. Nothing to do here.
+                return;
+            }
+
+            Botched(q);
+        }
+
+        /// <summary>
+        /// Nothing the player presses gets him out of it.
+        ///
+        /// The animation is tasked, so walking away would not actually cancel it -- but a
+        /// player mashing the stick during a two-second scene with the movement still live is
+        /// a man skating across the pavement in a takedown pose.
+        /// </summary>
+        private static void Hold()
+        {
+            try
+            {
+                Function.Call(Hash.DISABLE_CONTROL_ACTION, 0, (int)Control.MoveLeftRight, true);
+                Function.Call(Hash.DISABLE_CONTROL_ACTION, 0, (int)Control.MoveUpDown, true);
+                Function.Call(Hash.DISABLE_CONTROL_ACTION, 0, (int)Control.Attack, true);
+                Function.Call(Hash.DISABLE_CONTROL_ACTION, 0, (int)Control.Attack2, true);
+                Function.Call(Hash.DISABLE_CONTROL_ACTION, 0, (int)Control.MeleeAttack1, true);
+                Function.Call(Hash.DISABLE_CONTROL_ACTION, 0, (int)Control.MeleeAttack2, true);
+                Function.Call(Hash.DISABLE_CONTROL_ACTION, 0, (int)Control.Aim, true);
+                Function.Call(Hash.DISABLE_CONTROL_ACTION, 0, (int)Control.Jump, true);
+                Function.Call(Hash.DISABLE_CONTROL_ACTION, 0, (int)Control.Duck, true);
+                Function.Call(Hash.DISABLE_CONTROL_ACTION, 0, (int)Control.Cover, true);
+                Function.Call(Hash.DISABLE_CONTROL_ACTION, 0, (int)Control.Enter, true);
+            }
+            catch
+            {
+                // Then he can wander off mid-stab, which looks daft and breaks nothing.
+            }
+        }
+
+        /// <summary>Hands both of them back to themselves.</summary>
+        private void Let(Ped player)
+        {
+            try
+            {
+                Function.Call(Hash.SET_PED_CAN_RAGDOLL, player.Handle, true);
+                Function.Call(Hash.CLEAR_PED_TASKS, player.Handle);
+
+                if (_sticking != null && _sticking.Man != null && _sticking.Man.Exists())
+                {
+                    Function.Call(Hash.SET_PED_CAN_RAGDOLL, _sticking.Man.Handle, true);
+                }
+            }
+            catch
+            {
+                // They come back on their own.
+            }
+
+            if (_sticking != null) _sticking.Sticking = false;
+
+            _sticking = null;
+            _stuck = false;
+            _killed = false;
+            _stickMs = 0;
+        }
+
+        /// <summary>
+        /// You grabbed at a man who was already listening, and he got a hand up.
+        ///
+        /// It is the same outcome as being seen, because it IS being seen -- with your hands
+        /// on him. The card says he is onto you before you press it; this is what pressing it
+        /// anyway costs.
+        /// </summary>
+        private void Botched(Quarry q)
+        {
+            Gone(q);
+        }
 
         // ======================================================================
         // The lookouts
@@ -1430,7 +1990,7 @@ namespace Hoodrich.Missions
 
             if (eye.Mark != null && eye.Mark.Exists()) eye.Mark.Color = BlipColor.Red;
 
-            Say("somebody's on the phone. shut him up");
+            Word("somebody's on the phone. shut him up", SpeechSeen);
             Log.Info("Hunt: a lookout is making the call.");
         }
 
@@ -1477,7 +2037,7 @@ namespace Hoodrich.Missions
             if (nearest == null) return;
 
             Gone(nearest);
-            Say("that's one gone. somebody told him");
+            Word("that's one gone. somebody told him", SpeechWorst);
             Log.Info("Hunt: the call landed and one of them walked.");
         }
 
@@ -1531,9 +2091,7 @@ namespace Hoodrich.Missions
 
             Unring(q);
 
-            Say("he's gone man. you was too loud");
-
-            Notify.Failure("he saw you. that one's gone.");
+            Word("he's gone man. you was too loud", SpeechWorst);
 
             Log.Info("Hunt: one spooked. " + Down + " down, " + Lost + " lost. That is the job.");
 
@@ -1574,8 +2132,16 @@ namespace Hoodrich.Missions
 
             Unring(q);
 
-            Say(Down >= Many ? "that's three. let's move"
-                             : (Down == 1 ? "one down. two more" : "two. one left"));
+            // HOW HE WENT DOWN IS WORTH A DIFFERENT SENTENCE. A man shot off a roof and a
+            // man who never heard you coming are not the same result, and the whole point of
+            // the blade is that the second one is the one to aim for -- so the job says so.
+            var line = Down >= Many
+                ? "that's three. let's move"
+                : Down == 1
+                    ? (q.Knifed ? "one down. he never even turned round" : "one down. two more")
+                    : (q.Knifed ? "two. one left, do him the same way" : "two. one left");
+
+            Word(line, Down >= Many ? SpeechBest : SpeechGood);
 
             Log.Info("Hunt: one down. " + Down + " of " + Many + ".");
         }
@@ -1648,7 +2214,7 @@ namespace Hoodrich.Missions
                 q.Area = null;
             }
 
-            Say("you winged him. follow the blood");
+            Word("you winged him. follow the blood", SpeechBad);
         }
 
         // ======================================================================
@@ -1725,15 +2291,18 @@ namespace Hoodrich.Missions
 
             try
             {
-                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, _lamar.Handle,
-                              "GENERIC_INSULT_HIGH", "SPEECH_PARAMS_FORCE_SHOUTED");
+                // NAMED, BECAUSE IT WAS SILENT. GENERIC_INSULT_HIGH is a LAMAR_2_NORMAL
+                // line and this ped is not on that bank, so the one moment in the job that is
+                // supposed to be loud made no sound whatever. See LamarVoice.
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_WITH_VOICE_NATIVE, _lamar.Handle,
+                              "GENERIC_FUCK_YOU", LamarVoice, "SPEECH_PARAMS_FORCE_SHOUTED", 0);
             }
             catch
             {
                 // The text says it.
             }
 
-            Say("watch -- he's coming to look");
+            Word("watch -- he's coming to look", SpeechSeen);
         }
 
         /// <summary>
@@ -2020,15 +2589,89 @@ namespace Hoodrich.Missions
             return NoSeat;
         }
 
-        private void Say(string words)
+        /// <summary>
+        /// Lamar says something, out loud.
+        ///
+        /// HE USED TO TEXT YOU. Every beat of this job -- get out there, read the ground, one
+        /// down, follow the blood -- arrived as a PHONE MESSAGE from a man sitting in your
+        /// passenger seat, and that is the wrong medium for all of it. You are crouched behind
+        /// a fence watching a man's back; the thing that tells you it worked should not be a
+        /// notification sliding in over the corner of the screen, and it certainly should not
+        /// be a text from somebody four feet away.
+        ///
+        /// SO IT IS AUDIO, AND THE WORDS ARE HALF A FILENAME. Voice.Say hashes the exact
+        /// sentence into the name of a recording, so the lines written here ARE the to-record
+        /// list -- the log prints the name it wanted, you record it under that name, and he
+        /// says it. See tools/voice_lines.py.
+        ///
+        /// AND THE GAME'S OWN BANKS WHEN THERE IS NO RECORDING, so a fresh install is not a
+        /// silent job. Only for the beats that are GOOD or BAD -- a man down, a man winged, a
+        /// man spooked, a phone coming out. The quiet in between is the point of a stalk and
+        /// filling it with barks would undo the whole thing.
+        ///
+        /// THE VOICE IS NAMED RATHER THAN INHERITED. PLAY_PED_AMBIENT_SPEECH_NATIVE uses the
+        /// ped's OWN voice and fails in silence when that voice has no such line -- which is
+        /// exactly what was happening to the call across the block: it asked for
+        /// GENERIC_INSULT_HIGH, which LAMAR_1_NORMAL does not carry, so the loudest moment in
+        /// the job made no sound at all. Naming the voice means the name can be checked
+        /// against the install's own speech list, and every name in this file has been.
+        ///
+        /// AGAIN EVERY TIME. These are reactions, not performances -- see Voice.Say's `again`.
+        /// A hunt whose second outing is silent because the first used the lines up would be
+        /// worse than one with no audio at all.
+        ///
+        /// WHAT TO DO NEXT IS NOT IN HERE. That is the card's job and it is a different kind
+        /// of sentence -- see Step. This is a man talking; that is an instruction.
+        /// </summary>
+        private void Word(string words, string speech = null)
         {
-            if (string.IsNullOrEmpty(words)) return;
+            var spoke = false;
 
-            _said = words;
-            _saidAt = Game.GameTime;
+            if (!string.IsNullOrEmpty(words))
+            {
+                try { spoke = Core.Voice.Say("lamar", words, null, true); }
+                catch { /* then the banks below, or nothing */ }
+            }
 
-            Notify.Text("CHAR_LAMAR", "Lamar", "on the block", words, false);
+            if (spoke || string.IsNullOrEmpty(speech)) return;
+
+            try
+            {
+                // HIM IF HE IS THERE, the player's own ped if he is not. The line is a sound
+                // coming from somewhere nearby either way, and the alternative is the start of
+                // the job being silent because Lamar has not been fetched yet.
+                var who = _lamar != null && _lamar.Exists() && _lamar.IsAlive
+                    ? _lamar
+                    : Game.Player.Character;
+
+                if (who == null || !who.Exists()) return;
+
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_WITH_VOICE_NATIVE, who.Handle,
+                              speech, LamarVoice, "SPEECH_PARAMS_FORCE", 0);
+            }
+            catch
+            {
+                // A quiet job is still a job.
+            }
         }
+
+        /// <summary>
+        /// The voice bank his lines come out of, and every speech name in this file is in it.
+        ///
+        /// Checked against menyooStuff\PedSpeechList.txt on this machine: LAMAR_1_NORMAL and
+        /// LAMAR_2_NORMAL carry DIFFERENT sets, which is how the old call across the block
+        /// ended up asking for a line that only the other one has.
+        /// </summary>
+        private const string LamarVoice = "LAMAR_1_NORMAL";
+
+        /// <summary>Good: a man down, the job finished.</summary>
+        private const string SpeechGood = "GAME_GOOD_SELF";
+        private const string SpeechBest = "GAME_WIN_SELF";
+
+        /// <summary>Bad: winged him, lost him, somebody is on the phone.</summary>
+        private const string SpeechBad = "GENERIC_CURSE_MED";
+        private const string SpeechWorst = "GENERIC_CURSE_HIGH";
+        private const string SpeechSeen = "ENEMY_SPOTTED";
 
         // ======================================================================
         // Leaving
@@ -2060,23 +2703,24 @@ namespace Hoodrich.Missions
             if (!IsRunning) return;
             if (Phase == HuntPhase.Riding) return;
 
-            const float w = 0.190f;
-            const float h = 0.080f;
+            const float w = 0.206f;
+            const float h = 0.100f;
 
             var left = 0.5f - w * 0.5f;
-            var top = 0.795f;
+            var top = 0.778f;
 
             Theme.Panel(left, top, w, h);
 
-            var x = left + 0.010f;
+            var x = left + 0.011f;
+            var right = left + w - 0.011f;
 
-            Hud.Text("THE HUNT", x, top + 0.006f, 0.26f,
-                     Palette.Alpha(Palette.TextDim, 210), Hud.FontLabel, centre: false);
+            Hud.Text("THE HUNT", x, top + 0.005f, 0.25f,
+                     Palette.Alpha(Palette.TextDim, 200), Hud.FontLabel, centre: false);
 
-            Hud.TextRight(Down + " / " + Many, left + w - 0.010f, top + 0.004f, 0.34f,
+            Hud.TextRight(Down + " / " + Many, right, top + 0.003f, 0.34f,
                           Palette.Text, Hud.FontLabel);
 
-            Compass(x, top + 0.026f, w - 0.020f);
+            Compass(x, top + 0.030f, w - 0.022f);
 
             // ---- who is looking ----
             var watched = 0f;
@@ -2099,7 +2743,7 @@ namespace Hoodrich.Missions
                        : Palette.Alpha(Palette.TextDim, 190);
 
             Hud.Text(dialling ? "ON THE PHONE" : eyes > 0 ? "EYES  " + eyes : "NO EYES",
-                     x, top + 0.048f, 0.22f, eyeInk, Hud.FontLabel, centre: false);
+                     x, top + 0.058f, 0.22f, eyeInk, Hud.FontLabel, centre: false);
 
             // ---- how close the nearest one is to hearing you ----
             var worst = 0f;
@@ -2110,23 +2754,129 @@ namespace Hoodrich.Missions
                 if (q.Suspicion > worst) worst = q.Suspicion;
             }
 
-            var barX = x + 0.062f;
-            var barW = w - 0.068f - 0.010f;
+            var barX = x + 0.064f;
+            var barW = right - barX;
 
-            Hud.RectFrom(barX, top + 0.052f, barW, 0.0075f,
+            Hud.RectFrom(barX, top + 0.0615f, barW, 0.0075f,
                          Color.FromArgb(90, 255, 255, 255));
 
             if (worst > 0.01f)
             {
                 var ink = worst > 0.66f ? Palette.Danger : worst > 0.33f ? Palette.Warn : Palette.Brand;
 
-                Hud.RectFrom(barX, top + 0.052f, barW * Math.Min(1f, worst), 0.0075f, ink);
+                Hud.RectFrom(barX, top + 0.0615f, barW * Math.Min(1f, worst), 0.0075f, ink);
             }
 
-            if (!string.IsNullOrEmpty(_said) && Game.GameTime - _saidAt < 5200)
+            // ---- and what to do about all of it ----
+            Step(left, top + h - 0.020f, w);
+        }
+
+        /// <summary>
+        /// One line, at the bottom of the card, saying what to do next.
+        ///
+        /// THIS IS WHAT THE TEXT MESSAGES WERE FOR AND THEY WERE NEVER ANY GOOD AT IT. Lamar
+        /// used to phone the instructions through -- "read the ground", "follow the blood" --
+        /// which meant the one thing you needed to know arrived once, slid off the corner of
+        /// the screen, and was gone by the time you had finished turning round. An instruction
+        /// is not news. It should be on the screen for exactly as long as it is true and then
+        /// be replaced by the next one, which is what a line on the card is and what a
+        /// notification can never be. See Word for what he does instead.
+        ///
+        /// IT ANSWERS THE STATE, NOT THE SCRIPT. Nothing sets this; it is read off the same
+        /// things the rest of the card is drawn from, so it cannot get out of step with them.
+        /// The order is the order the trouble comes in: a phone being dialled outranks a man
+        /// within reach, and a man within reach outranks the tracks.
+        /// </summary>
+        private void Step(float left, float top, float w)
+        {
+            string words;
+            var ink = Palette.Alpha(Palette.Text, 235);
+
+            if (_sticking != null)
             {
-                Hud.Text(_said, left + w * 0.5f, top + 0.064f, 0.24f,
-                         Palette.Alpha(Palette.TextDim, 210), Hud.FontBody);
+                return;
+            }
+            else if (Dialling)
+            {
+                words = "DROP THE LOOKOUT -- HE'S CALLING IT IN";
+                ink = Palette.Danger;
+            }
+            else if (Phase == HuntPhase.Bleeding)
+            {
+                words = "FOLLOW THE BLOOD";
+                ink = Palette.Danger;
+            }
+            else if (Phase == HuntPhase.Leaving)
+            {
+                words = "GET BACK TO THE CAR";
+                ink = Palette.Brand;
+            }
+            else if (_within != null && !_armed)
+            {
+                words = "PULL THE BLADE OUT";
+                ink = Palette.Warn;
+            }
+            else if (_within != null && _clean)
+            {
+                words = Key + "   STICK HIM";
+                ink = Palette.Brand;
+            }
+            else if (_within != null)
+            {
+                words = "HE'S ONTO YOU -- BACK OFF";
+                ink = Palette.Danger;
+            }
+            else if (Marked)
+            {
+                words = "STAY LOW AND GET ROUND THE BACK OF HIM";
+            }
+            else
+            {
+                words = "READ THE GROUND -- FIND HIS TRACKS";
+            }
+
+            // A PLATE UNDER IT, because this line changes while everything above it stays put,
+            // and a line that changes needs to look like the part of the card that changes.
+            Hud.RectFrom(left + 0.008f, top - 0.0035f, w - 0.016f, 0.0155f,
+                         Color.FromArgb(38, ink.R, ink.G, ink.B));
+
+            Hud.RectFrom(left + 0.008f, top - 0.0035f, 0.0016f, 0.0155f,
+                         Palette.Alpha(ink, 210));
+
+            Hud.Text(words, left + w * 0.5f, top, 0.235f, ink, Hud.FontLabel);
+        }
+
+        /// <summary>What to press, in the words of whatever he is holding it with.</summary>
+        private static string Key => Hud.OnPad ? "[RB]" : "[E]";
+
+        /// <summary>Somebody has the phone out and the call has not landed yet.</summary>
+        private bool Dialling
+        {
+            get
+            {
+                foreach (var eye in _eyes)
+                {
+                    if (eye.Called) continue;
+                    if (eye.Man == null || !eye.Man.Exists() || !eye.Man.IsAlive) continue;
+                    if (eye.CallingFrom != 0) return true;
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>You have somebody's trail, so there is a man to get behind rather than find.</summary>
+        private bool Marked
+        {
+            get
+            {
+                foreach (var q in _out)
+                {
+                    if (q.Down || q.Spooked) continue;
+                    if (q.Found) return true;
+                }
+
+                return false;
             }
         }
 
@@ -2137,10 +2887,22 @@ namespace Hoodrich.Missions
         /// <summary>How wide a slice of the world the strip covers, each side of straight ahead.</summary>
         private const float CompassHalfFov = 90f;
 
-        /// <summary>The strip, and the pips on it.</summary>
-        private const float CompassH = 0.013f;
-        private const float PipW = 0.0030f;
-        private const float VaguePipW = 0.0070f;
+        /// <summary>The strip, the marks on it, and the room the caret needs above and below.</summary>
+        private const float CompassH = 0.0155f;
+        private const float CompassLip = 0.0062f;
+        private const float PipW = 0.0026f;
+        private const float VaguePipW = 0.0090f;
+
+        /// <summary>
+        /// Where the ends start dimming, as a fraction of the half width.
+        ///
+        /// A MARK THAT VANISHES IS A MARK THAT POPPED. The strip used to end in a hard edge,
+        /// so a man walking round you crossed it as a full-strength pip that simply stopped
+        /// existing, and the eye read that as the mod losing him rather than as him leaving
+        /// the slice you can see. Fading the last fifth of each end costs nothing and turns
+        /// the same event into something going out of view.
+        /// </summary>
+        private const float CompassFade = 0.78f;
 
         /// <summary>
         /// Which way they are, from where you are looking.
@@ -2159,6 +2921,18 @@ namespace Hoodrich.Missions
         ///
         /// AND IT IS THE CAMERA'S HEADING, NOT HIS. You look around far more than you turn,
         /// and a compass that answered to his feet would sit still while you searched.
+        ///
+        /// WHAT CHANGED WHEN IT WAS MADE TO LOOK LIKE SOMETHING. It was a black bar with
+        /// coloured rectangles on it, which is a debug readout rather than an instrument:
+        /// nothing on it said how far round anything was, the letters were four dim pixels
+        /// each, and a pip at the end of the strip was indistinguishable from a pip anywhere
+        /// else. It now has DEGREES on it -- a tick every fifteen, a longer one on the
+        /// diagonals, a letter on the quarters -- so the marks move against something and
+        /// turning ninety degrees looks like turning ninety degrees. The pips grow up from the
+        /// floor of the strip rather than floating in the middle of it, the ends fade, there
+        /// is a caret over the centre saying which way is forward, and the nearest man you
+        /// actually have a fix on gets a second caret UNDER the strip pointing at him. All of
+        /// it is DRAW_RECT, so it costs about thirty rectangles and nothing streamed.
         /// </summary>
         private void Compass(float x, float top, float w)
         {
@@ -2175,22 +2949,48 @@ namespace Hoodrich.Missions
             try { look = Heading(GameplayCamera.Direction); }
             catch { return; }
 
-            Hud.RectFrom(x, top, w, CompassH, Color.FromArgb(70, 0, 0, 0));
-
             var mid = x + w * 0.5f;
+            var half = w * 0.5f;
 
-            // Straight ahead, so a pip in the middle means walk forward.
-            Hud.RectFrom(mid - 0.0007f, top - 0.0015f, 0.0014f, CompassH + 0.003f,
-                         Palette.Alpha(Palette.Text, 150));
+            // ---- the strip ----
+            Hud.RectFrom(x, top, w, CompassH, Color.FromArgb(118, 0, 0, 0));
+            Hud.RectFrom(x, top + CompassH, w, 0.0012f, Palette.Alpha(Palette.TextDim, 48));
 
-            // North, east, south, west, wherever they have got to. Letters rather than ticks:
-            // the map is the other half of this and it is drawn the same way up.
-            Cardinal(x, top, w, mid, look, 90f, "N");
-            Cardinal(x, top, w, mid, look, 0f, "E");
-            Cardinal(x, top, w, mid, look, 270f, "S");
-            Cardinal(x, top, w, mid, look, 180f, "W");
+            // ---- the degrees ----
+            //
+            // Walked in world headings rather than in screen positions, so every mark is
+            // measured the same way the men are and nothing can drift out of step with them.
+            for (var deg = 0; deg < 360; deg += 15)
+            {
+                var off = Wrap(look - deg);
+                if (Math.Abs(off) > CompassHalfFov) continue;
+
+                var at = mid + off / CompassHalfFov * half;
+                var dim = Edge(off);
+
+                if (deg % 90 == 0)
+                {
+                    Hud.Text(Letter(deg), at, top + 0.0018f, 0.165f,
+                             Palette.Alpha(Palette.TextDim, (int)(180f * dim)), Hud.FontLabel);
+
+                    continue;
+                }
+
+                var major = deg % 45 == 0;
+
+                Hud.RectFrom(at - 0.0006f, top, 0.0012f, CompassH * (major ? 0.42f : 0.24f),
+                             Palette.Alpha(Palette.TextDim, (int)((major ? 130f : 74f) * dim)));
+            }
+
+            // ---- straight ahead, so a mark under the caret means walk forward ----
+            Caret(mid, top - CompassLip, 0.0036f, CompassLip - 0.0012f,
+                  Palette.Alpha(Palette.Text, 200), true);
 
             // ---- the men ----
+            Quarry fix = null;
+            var fixOff = 0f;
+            var fixGap = float.MaxValue;
+
             foreach (var q in _out)
             {
                 if (q.Down || q.Spooked) continue;
@@ -2217,14 +3017,36 @@ namespace Hoodrich.Missions
                 // for it. A range readout turns a hunt into a walk down a decreasing number;
                 // a pip that grows as you close says warmer without saying where.
                 var far = here.DistanceTo(at);
-                var near = far <= 40f ? 1f : far >= 200f ? 0.55f : 1f - (far - 40f) / 160f * 0.45f;
+                var near = far <= 25f ? 1f : far >= 200f ? 0.30f : 1f - (far - 25f) / 175f * 0.70f;
 
+                var off = Off(look, here, at);
+
+                // GROWN UP OFF THE FLOOR OF THE STRIP rather than floating in the middle of
+                // it. A row of marks standing on one line reads as a chart; the same marks
+                // centred read as scattered.
                 var tall = CompassH * near;
-                var pipTop = top + (CompassH - tall) * 0.5f;
 
-                Pip(x, pipTop, w, mid, Off(look, here, at),
+                Pip(x, top + CompassH - tall, w, mid, off,
                     known ? PipW : VaguePipW, tall,
                     known ? Palette.Brand : Palette.Alpha(Palette.TextDim, 150));
+
+                if (!known || far >= fixGap) continue;
+
+                fix = q;
+                fixOff = off;
+                fixGap = far;
+            }
+
+            // ---- and a second caret under the nearest one you actually have a fix on ----
+            //
+            // Under, not over, so it cannot be confused with the forward mark. This is the
+            // only thing on the strip that says WHICH of them to walk at.
+            if (fix != null && Math.Abs(fixOff) <= CompassHalfFov)
+            {
+                var at = mid + fixOff / CompassHalfFov * half;
+
+                Caret(at, top + CompassH + 0.0022f, 0.0030f, CompassLip - 0.0020f,
+                      Palette.Alpha(Palette.Brand, (int)(225f * Edge(fixOff))), false);
             }
 
             // ---- and whoever is looking at you ----
@@ -2243,6 +3065,56 @@ namespace Hoodrich.Missions
             }
         }
 
+        /// <summary>How much of its colour a mark keeps this near the end of the strip.</summary>
+        private static float Edge(float off)
+        {
+            var t = Math.Abs(off) / CompassHalfFov;
+
+            if (t <= CompassFade) return 1f;
+            if (t >= 1f) return 0f;
+
+            return 1f - (t - CompassFade) / (1f - CompassFade);
+        }
+
+        /// <summary>The quarter letters, laid out the way the map is.</summary>
+        private static string Letter(int deg)
+        {
+            switch (deg)
+            {
+                case 90: return "N";
+                case 0: return "E";
+                case 270: return "S";
+                default: return "W";
+            }
+        }
+
+        /// <summary>
+        /// A little triangle, pointing down at the strip or up at it.
+        ///
+        /// Stacked rectangles rather than a sprite, for the same reason the wedges in the
+        /// wheel are: DRAW_RECT has no texture to stream and no rotation to get wrong, and at
+        /// this size five rows is already smoother than the pixels it lands on.
+        /// </summary>
+        private static void Caret(float cx, float top, float halfWide, float tall, Color ink,
+                                  bool down)
+        {
+            if (tall <= 0f || halfWide <= 0f || ink.A <= 0) return;
+
+            const int rows = 5;
+
+            var rowH = tall / rows;
+
+            for (var i = 0; i < rows; i++)
+            {
+                var t = down ? i / (float)rows : 1f - (i + 1) / (float)rows;
+                var wide = halfWide * (1f - t);
+
+                if (wide <= 0.0002f) continue;
+
+                Hud.RectFrom(cx - wide, top + i * rowH, wide * 2f, rowH + 0.0004f, ink);
+            }
+        }
+
         /// <summary>One mark on the strip, clamped to the ends when it is behind you.</summary>
         private static void Pip(float x, float top, float w, float mid, float off,
                                 float wide, float tall, Color ink)
@@ -2257,10 +3129,14 @@ namespace Hoodrich.Missions
             if (edge)
             {
                 at = off > 0f ? x + w - wide : x;
-                ink = Color.FromArgb(ink.A / 2, ink.R, ink.G, ink.B);
+                ink = Color.FromArgb(ink.A / 3, ink.R, ink.G, ink.B);
             }
             else
             {
+                // And the last stretch before the end fades rather than stopping dead.
+                var dim = Edge(off);
+                if (dim < 1f) ink = Color.FromArgb((int)(ink.A * (0.25f + 0.75f * dim)), ink.R, ink.G, ink.B);
+
                 at -= wide * 0.5f;
 
                 if (at < x) at = x;
@@ -2268,19 +3144,6 @@ namespace Hoodrich.Missions
             }
 
             Hud.RectFrom(at, top, wide, tall, ink);
-        }
-
-        /// <summary>A compass letter, where it has got to, or nothing when it is behind you.</summary>
-        private static void Cardinal(float x, float top, float w, float mid, float look,
-                                     float angle, string letter)
-        {
-            var off = Wrap(look - angle);
-            if (Math.Abs(off) > CompassHalfFov) return;
-
-            var at = mid + off / CompassHalfFov * (w * 0.5f);
-
-            Hud.Text(letter, at, top + 0.0005f, 0.17f,
-                     Palette.Alpha(Palette.TextDim, 120), Hud.FontLabel);
         }
 
         /// <summary>
@@ -2384,11 +3247,37 @@ namespace Hoodrich.Missions
                 catch { /* the fixer takes him back on its own clock */ }
             }
 
+            // A JOB THAT ENDED MID-TAKEDOWN STILL GIVES HIM HIS LEGS BACK. Clear is called
+            // on a failure and on a hand-in as well as on the ordinary end, and a player left
+            // with ragdolling switched off is a bug that outlives the mission by the rest of
+            // the session.
+            if (_sticking != null)
+            {
+                try
+                {
+                    var me = Game.Player.Character;
+                    if (me != null && me.Exists()) Let(me);
+                }
+                catch
+                {
+                    _sticking = null;
+                }
+            }
+
+            // AND THE CLIPS GO BACK. Blade asks for the dictionary on every pass of the hunt
+            // so it is resident the frame it is wanted; nothing asks for it once the job is
+            // over, and a dictionary nobody has released stays in memory for the session.
+            try { Function.Call(Hash.REMOVE_ANIM_DICT, BladeDict); }
+            catch { /* the streamer lets go on its own eventually */ }
+
+            _within = null;
+            _clean = false;
+            _armed = false;
+
             _lamar = null;
             _lamarDoing = Walk.None;
             _lamarStealth = false;
             _def = null;
-            _said = "";
             _shotAt = 0;
             _layFrom = 0;
 
