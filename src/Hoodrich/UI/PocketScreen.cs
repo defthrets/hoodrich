@@ -336,7 +336,8 @@ namespace Hoodrich.UI
         /// when it is sat on a tile you are not looking at. Taken from the boot screen, which
         /// has been telling two containers apart this way for as long as it has existed.
         /// </summary>
-        private void Cap(float x, float y, float w, string label, string figure, int side, float arrive)
+        private void Cap(float x, float y, float w, string label, string figure, int side, float arrive,
+                         bool warn = false)
         {
             var live = SideOf(_selected) == side;
             var tint = side == 1 ? Palette.Standing : Palette.Brand;
@@ -346,12 +347,56 @@ namespace Hoodrich.UI
                      Hud.FontLabel, centre: false);
 
             Hud.TextRight(figure, x + w, y + 0.004f, 0.24f,
-                          Palette.Alpha(Palette.TextDim, (int)(215f * arrive)), Hud.FontLabel);
+                          Palette.Alpha(warn ? Palette.Warn : Palette.TextDim, (int)(215f * arrive)),
+                          Hud.FontLabel);
 
             var ry = y + CapH - 0.005f;
 
             Hud.RectFrom(x, ry, w, 0.0012f, Palette.Alpha(Theme.Hairline, (int)(Theme.Hairline.A * arrive)));
             Hud.RectFrom(x, ry - 0.0004f, w * 0.14f, 0.0020f, Palette.Alpha(tint, (int)(215f * arrive)));
+        }
+
+        /// <summary>
+        /// What his pockets are holding: grams of product, and how many things to eat.
+        ///
+        /// TWO CAPACITIES, BECAUSE THERE REALLY ARE TWO. Product in a jacket is weighed and
+        /// food in a jacket is counted -- they are different mods' pockets sharing one man --
+        /// and the heading showed only the grams. So a pane with eight sandwiches in it and no
+        /// product at all read "0 / 400g", which is true and answers nothing anybody was
+        /// looking at. The bag next door says 5 / 20 and means it; this now says what it is
+        /// carrying with the same directness.
+        /// </summary>
+        private string PocketFigure()
+        {
+            var grams = UiKit.Holding(_pockets);
+
+            var slots = Core.Larder.Slots;
+            if (slots <= 0) return grams;
+
+            return grams + "   " + Core.Larder.Total + " / " + slots;
+        }
+
+        /// <summary>
+        /// More in his pockets than they hold, which is a real state and not a bug.
+        ///
+        /// THE CAP CAN DROP UNDER WHAT IS ALREADY IN THERE. The bag used to LEND the food
+        /// pocket its twenty slots -- pockets of five became pockets of twenty-five while the
+        /// bag was on -- and the bag has its own shelf now, so the lending was withdrawn. A
+        /// player who had filled those lent slots keeps everything he was carrying and is over
+        /// the line until he eats it or moves it across, which is the right outcome: the
+        /// alternative is a mod that deletes a man's shopping to make a number tidy.
+        ///
+        /// It fixes itself and nothing can make it worse -- their pocket refuses anything new
+        /// while it is full -- but it is invisible unless the heading says so, and an invisible
+        /// over-capacity looks exactly like a broken slot count. See PocketFigure.
+        /// </summary>
+        private bool Overstuffed
+        {
+            get
+            {
+                var slots = Core.Larder.Slots;
+                return slots > 0 && Core.Larder.Total > slots;
+            }
         }
 
         /// <summary>What the bag is holding, for its heading. Empty when it is not on his back.</summary>
@@ -1124,7 +1169,7 @@ namespace Hoodrich.UI
             var paneW = paneTiles;
             var bagX = x + paneW + Gutter;
 
-            Cap(x, y, paneW, "ON YOU", UiKit.Holding(_pockets), 0, arrive);
+            Cap(x, y, paneW, "ON YOU", PocketFigure(), 0, arrive, Overstuffed);
             Cap(bagX, y, paneW, "IN THE BAG", BagFigure(), 1, arrive);
 
             y += CapH;
