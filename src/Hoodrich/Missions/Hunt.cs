@@ -620,7 +620,7 @@ namespace Hoodrich.Missions
 
             MarkField();
 
-            Word("get us out there. and go quiet when we're close");
+            Word("drive, nigga. and when we get close you go quiet on me");
 
             Log.Info("Hunt: on. " + Many + " corners, " + Need + " needed, " +
                      Stands[Last].Street + " last.");
@@ -909,7 +909,7 @@ namespace Hoodrich.Missions
             Phase = HuntPhase.Tracking;
             _phaseFrom = now;
 
-            Word("they're out here somewhere. get close and do em quiet");
+            Word("aight, we in they neighbourhood now. eyes open, feet quiet");
         }
 
         /// <summary>
@@ -2094,7 +2094,7 @@ namespace Hoodrich.Missions
 
             q.Area = null;
 
-            Word("he's seen us. do him or leave him", SpeechWorst);
+            Word("he seen you! that one a write-off now. do him or leave him", SpeechWorst);
 
             Log.Info("Hunt: number " + (q.Which + 1) + " is onto us. " + Down + " down, " +
                      Lost + " written off, " + Need + " needed.");
@@ -2129,15 +2129,21 @@ namespace Hoodrich.Missions
 
             Unring(q);
 
-            // COUNTED AGAINST THREE, which is what passes the job. A fourth is a bonus and
-            // ought not to be announced as though it were the finish line.
-            var line = Down >= Need
-                ? "that's three. we out"
-                : Down == 1
-                    ? (q.Knifed ? "one down. he never even turned round" : "one down. two more")
-                    : (q.Knifed ? "two. one more, do him the same way" : "two. one more");
+            // GROVE SPEAKS FOR HIMSELF. The last man going down is followed on the same frame
+            // by the street working out what happened -- see Grove -- and Voice.Say hushes
+            // whatever is already playing, so a line here would be cut off mid-word by that one.
+            if (q.Which == Last) return;
 
-            Word(line, Down >= Need ? SpeechBest : SpeechGood);
+            // AND THREE IS NOT THE END OF THE JOB. Three is what PASSES it, but Grove Street
+            // is still stood there whichever way the count got here, so this used to shout
+            // "that's three, we out" at a man with a quarter of the job left to do.
+            var line = Down >= Need
+                ? "that's three, we good. still gotta do grove"
+                : Down == 1
+                    ? (q.Knifed ? "ha! he never even turned round. that's one" : "that's one. two more")
+                    : (q.Knifed ? "two. one more, do him just like that" : "two. one more");
+
+            Word(line, SpeechGood);
 
             Log.Info("Hunt: number " + (q.Which + 1) + " down" + (q.Knifed ? ", quietly" : "") +
                      ". " + Down + " of " + Need + " needed.");
@@ -2212,11 +2218,11 @@ namespace Hoodrich.Missions
 
             if (turned > 0)
             {
-                Word("grove seen us. get back to lamar's", SpeechWorst);
+                Word("ay, they seen us! go go go -- back to my yard!", SpeechWorst);
             }
             else
             {
-                Word("that's the last one. we out", SpeechBest);
+                Word("that's the last one. we out, dawg", SpeechBest);
             }
         }
 
@@ -2578,10 +2584,10 @@ namespace Hoodrich.Missions
         /// </summary>
         private static readonly string[] Nudges =
         {
-            "there he go. let's go round the back of him and jump him",
-            "alright, let's sneak round and get this fool",
-            "that's him. get behind him and don't let him turn round",
-            "easy now. round the back of him, quick and quiet"
+            "there he go. get round the back of him and stick him",
+            "aight, let's creep up on this fool",
+            "that's him right there. behind him, Frank. don't let him turn round",
+            "easy now, dawg. round the back, quick and quiet"
         };
 
         /// <summary>How near the next one has to be before he says one. See Nudges.</summary>
