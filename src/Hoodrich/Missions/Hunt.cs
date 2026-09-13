@@ -336,6 +336,11 @@ namespace Hoodrich.Missions
         /// A FRESH ONE EVERY TIME HE SETS OFF rather than one picked when he spawned. Six
         /// clips on four men is not much variety if each man only ever has the one.
         ///
+        /// NOTHING IN HERE NEEDS SOMETHING TO LEAN ON. WORLD_HUMAN_LEANING was on this list
+        /// and is off it: it is authored against a wall, and the spots these men walk to are
+        /// whatever the pavement offers -- so most of the time he leant back onto nothing and
+        /// stood at an angle in open air, which reads as broken rather than as casual.
+        ///
         /// Every name is in Scenarios.txt on this machine.
         /// </summary>
         private static readonly string[] QuarryDoing =
@@ -346,7 +351,6 @@ namespace Hoodrich.Missions
             "WORLD_HUMAN_SMOKING_POT",
             "WORLD_HUMAN_DRINKING",
             "WORLD_HUMAN_HANG_OUT_STREET",
-            "WORLD_HUMAN_LEANING",
             "WORLD_HUMAN_DRUG_DEALER"
         };
 
@@ -1097,8 +1101,12 @@ namespace Hoodrich.Missions
 
             // Put down on the pavement rather than on the coordinate, which was read off a man
             // stood in a road and is a foot or two out either way.
+            // The pavement near the corner, or the corner itself -- and either way at the
+            // height of the concrete rather than of the man who read the coordinate. See Ground.
             var at = World.GetNextPositionOnSidewalk(stand.At);
             if (at == Vector3.Zero || at.DistanceTo(stand.At) > 12f) at = stand.At;
+
+            at = Ground(at);
 
             var doing = QuarryDoing[_rng.Next(QuarryDoing.Length)];
 
@@ -1149,7 +1157,10 @@ namespace Hoodrich.Missions
                 if (at.DistanceTo(home) > BeatFar + 6f) continue;
                 if (at.DistanceTo(from) < BeatWorth) continue;
 
-                return at;
+                // He walks there on the nav mesh, which settles the height on its own -- but
+                // the SCENARIO at the far end is placed at this coordinate exactly, so a spot
+                // that came back high is a man standing in the air when he arrives.
+                return Ground(at);
             }
 
             return Vector3.Zero;
@@ -1237,8 +1248,49 @@ namespace Hoodrich.Missions
         /// gunfight the moment a target or a lookout happened to glance your way. Now the only
         /// things that move him are the numbers in here.
         /// </summary>
+        /// <summary>
+        /// The pavement under a point.
+        ///
+        /// A COORDINATE READ OFF A HUD IS A MAN'S PELVIS. GET_ENTITY_COORDS on a ped does not
+        /// return the ground he is standing on, it returns his middle -- so every one of the
+        /// four corners in Stands, which were read by standing on them and writing down what
+        /// the screen said, is about a metre HIGHER than the concrete it names.
+        ///
+        /// Spawn a man there and he is created a metre up, and the scenario he is handed on
+        /// the same frame pins him there before gravity gets a word in: a Balla loitering in
+        /// mid-air, smoking, a foot above his own shadow. Reported as exactly that.
+        ///
+        /// FIXED HERE RATHER THAN IN THE NUMBERS, on purpose. The numbers are what that HUD
+        /// prints, and the next corner anybody adds will be read the same way off the same
+        /// screen -- so the correction belongs where every spot goes through it, not in four
+        /// hand-adjusted constants that only work until somebody writes down a fifth.
+        ///
+        /// Probed from a bit above and only believed within a few metres, so a bad read
+        /// cannot drop a man through a roof into the room below.
+        /// </summary>
+        private static Vector3 Ground(Vector3 where)
+        {
+            try
+            {
+                if (World.GetGroundHeight(new Vector3(where.X, where.Y, where.Z + 1.5f),
+                                          out var groundZ, GetGroundHeightMode.Normal) &&
+                    groundZ > 0f && Math.Abs(groundZ - where.Z) <= 3f)
+                {
+                    where.Z = groundZ;
+                }
+            }
+            catch
+            {
+                // Then the read height stands, which is wrong by a little rather than a storey.
+            }
+
+            return where;
+        }
+
         private Ped Make(Vector3 at, string doing, float sees)
         {
+            at = Ground(at);
+
             foreach (var name in Models)
             {
                 try
@@ -1250,6 +1302,27 @@ namespace Hoodrich.Missions
                     model.MarkAsNoLongerNeeded();
 
                     if (man == null || !man.Exists()) continue;
+
+                    // AND AGAIN, MEASURED OFF THE MAN HIMSELF. CREATE_PED does not always put
+                    // him where it was asked to -- and the scenario below freezes whatever
+                    // height he ended up at -- so the one reading worth trusting is the one
+                    // taken after he exists. Only when it is worth doing: snapping a man who
+                    // is already standing correctly is a visible twitch for nothing.
+                    try
+                    {
+                        var stood = man.Position;
+                        var floor = Ground(stood);
+
+                        if (Math.Abs(stood.Z - floor.Z) > 0.25f)
+                        {
+                            Function.Call(Hash.SET_ENTITY_COORDS, man.Handle,
+                                          floor.X, floor.Y, floor.Z, false, false, false, true);
+                        }
+                    }
+                    catch
+                    {
+                        // He stands where he landed.
+                    }
 
                     man.IsPersistent = true;
 
