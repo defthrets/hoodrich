@@ -2855,6 +2855,7 @@ namespace Hoodrich
                 // And he is down there when you are. See Vernon.Basement.
                 _vernon.Inside = () => _leroys != null && _leroys.IsInside;
                 _vernon.Landing = () => _leroys == null ? Vector3.Zero : _leroys.Landing;
+                _vernon.Doorway = () => _leroys == null ? Vector3.Zero : _leroys.Outside;
 
                 // And not on the map until Gerald has started you off. See Started.
                 _vernon.Known = () => Started;

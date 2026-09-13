@@ -136,6 +136,9 @@ namespace Hoodrich.Locations
         /// <summary>Downstairs rather than on the wall. See Basement.</summary>
         private bool _down;
         private int _walkedAt;
+
+        /// <summary>Out of the door and on his way back to the wall. See OutAfterYou.</summary>
+        private bool _returning;
         private Blip _blip;
         private int _lastUpdate;
         private bool _held;
@@ -187,6 +190,9 @@ namespace Hoodrich.Locations
         /// <summary>Set by Main: where the stairs put you, so he can arrive the same way.</summary>
         public Func<Vector3> Landing;
 
+        /// <summary>Set by Main: the door on Strawberry, so he can come out of it after you.</summary>
+        public Func<Vector3> Doorway;
+
         public bool InReach => Within(TalkRange);
 
         /// <summary>Near enough to be shouted at. See ShoutRange.</summary>
@@ -230,10 +236,21 @@ namespace Hoodrich.Locations
 
             if (below) { Basement(); return; }
 
-            // Back up the stairs: he lets go of the basement and the wall takes him again.
+            // ---- BACK UP THE STAIRS, BEHIND YOU ----
+            //
+            // He used to be ON THE WALL ALREADY. The basement copy was deleted, the street
+            // rules noticed a missing Vernon and put one back at his coordinate, leaning, mid
+            // cigarette -- so a man who had spent the last ten minutes stood beside you in his
+            // own basement was outside smoking before you had finished coming up his stairs.
+            //
+            // He comes out of the door instead and walks to the wall, which is the same trick
+            // as going down and for the same reason: the walk is what makes him a man who was
+            // with you rather than a fixture that respawns.
             if (_down)
             {
                 _down = false;
+                _returning = true;
+
                 Despawn();
             }
 
@@ -247,7 +264,12 @@ namespace Hoodrich.Locations
 
             if (away > SpawnRange) return;
 
-            if (_ped == null || !_ped.Exists()) Spawn();
+            if (_ped == null || !_ped.Exists())
+            {
+                if (_returning) OutAfterYou();
+                else Spawn();
+            }
+            else if (_returning) Returning();
             else if (!_held && !_talking) Settle();
         }
 
@@ -343,7 +365,7 @@ namespace Hoodrich.Locations
                 _down = true;
                 _held = false;
 
-                WalkToPost();
+                WalkTo(DownSpot, DownHeading);
                 return;
             }
 
@@ -353,7 +375,58 @@ namespace Hoodrich.Locations
 
             // Still on his way. A task that has fallen off him -- and they do -- looks exactly
             // like a man standing still halfway across his own basement.
-            if (Game.GameTime - _walkedAt > WalkAgainMs) WalkToPost();
+            if (Game.GameTime - _walkedAt > WalkAgainMs) WalkTo(DownSpot, DownHeading);
+        }
+
+        /// <summary>
+        /// Out of the shop door and back to his wall.
+        ///
+        /// MADE AT THE DOORWAY, which is the one coordinate out here somebody has certainly
+        /// just stood on -- the door puts the player on it coming out. It is a stride and a
+        /// half from the wall, so this is a short walk and it is meant to be: the point is that
+        /// he is coming OUT, not that he is going far.
+        /// </summary>
+        private void OutAfterYou()
+        {
+            var from = Spot;
+
+            if (Doorway != null)
+            {
+                try
+                {
+                    var step = Doorway();
+
+                    // Off the doorway rather than in it, so he is not made inside the man who
+                    // has just used it.
+                    if (step != Vector3.Zero) from = step + Forward(Heading) * -1.0f;
+                }
+                catch { /* the wall itself, then */ }
+            }
+
+            if (!Make(from, Heading, "out of the door after you"))
+            {
+                _returning = false;
+                return;
+            }
+
+            _held = false;
+
+            WalkTo(Spot, Heading);
+        }
+
+        /// <summary>On his way to the wall. Gets there, or is talked to on the way.</summary>
+        private void Returning()
+        {
+            if (_talking) { _returning = false; return; }
+
+            if (_ped.Position.DistanceTo(Spot) <= PostedRange)
+            {
+                _returning = false;
+                Settle();
+                return;
+            }
+
+            if (Game.GameTime - _walkedAt > WalkAgainMs) WalkTo(Spot, Heading);
         }
 
         /// <summary>The way a heading points, so a spot can be measured off one.</summary>
@@ -364,7 +437,7 @@ namespace Hoodrich.Locations
             return new Vector3(-(float)Math.Sin(r), (float)Math.Cos(r), 0f);
         }
 
-        private void WalkToPost()
+        private void WalkTo(Vector3 where, float facing)
         {
             _walkedAt = Game.GameTime;
 
@@ -373,9 +446,9 @@ namespace Hoodrich.Locations
                 _ped.Task.ClearAll();
 
                 Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, _ped.Handle,
-                              DownSpot.X, DownSpot.Y, DownSpot.Z, 1.0f, -1, DownHeading, 0.3f);
+                              where.X, where.Y, where.Z, 1.0f, -1, facing, 0.3f);
             }
-            catch { /* he stands where he is, which is still in the room */ }
+            catch { /* he stands where he is, which is still somewhere */ }
         }
 
         /// <summary>Arrived: turned the right way and stood in it like he owns it.</summary>

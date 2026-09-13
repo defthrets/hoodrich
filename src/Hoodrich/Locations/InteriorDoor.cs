@@ -308,6 +308,9 @@ namespace Hoodrich.Locations
         }
 
         private Vector3 Door => new Vector3(_spec.DoorX, _spec.DoorY, _spec.DoorZ);
+
+        /// <summary>The doorway itself, for anybody who has to come out of it behind you.</summary>
+        public Vector3 Outside => Door;
         private Vector3 Inside => new Vector3(_spec.InsideX, _spec.InsideY, _spec.InsideZ);
 
         /// <summary>The mark to leave from: where he was actually stood, or the ini's guess.</summary>
@@ -448,6 +451,68 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
+        /// The vehicle he arrived in, kept alive across the trip.
+        ///
+        /// THE DOOR IS A TELEPORT AND THE GAME DOES NOT KNOW THAT. Going in moves him eight
+        /// hundred metres to a warehouse in Banning; an ordinary parked vehicle nobody is
+        /// sitting in is cleaned up long before that, so the bike he rode to Strawberry on was
+        /// gone by the time he came back up the stairs -- from the pavement, indistinguishable
+        /// from the mod deleting it.
+        ///
+        /// MISSION ENTITY FOR THE LENGTH OF THE VISIT, then handed straight back. Held forever
+        /// it would be a vehicle the game can never tidy away, and a mod that pins one car per
+        /// doorway is a mod that fills the pool in an afternoon.
+        ///
+        /// NEAR THE DOOR, NOT MERELY THE LAST ONE HE SAT IN. LastVehicle remembers a car parked
+        /// across the city an hour ago, and pinning that would keep a vehicle alive somewhere he
+        /// is nowhere near for reasons nothing could explain.
+        /// </summary>
+        private void Hold(Ped player)
+        {
+            _kept = null;
+
+            try
+            {
+                var ride = player.LastVehicle;
+
+                if (ride == null || !ride.Exists()) return;
+                if (ride.Position.DistanceTo(player.Position) > KeepRange) return;
+
+                Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ride.Handle, true, true);
+
+                _kept = ride;
+
+                Log.Info("Holding the " + ride.DisplayName + " outside the " + _spec.Name +
+                         " while he is in there.");
+            }
+            catch
+            {
+                // Then it takes its chances, which is what it did before this existed.
+            }
+        }
+
+        /// <summary>Handed back to the game. See Hold -- keeping it forever is its own bug.</summary>
+        private void Release()
+        {
+            try
+            {
+                if (_kept != null && _kept.Exists())
+                {
+                    _kept.IsPersistent = false;
+                    _kept.MarkAsNoLongerNeeded();
+                }
+            }
+            catch { /* it is the game's problem either way now */ }
+
+            _kept = null;
+        }
+
+        /// <summary>How near the door it has to be parked to count as the one he came on.</summary>
+        private const float KeepRange = 30f;
+
+        private Vehicle _kept;
+
+        /// <summary>
         /// In. Fade, load, warp, check, fade back.
         ///
         /// The check is the important part. The interior coordinate is a guess until somebody
@@ -463,6 +528,10 @@ namespace Hoodrich.Locations
             // is the doorway, read off him rather than typed into a file.
             _cameFrom = player.Position;
             _cameFacing = player.Heading;
+
+            // AND WHATEVER HE RODE HERE ON. See Held: this door is a teleport to Banning and
+            // the kerb outside is eight hundred metres of nothing while he is down there.
+            Hold(player);
 
             try
             {
@@ -687,6 +756,11 @@ namespace Hoodrich.Locations
 
                     player.Position = Back;
                     player.Heading = BackFacing;
+
+                    // Bounced out because the room was not there. He never left the pavement,
+                    // so the thing he parked on it is the game's again. See Hold.
+                    Release();
+
                     Function.Call(Hash.FREEZE_ENTITY_POSITION, player.Handle, false);
 
 
@@ -766,6 +840,11 @@ namespace Hoodrich.Locations
 
                     player.Position = Back;
                     player.Heading = BackFacing;
+
+                    // Bounced out because the room was not there. He never left the pavement,
+                    // so the thing he parked on it is the game's again. See Hold.
+                    Release();
+
                     Function.Call(Hash.FREEZE_ENTITY_POSITION, player.Handle, false);
 
 
@@ -810,6 +889,8 @@ namespace Hoodrich.Locations
                 catch { /* nothing else to try */ }
 
                 try { player.Position = Back; } catch { /* nothing else to try */ }
+
+                Release();
                 Fade(true);
             }
             finally
@@ -1029,6 +1110,9 @@ namespace Hoodrich.Locations
                 player.Heading = _cameFrom != Vector3.Zero && _cameFrom.DistanceTo(Door) <= DoorwaySlack
                     ? BackFacing
                     : _spec.DoorHeading;
+
+                // He is stood next to it again, so the game can have it back. See Hold.
+                Release();
 
                 // He is outside again: the crew knock off and the city goes back to the
                 // map the story happens in.

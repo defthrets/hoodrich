@@ -214,21 +214,49 @@ def from_data(root, texts=False):
                 seen.add(name)
                 rows.append((name + ".mp3", d.get("name", ""), text))
 
-    # Lamar owns the mission list outright.
+    # Lamar owns MOST of the mission list, and "most" is the whole of the trouble.
     #
     # "Lamar", NOT "Lamar Davis". The key is built from whatever string the screen was handed
     # as the speaker, and that comes from Fixer.Name, which is the bare first name. This said
     # Lamar Davis for a long time, so every mission row it printed was named lamar_davis_...
     # and not one of them was ever a file the game asked for. A recording made from this list
     # would have sat in the folder in silence.
+    #
+    # WHICH IS EXACTLY WHAT THEN HAPPENED TO VERNON. A mission can name a `giver`, and the one
+    # that does is briefed by a different man in a different room -- his own basement -- with
+    # his own name on the panel. The panel's name is the speaker, so the game asks for
+    # vernon_<hash>.wav; this list said Lamar, so the takes were cut, named lamar_<hash>.wav,
+    # filed, and never once played. Nothing errors. The line simply does not speak, and it does
+    # not speak for as long as nobody stands in that basement and notices.
+    #
+    # Same hash either way -- the hash is of the sentence and the speaker is only the prefix --
+    # so a wrongly named take is a rename, not a re-record.
     doc = load("missions.json")
     for m in (doc or {}).get("missions", []):
+        who = Giver(m)
+
         for field in ("brief", "done", "briefAgain", "doneAgain"):
-            add("Lamar", m.get(field))
+            add(who, m.get(field))
         for line in m.get("briefMore") or []:
-            add("Lamar", line)
+            add(who, line)
 
     return rows
+
+
+def Giver(mission):
+    """Who says this job's lines: the mission's own giver, or Lamar when it has none.
+
+    THE NAME AS THE PANEL PRINTS IT, because the panel's name is what the key is built from.
+    Anything not in here falls back to the id with a capital on it, which is right for a
+    one-word first name and is the shape every giver has had so far.
+    """
+    who = (mission.get("giver") or "").strip()
+
+    if not who:
+        return "Lamar"
+
+    return {"vernon": "Vernon", "gerald": "Gerald", "hao": "Hao", "lamar": "Lamar"}.get(
+        who.lower(), who[:1].upper() + who[1:])
 
 
 # ------------------------------------------------------------------- the feed

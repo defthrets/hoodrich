@@ -639,7 +639,7 @@ namespace Hoodrich.Locations
 
             var node = Node(
                 "THAT'S what I'm talkin' about. Aight, come on, I'll put you on it. And " +
-                "Franklin -- after? You comin' down them stairs and you hearin' the whole tape. " +
+                "Franklin -- after? You standin' right back here and you hearin' the whole tape. " +
                 "All of it. Front to back.");
 
             node.Say("Let's go.", () =>
@@ -666,9 +666,9 @@ namespace Hoodrich.Locations
         private DialogueNode Decline()
         {
             var node = Node(
-                "Cool. Cool cool cool. I ain't beggin' nobody. I'll be right here on this wall " +
-                "when you change your mind -- ain't like I got somewhere else to be, if I'm " +
-                "bein' honest with you.");
+                "Cool. Cool cool cool. I ain't beggin' nobody. I'll be right here when you " +
+                "change your mind -- ain't like I got somewhere else to be, if I'm bein' " +
+                "honest with you.");
 
             node.Leave();
             return node;
