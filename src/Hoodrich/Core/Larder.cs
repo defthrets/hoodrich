@@ -47,7 +47,7 @@ namespace Hoodrich.Core
         private static int _nextTry;
         private static int _firstTry;
 
-        private static PropertyInfo _ready, _total, _slots;
+        private static PropertyInfo _ready, _total, _slots, _extra, _menuOpen;
         private static MethodInfo _ids, _countOf, _nameOf, _iconOf, _tintOf, _consume, _mark;
         private static MethodInfo _notSleep;
         private static MethodInfo _drain;
@@ -106,6 +106,12 @@ namespace Hoodrich.Core
                     _ready = type.GetProperty("Ready", BindingFlags.Public | BindingFlags.Static);
                     _total = type.GetProperty("Total", BindingFlags.Public | BindingFlags.Static);
                     _slots = type.GetProperty("Slots", BindingFlags.Public | BindingFlags.Static);
+
+                    // Added to their API without a version bump, so they are looked up the
+                    // same way and simply come back null on an older build. See
+                    // Api.Pantry.ExtraSlots, which says why that is safe in this direction.
+                    _extra = type.GetProperty("ExtraSlots", BindingFlags.Public | BindingFlags.Static);
+                    _menuOpen = type.GetProperty("MenuOpen", BindingFlags.Public | BindingFlags.Static);
 
                     _ids = type.GetMethod("Ids", BindingFlags.Public | BindingFlags.Static);
                     _countOf = type.GetMethod("CountOf", BindingFlags.Public | BindingFlags.Static);
@@ -218,6 +224,59 @@ namespace Hoodrich.Core
             {
                 try { return !Present || _slots == null ? 0 : (int)_slots.GetValue(null, null); }
                 catch { return 0; }
+            }
+        }
+
+        /// <summary>
+        /// Lends their pocket room, because our bag is on his back.
+        ///
+        /// FOOD LIVES IN THEIR POCKET AND THE BAG IS OURS. A bag that makes you able to carry
+        /// more drugs and not more sandwiches is a bag that is lying about being a bag, so the
+        /// number goes over the bridge and their pocket grows by it. Nought when it is on the
+        /// floor, and nought on an install that has not got them.
+        ///
+        /// Written every time it changes rather than every pass: a property set through
+        /// reflection is not free, and this answer changes twice a session.
+        /// </summary>
+        public static int Lending
+        {
+            set
+            {
+                try
+                {
+                    if (!Present || _extra == null) return;
+                    if ((int)_extra.GetValue(null, null) == value) return;
+
+                    _extra.SetValue(null, value, null);
+                }
+                catch
+                {
+                    // Then their pocket is the size it always was, which is not broken.
+                }
+            }
+        }
+
+        /// <summary>
+        /// Whether one of THEIR screens is up and owns the buttons.
+        ///
+        /// TWO MODS, ONE KEYBOARD. Their shop, fridge and pocket all read arrows and a confirm
+        /// key, and so does the phone next door -- so a player buying a burger and pressing the
+        /// wrong thing ends up with a phone drawn over the top of a shop, with neither mod
+        /// having done anything wrong on its own. False on an install without them, which is
+        /// the answer that changes nothing.
+        /// </summary>
+        public static bool TheirMenuIsUp
+        {
+            get
+            {
+                try
+                {
+                    return Present && _menuOpen != null && (bool)_menuOpen.GetValue(null, null);
+                }
+                catch
+                {
+                    return false;
+                }
             }
         }
 

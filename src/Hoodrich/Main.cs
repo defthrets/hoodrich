@@ -3322,7 +3322,12 @@ namespace Hoodrich
                 // phone opening over a sniper sight covers the one thing you were using it for
                 // -- and on PC the two are the same key: the game's phone button is the up
                 // arrow, which is exactly what a hand reaches for while scoped.
-                _phone.Busy = () => _talk.IsOpen || Aiming();
+                // AND NOT OVER SOMEBODY ELSE'S SCREEN. Bare Minimum's shop, fridge and
+                // pocket read arrows and a confirm key exactly like this does, so a player
+                // buying a burger and pressing the wrong thing got a phone drawn over the top
+                // of a shop -- with neither mod having done anything wrong on its own. See
+                // Core.Larder.TheirMenuIsUp, which is false on an install without them.
+                _phone.Busy = () => _talk.IsOpen || Aiming() || Core.Larder.TheirMenuIsUp;
 
                 pages.ShowVanillaPhone = () => _phone.ShowVanillaPhone();
 

@@ -137,6 +137,11 @@ namespace Hoodrich.Economy
         {
             if (_state.Stash == null) return;
 
+            // AND THE FOOD POCKET NEXT DOOR GROWS WITH IT. Food is Bare Minimum's, so the
+            // bag has to say so over the bridge or it is a bag that holds drugs and lies about
+            // holding sandwiches. See Core.Larder.Lending.
+            Core.Larder.Lending = bag.Worn ? Satchel.Slots : 0;
+
             var want = Satchel.Pockets + (bag.Worn ? Satchel.Grams : 0f);
 
             if (Math.Abs(_state.Stash.Capacity - want) < 0.5f) return;
