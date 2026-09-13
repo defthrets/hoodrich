@@ -45,6 +45,33 @@ namespace Hoodrich.Economy
         private const int EveryMs = 200;
 
         /// <summary>
+        /// Where the bag is written down for the other mods on this machine.
+        ///
+        /// APPDOMAIN, AND PLAIN TYPES ONLY. SHVDN loads every script into one AppDomain, so
+        /// GetData/SetData is the one channel that needs no reference and no version agreement
+        /// between two assemblies -- and it only works with types both sides are guaranteed to
+        /// mean the same thing by. An int array. Not a Satchel: a class compiled into two
+        /// assemblies is two different types with the same name, and the cast on the far side
+        /// fails in a way nobody can read. This is the same channel the draw ledger uses.
+        ///
+        /// STATE OUT, ONE REQUEST IN. Anybody can see whether the bag is on and how full it
+        /// is; anybody can ASK for it to come off. Nobody else gets to put it down themselves,
+        /// because dropping it is a prop, a blip, a ped component and a save, and all four of
+        /// those belong here.
+        /// </summary>
+        private const string Channel = "spitmux.bag";
+        private const string DropAsk = "spitmux.bag.drop";
+
+        /// <summary>Slots of the state array: worn, used, total.</summary>
+        private const int SWorn = 0;
+        private const int SUsed = 1;
+        private const int SSlots = 2;
+        private const int SSize = 3;
+
+        /// <summary>The last drop request answered, so one ask is not answered twice.</summary>
+        private int _asked;
+
+        /// <summary>
         /// What it looks like on the pavement. Tried in order; the first this install has wins.
         ///
         /// A holdall rather than a parcel, because the thing on the floor has to read as YOUR
@@ -109,6 +136,9 @@ namespace Hoodrich.Economy
             if (bag == null) return;
 
             Room(bag);
+            Publish(bag);
+
+            if (Asked(me)) return;
 
             if (bag.Worn)
             {
@@ -118,6 +148,74 @@ namespace Hoodrich.Economy
             }
 
             Down(me, now);
+        }
+
+        /// <summary>
+        /// Writes the bag down where the rest of the machine can read it. See Channel.
+        ///
+        /// EVERY PASS, BECAUSE IT IS THREE INTS. Cheaper than working out whether it changed,
+        /// and a reader that starts up halfway through a session finds an answer immediately
+        /// rather than waiting for the next time somebody moves something.
+        /// </summary>
+        private void Publish(Satchel bag)
+        {
+            try
+            {
+                var row = AppDomain.CurrentDomain.GetData(Channel) as int[];
+
+                if (row == null || row.Length < SSize)
+                {
+                    row = new int[SSize];
+                    AppDomain.CurrentDomain.SetData(Channel, row);
+                }
+
+                row[SWorn] = bag.Worn ? 1 : 0;
+                row[SUsed] = bag.Used;
+                row[SSlots] = Satchel.Slots;
+            }
+            catch
+            {
+                // Then nobody else can see it, which costs them and not us.
+            }
+        }
+
+        /// <summary>
+        /// Somebody next door asked for it to come off.
+        ///
+        /// A COUNTER RATHER THAN A FLAG. A bool has to be cleared by whoever set it, and a
+        /// mod that sets one and then unloads leaves it stuck on -- so the asker just writes
+        /// a number that changes, and this answers each new one exactly once. Zero is never
+        /// an ask, so an array that has only ever been created does nothing.
+        ///
+        /// AND IT IS A REQUEST. The drop itself happens here, with the prop, the blip, the ped
+        /// component and the save all in one place, because those are the four things that
+        /// have to agree and none of them belong to anybody else.
+        /// </summary>
+        private bool Asked(Ped me)
+        {
+            int ask;
+
+            try
+            {
+                var row = AppDomain.CurrentDomain.GetData(DropAsk) as int[];
+                if (row == null || row.Length < 1) return false;
+
+                ask = row[0];
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (ask == 0 || ask == _asked) return false;
+
+            _asked = ask;
+
+            if (!Bag.Worn) return false;
+            if (me.IsInVehicle()) return false;
+
+            Drop(me);
+            return true;
         }
 
         /// <summary>
