@@ -68,8 +68,10 @@ namespace Hoodrich.Missions
     ///   That is the entire cost of blowing one, and with three needed out of four you can
     ///   afford it exactly once.
     ///
-    ///   AND GROVE STREET IS LAST. It is the only one of the four that is somebody's block
-    ///   rather than somebody's corner. Settle him and whoever is stood on that street works
+    ///   AND GROVE STREET IS LAST. All four corners are BALLAS TURF -- Davis and Rancho are
+    ///   theirs and are not shared, which is what makes the whole job a trespass and is why
+    ///   noise costs so much out here. Grove is the deepest into it and the only one of the
+    ///   four with a street full of their people round it. Settle him and whoever is stood there works
     ///   it out, and the job ends with a run back to Lamar's yard rather than a fourth quiet
     ///   exit. Nobody is spawned to make that happen -- if the block is empty at four in the
     ///   morning then it is empty and you walk home.
@@ -2161,12 +2163,14 @@ namespace Hoodrich.Missions
         /// <summary>
         /// The last one is on somebody's block, and the block works it out.
         ///
-        /// THE OTHER THREE ARE CORNERS AND THIS ONE IS A STREET. Three men stood on their own
-        /// outside a liquor store can be taken quietly and nobody is any the wiser -- which is
-        /// the whole point of the knife and is enforced everywhere else by switching the dead
-        /// body events off. Grove Street is the exception on purpose: it is the only one of
-        /// the four with people on it who would notice, so the job ends with a street turning
-        /// round rather than with a fourth quiet exit.
+        /// THE OTHER THREE ARE CORNERS AND THIS ONE IS A STREET. All four stand on Ballas
+        /// turf -- see gangs.json, where Davis is theirs and explicitly not shared -- but three
+        /// of them are men on their own outside a liquor store, and a man on his own can be
+        /// taken quietly with nobody any the wiser. That is the whole point of the knife and is
+        /// enforced everywhere else by switching the dead body events off. Grove Street is the
+        /// exception on purpose: it is the deepest into their blocks and the only one of the
+        /// four with their people stood round it, so the job ends with a street turning round
+        /// rather than with a fourth quiet exit.
         ///
         /// WHOEVER IS ACTUALLY THERE, which is the honest version of it. Nobody is spawned to
         /// make this happen. If the block is empty at four in the morning then the block is

@@ -183,10 +183,10 @@
       "id": "hunt_davis",
       "kind": "Hunt",
       "name": "We goin' huntin'.",
-      "brief": "Ay. Ay, Frank. Sit down. Nah -- stand UP, this a standin'-up conversation. Brouge. Rancho. Carson. Three of our corners, gone. Gone gone, nigga. And I ain't heard one shot, one horn, one nothin'. Three weeks these fools been eatin' out our fridge and puttin' the milk back like we wasn't gon' notice. That's that bullshit right there.",
-      "done": "Ay, you SEEN that? Man never even turned round! Three weeks they been doin' us like that, and tonight can't one of them corners tell nobody we was ever on it. No noise, no nothin'. That's it, cuz. That's exactly it, on my mama. Now give me my knife back.",
-      "briefAgain": "Same as before, nigga. Four corners, just the knife, get up behind 'em. Three out the four and we good. Grove last, then we out. And don't make no noise, I'm beggin' you.",
-      "doneAgain": "Four corners, quiet feet, and we walked out. Supposed to go like that every time, dawg. Never do.",
+      "brief": "Ay. Ay, Frank. Sit down. Nah -- stand UP, this a standin'-up conversation. Somebody been creepin' up on the Hills at night. Three weeks now. No shots, no horns, no nothin' -- they come, they take somethin', and they gone 'fore anybody even know they was on the block.",
+      "done": "Ay, you SEEN that? Man never even turned round! Three weeks they been creepin' up on us, and tonight we was stood on they own corners and can't one of 'em tell nobody we was ever there. That's it, cuz. That's exactly it, on my mama. Now give me my knife back.",
+      "briefAgain": "Same as before. Four Ballas, Davis and Rancho, just the knife. Get up behind 'em where they can't see you. Three out the four and we good. Grove last, then we out. And don't make no noise -- that's they block, not ours.",
+      "doneAgain": "Four corners, quiet feet, and we walked out they neighbourhood. Supposed to go like that every time, dawg. Never do.",
       "targetGang": "ballas",
       "zone": "DAVIS",
       "x": 115.921,
@@ -201,9 +201,9 @@
       "rep": 80,
       "minRank": 3,
       "briefMore": [
-        "And this where I stop playin' with you. They put the little homie in the hospital with a bat and had him tellin' me he fell down some stairs. Stairs, Frank. Boy live in a bungalow. Took another one phone, took his money, sent him home talkin' about some stranger did it. They keepin' it quiet 'cause quiet mean can't nobody point at nothin'. Three weeks. And don't nobody say a word to me.",
-        "So I'm in the pawn shop, right, I'm in there to buy a TV -- and I look in the case and there it is. Big ass Rambo knife, dawg. Serrated down the back, compass in the handle, li'l matches in there TOO, case you get lost. You ain't gettin' lost, we goin' to Davis. Walked out with no TV. And soon as that thing hit my hand I knew, for real for real: they took it quiet, so we takin' it back quiet. You feel me?",
-        "Four of 'em, corner each, I'ma tell you which one we on. They be standin' round on they phone all day like they got a career, know what I'm sayin'. You come up on his BACK, you stick him, and he never even knew nobody was on the street with him. They leave marks where they walked, so follow 'em. One of 'em turn round and clock you, he ain't runnin' nowhere, he comin' -- and that one don't count for us no more. Three out the four and we good. But Frank. I do not want to HEAR nothin' out there. Grove Street last, 'cause Grove somebody's block, and the second he drop we gone."
+        "And this where I stop playin' with you. They put the little homie in the hospital with a bat and had him tellin' me he fell down some stairs. Stairs, Frank. Boy live in a bungalow. Took another one phone, took his money, sent him home talkin' about some stranger did it. Quiet. Every time. Three weeks, and don't nobody say a word to me.",
+        "Well now we got 'em. Four Ballas -- and they ain't even hidin', dawg, they right back on they own corners in Davis and Rancho like wasn't nothin' happened. Standin' out there all day. So I'm in the pawn shop buyin' a TV, I look in the case, and there it is. Big ass Rambo knife. Serrated down the back, compass in the handle, li'l matches in there TOO, case you get lost. Walked out with no TV. They came to us quiet -- we goin' to them the exact same way.",
+        "Now that's THEY neighbourhood, Frank, so can't nothin' go loud out there. I'ma tell you which one we on. They be standin' round on they phone all day like they got a career -- you come up on his BACK, you stick him, and he never even knew nobody was on the street with him. They leave marks where they walked, so follow 'em. One of 'em turn round and clock you, he ain't runnin' nowhere, he comin', and that one don't count for us no more. Three out the four and we good. Grove Street last, 'cause Grove the deepest in and it's full of they people -- second he drop, we gone."
       ]
     },
     {
