@@ -198,17 +198,23 @@ if ($exit -ne 0) { throw "Compilation failed (csc exit $exit)." }
 Write-Host ("OK  {0:N0} bytes in {1:N1}s" -f (Get-Item $outDll).Length, $sw.Elapsed.TotalSeconds) -ForegroundColor Green
 
 # --- deploy -----------------------------------------------------------------
-function Read-IniKeys {
+function Read-IniPairs {
     <#
-        Every "Section.Key" in an ini, so two of them can be compared by what they actually
-        SET rather than by which headings they happen to have. Comments and blank lines are
-        skipped; a key outside any section is ignored, because the parser in the mod ignores
-        it too.
+        Every "Section.Key" in an ini AND what it is set to, so two of them can be compared by
+        what they actually SAY rather than by which headings they happen to have. Comments and
+        blank lines are skipped; a key outside any section is ignored, because the parser in
+        the mod ignores it too.
+
+        The VALUE is here because a key list cannot see the worst kind of stale ini. A door's
+        inside coordinate is not a setting, it is content that happens to live in a file the
+        player owns -- so a corrected coordinate sat in the repo for two days while the game
+        kept walking him into the old one, and the deploy said "all current" every time,
+        because the KEY was there. It was.
     #>
     param([string]$Path)
 
     $section = ''
-    $keys = New-Object System.Collections.Generic.List[string]
+    $pairs = @{}
 
     foreach ($line in (Get-Content -LiteralPath $Path)) {
         $t = $line.Trim()
@@ -217,10 +223,11 @@ function Read-IniKeys {
         if ($t.StartsWith(';') -or -not $t.Contains('=')) { continue }
         if (-not $section) { continue }
 
-        $keys.Add("$section.$($t.Split('=')[0].Trim())")
+        $cut = $t.IndexOf('=')
+        $pairs["$section.$($t.Substring(0, $cut).Trim())"] = $t.Substring($cut + 1).Trim()
     }
 
-    return $keys
+    return $pairs
 }
 
 function Deploy-To([string]$gameDir, [string]$label) {
@@ -327,11 +334,30 @@ function Deploy-To([string]$gameDir, [string]$label) {
             # from the template months ago and sat in both deployed inis regardless, along with
             # four hideout prices, two map settings and a wheel texture. None of it was read by
             # anything, and the deploy said "keep" every single time.
-            $srcKeys = Read-IniKeys $iniSrc
-            $dstKeys = Read-IniKeys $iniDst
+            $srcPairs = Read-IniPairs $iniSrc
+            $dstPairs = Read-IniPairs $iniDst
+
+            $srcKeys = @($srcPairs.Keys)
+            $dstKeys = @($dstPairs.Keys)
 
             $absent = $srcKeys | Where-Object { $dstKeys -notcontains $_ }
             $stale  = $dstKeys | Where-Object { $srcKeys -notcontains $_ }
+
+            # WHAT IS SET TO SOMETHING ELSE, and of those, which are PLACES.
+            #
+            # A player's ini is meant to disagree with the template -- that is what settings
+            # are for, and those are listed quietly and left alone. But a door's coordinates
+            # are not taste. They are a spot somebody stood on and measured, shipped in a file
+            # the player owns, and when the measurement is corrected the correction never
+            # arrives: the key is present, the deploy says "all current", and the game walks
+            # him into last week's coordinate for ever. That is called out on its own line.
+            $moved = $srcKeys |
+                     Where-Object { $dstKeys -contains $_ -and $srcPairs[$_] -ne $dstPairs[$_] } |
+                     Sort-Object
+
+            # -cmatch, because -match is case-INSENSITIVE and 'Paint.Opacity' ends in a y.
+            $places = $moved | Where-Object { $_ -cmatch '(X|Y|Z|Heading)$' }
+            $taste  = $moved | Where-Object { $_ -cnotmatch '(X|Y|Z|Heading)$' }
 
             if ($absent) {
                 Write-Host "  STALE  Hoodrich.ini is missing $($absent.Count) setting(s):" -ForegroundColor Yellow
@@ -345,7 +371,21 @@ function Deploy-To([string]$gameDir, [string]$label) {
                 Write-Host "         Left alone -- it is your file. Delete them, or copy Hoodrich.ini over it." -ForegroundColor DarkGray
             }
 
-            if (-not $absent -and -not $stale) {
+            if ($places) {
+                Write-Host "  MOVED  Hoodrich.ini has $($places.Count) coordinate(s) that are not what you built:" -ForegroundColor Red
+
+                foreach ($k in $places) {
+                    Write-Host "         $k  built=$($srcPairs[$k])  yours=$($dstPairs[$k])" -ForegroundColor DarkGray
+                }
+
+                Write-Host "         A place is not a setting. The game is using YOURS." -ForegroundColor DarkGray
+            }
+
+            if ($taste) {
+                Write-Host "  yours  $($taste.Count) setting(s) differ from the template: $($taste -join ', ')" -ForegroundColor DarkGray
+            }
+
+            if (-not $absent -and -not $stale -and -not $moved) {
                 # Counted, not typed. The number was hardcoded at 70 and stayed at 70 through
                 # every setting added since -- on a line whose entire job is telling you whether
                 # your ini is current.

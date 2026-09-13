@@ -121,7 +121,16 @@ namespace Hoodrich.Locations
         /// anything further away is something else entirely.
         /// </summary>
         private const float FloorProbeUp = 3f;
-        private const float FloorProbeBand = 4f;
+        /// <summary>
+        /// How far the floor probe is allowed to disagree with the recorded height.
+        ///
+        /// FOUR METRES IS A STOREY, which is the whole problem. The probe is there to correct a
+        /// Z that was read off a HUD and is a few centimetres out; at four metres it will
+        /// happily find the warehouse floor under a walkway and drop him onto it, undoing the
+        /// coordinate on purpose. A probe may AGREE with a measured height. It may not overrule
+        /// one -- the same rule the missions use for a spawn on a roof.
+        /// </summary>
+        private const float FloorProbeBand = 1.2f;
 
         /// <summary>
         /// How far the room's own origin may be from the recorded coordinate before it is
@@ -509,6 +518,9 @@ namespace Hoodrich.Locations
                 player.Position = to;
                 player.Heading = _spec.InsideHeading;
 
+                // The room's own middle, if it turns out he needs rescuing to it. See below.
+                var middle = Vector3.Zero;
+
                 // Pin the interior so the game does not decide the room is not worth streaming
                 // while we are stood in the middle of it.
                 var interior = Function.Call<int>(Hash.GET_INTERIOR_AT_COORDS, to.X, to.Y, to.Z);
@@ -520,8 +532,8 @@ namespace Hoodrich.Locations
                     Dress(interior);
                     Function.Call(Hash.REFRESH_INTERIOR, interior);
 
-                    // Where the room ACTUALLY is, asked of the game rather than read off a
-                    // coordinate somebody typed into an ini.
+                    // WHERE THE ROOM'S MIDDLE IS, KEPT IN CASE HE NEEDS IT. It is not
+                    // where he is going.
                     //
                     // This is what the grow room needed. The log said it plainly:
                     //
@@ -533,18 +545,29 @@ namespace Hoodrich.Locations
                     // with no collision under him and no room around him. Near enough to find
                     // the room, not near enough to be in it, which is the one failure a
                     // hand-taken reading produces and the one a person cannot debug by looking.
+                    // The interior knows its own origin, and offset zero from it is the middle
+                    // of the room, which is at least somewhere a man can stand.
                     //
-                    // The interior knows its own origin. Offset zero from it is the middle of
-                    // the room, which is somewhere a man can stand.
-                    var origin = Function.Call<Vector3>(Hash.GET_OFFSET_FROM_INTERIOR_IN_WORLD_COORDS,
-                                                        interior, 0f, 0f, 0f);
+                    // SO IT WAS TAKEN EVERY TIME, AND THAT IS THE BUG. Any room whose middle
+                    // was within sixty metres of the measured spot -- which is every room,
+                    // because sixty metres is most of a warehouse -- had the measured spot
+                    // thrown away for it. Leroy's said so in the log on every single entry:
+                    //
+                    //   The Leroy's Electrical is really at X:147.39 Y:-2201.34 Z:3.60,
+                    //   not X:135.58 Y:-2203.11 Z:7.30 -- using the room's own origin
+                    //
+                    // and then, one line later, "he is in interior=156929" -- he was in the
+                    // room. The coordinate was never wrong. A man stood on the walkway to pick
+                    // the arrival spot and was put on the warehouse floor twelve metres away
+                    // for it, every time, and the only thing that ever went wrong was this.
+                    //
+                    // It is a rescue now. If he lands in the room, he stays where he was put;
+                    // it is only used when the game says he is in no interior at all, which is
+                    // the grow room's failure and nobody else's. See below the wait.
+                    var found = Function.Call<Vector3>(Hash.GET_OFFSET_FROM_INTERIOR_IN_WORLD_COORDS,
+                                                       interior, 0f, 0f, 0f);
 
-                    if (origin != Vector3.Zero && origin.DistanceTo(to) < OriginTrust)
-                    {
-                        Log.Info("The " + _spec.Name + " is really at " + origin +
-                                 ", not " + to + " -- using the room's own origin.");
-                        to = origin;
-                    }
+                    if (found != Vector3.Zero && found.DistanceTo(to) < OriginTrust) middle = found;
                 }
 
                 // Waited ON rather than waited OUT.
@@ -658,6 +681,30 @@ namespace Hoodrich.Locations
                         ? "that room ain't there. check [" + _spec.Section + "] Inside in the ini."
                         : "ipl '" + _spec.Ipl + "' never loaded. check [" + _spec.Section + "] Ipl in the ini.");
                     return;
+                }
+
+                // ---- THE RESCUE, AND ONLY NOW ----
+                //
+                // He is somewhere the game has a room registered but he himself is in no
+                // interior: the coordinate is near the room and not inside it, which is the
+                // grow room's failure. The middle of the room is somewhere a man can stand, so
+                // put him there rather than leave him in the gap between the wall and the
+                // outside. Anyone who landed IN the room never gets here, and keeps the spot
+                // that was measured for him.
+                if (inRoom == 0 && middle != Vector3.Zero)
+                {
+                    Log.Warn("He landed at " + to + " in the " + _spec.Name + " and that is not " +
+                             "inside the room. Standing him in the middle of it, at " + middle +
+                             " -- re-measure [" + _spec.Section + "] Inside from in there.");
+
+                    to = middle;
+
+                    player.Position = to;
+                    player.Heading = _spec.InsideHeading;
+
+                    Wait(StreamStepMs);
+
+                    inRoom = Function.Call<int>(Hash.GET_INTERIOR_FROM_ENTITY, player.Handle);
                 }
 
                 // The floor the GAME reports, not the one somebody typed into the ini.
