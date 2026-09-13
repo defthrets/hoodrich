@@ -122,6 +122,16 @@ namespace Hoodrich.Economy
             /// </summary>
             public Vector3 SceneAt = new Vector3(0f, 0f, 0f);
 
+            /// <summary>
+            /// WHETHER HE BREATHES IT OUT. A plume of smoke out of his face every couple of
+            /// seconds for as long as this runs, the linger included.
+            ///
+            /// Only for the things that are actually smoked. A needle does not exhale and a
+            /// bump does not either, and a mod that puffs smoke out of a man snorting a line
+            /// is a mod that stopped paying attention. See Exhale.
+            /// </summary>
+            public bool Puffs;
+
             /// <summary>How long it takes before the effect lands.</summary>
             public int Ms = 2600;
 
@@ -166,6 +176,55 @@ namespace Hoodrich.Economy
 
         /// <summary>Whether what is playing is a synchronised scene. See Scene.</summary>
         private bool _scene;
+
+        /// <summary>When the next lungful is due, and how many have gone. See Recipe.Puffs.</summary>
+        private int _puffAt;
+        private int _puffs;
+
+        private const int PuffEveryMs = 2200;
+
+        /// <summary>
+        /// Whether he has just drawn on somebody, in which case this is over.
+        ///
+        /// NOT SIMPLY "IS HE ARMED". He can be carrying half an armoury and still want a
+        /// smoke; what ends it is a CHANGE of weapon from the one he started with, or an act
+        /// -- a shot, a swing, or sights going up. A bare-handed punch is not melee combat
+        /// until it lands, so the button is read as well, and only while he is unarmed:
+        /// with a gun in his hand that button is the trigger and the shot test has it.
+        /// </summary>
+        private bool Drawn(Ped me)
+        {
+            try
+            {
+                var now = me.Weapons != null && me.Weapons.Current != null
+                        ? me.Weapons.Current.Hash : WeaponHash.Unarmed;
+
+                // A CHANGE TO SOMETHING, NOT A CHANGE TO NOTHING. The game takes a weapon
+                // off him itself for some of these animations -- a synchronised scene empties
+                // his hands -- and reading that as "he drew" would cancel the very clip that
+                // caused it on its second frame. Putting one away is not drawing one.
+                if (now != _armed && now != WeaponHash.Unarmed) return true;
+
+                if (Function.Call<bool>(Hash.IS_PED_SHOOTING, me.Handle)) return true;
+                if (Function.Call<bool>(Hash.IS_PED_IN_MELEE_COMBAT, me.Handle)) return true;
+                if (Function.Call<bool>(Hash.IS_PLAYER_FREE_AIMING, Game.Player.Handle)) return true;
+
+                // AND NOT AT THE WHEEL. Attack is a driving control as well, and a meal
+                // eaten through a drive-through is eaten sitting on it.
+                if (now == WeaponHash.Unarmed && !me.IsInVehicle() &&
+                    Game.IsControlJustPressed(Control.Attack)) return true;
+
+                return false;
+            }
+            catch
+            {
+                // A test that cannot be made is not an interruption.
+                return false;
+            }
+        }
+
+        /// <summary>What he was holding when this started. See Drawn.</summary>
+        private WeaponHash _armed = WeaponHash.Unarmed;
 
         public bool Busy { get; private set; }
 
@@ -266,6 +325,21 @@ namespace Hoodrich.Economy
             _recipe = recipe;
             _after = null;
 
+            // The first lungful is not on the first frame -- he has not had it to his mouth
+            // yet. And what he is holding now is what a change is measured against. See Drawn.
+            _puffs = 0;
+            _puffAt = Game.GameTime + PuffEveryMs;
+
+            try
+            {
+                _armed = me.Weapons != null && me.Weapons.Current != null
+                       ? me.Weapons.Current.Hash : WeaponHash.Unarmed;
+            }
+            catch
+            {
+                _armed = WeaponHash.Unarmed;
+            }
+
             Hold(recipe, me);
 
             // Round the front, for as long as this takes. See RitualCam -- the whole point of
@@ -348,10 +422,40 @@ namespace Hoodrich.Economy
                 return true;
             }
 
+            // HANDS ARE FOR ONE THING AT A TIME. Drawing on somebody ends it: the man stops
+            // smoking, the prop goes, and the effect lands anyway because he already paid for
+            // it and the gram is already gone. Losing a bag to an accidental trigger pull
+            // would be a worse bug than the one this fixes. See Drawn.
+            if (Drawn(me))
+            {
+                Log.Info("Ritual cut short: he reached for a weapon.");
+
+                var land = !Landed;
+                Landed = true;
+
+                Stop();
+
+                // True is "the effect lands this tick" to whoever is driving this. See
+                // Highs.Update, which is the only caller.
+                return land;
+            }
+
             // Every frame this runs, which is what a camera move needs. It gives itself back
             // when its own clock runs out, so a ritual that lingers for a minute does not mean
             // a minute of not being able to look where you like.
             RitualCam.Update(me);
+
+            // AND HE BREATHES OUT WHILE HE DOES IT. On its own clock rather than off the
+            // animation, because these clips carry no signal for where the drag ends and the
+            // whole point is that something comes out of him. See Recipe.Puffs.
+            if (_recipe != null && _recipe.Puffs && now >= _puffAt)
+            {
+                _puffAt = now + PuffEveryMs;
+
+                if (_puffs > 0) Exhale.Now(me, 0.18f);
+
+                _puffs++;
+            }
 
             if (_waiting != null)
             {

@@ -203,6 +203,7 @@ namespace Hoodrich.Economy
             Scenario = "WORLD_HUMAN_SMOKING_POT",
 
             // The first drag is what does it; the rest is standing there smoking. See Linger.
+            Puffs = true,
             Ms = 7400,
             Linger = SmokeMs
         };
@@ -246,6 +247,7 @@ namespace Hoodrich.Economy
 
             // A bong is not a quick one. The clip runs the best part of eight seconds and the
             // hit lands at the end of it, which is the whole argument of this file.
+            Puffs = true,
             Ms = 7800,
             Linger = SmokeMs
         };
@@ -288,6 +290,7 @@ namespace Hoodrich.Economy
             Lefty = true,
             Sits = new Vector3(0.02f, 0.01f, 0.0f),
             Scenario = "WORLD_HUMAN_SMOKING_POT",
+            Puffs = true,
             Ms = 7800,
             Linger = SmokeMs
         };
