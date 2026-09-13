@@ -113,6 +113,8 @@ namespace Hoodrich.Locations
                     // switch them on again the moment it decided it was dark.
                     if (Lights) Function.Call(Hash.SET_VEHICLE_LIGHTS, _car.Handle, 1);
 
+                    Latch();
+
                     if (Neon.HasValue)
                     {
                         for (var side = 0; side < 4; side++)
@@ -189,8 +191,36 @@ namespace Hoodrich.Locations
         /// <summary>Mods asked for by index: slot to index, or -1 for the last one the car has.</summary>
         public System.Collections.Generic.Dictionary<int, int> Mods;
 
+        /// <summary>
+        /// One rim out of Benny's Originals, by index, or below zero to leave the wheels alone.
+        ///
+        /// SEPARATE FROM Built, because a set of rims is not a build. Built drops the car on
+        /// its springs, blacks the glass and fits the whole Benny's catalogue -- right for the
+        /// lowrider the yard is arranged around, wrong for a man who spent his money on chrome
+        /// and left everything else as it came.
+        /// </summary>
+        public int Rims = -1;
+
         /// <summary>The glass, if it is not to be whatever the build gives it: 1 black, 2 dark smoke, 3 light smoke.</summary>
         public int Tint = -1;
+
+        /// <summary>
+        /// Set by whoever owns it: whether it is locked right now.
+        /// </summary>
+        ///
+        /// <remarks>
+        /// SCENERY YOU CANNOT DRIVE OFF IN. Every other car in this mod is somebody's and the
+        /// player is welcome to it; this one is a man's own car, parked where he parks it,
+        /// and it stays his except on the day he hands you the keys. A lock is the only way to
+        /// say that -- take the car away and the fiction goes with it, leave it open and the
+        /// first thing anybody does is drive it into the sea.
+        ///
+        /// ASKED EVERY PASS RATHER THAN SET AT SPAWN, because the answer changes mid-session --
+        /// the job starts, the doors open, the job ends -- and a lock written once is a lock
+        /// that is wrong for the half of the session that matters. Null leaves the doors
+        /// exactly as the game made them, which is what every other parked car wants.
+        /// </remarks>
+        public Func<bool> Locked;
 
         /// <summary>
         /// Somebody sat on it: models tried in order, the first that loads put in the seat,
@@ -695,6 +725,8 @@ namespace Hoodrich.Locations
         /// <summary>The mods asked for by index, and the glass. See Mods and Tint.</summary>
         private void Asked()
         {
+            Chrome();
+
             if (Mods != null)
             {
                 foreach (var pair in Mods)
@@ -740,6 +772,49 @@ namespace Hoodrich.Locations
                 }
             }
         }
+
+        /// <summary>
+        /// The rims, and the log says which ones the game actually fitted.
+        ///
+        /// A RIM LIST IS NOT THE SAME LENGTH ON EVERY BODY. An index counted off a trainer's
+        /// menu is right for the car it was counted on and a guess everywhere else, and a wheel
+        /// that silently comes out one off is the sort of thing nobody notices for a month. So
+        /// the name the GAME gives what it fitted goes in the log, once, and the number in the
+        /// source can be checked against it rather than believed.
+        /// </summary>
+        private void Chrome()
+        {
+            if (Rims < 0 || _rimsOn) return;
+
+            _rimsOn = true;
+
+            try
+            {
+                Function.Call(Hash.SET_VEHICLE_MOD_KIT, _car.Handle, 0);
+                Function.Call(Hash.SET_VEHICLE_WHEEL_TYPE, _car.Handle, BennysWheels);
+
+                var many = Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, _car.Handle, 23);
+
+                if (many <= 0)
+                {
+                    Log.Info("The " + _car.DisplayName + " has no Benny's rims to fit.");
+                    return;
+                }
+
+                var want = Rims >= many ? many - 1 : Rims;
+
+                Function.Call(Hash.SET_VEHICLE_MOD, _car.Handle, 23, want, false);
+
+                Log.Info("The " + _car.DisplayName + " is on rim " + want + " of " + many +
+                         " (" + (ModName(23, want) ?? "no name") + ").");
+            }
+            catch
+            {
+                // Factory wheels, which is not a crash.
+            }
+        }
+
+        private bool _rimsOn;
 
         /// <summary>What a mod option is called, the way the shop reads it, or nothing.</summary>
         private string ModName(int slot, int index)
@@ -897,6 +972,36 @@ namespace Hoodrich.Locations
         {
             Function.Call(Hash.SET_VEHICLE_DOOR_LATCHED, _car.Handle, door, false, false, true);
             Function.Call(Hash.SET_VEHICLE_DOOR_CONTROL, _car.Handle, door, 1f, 1f);
+        }
+
+        /// <summary>
+        /// Locked or not, said again every pass. See Locked.
+        ///
+        /// TWO IS "locked, and the player cannot even try"; ONE is the ordinary unlocked door.
+        /// Said every pass because the game will happily unlock a vehicle behind you -- a wanted
+        /// level, a scripted scene, a passenger getting out -- and a car that is only locked
+        /// until something else touches it is a car that is not locked.
+        /// </summary>
+        private void Latch()
+        {
+            if (Locked == null) return;
+
+            try
+            {
+                var shut = Locked();
+
+                Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, _car.Handle, shut ? 2 : 1);
+
+                // AND NOT MERELY SHUT: a locked car whose door the player can still open is
+                // every bit as unlocked as one that is not. This is the native that refuses
+                // the hand on the handle.
+                Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED_FOR_PLAYER, _car.Handle,
+                              Game.Player.Handle, shut);
+            }
+            catch
+            {
+                // Then it is a car with doors, which is where everything started.
+            }
         }
 
         /// <summary>

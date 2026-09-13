@@ -221,6 +221,8 @@ namespace Hoodrich.Locations
 
             if (Known == null || Known()) EnsureBlip(); else DropBlip();
 
+            Keyed();
+
             // OUT ON THE JOB, SO THE WALL LETS GO OF HIM. Everything below is about a man
             // stood in one place in Strawberry -- it despawns him at a hundred and sixty
             // metres and settles him back into his scenario whenever he drifts -- and all of
@@ -412,6 +414,52 @@ namespace Hoodrich.Locations
             _held = false;
 
             WalkTo(Spot, Heading);
+
+            Keys();
+        }
+
+        /// <summary>
+        /// What he says coming out of the door behind you: the car is round the side.
+        ///
+        /// SAID ON THE WAY OUT, NOT IN A PANEL. A full-screen conversation to deliver one
+        /// sentence while both of you are walking is a screen that stops the walk it is
+        /// describing -- and this line exists to point at something, which is a thing a man does
+        /// over his shoulder.
+        ///
+        /// ONLY WHILE HE STILL OWES YOU THE JOB. Afterwards there is nothing to drive anywhere
+        /// for, and a man announcing his car every time you come up from listening to his tape
+        /// is a man you would stop visiting.
+        /// </summary>
+        private void Keys()
+        {
+            if (_state != null && _state.HasDone(Locations.VernonTalk.JobId)) return;
+
+            _keysAt = Game.GameTime + KeysAfterMs;
+        }
+
+        /// <summary>The one line. See Keys.</summary>
+        private const string RoundTheSide =
+            "Aight -- we takin' my Dorado, she round the side. And Franklin? Mind them rims.";
+
+        /// <summary>A breath after the door, so it is not said over the fade. See Keys.</summary>
+        private const int KeysAfterMs = 1200;
+
+        private int _keysAt;
+
+        /// <summary>Said once the pause is up, if he is still out here to say it. See Keys.</summary>
+        private void Keyed()
+        {
+            if (_keysAt == 0 || Game.GameTime < _keysAt) return;
+
+            _keysAt = 0;
+
+            if (_ped == null || !_ped.Exists() || !_ped.IsAlive) return;
+
+            try { Core.Voice.Say("vernon", RoundTheSide, null, true); }
+            catch { /* the subtitle still carries it */ }
+
+            try { GTA.UI.Screen.ShowSubtitle(Core.Lang.T("~y~VERNON:~s~ " + RoundTheSide), 5000); }
+            catch { /* the audio still carries it */ }
         }
 
         /// <summary>On his way to the wall. Gets there, or is talked to on the way.</summary>

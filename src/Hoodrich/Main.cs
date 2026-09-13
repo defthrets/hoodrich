@@ -344,6 +344,18 @@ namespace Hoodrich
         /// <summary>The game's own metallic dark green, which is what a lowrider is painted.</summary>
         private const int MetallicDarkGreen = 49;
 
+        /// <summary>Plain black, which the game renders glossy. The matte blacks are elsewhere.</summary>
+        private const int GlossBlack = 0;
+
+        /// <summary>
+        /// "Lotta Chrome", seventeenth in Benny's Originals and therefore sixteen from nought.
+        ///
+        /// Read off the trainer's own list rather than guessed. ParkedCar logs the name the
+        /// GAME gives whatever it fits, so if a body has a shorter list than the one that was
+        /// counted, the log says so rather than the car quietly wearing the wrong rim.
+        /// </summary>
+        private const int LottaChrome = 16;
+
         /// <summary>Not a colour. Tells the parked car to leave the paint alone.</summary>
         private const int LeaveThePaint = -1;
 
@@ -1309,6 +1321,40 @@ namespace Hoodrich
                 // The neon is asked for and may simply not answer: underglow is a Los Santos
                 // Customs slot, and a quad has not got one. It costs two calls to try and
                 // nothing to be told no, so it is tried.
+                // ---- VERNON'S DORADO, DOWN THE SIDE OF THE SHOP ----
+                //
+                // The one car in the mod that is not yours to take. He talks about it, he walks
+                // you to it, and every other hour of the save it sits there locked -- which is
+                // the entire point of it: a man who owns something is a man who has something
+                // to lose, and a car you can drive away the first time you see it is set
+                // dressing with a door on it.
+                //
+                // GLOSS BLACK, CHROME RIMS, GREEN TUBES, SMOKED GLASS. Every one of those is
+                // his taste rather than ours, and it is the same taste as the basement: the
+                // money went on the two things anybody looks at.
+                //
+                // ON THE GROUND PROPERLY RATHER THAN AT THE READING. The coordinate came off a
+                // HUD and a HUD reports a man's PELVIS -- the same metre that had four Ballas
+                // loitering in mid-air in the hunt and the bag floating over Denise's carpet.
+                // ParkedCar settles what it makes, so the number here is the reading as taken.
+                _cars.Add(new ParkedCar(new Vector3(38.751f, -1450.349f, 28.934f), 320.177f,
+                                        GlossBlack, "dorado")
+                {
+                    // His, and shut, unless the job has the keys. See Deal.
+                    Locked = () => _jobs == null || !_jobs.OnVernonsJob,
+
+                    // Benny's Originals, "Lotta Chrome" -- seventeenth of the thirty-two, so
+                    // sixteen counting from nought. The log says which one the game actually
+                    // fitted, because a rim list is not the same length on every body.
+                    Rims = LottaChrome,
+
+                    // Dark smoke. Not black: black glass on a black car is a shape, and he
+                    // wants people to see there is a man in there.
+                    Tint = 2,
+
+                    Neon = System.Drawing.Color.FromArgb(60, 220, 70)
+                });
+
                 _cars.Add(new ParkedCar(new Vector3(-197.960f, -1714.836f, 31.955f), 290.056f,
                                         MetallicDarkGreen,
                                         "blazer4", "blazer", "faggio2")

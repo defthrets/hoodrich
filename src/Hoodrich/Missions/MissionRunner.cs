@@ -320,6 +320,9 @@ namespace Hoodrich.Missions
                                  || _hunt.IsRunning
                                  || _deal.IsRunning;
 
+        /// <summary>Vernon's job is on, so the keys to his car are yours for the afternoon.</summary>
+        public bool OnVernonsJob => _deal.IsRunning;
+
         private bool OnBike => _bike.IsRunning;
 
         private bool OnHunt => _hunt.IsRunning;
