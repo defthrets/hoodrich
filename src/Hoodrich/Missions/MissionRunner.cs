@@ -208,6 +208,7 @@ namespace Hoodrich.Missions
 
         private readonly BikeRide _bike;
         private readonly Hunt _hunt;
+        private readonly Deal _deal;
 
         /// <summary>
         /// The paint engine, on its way to the tag run.
@@ -274,6 +275,7 @@ namespace Hoodrich.Missions
             _zones = zones;
             _bike = new BikeRide(crew, gangs);
             _hunt = new Hunt(crew, gangs);
+            _deal = new Deal(crew, gangs);
             _tags = new TagRun(gangs) { Crew = crew };
             _walls = TagRun.Load();
         }
@@ -307,11 +309,13 @@ namespace Hoodrich.Missions
         public MissionState State { get; private set; } = MissionState.None;
 
         public bool IsRunning => State != MissionState.None || _bike.IsRunning || _tags.IsRunning
-                                 || _hunt.IsRunning;
+                                 || _hunt.IsRunning
+                                 || _deal.IsRunning;
 
         private bool OnBike => _bike.IsRunning;
 
         private bool OnHunt => _hunt.IsRunning;
+        private bool OnDeal => _deal.IsRunning;
 
         private bool OnTags => _tags.IsRunning;
 
@@ -336,6 +340,7 @@ namespace Hoodrich.Missions
             {
                 if (OnBike) return _bike.Objective;
                 if (OnHunt) return _hunt.Objective;
+                if (OnDeal) return _deal.Objective;
                 if (OnTags) return _tags.Objective;
 
                 switch (State)
@@ -455,6 +460,18 @@ namespace Hoodrich.Missions
                 _homiesLost = 0;
 
                 Log.Info("Mission " + def.Id + " started as a hunt.");
+                return null;
+            }
+
+            if (def.Kind == MissionKind.Deal)
+            {
+                var no = _deal.Start(def);
+                if (no != null) return no;
+
+                _def = def;
+                _homiesLost = 0;
+
+                Log.Info("Mission " + def.Id + " started as a buy.");
                 return null;
             }
 
@@ -924,6 +941,17 @@ namespace Hoodrich.Missions
         /// all, including the one he already texted about.
         /// </summary>
         /// <param name="unmentionedOnly">Skip anything he has already texted about.</param>
+        /// <summary>
+        /// Whether this is one Lamar hands out, which is all of them bar the ones that say
+        /// otherwise. See MissionDef.Giver.
+        /// </summary>
+        private static bool His(MissionDef def)
+        {
+            return def != null &&
+                   (string.IsNullOrEmpty(def.Giver) ||
+                    string.Equals(def.Giver, "lamar", StringComparison.OrdinalIgnoreCase));
+        }
+
         public MissionDef NextInTheWindow(bool unmentionedOnly)
         {
             if (_state == null || Book == null) return null;
@@ -946,6 +974,7 @@ namespace Hoodrich.Missions
             {
                 var def = Book.All[i];
 
+                if (!His(def)) continue;
                 if (_state.HasDone(def.Id)) continue;
                 if (unmentionedOnly && _state.HasBeenOffered(def.Id)) continue;
 
@@ -970,6 +999,7 @@ namespace Hoodrich.Missions
             for (var i = 0; i < Book.All.Count; i++)
             {
                 var def = Book.All[i];
+                if (!His(def)) continue;
                 if (unmentionedOnly && _state.HasBeenOffered(def.Id)) continue;
                 pool.Add(def);
             }
@@ -980,7 +1010,10 @@ namespace Hoodrich.Missions
             {
                 if (unmentionedOnly) return null;
 
-                for (var i = 0; i < Book.All.Count; i++) pool.Add(Book.All[i]);
+                for (var i = 0; i < Book.All.Count; i++)
+                {
+                    if (His(Book.All[i])) pool.Add(Book.All[i]);
+                }
             }
 
             return pool.Count == 0 ? null : pool[_rng.Next(pool.Count)];
@@ -1052,6 +1085,16 @@ namespace Hoodrich.Missions
 
                 var wentWrong = _hunt.Failure;
                 if (!string.IsNullOrEmpty(wentWrong)) Fail(wentWrong);
+
+                return;
+            }
+
+            if (OnDeal)
+            {
+                _deal.Update();
+
+                var wentBad = _deal.Failure;
+                if (!string.IsNullOrEmpty(wentBad)) Fail(wentBad);
 
                 return;
             }
@@ -3078,6 +3121,7 @@ namespace Hoodrich.Missions
         public bool ReadyToCollect =>
             OnBike ? _bike.ReadyToCollect :
             OnHunt ? _hunt.ReadyToCollect :
+            OnDeal ? _deal.ReadyToCollect :
             OnTags ? _tags.ReadyToCollect :
             State == MissionState.Collect;
 
@@ -3352,6 +3396,7 @@ namespace Hoodrich.Missions
             // Safe to call with no hunt running: HandItBack returns on _lent == 0, both lists
             // are empty, and the three flags are already at rest.
             _hunt.Clear();
+            _deal.Clear();
 
             ClearSiteBlip();
             ClearBlips();
@@ -3462,6 +3507,7 @@ namespace Hoodrich.Missions
             _tags.Draw();
             _bike.Draw();
             _hunt.Draw();
+            _deal.Draw();
             DrawBay();
 
             // Centred at the top: it belongs to the job, not to the corner of the screen.
@@ -3665,6 +3711,7 @@ namespace Hoodrich.Missions
                 // bar sat empty for the whole of two jobs.
                 if (OnBike) return Clamp01(_bike.Advance);
                 if (OnHunt) return Clamp01(_hunt.Advance);
+                if (OnDeal) return Clamp01(_deal.Advance);
                 if (OnTags) return Clamp01(_tags.Advance);
 
                 var player = Game.Player.Character;

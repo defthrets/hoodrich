@@ -2712,9 +2712,39 @@ namespace Hoodrich
                     if (owned != null && car.Live != null && car.Live.Exists()) _plateScreen.Open(car.Live, owned, car.Name);
                 };
 
-                // Vernon. The job is not written yet, and Job stays null until it is --
-                // the accept row says he is lining it up rather than pretending otherwise.
+                // Vernon, and his job, which is his own rather than another leaf of Lamar's
+                // book -- see MissionDef.Giver, without which the man in Strawberry asks you
+                // to go and buy a kilo and then Lamar texts you about it.
                 _vernonTalk = new VernonTalk(_state);
+
+                _vernonTalk.Brief = () =>
+                {
+                    var job = VernonJob();
+                    if (job == null) return null;
+
+                    var beats = new List<string>();
+
+                    if (!string.IsNullOrEmpty(job.Brief)) beats.Add(job.Brief);
+                    foreach (var more in job.BriefMore) beats.Add(more);
+
+                    return beats.ToArray();
+                };
+
+                _vernonTalk.Job = () =>
+                {
+                    var job = VernonJob();
+
+                    if (job == null)
+                    {
+                        Core.Log.Warn("Vernon's job is not in missions.json -- looked for " +
+                                      Locations.VernonTalk.JobId + ".");
+                        return;
+                    }
+
+                    var no = _jobs.Start(job);
+
+                    if (!string.IsNullOrEmpty(no)) UI.Notify.Problem("Can't go right now: " + no);
+                };
 
                 _vernon.Talk = _talk;
                 _vernon.TalkBuilder = () =>
@@ -5104,6 +5134,23 @@ namespace Hoodrich
         private const int PillboxDelayMs = 6500;
 
         /// <summary>Whether a vehicle is one we parked on purpose, for the traffic watchdog.</summary>
+        /// <summary>Vernon's own job, out of the book, by the id his door is locked behind.</summary>
+        private Missions.MissionDef VernonJob()
+        {
+            foreach (var def in _missions.All)
+            {
+                if (def == null) continue;
+
+                if (string.Equals(def.Id, Locations.VernonTalk.JobId,
+                                  StringComparison.OrdinalIgnoreCase))
+                {
+                    return def;
+                }
+            }
+
+            return null;
+        }
+
         private bool OurParkedCar(Vehicle car)
         {
             foreach (var parked in _cars)

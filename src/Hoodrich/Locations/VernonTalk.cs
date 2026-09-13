@@ -49,6 +49,20 @@ namespace Hoodrich.Locations
         public Action Job { get; set; }
 
         /// <summary>
+        /// Set by Main: the beats of his pitch, in order, out of the job's own definition.
+        ///
+        /// WRITTEN IN THE DATA AND NOT IN THIS FILE, which is where every other brief in the
+        /// mod lives -- and nearly a bug, because the data had his whole pitch in it and this
+        /// screen had no idea. Lamar's jobs reach their brief through FixerTalk; Vernon is not
+        /// Lamar and has his own screen, so the words would have sat in missions.json being
+        /// read by nobody while he said "I got a situation" and sent you out knowing nothing.
+        ///
+        /// Null until Main wires it, and TheAsk handles that: the short version is still a
+        /// complete sentence, so a job with no beats on it is a terse man rather than a hole.
+        /// </summary>
+        public Func<string[]> Brief { get; set; }
+
+        /// <summary>
         /// What he sounds like between sentences.
         ///
         /// Up, always. He is pleased you stopped -- being stopped for is the entire event of
@@ -284,8 +298,44 @@ namespace Hoodrich.Locations
                 "a man who handle situations. It ain't nothin' crazy. It's just somethin' I " +
                 "can't do myself, and I can't ask nobody 'round here to do it neither.");
 
-            node.Say("I'm listening.", () => Accept(), "Take the job").MovesOn();
+            node.Say("I'm listening.", () => Pitch(0), "Take the job").MovesOn();
             node.Say("Not today.", () => Decline());
+            node.Leave("Not today.");
+
+            return node;
+        }
+
+        /// <summary>
+        /// The pitch, however many beats it takes, and he finishes before you are asked.
+        ///
+        /// THE SAME SHAPE AS LAMAR'S, ON PURPOSE. A job you can accept from the first sentence
+        /// is a job where the rest of what he said was decoration -- and in this one the rest
+        /// of what he said is the entire joke, because every hole in the arrangement is in a
+        /// beat you would have skipped. See FixerTalk.Brief, which does this for the other man.
+        /// </summary>
+        private DialogueNode Pitch(int beat)
+        {
+            string[] beats = null;
+
+            try { beats = Brief == null ? null : Brief(); }
+            catch { /* then he is a man of few words */ }
+
+            if (beats == null || beat >= beats.Length) return Accept();
+
+            var node = Node(beats[beat]);
+
+            var next = beat + 1;
+
+            if (next < beats.Length)
+            {
+                node.Say("Go on.", () => Pitch(next)).WithIcon(Icons.Tick);
+            }
+            else
+            {
+                node.Say("Aight.", () => Accept(), "Take it").MovesOn().WithIcon(Icons.Tick);
+            }
+
+            node.Say("Nah, Vee.", () => Decline());
             node.Leave("Not today.");
 
             return node;

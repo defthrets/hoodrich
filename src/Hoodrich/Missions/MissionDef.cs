@@ -43,7 +43,15 @@ namespace Hoodrich.Missions
         /// leave if you are loud. Scripted end to end, the same as the bike ride, because
         /// the shape of it is the job. See Missions.Hunt.
         /// </summary>
-        Hunt
+        Hunt,
+
+        /// <summary>
+        /// A buy that is not one: drive out with somebody else's money, stand in front of
+        /// four men for three seconds, and then find out what the meeting actually was.
+        /// Scripted end to end, the same as the hunt, because the TURN is the job and a turn
+        /// assembled out of a site and a target count is just an ambush. See Missions.Deal.
+        /// </summary>
+        Deal
     }
 
     /// <summary>One job Lamar can put your way.</summary>
@@ -124,6 +132,19 @@ namespace Hoodrich.Missions
         public float Z;
 
         public int Targets = 3;
+
+        /// <summary>
+        /// Who gives this one out. "lamar" unless it says otherwise.
+        ///
+        /// BECAUSE THE BOOK IS LAMAR'S AND NOT EVERY JOB IS. NextInTheWindow walks this file
+        /// in order and offers you the next thing you have not done -- which was fine while
+        /// every job in it came off the same corner, and stopped being fine the moment Vernon
+        /// had one. Without this, the man on the wall in Strawberry asks you to buy a kilo and
+        /// then Lamar texts you about it, which reads as the mod losing track of its own
+        /// characters. The window skips anything that is not his; the person whose job it is
+        /// starts it directly.
+        /// </summary>
+        public string Giver = "lamar";
 
         /// <summary>
         /// Where the car and the people who ride in it are left, for the jobs that need one.
@@ -284,6 +305,8 @@ namespace Hoodrich.Missions
                     ClosesHour = node["closesHour"].AsInt(-1),
                     Homies = Math.Max(0, node["homies"].AsInt(2))
                 };
+
+                def.Giver = node["giver"].AsString("lamar");
 
                 var kind = node["kind"].AsString(def.Kind.ToString());
                 try { def.Kind = (MissionKind)Enum.Parse(typeof(MissionKind), kind, true); }

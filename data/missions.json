@@ -236,6 +236,35 @@
         "Roll through, make it LOUD, be gone before the laws finish they donut. Don't be sittin' out there tryna prove somethin' to nobody, that's how you end up in somebody photograph. In and out, my boy. It's a message, not a visit.",
         "And look what's out front before you pull off. You know what it is and you know where it goes. Don't make me the man who explains the same thing every time he see you."
       ]
+    },
+    {
+      "id": "vernon_intro",
+      "giver": "vernon",
+      "kind": "Deal",
+      "name": "Anything, Franklin.",
+      "brief": "Franklin. Come here. Close the -- nah, leave it, it's a shop. Aight, check it. You know how I been sayin' the basement is square footage? Square footage need STOCK, homie. And I been buyin' off a little dude in Davis four months at a number I ain't sayin' out loud in my own store.",
+      "briefMore": [
+        "So. Six weeks back a man walk in here and buy every fluorescent I got. Every one. Tubes, ballasts, them long cords -- four hundred dollars, cash, straight out the door. Tells me it's for a car showroom. Now I'm standin' there thinkin', that is a LOT of light for a car showroom. And he lookin' at me thinkin', this dude got a basement. And we just kinda nodded at each other, Franklin. That's business. That's how it happen.",
+        "So we been talkin' since. On the phone. The SHOP phone -- I ain't givin' a man I never met my personal, I ain't stupid. His name Ardo. Or Arto. It's one of them, the line ain't great in here, it's all that metal on the roof. And Ardo say he can do me a kilo at a number I had to sit DOWN for. Today. Two o'clock.",
+        "And before you say it -- yeah. I know what them dudes is known for. And I asked him about it straight up, 'cause I'm a professional. And he said, and I'm quotin' him word for word: we can get anything. ANYTHING, Franklin. That's a man who understands demand. Pops would've loved him.",
+        "Now I can't go, I got a delivery comin' and I ain't leavin' this store unattended, that's just retail. So you go, you hand him the rest, you bring me back what I paid for. That's it. That's the whole thing. Oh -- and I already sent the deposit, so don't be negotiatin'. And I told him you my head of security, so just stand there lookin' like that. You already doin' it."
+      ],
+      "briefAgain": "Same as before. Two o'clock, the money, a man called Ardo. Or Arto. Bring me back my kilo and don't scuff that briefcase, that was Pops'.",
+      "done": "...you shot him. You shot Ardo. FRANKLIN. -- nah. Nah, hold on, I'm not mad, I'm processin'. 'Cause that's four hundred dollars of fluorescents I ain't never gettin' paid for neither, and THAT'S what's hurtin' me. ... Is that it? Is that the -- man, that's more than a kilo. That's a lot more than a kilo. Put it down. Don't hold it like that, put it DOWN. Aight. Aight. So we up.",
+      "doneAgain": "Same man, same two o'clock, same outcome. I'm startin' to think Ardo was never gon' hand me nothin'. Bring it downstairs. And Franklin -- new phone. I threw the shop one in the canal.",
+      "targetGang": "armenians",
+      "zone": "BURTON",
+      "x": -322.2,
+      "y": -219.8,
+      "z": 40.0,
+      "targets": 4,
+      "homies": 0,
+      "escapeHeat": false,
+      "heatStars": 0,
+      "payMin": 0,
+      "payMax": 0,
+      "rep": 120,
+      "minRank": 2
     }
   ]
 }
