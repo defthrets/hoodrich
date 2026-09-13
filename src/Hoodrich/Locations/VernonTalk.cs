@@ -494,7 +494,7 @@ namespace Hoodrich.Locations
             if (Below == null || !Below())
             {
                 var up = Node(
-                    "Ho -- nah, not out here. Not on the pavement with the whole of Strawberry " +
+                    "Oh -- nah, not out here. Not on the pavement with the whole of Strawberry " +
                     "walkin' past. Go down them stairs, I'm right behind you. I gotta SHOW " +
                     "you somethin' anyway.");
 
