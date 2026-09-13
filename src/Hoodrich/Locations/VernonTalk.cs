@@ -33,13 +33,13 @@ namespace Hoodrich.Locations
         public const string JobId = "vernon_intro";
 
         /// <summary>
-        /// The toll he actually charges, and what the basement door is locked behind now.
+        /// He has played you the whole thing at least once.
         ///
-        /// HE NAMES IT HIMSELF AND HE NAMES IT FIRST: you don't walk in a man's booth before
-        /// you've heard his single, that's disrespect. So the tape is the price of the stairs
-        /// -- which is both funnier and the only arrangement that works, because the job is
-        /// briefed DOWN there now and a door locked behind the job would be a door locked
-        /// behind itself.
+        /// A RECORD, NOT A KEY. This was what the basement door was locked behind for a while,
+        /// and it was the wrong lock: it meant a player who sat through the verse could wander
+        /// down there on his own whenever he liked, which is a private operation with the door
+        /// left open. Nobody walks down Vee's stairs unless Vee is walking them down -- see
+        /// WalkingYouDown -- or the job is finished and there is nothing down there to hide.
         /// </summary>
         public const string HeardIt = "vernon_tape";
 
@@ -61,6 +61,24 @@ namespace Hoodrich.Locations
         /// Again.
         /// </summary>
         public const string TriedIt = "vernon_tried";
+
+        /// <summary>
+        /// He has just told you to go down them stairs, and he is right behind you.
+        ///
+        /// THE ONLY WAY DOWN BEFORE THE JOB IS DONE. The basement is not a room you can visit;
+        /// it is where he does business, and he does business with you exactly twice -- the
+        /// time he walks you down to pitch it, and every time after you have finished it, when
+        /// there is nothing left to hide from you and a whole tape to sit through.
+        ///
+        /// SO IT IS ARMED BY HIM SAYING IT AND DISARMED BY THE JOB STARTING. Walk off between
+        /// those two and the stairs are still open, because he is still stood on the pavement
+        /// waiting for you to use them. Take the job and they shut behind you: you are going to
+        /// Rogers Scrap, not back down to look at his shelf.
+        ///
+        /// NOT SAVED, AND THAT IS RIGHT. A man does not hold a door open across a restart. Come
+        /// back to a loaded save and he asks you down again, which costs one line of dialogue.
+        /// </summary>
+        public bool WalkingYouDown { get; private set; }
 
         private readonly PlayerState _state;
 
@@ -294,7 +312,7 @@ namespace Hoodrich.Locations
                        .Beat(() => VerseTwo());
         }
 
-        /// <summary>He has played you the whole thing, so the stairs are open. See HeardIt.</summary>
+        /// <summary>He has played you the whole thing. See HeardIt -- it is written down, not spent.</summary>
         private void Heard()
         {
             try { if (_state != null) _state.MarkDone(HeardIt); }
@@ -498,7 +516,12 @@ namespace Hoodrich.Locations
                     "walkin' past. Go down them stairs, I'm right behind you. I gotta SHOW " +
                     "you somethin' anyway.");
 
-                up.Say("Aight.", () => null, "Head downstairs").WithIcon(Icons.Tick);
+                up.Say("Aight.", () =>
+                {
+                    // He said it, so the door means it. See WalkingYouDown.
+                    WalkingYouDown = true;
+                    return null;
+                }, "Head downstairs").WithIcon(Icons.Tick);
                 up.Leave("Later, Vee.");
 
                 return up;
@@ -608,6 +631,10 @@ namespace Hoodrich.Locations
                 // mission's business; whether he has already explained it is this file's.
                 try { if (_state != null) _state.MarkDone(TriedIt); }
                 catch { /* he tells it long again, which is no loss */ }
+
+                // And the stairs shut behind you. He walked you down to ask; you are going to
+                // the scrap yard now, not back to the basement. See WalkingYouDown.
+                WalkingYouDown = false;
 
                 try { Job(); }
                 catch (Exception ex) { Core.Log.Debug("Vernon's job would not start: " + ex.Message); }

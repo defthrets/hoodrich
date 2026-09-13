@@ -1147,17 +1147,29 @@ namespace Hoodrich
                     {
                         _leroys = new InteriorDoor(spec)
                         {
-                            // HEARD THE VERSE, NOT DONE THE JOB.
+                            // HE WALKS YOU DOWN OR YOU DON'T GO DOWN.
                             //
-                            // It used to be locked until the job was finished, which was a
-                            // circle with nothing in it the moment the job moved downstairs:
-                            // he briefs you in the basement, and you could not get into the
-                            // basement until you had done the thing he briefs you on. It opens
-                            // when he has played you the tape now -- which is the toll he
-                            // actually names ("you don't walk in a man's booth 'fore you heard
-                            // his single") and always was.
-                            Shut = () => _state == null || !_state.HasDone(VernonTalk.HeardIt),
-                            ShutWhy = "Vee ain't walking you down there yet.",
+                            // Two ways in and no others. The job is finished, in which case
+                            // there is nothing down there he is hiding from you and the tape
+                            // he promised is waiting -- or he has this minute told you to go
+                            // down them stairs because he is right behind you, which is the
+                            // one trip that happens before the job rather than after it.
+                            //
+                            // IT WAS THE TAPE, AND THE TAPE WAS THE WRONG LOCK. Sit through
+                            // the verse and the stairs stayed open for the rest of the save:
+                            // a man's private operation, with anybody able to stroll down and
+                            // stand in it whenever they were passing. Hearing his single buys
+                            // you his respect. It does not buy you a key.
+                            //
+                            // The job was tried as the lock before that and was a circle with
+                            // nothing in it -- he briefs you down there, so a door locked
+                            // behind the job is a door locked behind itself. The walk-down is
+                            // what breaks the circle: see VernonTalk.WalkingYouDown.
+                            Shut = () => _state == null ||
+                                         (!_state.HasDone(VernonTalk.JobId) &&
+                                          (_vernonTalk == null || !_vernonTalk.WalkingYouDown)),
+
+                            ShutWhy = "Vee walks you down them stairs or you don't go down.",
 
                             // And it says nothing at all while he is stood in it. See Hush.
                             Hush = () => _vernon != null && _vernon.InReach
@@ -2588,20 +2600,12 @@ namespace Hoodrich
                     {
                         if (_state == null) return;
 
-                        // THE TAPE AS WELL AS THE JOB. The basement is locked behind having
-                        // heard the verse now, not behind the job -- see VernonTalk.HeardIt --
-                        // so a switch that only set the job left the stairs shut and the debug
-                        // toggle unable to reach the room it exists to reach.
-                        if (on)
-                        {
-                            _state.MarkDone(Locations.VernonTalk.JobId);
-                            _state.MarkDone(Locations.VernonTalk.HeardIt);
-                        }
-                        else
-                        {
-                            _state.Undo(Locations.VernonTalk.JobId);
-                            _state.Undo(Locations.VernonTalk.HeardIt);
-                        }
+                        // THE JOB, AND THE JOB IS ENOUGH AGAIN. The stairs were locked behind
+                        // the tape for a while and this had to set both; they are locked behind
+                        // the job being done again -- see the door in Places -- so one flag is
+                        // the whole of it.
+                        if (on) _state.MarkDone(Locations.VernonTalk.JobId);
+                        else _state.Undo(Locations.VernonTalk.JobId);
                     };
                 }
 
