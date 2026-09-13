@@ -2746,6 +2746,13 @@ namespace Hoodrich
                 // He will not pitch it on the pavement. See VernonTalk.TheAsk.
                 _vernonTalk.Below = () => _leroys != null && _leroys.IsInside;
 
+                // The one-paragraph version, for a man going back out. See VernonTalk.TriedIt.
+                _vernonTalk.Again = () =>
+                {
+                    var job = VernonJob();
+                    return job == null ? null : job.BriefAgain;
+                };
+
                 _vernonTalk.Brief = () =>
                 {
                     var job = VernonJob();

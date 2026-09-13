@@ -335,7 +335,7 @@ PIECE = re.compile(r'"((?:[^"\\]|\\.)*)"')
 # catches the one shape that assigns a spoken line through a conditional before handing
 # it over -- "var line = down >= need ? this : that" -- which ASSIGN cannot see.
 WORD = re.compile(r'\bWord\(\s*((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+)', re.S)
-NAMED = re.compile(r'\bstring\[\]\s+(?:Nudges)\s*=\s*\{(.*?)\};', re.S)
+NAMED = re.compile(r'\bstring\[\]\s+(?:Nudges|Panic)\s*=\s*\{(.*?)\};', re.S)
 TERNARY = re.compile(r'\bvar\s+line\s*=\s*([^;]*?"[^;]*?);', re.S)
 
 

@@ -46,6 +46,22 @@ namespace Hoodrich.Locations
         /// <summary>He has walked you round the operation once. See Tour.</summary>
         public const string SawIt = "vernon_setup";
 
+        /// <summary>
+        /// You have been sent to Rogers Scrap at least once, however it went.
+        ///
+        /// THE JOB HAPPENS ONCE AND THAT IS THE WHOLE OF IT. Finish it and Root never offers
+        /// it again -- he has nothing left to ask for and the conversation is a man playing
+        /// you his new verse. The only way back to that scrap yard is failing it or starting
+        /// the save over.
+        ///
+        /// WHICH LEAVES ONE CASE, AND IT IS THIS FLAG. A player who got shot in that yard
+        /// comes back to a man who has already given him the tour, the terms, the deposit and
+        /// the head-of-security line -- and making him sit through five beats of it again to
+        /// get to a retry is a punishment for having died. He says the short version. See
+        /// Again.
+        /// </summary>
+        public const string TriedIt = "vernon_tried";
+
         private readonly PlayerState _state;
 
         public VernonTalk(PlayerState state)
@@ -78,6 +94,9 @@ namespace Hoodrich.Locations
 
         /// <summary>Set by Main: whether the pair of you are down in the basement. See TheAsk.</summary>
         public Func<bool> Below { get; set; }
+
+        /// <summary>Set by Main: the one-paragraph version, for somebody going back. See TriedIt.</summary>
+        public Func<string> Again { get; set; }
 
         /// <summary>
         /// What he sounds like between sentences.
@@ -136,6 +155,14 @@ namespace Hoodrich.Locations
             return new DialogueNode(Stage, lines) { Encore = true };
         }
 
+        /// <summary>
+        /// Which Vernon you get, and there are only ever three.
+        ///
+        /// ONCE, AND THEN NEVER AGAIN. Finish the job and this routes to Since for the rest of
+        /// the save: he has nothing left to ask for, the basement is open, and what is left is
+        /// a man with a new verse. There is no repeat of Rogers Scrap and no second kilo --
+        /// the only ways back to that yard are failing it, or starting over.
+        /// </summary>
         public DialogueNode Root()
         {
             var met = _state != null && _state.MetVernon;
@@ -506,6 +533,26 @@ namespace Hoodrich.Locations
         {
             string[] beats = null;
 
+            // BEEN ONCE ALREADY, SO HE SAYS IT ONCE. See TriedIt.
+            if (_state != null && _state.HasDone(TriedIt))
+            {
+                string few = null;
+
+                try { few = Again == null ? null : Again(); }
+                catch { /* then the long one, which is still true */ }
+
+                if (!string.IsNullOrEmpty(few))
+                {
+                    var back = Node(few);
+
+                    back.Say("Let's go.", () => Accept(), "Go again").MovesOn().WithIcon(Icons.Tick);
+                    back.Say("Not today.", () => Decline());
+                    back.Leave("Not today.");
+
+                    return back;
+                }
+            }
+
             try { beats = Brief == null ? null : Brief(); }
             catch { /* then he is a man of few words */ }
 
@@ -557,6 +604,11 @@ namespace Hoodrich.Locations
 
             node.Say("Let's go.", () =>
             {
+                // WRITTEN DOWN AS YOU LEAVE, not as you succeed. Whether it went well is the
+                // mission's business; whether he has already explained it is this file's.
+                try { if (_state != null) _state.MarkDone(TriedIt); }
+                catch { /* he tells it long again, which is no loss */ }
+
                 try { Job(); }
                 catch (Exception ex) { Core.Log.Debug("Vernon's job would not start: " + ex.Message); }
 

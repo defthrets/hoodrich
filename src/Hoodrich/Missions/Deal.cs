@@ -634,12 +634,26 @@ namespace Hoodrich.Missions
 
         private void Fighting(Ped player, int now)
         {
-            if (Standing > 0) return;
+            if (Standing > 0)
+            {
+                if (now - _panicAt < PanicEveryMs) return;
+
+                _panicAt = now;
+                Vees(Panic[_rng.Next(Panic.Length)]);
+
+                return;
+            }
 
             Phase = DealPhase.Collecting;
             _phaseFrom = now;
 
             Drop();
+
+            if (!_saidGrab)
+            {
+                _saidGrab = true;
+                Vees(GrabIt);
+            }
 
             Log.Info("Deal: all of them down. The package is on the floor.");
         }
@@ -739,6 +753,12 @@ namespace Hoodrich.Missions
 
             Hud.PlaySound("PICK_UP", "HUD_FRONTEND_DEFAULT_SOUNDSET");
             Mark();
+
+            if (!_saidAway)
+            {
+                _saidAway = true;
+                Vees(Away);
+            }
 
             Log.Info("Deal: package collected. Back to Vernon.");
         }
@@ -959,12 +979,65 @@ namespace Hoodrich.Missions
         /// </summary>
         private static readonly string[] Talk =
         {
-            "vee:ay -- Ardo? It's Vee. Vernon. From the lights.",
+            "vee:hey Ardo, it's Vee. Vernon. From the lights.",
             "arm:You brought somebody.",
             "vee:That's my head of security. He with me. So -- we good? You got it?",
             "arm:Put the case down.",
             "vee:...I mean I will, but that's fourteen and a half in there, so -- Franklin, is that a"
         };
+
+        /// <summary>
+        /// Vernon once it starts, which is the other half of bringing him.
+        ///
+        /// HE IS NOT A GUNMAN AND THESE LINES KNOW IT. He is an electrical wholesaler behind a
+        /// skip with his father's briefcase, and every one of these is him shouting at the one
+        /// person present who might get them both out of it. That is the point of him being
+        /// there: the fight has a voice in it that is frightened, and it is not yours.
+        ///
+        /// SPELT AS RECORDED. "lets go" without the apostrophe, because these are barks with
+        /// no text anywhere on screen -- nobody reads them, the recorder named the files off
+        /// them, and a stray apostrophe is a take that never gets found. See Voice.Key.
+        /// </summary>
+        private static readonly string[] Panic =
+        {
+            "Crap! Franklin! Help!",
+            "Goddamn it, Franklin, hurry the hell up!"
+        };
+
+        private const string GrabIt = "Shit -- Franklin, grab the bag and lets go!";
+        private const string Away = "Go go, Franklin, lets go!";
+
+        /// <summary>How often he is allowed to shout while it is going on.</summary>
+        private const int PanicEveryMs = 7000;
+
+        private int _panicAt;
+        private bool _saidGrab;
+        private bool _saidAway;
+
+        /// <summary>
+        /// One line out of Vernon, if he is alive to say it.
+        ///
+        /// Dead men do not shout, and a recording playing out of a body on the floor is the
+        /// worst thing this job could do to the moment it has just built.
+        /// </summary>
+        private void Vees(string line)
+        {
+            if (_vee == null || !_vee.Exists() || !_vee.IsAlive) return;
+            if (string.IsNullOrEmpty(line)) return;
+
+            try { Core.Voice.Say("vernon", line, null, true); }
+            catch { /* then the bank line below */ }
+
+            try
+            {
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, _vee.Handle,
+                              "GENERIC_FRIGHTENED_HIGH", "SPEECH_PARAMS_FORCE_SHOUTED");
+            }
+            catch
+            {
+                // A quiet panic.
+            }
+        }
 
         /// <summary>Whoever is doing the talking, saying the last thing anybody says politely.</summary>
         private void Say(string speech)
@@ -1268,6 +1341,9 @@ namespace Hoodrich.Missions
             _vee = null;
             _veeRiding = false;
             _veeAt = 0;
+            _panicAt = 0;
+            _saidGrab = false;
+            _saidAway = false;
 
             _def = null;
             _layFrom = 0;
