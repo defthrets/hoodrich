@@ -374,6 +374,7 @@ namespace Hoodrich.Missions
             _beat = 0;
             _veeAt = 0;
             _veeRiding = false;
+            _veeDown = false;
 
             Mark();
 
@@ -397,6 +398,13 @@ namespace Hoodrich.Missions
                 if (player == null || !player.Exists() || !player.IsAlive)
                 {
                     Failure = "you didn't make it back.";
+                    return;
+                }
+
+                // AND THE SAME QUESTION ABOUT HIM. See Down.
+                if (Down())
+                {
+                    Failure = "Vernon didn't make it.";
                     return;
                 }
 
@@ -1271,6 +1279,44 @@ namespace Hoodrich.Missions
         /// follow task sixty times a second is a man who never finishes starting to walk --
         /// which is the same note the hunt's Lamar carries, for the same reason.
         /// </summary>
+        /// <summary>
+        /// Whether Vernon has been killed, which ends the job.
+        ///
+        /// IT IS HIS MONEY, HIS GUY AND HIS KILO. Twenty-two five of it is his and eight of
+        /// that is already spent; the only reason there is a deal at all is that he arranged
+        /// one, and the only reason you know where Rogers Scrap is is that he is sat next to
+        /// you saying so. A version of this job that carries on without him is you robbing a
+        /// yard full of Armenians for a stranger's shopping.
+        ///
+        /// It also could not end properly. The hand-in is walking up to Vernon and giving him
+        /// the package -- see Paid -- so a dead Vernon left the job running with nothing left
+        /// in it that could finish it, marker pointing at a kerb outside a shop with nobody
+        /// against the wall. Vee simply stopped tasking him and everything else carried on.
+        ///
+        /// LATCHED, BECAUSE A BODY IS TIDIED UP. The game removes a dead ped after a while and
+        /// Exists goes false with it, which is indistinguishable from a man who has streamed
+        /// out -- and Lend refuses to hand back a corpse, so the re-fetch in Vee quietly
+        /// answers null for ever. Without the latch the fail would have a few seconds to land
+        /// in and then the job would carry on regardless, which is worse than either outcome.
+        ///
+        /// NOT-EXISTING IS NOT DYING. He has not been fetched yet on the first tick and he can
+        /// be unloaded legitimately, so only a ped that is here and not alive counts.
+        /// </summary>
+        private bool Down()
+        {
+            if (_veeDown) return true;
+
+            if (_vee == null || !_vee.Exists() || _vee.IsAlive) return false;
+
+            _veeDown = true;
+
+            Log.Info("Vernon was killed on his own job. It's over.");
+            return true;
+        }
+
+        /// <summary>Set the first frame he is seen dead, and cleared with the rest of it.</summary>
+        private bool _veeDown;
+
         private void Vee(Ped player, int now)
         {
             if (_vee == null || !_vee.Exists())
@@ -1885,6 +1931,7 @@ namespace Hoodrich.Missions
             _vee = null;
             _veeRiding = false;
             _veeAt = 0;
+            _veeDown = false;
             _panicAt = 0;
             _saidGrab = false;
             _saidAway = false;
