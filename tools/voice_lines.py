@@ -331,6 +331,11 @@ SPEECH = [
     (r"src\Hoodrich\Locations\ArmourerTalk.cs", ["Stretch"]),
     (r"src\Hoodrich\Locations\HaoTalk.cs",      ["Hao"]),
     (r"src\Hoodrich\Locations\VernonTalk.cs",   ["Vernon"], {"Verse": "OG Vee"}),
+
+    # The man rather than the conversation. Nothing in here builds a dialogue node -- it is
+    # the ped, the wall and the walk to his car -- but he speaks on the way out of the shop,
+    # and a line said outside a conversation is still a line somebody has to record.
+    (r"src\Hoodrich\Locations\Vernon.cs",       ["Vernon"]),
     (r"src\Hoodrich\Missions\FixerTalk.cs",     ["Lamar"]),
     (r"src\Hoodrich\Missions\BikeRide.cs",      ["Lamar"]),
     (r"src\Hoodrich\Missions\Hunt.cs",          ["Lamar"]),
@@ -343,6 +348,23 @@ SPEECH = [
 CALL = re.compile(r'\b(?:Node|Nothing|Step)\(\s*(?:[A-Za-z_][\w.]*\s*,\s*){0,2}((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+)', re.S)
 ASSIGN = re.compile(r'\bline\s*=\s*((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+);', re.S)
 EXPLICIT = re.compile(r'new DialogueNode\(\s*"([^"]+)"\s*,\s*((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+)', re.S)
+
+# A LINE HELD IN A CONSTANT AND SPOKEN BY NAME.
+#
+# Every other pattern here finds a literal sitting where a sentence goes. This finds the case
+# where the sentence was given a name first -- Voice.Say("vernon", RoundTheSide) -- which is
+# what you do the moment a line is needed twice, once for the audio and once for the subtitle.
+# It looks exactly like a call with no literal in it, so it was extracted by nothing, had no
+# filename, was on no list to record, and simply never spoke.
+#
+# ONLY CONSTANTS THAT ARE ACTUALLY SAID: the name has to turn up in a Voice.Say in the same
+# file. A const string on its own is as likely to be an anim dictionary or a stage name.
+SAID = re.compile(r'\bVoice\.Say\(\s*"([^"]+)"\s*,\s*([A-Za-z_]\w*)\s*[,)]')
+
+
+def CONST(name):
+    return re.compile(r'\bconst\s+string\s+' + re.escape(name) +
+                      r'\s*=\s*((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+);', re.S)
 PIECE = re.compile(r'"((?:[^"\\]|\\.)*)"')
 
 # Step is Vernon's tour of his own basement -- one stop per node, built through a helper
@@ -436,6 +458,20 @@ def from_source(root):
                 for piece in PIECE.findall(m.group(1)):
                     for who in speakers:
                         add(who, joined('"' + piece + '"'))
+
+        # A sentence that was given a name before it was said. See SAID.
+        for m in SAID.finditer(body):
+            who, named = m.group(1), m.group(2)
+
+            held = CONST(named).search(body)
+            if not held:
+                continue
+
+            # The call spells the speaker the way the KEY wants it; the list wants it the way a
+            # person reads it, which is how the file is labelled already.
+            shown = next((w for w in speakers if w.lower() == who.lower()), who.capitalize())
+
+            add(shown, joined(held.group(1)))
 
         # And the helpers that stamp a different name. See SPEECH.
         for helper, who in helpers.items():

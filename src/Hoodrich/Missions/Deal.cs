@@ -469,13 +469,27 @@ namespace Hoodrich.Missions
             var gone = now - _phaseFrom;
             var beat = gone / (MeetMs / Math.Max(1, Talk.Length));
 
-            if (beat > _beat && _beat < Talk.Length)
+            // ---- A LINE IS AS LONG AS IT IS ----
+            //
+            // THE BEATS RAN ON A CLOCK AND THE CLOCK DOES NOT KNOW HOW LONG A TAKE IS. Seven
+            // seconds carved into however many lines there are, and a recorded one that runs
+            // over its slice is cut off mid-word by the next man talking. The whole scene is
+            // Vernon being unable to stop himself, so the one thing it cannot afford is his
+            // sentences being clipped.
+            //
+            // The slot is a MINIMUM now rather than a deadline: a beat waits for its share of
+            // the clock AND for whoever is speaking to finish. With no recordings at all that
+            // is exactly the old pacing, which is what a player with the voice pack off should
+            // still get.
+            if (beat > _beat && _beat < Talk.Length && !Core.Voice.Talking)
             {
                 Word(Talk[_beat]);
                 _beat++;
             }
 
-            if (gone < MeetMs) return;
+            // And the turn waits for the last of it, or the gun comes out over the top of the
+            // line that is supposed to make you trust him.
+            if (gone < MeetMs || _beat < Talk.Length || Core.Voice.Talking) return;
 
             Phase = DealPhase.Turning;
             _phaseFrom = now;
@@ -619,6 +633,21 @@ namespace Hoodrich.Missions
 
             try
             {
+                // ---- IN FRANKLIN'S GROUP BEFORE HE IS IN ANYTHING ELSE ----
+                //
+                // HE WAS SHOOTING AT FRANKLIN, and this is why. He is tasked onto one Armenian
+                // and that is the whole of his orders; the moment that man goes down he is a
+                // ped with a pistol, in a firefight, in whatever relationship group Lend left
+                // him in -- which is nobody's. A ped with no side picks its own, and the
+                // nearest thing shooting is you.
+                //
+                // In the player's own group he cannot target the player at all, whatever he
+                // decides to do next, and the Armenians are already hostile to that group
+                // because that is what makes them attack you.
+                Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, _vee.Handle,
+                              Function.Call<int>(Hash.GET_PED_RELATIONSHIP_GROUP_HASH,
+                                                 Game.Player.Character.Handle));
+
                 Function.Call(Hash.GIVE_WEAPON_TO_PED, _vee.Handle,
                               Function.Call<uint>(Hash.GET_HASH_KEY, "WEAPON_PISTOL"),
                               120, false, true);
@@ -642,10 +671,40 @@ namespace Hoodrich.Missions
             }
         }
 
+        /// <summary>Points him at somebody who is still standing, if he has run out of targets.</summary>
+        private void Aim()
+        {
+            if (_vee == null || !_vee.Exists() || !_vee.IsAlive) return;
+
+            try
+            {
+                // Already busy with somebody. TASK_COMBAT is 3 in the task list.
+                if (Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, _vee.Handle, 3)) return;
+
+                foreach (var m in _them)
+                {
+                    if (m.Who == null || !m.Who.Exists() || !m.Who.IsAlive) continue;
+
+                    Function.Call(Hash.TASK_COMBAT_PED, _vee.Handle, m.Who.Handle, 0, 16);
+                    return;
+                }
+            }
+            catch
+            {
+                // Then he stands behind you, which is also in character.
+            }
+        }
+
         private void Fighting(Ped player, int now)
         {
             if (Standing > 0)
             {
+                // HIS ORDERS RUN OUT WHEN HIS MAN DOES. Guard points him at one Armenian and
+                // that is all he is ever told; from the moment that one drops he is
+                // freelancing, which is the state the group above exists to make harmless and
+                // this makes useful.
+                Aim();
+
                 if (now - _panicAt < PanicEveryMs) return;
 
                 _panicAt = now;
