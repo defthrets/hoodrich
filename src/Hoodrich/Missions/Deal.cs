@@ -188,9 +188,19 @@ namespace Hoodrich.Missions
         private static readonly string[] Brick =
             { "prop_attache_case_01", "hei_p_attache_case_shut", "prop_coke_block_01" };
 
-        /// <summary>What Vernon carries out of the shop: eight up front, in a case.</summary>
+        /// <summary>
+        /// What Vernon carries out of the shop: the money, in a paper bag.
+        ///
+        /// NOT A BRIEFCASE, AND prop_cash_case_01 IS AN OPEN ONE. It renders with the lid
+        /// flipped back and the notes on show, so he walked down Strawberry holding his money
+        /// out for everybody to look at -- which is a different man from the one who would not
+        /// say a price out loud in his own shop.
+        ///
+        /// A paper bag is also just funnier and more him: twenty-two thousand dollars from a
+        /// man whose vault is a filing cabinet was never going to arrive in a metal case.
+        /// </summary>
         private static readonly string[] Money =
-            { "prop_cash_case_01", "prop_attache_case_01", "hei_p_attache_case_shut" };
+            { "hei_prop_hei_paper_bag", "ng_proc_food_bag01a", "ng_proc_food_bag02a" };
 
         /// <summary>
         /// A man walking with a case in one hand, which is a whole movement set rather than a
@@ -787,7 +797,7 @@ namespace Hoodrich.Missions
         /// the movement set is what stops him swinging both arms through it as he walks. One
         /// without the other is a case floating beside a man jogging normally.
         /// </summary>
-        private static void InHand(Ped who, Prop what)
+        private static void InHand(Ped who, Prop what, bool upright = false)
         {
             if (who == null || !who.Exists() || what == null || !what.Exists()) return;
 
@@ -795,10 +805,18 @@ namespace Hoodrich.Missions
             {
                 var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, who.Handle, HandBone);
 
-                // The offsets sit it in the fist rather than through the wrist. Taken from the
-                // way the game's own carried cases hang.
+                // THE TWO THINGS HANG DIFFERENTLY. A case swings flat off a fist; a paper bag
+                // is held with its bottom down and its top in the hand, or it is a bag lying on
+                // its side pouring money down a man's leg. Same bone, same grip, different
+                // object.
+                var x = upright ? 0.14f : 0.12f;
+                var z = upright ? -0.14f : -0.02f;
+
+                var rx = upright ? 0f : 100f;
+                var rz = upright ? 0f : 180f;
+
                 Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, what.Handle, who.Handle, bone,
-                              0.12f, 0.0f, -0.02f, 100f, 0f, 180f, false, false, false, false,
+                              x, 0.0f, z, rx, 0f, rz, false, false, false, false,
                               2, true);
 
                 Function.Call(Hash.REQUEST_ANIM_SET, Carrying);
@@ -867,7 +885,7 @@ namespace Hoodrich.Missions
                     _case.IsPersistent = true;
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, _case.Handle, true, true);
 
-                    InHand(_vee, _case);
+                    InHand(_vee, _case, true);
 
                     _caseDown = false;
 
@@ -915,7 +933,7 @@ namespace Hoodrich.Missions
 
             if (gap <= 1.4f)
             {
-                InHand(_vee, _case);
+                InHand(_vee, _case, true);
                 _caseDown = false;
 
                 Core.Log.Info("Deal: Vernon has his money back.");
