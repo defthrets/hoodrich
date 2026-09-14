@@ -113,8 +113,6 @@ namespace Hoodrich.Locations
                     // switch them on again the moment it decided it was dark.
                     if (Lights) Function.Call(Hash.SET_VEHICLE_LIGHTS, _car.Handle, 1);
 
-                    Latch();
-
                     if (Neon.HasValue)
                     {
                         for (var side = 0; side < 4; side++)
@@ -445,6 +443,11 @@ namespace Hoodrich.Locations
             // than behind the throttle.
             Swing();
 
+            // The doors, whoever owns them. NOT inside Keep: that returns early for a car with
+            // no radio and no neon, and again the moment anybody is sat in it, so the lock only
+            // ever applied to a car with a stereo, at night. See Latch.
+            Latch();
+
             // AND THE REAR AXLE, EVERY FRAME, FOR THE SAME REASON THE RADIO IS. The car's own
             // code puts the camber back the frame after it is written, so a stance behind the
             // throttle below is a wheel that is straight for fourteen frames out of fifteen.
@@ -462,6 +465,7 @@ namespace Hoodrich.Locations
             {
                 _car = null;
                 _stance.Forget();
+                _latched = null;
                 Unseat();
             }
 
@@ -482,6 +486,7 @@ namespace Hoodrich.Locations
 
                     _car = null;
                     _stance.Forget();
+                    _latched = null;
                 }
 
                 Unseat();
@@ -1014,25 +1019,47 @@ namespace Hoodrich.Locations
         /// </summary>
         private void Latch()
         {
-            if (Locked == null) return;
+            if (Locked == null || _car == null || !_car.Exists()) return;
+
+            bool shut;
+
+            try { shut = Locked(); }
+            catch { return; }
+
+            // ---- WRITTEN WHEN IT CHANGES, AND THAT IS THE WHOLE FIX ----
+            //
+            // IT WAS BEING SET EVERY FRAME AND THE DOOR COULD NOT BE OPENED. Getting into a car
+            // is an animation with the door as a moving part, and re-stating the lock underneath
+            // it -- sixty times a second, while the hand is on the handle -- is the game being
+            // told the door's state again mid-swing. It reads as the door snapping, the ped
+            // letting go, and the whole thing starting over.
+            //
+            // A lock is not a thing that needs holding. It is set when it becomes true and set
+            // back when it stops being, which for this car is twice a session.
+            if (_latched.HasValue && _latched.Value == shut) return;
 
             try
             {
-                var shut = Locked();
-
                 Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED, _car.Handle, shut ? 2 : 1);
 
                 // AND NOT MERELY SHUT: a locked car whose door the player can still open is
-                // every bit as unlocked as one that is not. This is the native that refuses
-                // the hand on the handle.
+                // every bit as unlocked as one that is not. This is the native that refuses the
+                // hand on the handle, and it wants the PLAYER INDEX rather than his ped.
                 Function.Call(Hash.SET_VEHICLE_DOORS_LOCKED_FOR_PLAYER, _car.Handle,
                               Game.Player.Handle, shut);
+
+                _latched = shut;
+
+                Log.Info("The " + _car.DisplayName + " is " + (shut ? "locked." : "open."));
             }
             catch
             {
                 // Then it is a car with doors, which is where everything started.
             }
         }
+
+        /// <summary>What the doors were last told, so they are not told again. See Latch.</summary>
+        private bool? _latched;
 
         /// <summary>
         /// Underglow, all four sides, in one colour.
@@ -1120,6 +1147,7 @@ namespace Hoodrich.Locations
 
             _car = null;
             _stance.Forget();
+            _latched = null;
             Unseat();
         }
 
