@@ -209,6 +209,11 @@ namespace Hoodrich.Locations
         /// <summary>Set by Main: the job is done and he is waiting to be handed it. See UpdatePrompt.</summary>
         public Func<bool> HandingIn;
 
+        /// <summary>
+        /// Set by Main: makes him a contact. Called once, after the job, once you have gone.
+        /// </summary>
+        public Action Numbered;
+
         public bool InReach => Within(TalkRange);
 
         /// <summary>Near enough to be shouted at. See ShoutRange.</summary>
@@ -238,6 +243,9 @@ namespace Hoodrich.Locations
             if (Known == null || Known()) EnsureBlip(); else DropBlip();
 
             Keyed();
+
+            // AND THE NUMBER, ONCE YOU ARE GONE. See Number.
+            Number(player);
 
             // OUT ON THE JOB, SO THE WALL LETS GO OF HIM. Everything below is about a man
             // stood in one place in Strawberry -- it despawns him at a hundred and sixty
@@ -852,6 +860,58 @@ namespace Hoodrich.Locations
 
         /// <summary>Whether you have been introduced, which is the only thing the prompt knows.</summary>
         private bool Knows => _state != null && _state.MetVernon;
+
+        /// <summary>
+        /// HIS NUMBER, WHICH IS THE REST OF THE PAY.
+        ///
+        /// The job ends with him handing you money in a scrap yard and that was the whole of
+        /// it -- you drove back to Strawberry and he went and leaned on his wall again, and
+        /// nothing about the basement he had just shown you was any different afterwards. A
+        /// man whose stock you are the reason he still has does not go back to being scenery.
+        ///
+        /// NOT AT THE HAND-IN, AND THAT IS THE POINT. Standing in front of somebody who is
+        /// counting out your cut is not the moment for a text message from him; a phone going
+        /// off in your pocket while its owner is looking at you is the mod talking over
+        /// itself. So it waits until you have LEFT -- far enough that the shop is behind you
+        /// and the wall is out of sight, which is exactly when somebody who has had a think
+        /// about it gets in touch.
+        ///
+        /// The message itself is not sent here. This only makes him a contact; the
+        /// introduction goes out through DealerManager.TextIfNewlyOpen with everybody else's,
+        /// in his own words out of dealers.json, and it has the offer in it.
+        ///
+        /// LATCHED IN MEMORY AND ON THE SAVE. The latch here saves a distance check on a man
+        /// who is already opened; OpenUp is what actually makes it survive a reload, and it
+        /// refuses politely if he is open already.
+        /// </summary>
+        private void Number(Ped player)
+        {
+            if (_numbered || Numbered == null) return;
+            if (_state == null || !_state.HasDone(Locations.VernonTalk.JobId)) return;
+
+            // Still stood in it. The text is for after you have driven off, not for the kerb
+            // outside his shop.
+            if (player.Position.DistanceTo(Spot) < GoneFar) return;
+
+            _numbered = true;
+
+            try { Numbered(); }
+            catch
+            {
+                // He keeps his number to himself, which is where this started.
+            }
+        }
+
+        /// <summary>
+        /// How far away counts as having left.
+        ///
+        /// A HUNDRED AND TWENTY METRES is off the block and round a corner -- you have driven
+        /// away rather than crossed the road -- and it is inside the hundred and sixty at
+        /// which he despawns, so the man is still there to have thought about it.
+        /// </summary>
+        private const float GoneFar = 120f;
+
+        private bool _numbered;
 
         /// <summary>
         /// Whether a conversation that nobody asked for would be welcome right now.

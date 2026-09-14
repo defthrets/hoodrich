@@ -1639,6 +1639,41 @@ namespace Hoodrich.Supply
         }
 
         /// <summary>
+        /// Somebody becomes a contact because of something that HAPPENED.
+        ///
+        /// EVERY OTHER PLUG IS MET BY WALKING UP TO HIM, and that rule is right for the men
+        /// who stand on corners waiting to be found. It is wrong for somebody you already
+        /// know: Vernon has been leaning on the wall outside Leroy's Electrical since the
+        /// first hour of the save and you have just driven him to La Puerta and back, so
+        /// "you ain't met him" is a sentence about the wrong man.
+        ///
+        /// What opens him is finishing his job. This is the one line that says so, and it is
+        /// deliberately a general door rather than a switch on his id -- the next man whose
+        /// number is a reward rather than a discovery uses the same one.
+        ///
+        /// EVERYTHING ELSE FOLLOWS ON ITS OWN. The introduction text goes out through
+        /// TextIfNewlyOpen on its next pass, the Contacts row appears, and the delivery
+        /// unlocks -- all three read HaveMet, and this writes exactly the marker HaveMet
+        /// looks for. Nothing here sends a message; if it did there would be two.
+        ///
+        /// Idempotent, so a caller may ask every tick without thinking about it.
+        /// </summary>
+        public bool OpenUp(string id)
+        {
+            if (string.IsNullOrEmpty(id) || State == null) return false;
+
+            var def = Get(id);
+
+            if (def == null || HaveMet(def, State)) return false;
+
+            State.MarkOffered(MetKey(def));
+            State.Touch();
+
+            Log.Info(def.Name + " is a contact now -- he was earned rather than found.");
+            return true;
+        }
+
+        /// <summary>
         /// Whether you have actually met him, rather than merely qualified for him.
         ///
         /// THE OLD MARKER COUNTS. Before this rule existed, "plug:&lt;id&gt;" was set the moment a

@@ -2989,6 +2989,21 @@ namespace Hoodrich
                 // And not on the map until Gerald has started you off. See Started.
                 _vernon.Known = () => Started;
 
+                // HIS NUMBER IS THE REST OF THE PAY. Once the buy is done and you have driven
+                // off, he is a plug -- powder, at a price nobody else in the mod does. The text
+                // that says so is his own, out of dealers.json, and goes out through the same
+                // door every other plug's introduction does. See Vernon.Number and
+                // DealerManager.OpenUp.
+                _vernon.Numbered = () =>
+                {
+                    if (_dealers != null) _dealers.OpenUp("vernon");
+
+                    // AND IT IS WORTH SAYING OUT LOUD. Not the number itself -- the post is
+                    // somebody being pleased with himself and careful at the same time, which
+                    // is the only honest way to write a man posting about his supply.
+                    if (_social != null) _social.PostAsYou("YouGotTheConnect", "Vernon");
+                };
+
                 _hao.Talk = _talk;
                 _hao.Showroom = () => _carScreen.Open();
                 _hao.TalkBuilder = () =>

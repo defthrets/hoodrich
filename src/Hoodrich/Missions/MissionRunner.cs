@@ -3044,6 +3044,13 @@ namespace Hoodrich.Missions
                 case MissionKind.TorchJob: return "YouDidTheTorch";
                 case MissionKind.Tags: return "YouDidTheTags";
                 case MissionKind.Hit: return "YouDidTheHit";
+
+                // The scrapyard buy. It had been falling through to the general set, which is
+                // written about jobs Lamar hands you -- so the one job in the mod that is a
+                // purchase, with the man whose money it is sat next to you, was posted about
+                // as "lamar had a job". Wrong giver, wrong shape, wrong everything.
+                case MissionKind.Deal: return "YouDidTheDeal";
+
                 default: return "YouDidTheJob";
             }
         }

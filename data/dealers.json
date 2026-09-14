@@ -341,6 +341,52 @@
         22
       ],
       "rideNeon": [255, 110, 0]
+    },
+    {
+      "_": [
+        "OG VEE, AFTER THE BUY. He is not a plug you find on a corner and he is not a man you",
+        "meet -- he is the fella off the wall outside Leroy's Electrical, and the only way to",
+        "get his number is to do the job in the basement and drive away from it. Vernon.cs",
+        "opens him up once vernon_intro is done and the player has left Strawberry; the",
+        "introduction text then goes out through TextIfNewlyOpen like everybody else's.",
+        "",
+        "ONE PRODUCT AND A GOOD PRICE, WHICH IS THE REWARD. He went to Rogers Scrap for a",
+        "kilo at twenty-two five and you are the reason he still has it, so he sells it on at",
+        "a number nobody else in the mod will do -- under the port, which is the cheapest",
+        "thing there was. What stops that being free money is the SIZE: two kilos a call. He",
+        "is a man with a basement, not a dock. Bulk still has to come off Tao.",
+        "",
+        "deliveryOnly, so he is met where things actually happen rather than by walking up to",
+        "a corner he does not stand on. Same rule as Hao -- see DealerManager.HaveMet."
+      ],
+      "id": "vernon",
+      "deliveryOnly": true,
+      "plate": "OGVEE",
+      "name": "Vernon",
+      "tag": "VEE",
+      "kind": "Independent",
+      "gangId": "",
+      "drugs": [
+        "coke"
+      ],
+      "priceMultiplier": 0.62,
+      "minRank": 0,
+      "maxOrderGrams": 2000,
+      "openHour": 0,
+      "closeHour": 24,
+      "_rides": "His own Dorado, the one you rode to La Puerta in. It is the car the whole job happened in and the one parked down the side of the shop, so a delivery in anything else would be a stranger pulling up.",
+      "rides": [
+        "dorado"
+      ],
+      "rideOwn": true,
+      "ridePaint": 0,
+      "greeting": "There he is. Come on then, I ain't stood out here for my health.",
+      "buyLine": "Powder. That's it, that's the list, and you already know what it is 'cause you was there when I bought it. Say how much.",
+      "sourceReply": "You KNOW where I get it. You drove me there. Sat in the car and everything.",
+      "sourceTooSoon": "",
+      "farewell": "Aight. And Franklin -- the price is the price 'cause it's you. Don't be tellin' people.",
+      "openingText": "franklin. its vee. that basement is stocked now and it ain't stocked for my health. you want powder, you text me -- and im doin you a number i ain't doin nobody else, on account of you was there. dont go tellin the whole of strawberry",
+      "numberLine": "Take my number. Powder only, and don't be askin' me for pills like I'm a chemist."
     }
   ],
   "later": [
