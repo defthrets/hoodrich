@@ -51,6 +51,9 @@ namespace Hoodrich.UI
 
         private static readonly HashSet<string> Resident = new HashSet<string>();
 
+        /// <summary>What his photograph is filed under. See For and Theme.</summary>
+        private const string VernonFace = "vernon";
+
         /// <summary>When the pictures are next checked over. See Theme.</summary>
         private static int _nextCheck;
 
@@ -86,6 +89,23 @@ namespace Hoodrich.UI
                 // The man on the lot. His own contact picture where the game ships one --
                 // it does, for the street races -- and the shop's otherwise.
                 case "HAO": return FirstReady("CHAR_HAO", "CHAR_LS_CUSTOMS", "CHAR_MP_MECHANIC");
+
+                // THE MAN ON THE WALL, AND THE GAME HAS NO PICTURE OF HIM AT ALL.
+                //
+                // Vernon is a story ped. Rockstar never gave him a phone card, so there is no
+                // CHAR_ to ask for and every message he has ever sent -- the one after you die
+                // on his job, the one with his number in it -- arrived over the grey
+                // silhouette, from a man whose face is in the dialogue panel two feet above it.
+                //
+                // So his is PHOTOGRAPHED instead. Headshots renders a ped model into a texture
+                // the message layer draws exactly like a contact picture -- Notify checks
+                // Headshots.Holds before it checks the streamed dictionaries, for this reason
+                // -- and the LUber driver has had his face this way for weeks.
+                //
+                // Empty until the factory has been round, which is the right answer rather
+                // than a wrong picture: Notify falls back to the silhouette on an empty, the
+                // way it does for anybody it has never heard of. See Theme, which asks.
+                case "VERNON": return Headshots.Txd(VernonFace) ?? "";
 
                 case "MICHAEL": return "CHAR_MICHAEL";
                 case "TREVOR": return "CHAR_TREVOR";
@@ -124,6 +144,30 @@ namespace Hoodrich.UI
             if (_nextCheck != 0 && now < _nextCheck) return;
 
             _nextCheck = now + CheckEveryMs;
+
+            // AND VERNON'S PHOTOGRAPH, WHICH IS NOT A STREAMED DICTIONARY AT ALL.
+            //
+            // Asked for here because here is the thing that already runs on a slow clock and
+            // already exists to make sure a face is ready before the message that needs it.
+            // WantAs does nothing once the picture has been taken, and backs off on its own
+            // after a failure, so this is one dictionary lookup every fifteen seconds for the
+            // rest of the session.
+            //
+            // ig_vernon first and csb_vernon behind it -- the same pair his own spawner uses,
+            // in the same order, so the photograph is of the man who is actually stood on the
+            // wall rather than of a cutscene variant of him.
+            try
+            {
+                // ASKED FOR EVEN ONCE IT EXISTS, because asking is what keeps it. Eviction
+                // takes whichever face has gone longest without being wanted -- and the social
+                // feed photographs a new stranger every few seconds, thirty of them an hour.
+                // A contact whose picture is only wanted on the rare frame he texts you is a
+                // contact whose picture has been thrown away by the time he does.
+                Headshots.Txd(VernonFace);
+
+                Headshots.WantAs(VernonFace, "ig_vernon", "csb_vernon");
+            }
+            catch { /* he keeps the silhouette, which is where this started */ }
 
             var lost = 0;
 

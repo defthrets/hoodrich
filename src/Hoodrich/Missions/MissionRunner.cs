@@ -3283,6 +3283,9 @@ namespace Hoodrich.Missions
                 // Which is why a man who died on Vernon's job was told nothing, and why the
                 // one line in it that matters -- come and see me, we ain't done -- never
                 // reached anybody. Main asks for it once he is stood outside the hospital.
+                // NULL MEANT "WORK IT OUT FROM THE NAME" and Notify does exactly that, so
+                // this was already right -- it just had nothing to find. Faces knows Vernon
+                // now: his picture is a photograph rather than a contact card. See Faces.For.
                 _deathFace = vees ? null : "CHAR_LAMAR";
                 _deathWho = vees ? "Vernon" : "Lamar";
                 _deathSaid = lines[_rng.Next(lines.Length)];
