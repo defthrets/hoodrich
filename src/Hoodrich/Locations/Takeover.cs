@@ -1030,6 +1030,14 @@ namespace Hoodrich.Locations
             /// <summary>When he stopped on the way home, or nought if he is still moving.</summary>
             public int Stuck;
 
+            /// <summary>
+            /// He has come off the throttle for the last stretch into his mark. See Ease.
+            ///
+            /// Cleared whenever a new approach begins, because a car that has done its go and
+            /// is driving back to the same marker has to ease off again on the way in.
+            /// </summary>
+            public bool Eased;
+
             /// <summary>When the lock swaps to the other side. See Working.</summary>
             public int SwapAt;
 
@@ -4408,6 +4416,12 @@ namespace Hoodrich.Locations
 
                     if (r.Car.Position.DistanceTo(bay) > StageArrived)
                     {
+                        // He eases off coming home too. His go ends the same way it began --
+                        // on the brake on his mark -- and a car that arrives back at eight
+                        // metres a second slides through it exactly the way it did the first
+                        // time. See Ease.
+                        Ease(r, bay);
+
                         Hold(r, now, bay);
                         continue;
                     }
@@ -4450,6 +4464,11 @@ namespace Hoodrich.Locations
                             // fifteen metres from it is just as available.
                             if (now - r.Sent < StageGiveUpMs)
                             {
+                                // AND HE LIFTS OFF BEFORE HE GETS THERE. See Ease -- the run-in
+                                // was twelve metres a second held to the last five, which is
+                                // why the first thing they did on the mark was slide across it.
+                                Ease(r, bay);
+
                                 // Same patience as a car going home: he is driving round the
                                 // edge of a crowd, so being stopped is normal and asking again
                                 // is the answer rather than forcing through.
@@ -4516,10 +4535,9 @@ namespace Hoodrich.Locations
                     }
                     else if (r.Burn != 0)
                     {
-                        // Braking, or about to start smoking. Neither is topped up -- both are
-                        // asked for once and run exactly as long as they were asked for, so
-                        // there is nothing to do here but wait for the clock.
-                        if (now >= r.Burn) Smoke(r, now);
+                        // Braking, or about to start smoking. The clock says the earliest he
+                        // may start; being stopped says whether he does. See Braking.
+                        Braking(r, now);
                     }
                     else if (r.Car.Position.DistanceTo(Circle) > (r.Wide ? WideRoam : Roam))
                     {
@@ -5412,8 +5430,14 @@ namespace Hoodrich.Locations
 
                 Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
 
+                // AT WHATEVER SPEED THE APPROACH IS OWED. Asking again used to hand back the
+                // full twelve metres a second, including to a car that had already eased off
+                // for the last twenty -- so a driver who got briefly stuck near his mark set
+                // off at it flat out and arrived exactly the way Ease exists to stop.
+                var how = r.Car.Position.DistanceTo(at) <= EaseWithin ? EaseSpeed : 12f;
+
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle, r.Car.Handle,
-                              to.X, to.Y, to.Z, 12f, 0, r.Car.Model.Hash,
+                              to.X, to.Y, to.Z, how, 0, r.Car.Model.Hash,
                               CareStyle, 3f, true);
 
                 Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, true);
@@ -5423,6 +5447,66 @@ namespace Hoodrich.Locations
                 // He tries again in a few seconds.
             }
         }
+
+        /// <summary>
+        /// HE COMES OFF IT BEFORE THE MARK.
+        ///
+        /// THEY WERE ARRIVING FLAT OUT AND SKIDDING THROUGH THEIR OWN PITCH. The run-in is a
+        /// single drive task at twelve metres a second held right up to the arrival circle,
+        /// and the first thing that happens on crossing it is CLEAR_PED_TASKS and a brake --
+        /// so forty-odd kilometres an hour went into a stop that had five metres to happen in.
+        /// What the crowd saw was a car come in hot, lock up, and slide across the mark
+        /// sideways before any of the show had started. It read as a driver arriving badly,
+        /// which is the opposite of the thing everybody is stood there to watch.
+        ///
+        /// So the last stretch is driven slowly. Inside EaseWithin the route is re-issued at
+        /// EaseSpeed -- a roll rather than a stop, because a car that creeps the last twenty
+        /// metres of a takeover looks lost. He is still driving, he is just not driving AT the
+        /// mark any more, and the brake that follows now has a car doing walking pace to stop
+        /// rather than one doing forty.
+        ///
+        /// THE SAME ROUTE, NOT A NEW ONE. Re-issuing a drive to the same coordinate at a lower
+        /// cruise speed continues the approach; it does not restart it or re-plan it. And it
+        /// happens ONCE per approach -- Eased -- because asking every tick would reset the
+        /// steering every seven hundred milliseconds and that is its own kind of wobble.
+        ///
+        /// CareStyle rather than RushStyle, which is what the run-in already used: he is
+        /// driving into a ring of people at this point and stopping for one of them is right.
+        /// </summary>
+        private void Ease(Runner r, Vector3 at)
+        {
+            if (r.Eased) return;
+
+            try
+            {
+                if (r.Car.Position.DistanceTo(at) > EaseWithin) return;
+
+                r.Eased = true;
+
+                var to = Toward(r.Car.Position, at);
+
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle, r.Car.Handle,
+                              to.X, to.Y, to.Z, EaseSpeed, 0, r.Car.Model.Hash,
+                              CareStyle, 3f, true);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, r.Driver.Handle, true);
+            }
+            catch
+            {
+                // He arrives at whatever he was already doing, which is where this started.
+            }
+        }
+
+        /// <summary>
+        /// Where he lifts off, and what he rolls in at.
+        ///
+        /// TWENTY METRES AND FIVE A SECOND. Twenty is far enough out that the lift is a
+        /// decision rather than a flinch -- a car doing twelve sheds the difference over most
+        /// of it -- and five metres a second is eighteen kilometres an hour, which is a car
+        /// being placed rather than a car giving up. Not a crawl: he is still arriving.
+        /// </summary>
+        private const float EaseWithin = 20f;
+        private const float EaseSpeed = 5f;
 
         /// <summary>How long a car going home may sit still before it asks for the route again.</summary>
         private const int BlockedMs = 4000;
@@ -5485,10 +5569,10 @@ namespace Hoodrich.Locations
                     r.Burn = 0;
                 }
 
-                // Still braking, or owed his five seconds of smoke. See Settle.
+                // Still braking, or owed his five seconds of smoke. See Settle and Braking.
                 if (r.Burn != 0)
                 {
-                    if (now >= r.Burn) Smoke(r, now);
+                    Braking(r, now);
                     continue;
                 }
 
@@ -5532,9 +5616,18 @@ namespace Hoodrich.Locations
         ///   spot, which is the thing everybody stands around a takeover to watch.
         ///   LOCK -- see Show. From nothing, which is the only way a donut looks like one.
         ///
-        /// THE TYRES GO ON NOW rather than at the lock, so nothing about the car changes
-        /// between the brake and the spin. Changing grip halfway through a move is a car that
-        /// steps sideways for no reason anybody watching can see.
+        /// AND THE GRIP STAYS UP FOR THE STOP, WHICH IS THE OTHER HALF OF THE SKID.
+        ///
+        /// The tyres used to go slick HERE, on the reasoning that nothing about the car should
+        /// change between the brake and the spin. What it actually did was ask a car to stop
+        /// and cut its grip to two fifths in the same breath -- so the brake was taken on ice,
+        /// and forty kilometres an hour of arrival went sliding across the pitch instead of
+        /// stopping on it. The car that was meant to be settling was the car skidding off
+        /// course.
+        ///
+        /// The rig goes on at the LOCK instead -- Show calls Still, which sets exactly this --
+        /// and by then he is stationary, so the change nobody was meant to see happens on a
+        /// car that is not moving. The thing that note was guarding against cannot occur.
         ///
         /// Drift tyres and not reduced grip, which is the change that came with the standing
         /// donut: drift tyres loosen the REAR, which is what should be loose, and reduced grip
@@ -5566,18 +5659,73 @@ namespace Hoodrich.Locations
 
                 Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
 
-                // THE SAME RIG THE SPIN USES, so nothing about the car changes between the
-                // brake, the smoke and the lock. See Still: the grip comes DOWN, which is what
-                // lets the back come round when the wheel goes over. It was left up here on the
-                // same wrong reasoning that put burnout mode on.
-                Slick(r.Car, true);
-                Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, true);
+                // FULL GRIP FOR THE STOP. Not a no-op: he may be arriving back off a turn he
+                // spent on the slick rig, and a car asked to brake on two fifths of its grip
+                // does not brake, it slides. Still puts the rig back on at the lock.
+                Slick(r.Car, false);
+                Function.Call(Hash.SET_DRIFT_TYRES, r.Car.Handle, false);
+
+                // AND THE NEXT APPROACH EASES OFF AGAIN. Settle is the one door every arrival
+                // goes through, so it is the one place that has to say so. See Ease.
+                r.Eased = false;
             }
             catch
             {
                 // The clock still runs and the lock still comes.
             }
         }
+
+        /// <summary>
+        /// STILL STOPPING, OR STOPPED AND OWED HIS SMOKE.
+        ///
+        /// THE BRAKE USED TO END ON A CLOCK AND NOTHING ELSE. A settle is a fixed second and a
+        /// half, and if the car was still rolling when it ran out the standing burnout began on
+        /// a car that was not standing -- which is a burnout that travels, and then a lock that
+        /// starts from a car already moving, which is the slide this whole arrival exists to
+        /// get rid of.
+        ///
+        /// So the clock is the EARLIEST he may start smoking rather than the moment he does.
+        /// Past it he still has to be under walking pace, and while he is not the brake is
+        /// asked for again -- a temp action re-issued is simply continued, so this is him
+        /// leaning on it a little longer rather than pumping it.
+        ///
+        /// WITH A CAP, because "until he is stopped" is a sentence a car on a slope, or one
+        /// being shoved by the next arrival, can refuse forever. Past the grace he gets his
+        /// five seconds wherever he is: a burnout that creeps is worse than nothing to look at,
+        /// and a performer stuck on the brake all night is nothing to look at at all.
+        /// </summary>
+        private void Braking(Runner r, int now)
+        {
+            if (now < r.Burn) return;
+
+            try
+            {
+                if (r.Car.Speed > StoppedAt && now < r.Burn + BrakeGraceMs)
+                {
+                    Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, r.Car.Handle,
+                                  1, SettleMs);
+                    return;
+                }
+            }
+            catch
+            {
+                // Then he gets it now, which is what used to happen every time.
+            }
+
+            Smoke(r, now);
+        }
+
+        /// <summary>
+        /// Slow enough to call stopped, and how long he is given to get there.
+        ///
+        /// A METRE A SECOND IS A CAR ROLLING TO A HALT rather than one still arriving, and it
+        /// is loose on purpose -- a car held on the brake against an idling engine never reads
+        /// as exactly nought. Two and a half seconds on top of the settle is long enough for a
+        /// car that eased off to come to rest and short enough that one that cannot is not
+        /// left sat there.
+        /// </summary>
+        private const float StoppedAt = 1f;
+        private const int BrakeGraceMs = 2500;
 
         /// <summary>
         /// FIVE SECONDS STOOD STILL WITH THE BACK GOING.
