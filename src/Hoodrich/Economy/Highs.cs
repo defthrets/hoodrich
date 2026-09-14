@@ -490,10 +490,14 @@ namespace Hoodrich.Economy
             Turned = new Vector3(0f, 0f, 90f),
             Scenario = "WORLD_HUMAN_DRUG_DEALER_HARD",
 
-            // The nod. He goes down at the end of it, which is the half of this that nobody
-            // needs an animation dictionary to read -- and it is a man slumped on the
-            // ground now rather than a ragdoll. See Nodding.
-            Then = Nodding,
+            // NO NOD. This chained into Nodding -- him on his side on the floor for the
+            // minutes after, which is honest about what the drug does and is a long time to
+            // spend looking at the back of your own head with no way to stand up. It is the
+            // one effect in this file that takes the game off you rather than changing it, and
+            // a high you have to wait out lying down is not one anybody takes twice.
+            //
+            // Nodding stays in the file: it is the right animation and the objection is to
+            // where it was chained, not to what it is.
             Ms = 7000
         };
         /// <summary>
@@ -802,9 +806,21 @@ namespace Hoodrich.Economy
                 // pushed just off normal -- not crack's heavy drag, which is a different drug,
                 // but far enough that the world is not quite right for as long as it lasts.
                 Fx = "RaceTurbo",
-                Clipset = "move_m@drunk@slightlydrunk",
-                Shake = 0.42f,
-                Time = 0.88f,
+                // ---- SPEED, AND NOTHING THAT SLOWS HIM ----
+                //
+                // THE NUMBER SAID SPRINT AND THE ANIMATION SAID LAST ORDERS. Run has been 1.40
+                // all along -- forty per cent quicker on his feet -- under a drunk stagger
+                // clipset and a time scale of 0.88, which is the world running at seven eighths
+                // speed. What you actually felt was a man wading. The animation and the clock
+                // beat the number every time.
+                //
+                // A hurried walk, no slow motion, and no shake: a stimulant is not a stumble.
+                // The hallucinations stay where they are -- they are the screen effects, and
+                // those already wait for the SECOND dose, which is what "at higher dose" means
+                // and was already true. See the note about halving in Apply.
+                Clipset = "move_m@hurry@a",
+                Shake = 0f,
+                Time = 1f,
                 Run = 1.40f,
                 Hits = 1.2f,
                 Takes = 0.85f,
