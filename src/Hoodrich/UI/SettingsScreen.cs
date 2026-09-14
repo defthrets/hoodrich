@@ -562,10 +562,10 @@ namespace Hoodrich.UI
                     "A timecycle name. Ini only -- there is no list to pick from");
 
             Head("Voices");
-            Tick("Recorded dialogue", "Voice", "VoiceEnabled",
+            Tick("Recorded dialogue", "Voice", "Enabled",
                  () => c.VoiceEnabled, v => c.VoiceEnabled = v,
                  "Gerald, Lamar, Hao and Tao, in their own voices. Off leaves the text");
-            Slide("How loud", "Voice", "VoiceVolume",
+            Slide("How loud", "Voice", "Volume",
                   () => c.VoiceVolume, v => c.VoiceVolume = v, 0f, 1f, 0.05f, "0.00",
                   note: "Against the game's own dialogue, not against the music");
 
@@ -1206,29 +1206,29 @@ namespace Hoodrich.UI
             Slide("Fine when they find it", "PostUp", "PostUpFine",
                   () => c.PostUpFine, v => c.PostUpFine = (int)v, 0f, 50000f, 250f, "N0", "", "$");
 
-            Tick("Blocks get worked out", "PostUp", "BlockSaturationEnabled",
+            Tick("Blocks get worked out", "Economy", "BlockSaturationEnabled",
                  () => c.BlockSaturationEnabled, v => c.BlockSaturationEnabled = v,
                  "Selling on one corner makes the next customer there slower to turn up");
-            Slide("Grams to dry a block", "PostUp", "BlockSaturationGrams",
+            Slide("Grams to dry a block", "Economy", "BlockSaturationGrams",
                   () => c.BlockSaturationGrams, v => c.BlockSaturationGrams = v,
                   10f, 2000f, 10f, "0", "g");
-            Slide("It recovers over", "PostUp", "BlockRecoveryMinutes",
+            Slide("It recovers over", "Economy", "BlockRecoveryMinutes",
                   () => c.BlockRecoveryMinutes, v => c.BlockRecoveryMinutes = v,
                   1f, 240f, 1f, "0", "m", note: "While you are somewhere else");
-            Slide("A dead block still does", "PostUp", "BlockDemandFloor",
+            Slide("A dead block still does", "Economy", "BlockDemandFloor",
                   () => c.BlockDemandFloor, v => c.BlockDemandFloor = v, 0f, 1f, 0.05f, "0.00", "x",
                   note: "It never goes to nothing. 0.25 is a quarter of normal");
 
-            Tick("Buyers ring you", "PostUp", "ColdCallsEnabled",
+            Tick("Buyers ring you", "Supply", "ColdCallsEnabled",
                  () => c.ColdCallsEnabled, v => c.ColdCallsEnabled = v,
                  "Somebody calls wanting something, somewhere, for a while");
-            Slide("They try every", "PostUp", "ColdCallEveryMinutes",
+            Slide("They try every", "Supply", "ColdCallEveryMinutes",
                   () => c.ColdCallEveryMinutes, v => c.ColdCallEveryMinutes = v,
                   1f, 120f, 1f, "0", "m");
-            Slide("Chance they call", "PostUp", "ColdCallChancePercent",
+            Slide("Chance they call", "Supply", "ColdCallChancePercent",
                   () => c.ColdCallChancePercent, v => c.ColdCallChancePercent = v,
                   0f, 100f, 5f, "0", "%");
-            Slide("You have", "PostUp", "ColdCallMinutes",
+            Slide("You have", "Supply", "ColdCallMinutes",
                   () => c.ColdCallMinutes, v => c.ColdCallMinutes = v, 1f, 60f, 1f, "0", "m",
                   note: "Before they go elsewhere");
 
