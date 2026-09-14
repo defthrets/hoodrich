@@ -529,6 +529,9 @@ namespace Hoodrich.Missions
 
             Face(player);
 
+            // The chatter facial, for as long as whoever spoke last is still speaking. See Word.
+            Core.Lips.Update(_saying);
+
             var gone = now - _phaseFrom;
             var beat = gone / (MeetMs / Math.Max(1, Talk.Length));
 
@@ -556,6 +559,10 @@ namespace Hoodrich.Missions
 
             Phase = DealPhase.Turning;
             _phaseFrom = now;
+
+            // Faces back. From here it is a gunfight and nobody is chatting.
+            _saying = null;
+            Core.Lips.Rest();
 
             Pull(player);
 
@@ -1538,6 +1545,23 @@ namespace Hoodrich.Missions
             try { Core.Voice.Say(mine ? "vernon" : "armenian", words, null, true); }
             catch { /* the banks below, or nothing */ }
 
+            // ---- WHOSE MOUTH IS MOVING ----
+            //
+            // THE FACE WAS ANIMATED BY A ONE-SECOND BARK UNDER A TEN-SECOND LINE. The ambient
+            // speech below gives lip movement for exactly as long as the grunt it plays lasts,
+            // and the recorded line goes on talking over a closed mouth for the rest of it.
+            // Core.Lips is the thing that already solves this -- it holds the chatter facial
+            // for as long as Voice is actually speaking -- and it only needed telling who to
+            // put it on. See Meeting, which ticks it.
+            _saying = who;
+
+            // AND A HAND, because a man saying four sentences with his arms at his sides is a
+            // waxwork. Upper body only and as a secondary task, so it plays over whatever
+            // scenario he is stood in rather than cancelling it.
+            Gesture(who);
+
+            // The ambient bark stays: it is what makes them audible on an install with no
+            // voice pack at all, and under a recorded line it is one grunt at the front.
             try
             {
                 Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, who.Handle,
@@ -1548,7 +1572,64 @@ namespace Hoodrich.Missions
             {
                 // A quiet meeting.
             }
+
+            // AND IT IS ON THE SCREEN. Every other word in this mod is readable and this scene
+            // -- the one the whole job turns on -- was audio only, so an install without the
+            // voice pack watched two men stand in a yard in silence and then get shot at.
+            try
+            {
+                GTA.UI.Screen.ShowSubtitle(
+                    Core.Lang.T("~y~" + (mine ? "VERNON" : "ARDO") + ":~s~ " + words), 6000);
+            }
+            catch
+            {
+                // Then it is audio only, which is where this started.
+            }
         }
+
+        /// <summary>Who is speaking, for the mouth. Cleared when the scene ends.</summary>
+        private Ped _saying;
+
+        /// <summary>
+        /// One hand movement, thrown over whatever he is stood doing.
+        ///
+        /// UPPER BODY AND SECONDARY, which is flag 48 -- the same pair every other gesture in
+        /// this mod uses. A gesture that took his whole body would cancel the scenario he is
+        /// waiting in and stand him up straight in the middle of his own sentence.
+        ///
+        /// PICKED AT RANDOM OUT OF A SMALL BAG. They are conversational hand movements with no
+        /// meaning of their own, so which one lands on which line does not matter -- what
+        /// matters is that it is not the same one four times.
+        /// </summary>
+        private void Gesture(Ped who)
+        {
+            try
+            {
+                var clip = Gestures[_rng.Next(Gestures.Length)];
+
+                if (!Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, GestureDict))
+                {
+                    Function.Call(Hash.REQUEST_ANIM_DICT, GestureDict);
+                    return;
+                }
+
+                Function.Call(Hash.TASK_PLAY_ANIM, who.Handle, GestureDict, clip,
+                              4f, -2f, -1, 48, 0f, false, false, false);
+            }
+            catch
+            {
+                // He says it with his hands in his pockets.
+            }
+        }
+
+        /// <summary>Off the install's own animation list rather than remembered.</summary>
+        private const string GestureDict = "gestures@m@standing@casual";
+
+        private static readonly string[] Gestures =
+        {
+            "gesture_hand_right", "gesture_you_soft", "gesture_hand_down",
+            "gesture_what_hard", "gesture_point", "gesture_damn",
+        };
 
         /// <summary>
         /// The player walked out of it before it happened.
