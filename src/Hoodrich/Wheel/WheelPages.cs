@@ -206,6 +206,14 @@ namespace Hoodrich.Wheel
                 return;
             }
 
+            // THEIRS IF THEY ARE HERE. Bare Minimum has a pocket screen of its own, it lists
+            // OUR drugs in the same grid as its food, and it can move things into the bag --
+            // so on a machine with both mods the whole inventory is one screen rather than
+            // this one and that one disagreeing about what is in your hands. It refuses if
+            // he is mid-meal or one of its own screens is already up, and then this carries
+            // on below exactly as it did. See Core.Larder.Open.
+            if (Core.Larder.Open()) return;
+
             // And anywhere else it is the same list with nowhere to push it. One container, and
             // the only way out of it is the floor.
             if (PocketScreen != null)

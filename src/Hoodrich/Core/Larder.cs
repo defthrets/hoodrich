@@ -51,6 +51,9 @@ namespace Hoodrich.Core
         private static MethodInfo _ids, _countOf, _nameOf, _iconOf, _tintOf, _consume, _mark;
         private static MethodInfo _descOf, _categoryOf;
         private static MethodInfo _give, _take;
+
+        /// <summary>Their own pocket screen, asked for rather than copied. See Open.</summary>
+        private static MethodInfo _open;
         private static MethodInfo _notSleep;
         private static MethodInfo _drain;
 
@@ -136,6 +139,11 @@ namespace Hoodrich.Core
                     // Optional: an older Bare Minimum on the same API version will not
                     // have it, and a null here just means no mark beside the heading.
                     _mark = type.GetMethod("Mark", BindingFlags.Public | BindingFlags.Static);
+
+                    // Optional the same way. Older builds of theirs have no screen to ask
+                    // for, and the phone draws its own list as it always did. See Open.
+                    _open = type.GetMethod("Open", BindingFlags.Public | BindingFlags.Static,
+                                           null, Type.EmptyTypes, null);
 
                     // Also optional, same reasoning. Without it an overdose still skips the
                     // hours -- they are just counted as a night's sleep over there, which is
@@ -450,6 +458,30 @@ namespace Hoodrich.Core
         }
 
         /// <summary>Eats, drinks or smokes one. True when it actually started.</summary>
+        /// <summary>
+        /// Asks Bare Minimum to open its own pocket, and says whether it did.
+        ///
+        /// THEIR SCREEN IS BETTER THAN OUR COPY OF THEIR DATA. The phone can read their food
+        /// over this bridge and list it, and a list is all it can be: it cannot show the
+        /// picture the way their tiles do, cannot move anything into their bag, and has to
+        /// reimplement every rule about what is edible and when. Their pocket does all of it
+        /// already, and it lists OUR drugs in the same grid, so one screen is the whole
+        /// inventory rather than two halves of it.
+        ///
+        /// False when they are not installed, when a screen of theirs is already up, or when
+        /// he is mid-meal -- and then the phone draws its own, which is the only thing there
+        /// is on a machine without them.
+        /// </summary>
+        public static bool Open()
+        {
+            try
+            {
+                if (!Present || _open == null) return false;
+                return (bool)_open.Invoke(null, null);
+            }
+            catch { return false; }
+        }
+
         /// <summary>Puts one back in their pocket. False if it would not fit or they are not here.</summary>
         public static bool Give(string id, int many = 1)
         {
