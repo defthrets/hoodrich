@@ -937,6 +937,23 @@ namespace Hoodrich.Missions
                     continue;
                 }
 
+                // ---- A MAN IN THE MIDDLE OF BEING STABBED IS NOT TAKING ORDERS ----
+                //
+                // Everything below re-tasks him, and one TASK_TURN_TO_FACE in the middle of a
+                // takedown is two men doing different animations a foot apart.
+                //
+                // AND HE IS NOT BEING SPOOKED EITHER, WHICH IS WHY THIS MOVED. The wound test
+                // below is what tells a shot from a stab -- it asks whether he was hurt from
+                // outside arm's reach -- and it used to run FIRST. A takedown is a wound by
+                // definition, and the clip walks the pair of them apart far enough, on the odd
+                // frame, to read as range. So the game announced he had spotted you at the
+                // exact moment the knife went into his neck, and failed the job for it.
+                //
+                // Nothing above this is skipped: dying mid-stab still goes through Dropped, and
+                // vanishing still goes through Vanished. It is only the judging he is exempt
+                // from, and only while the knife is in him.
+                if (q == _sticking) continue;
+
                 // HIT AND STILL UP, AND HE KNOWS WHO DID IT. He used to run bleeding and
                 // you followed the blood; he turns round now. A wound taken from outside
                 // arm's reach was a shot, and the shot was yours to not take.
@@ -946,11 +963,6 @@ namespace Hoodrich.Missions
                     Blown(q);
                     continue;
                 }
-
-                // A MAN IN THE MIDDLE OF BEING STABBED IS NOT TAKING ORDERS. Everything
-                // below re-tasks him, and one TASK_TURN_TO_FACE in the middle of a takedown is
-                // two men doing different animations a foot apart.
-                if (q == _sticking) continue;
 
                 Wander(q, now);
                 Watch(q, player, crouched, sprinting, now);
@@ -1867,7 +1879,19 @@ namespace Hoodrich.Missions
             var mine = !clean ? BotchPlayer : behind ? StealthPlayer : FrontPlayer;
             var his = !clean ? BotchVictim : behind ? StealthVictim : FrontVictim;
 
-            var origin = player.Position;
+            // ---- ON THE FLOOR, NOT AT WHATEVER HEIGHT HE HAPPENS TO BE ----
+            //
+            // THE VICTIM WAS SUNK INTO THE PAVEMENT TO HIS WAIST. Both halves of this play at
+            // ONE origin -- that is what makes the pair line up without a synchronised scene --
+            // and the origin was the player's own position, which is where the ENGINE thinks he
+            // is rather than where the ground is. Stood on a kerb, on a slope, or on anything
+            // the two of them are not equally on, the clip's root goes with the player and the
+            // other man goes wherever that puts him.
+            //
+            // Ground is the probe this file already has for exactly this, and it is the same
+            // rule it uses everywhere else: believe it only within three metres, or a bad read
+            // puts the pair of them on a roof.
+            var origin = Ground(player.Position);
             var heading = player.Heading;
 
             try
