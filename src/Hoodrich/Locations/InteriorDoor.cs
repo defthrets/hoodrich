@@ -550,7 +550,7 @@ namespace Hoodrich.Locations
                 // loader on this machine was doing all along, under a setting called
                 // "load mp maps on refresh", and it is why the door worked while that mod ran
                 // and stopped the day it did not. Nothing about this mod ever changed.
-                Mp(true);
+                Map(true);
 
                 foreach (var name in (_spec.Ipl + ";" + _spec.Extra).Split(';'))
                 {
@@ -764,7 +764,7 @@ namespace Hoodrich.Locations
                     // Bounced out because the room was not there: the map goes back too,
                     // or a failed attempt leaves the whole city on the online variant for
                     // nothing at all.
-                    Mp(false);
+                    Map(false);
 
                     Wait(400);
                     Fade(true);
@@ -848,7 +848,7 @@ namespace Hoodrich.Locations
                     // Bounced out because the room was not there: the map goes back too,
                     // or a failed attempt leaves the whole city on the online variant for
                     // nothing at all.
-                    Mp(false);
+                    Map(false);
 
                     Wait(400);
                     Fade(true);
@@ -1113,7 +1113,7 @@ namespace Hoodrich.Locations
 
                 // He is outside again: the crew knock off and the city goes back to the
                 // map the story happens in.
-                Mp(false);
+                Map(false);
 
                 Log.Info("Out of the " + _spec.Name + " to " + Back +
                          (_cameFrom == Vector3.Zero
@@ -1183,6 +1183,37 @@ namespace Hoodrich.Locations
         }
 
         private const float RingRange = 30f;
+
+        /// <summary>
+        /// Whether this room is online content and therefore needs the online map.
+        ///
+        /// AN IPL IS THE TELL. The map swap exists for DLC shells -- a bunker, a nightclub --
+        /// which in a story game are not merely unloaded but not in the map at all, so
+        /// REQUEST_IPL finds nothing and every coordinate inside reads as empty. A door that
+        /// names no IPL is a door onto a room that is already there.
+        /// </summary>
+        private bool Online => (_spec.Ipl + _spec.Extra).Trim().Length > 0;
+
+        /// <summary>
+        /// The map swap, for the doors that actually need one.
+        ///
+        /// ON_ENTER_MP CHANGES THE WHOLE CITY, and it was being called for every door in the
+        /// file. Leroy's basement is the torture room out of By the Book -- a STORY interior,
+        /// already in the map, with no way in rather than nothing there, which is why its Ipl
+        /// is empty -- so going down Vernon's stairs swapped Los Santos to the online variant
+        /// for a room that was there either way, and the player walked out of a shop into a
+        /// city that was not the one he walked into it from.
+        /// </summary>
+        private void Map(bool on)
+        {
+            if (!Online)
+            {
+                if (on) Log.Info("The " + _spec.Name + " is a story interior; the map stays as it is.");
+                return;
+            }
+
+            Mp(on);
+        }
 
         private static void Mp(bool on)
         {
