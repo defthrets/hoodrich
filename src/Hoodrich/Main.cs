@@ -2590,6 +2590,15 @@ namespace Hoodrich
                 _pocketScreen.BagSlots = () => State.Satchel.Slots;
                 _pocketScreen.BagStash = () => _state == null ? null : _state.Bag.Stash;
                 _pocketScreen.BagFood = () => _state == null ? null : _state.Bag.Food;
+                // The house is somewhere you put things down, so the bag comes off in there
+                // too. Same hooks as the pocket screen's.
+                _stashScreen.BagOn = () => _state != null && _state.Bag.Worn;
+                _stashScreen.DropBag = () =>
+                {
+                    var him = Game.Player.Character;
+                    if (_bag != null && him != null && him.Exists()) _bag.Drop(him);
+                };
+
                 _pocketScreen.DropBag = () =>
                 {
                     var me = Game.Player.Character;

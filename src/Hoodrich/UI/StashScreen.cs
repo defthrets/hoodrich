@@ -167,6 +167,18 @@ namespace Hoodrich.UI
 
             if (Game.GameTime - _openedAt < OpenGraceMs) return;
 
+            // The bag off the shoulder, and the screen goes with it: putting it down is the
+            // end of what you came in here to do with it.
+            if (BagOn != null && BagOn() && DropBag != null &&
+                (Pressed(Control.FrontendLb) || Game.IsKeyPressed(System.Windows.Forms.Keys.B)))
+            {
+                try { DropBag(); }
+                catch { /* the key in the street still works */ }
+
+                Close();
+                return;
+            }
+
             if (Pressed(Control.PhoneCancel))
             {
                 Hud.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
@@ -190,6 +202,10 @@ namespace Hoodrich.UI
             if (Held(Control.PhoneRight)) Transfer(toHouse: true, everything: all);
             else if (Held(Control.PhoneLeft)) Transfer(toHouse: false, everything: all);
         }
+
+        /// <summary>Set by Main: whether the bag is on his back, and taking it off.</summary>
+        public Func<bool> BagOn;
+        public Action DropBag;
 
         private static bool Pressed(Control control)
         {
@@ -474,7 +490,19 @@ namespace Hoodrich.UI
             var kx = UiKit.Key(x, ky, null, "arrow_updown.png", "PICK", arrive);
             kx = UiKit.Key(kx, ky, null, "arrow_left.png", "TAKE OUT", arrive);
             kx = UiKit.Key(kx, ky, null, "arrow_right.png", "PUT AWAY", arrive);
-            UiKit.Key(kx, ky, UiKit.All, null, "ALL OF IT", arrive);
+            kx = UiKit.Key(kx, ky, UiKit.All, null, "ALL OF IT", arrive);
+
+            // ---- AND THE BAG COMES OFF IN HERE TOO ----
+            //
+            // B DROPS THE BAG EVERYWHERE EXCEPT WHERE YOU MOST WANT TO. The key is read in the
+            // street and refuses while any screen is up, which is right -- it must not fire
+            // under a panel that is using the same button -- and the one screen you are looking
+            // at when you want the bag off your back is this one. You come to the house to put
+            // things down.
+            if (BagOn != null && BagOn())
+            {
+                UiKit.Key(kx, ky, UiKit.Sling, null, "DROP BAG", arrive);
+            }
 
             // Last, so it rides over the rows it is pointing at.
             _glide.Draw(arrive);
