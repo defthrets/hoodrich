@@ -655,7 +655,7 @@ namespace Hoodrich.Economy
                 Clipset = "move_m@drunk@slightlydrunk",
                 Shake = 0.10f,
                 Time = 0.80f,
-                Ms = 100000,
+                Ms = 200000,
                 Line = "everything's fine. everything's real slow and fine"
             },
 
@@ -702,7 +702,7 @@ namespace Hoodrich.Economy
                 Hits = 1f,
                 Takes = 0.7f,
                 Heals = 1.6f,
-                Ms = 180000,
+                Ms = 360000,
                 DownMs = 45000,
                 Line = "everyone here is beautiful and i love this song"
             },
@@ -723,7 +723,7 @@ namespace Hoodrich.Economy
                 Time = 0.92f,
                 Takes = 0.7f,
                 Sunny = true,
-                Ms = 150000,
+                Ms = 300000,
                 DownMs = 15000,
                 Line = "beautiful day. beautiful. wheres my car"
             },
@@ -742,7 +742,7 @@ namespace Hoodrich.Economy
                 Hits = 2.2f,
                 Takes = 0.5f,
                 Rage = true,
-                Ms = 40000,
+                Ms = 80000,
                 DownMs = 40000,
                 Line = "MOVE"
             },
@@ -778,7 +778,7 @@ namespace Hoodrich.Economy
                 Run = 1.49f,
                 Hits = 1.3f,
                 Rage = true,
-                Ms = 60000,
+                Ms = 120000,
                 DownMs = 30000,
                 Line = "yeah. yeah yeah yeah. what we doing"
             },
@@ -808,7 +808,7 @@ namespace Hoodrich.Economy
                 Run = 1.40f,
                 Hits = 1.2f,
                 Takes = 0.85f,
-                Ms = 300000,
+                Ms = 600000,
                 DownMs = 60000,
                 Line = "not even tired. could go all night"
             },
@@ -892,7 +892,7 @@ namespace Hoodrich.Economy
                 Time = 0.90f,
                 Run = 1f,
 
-                Ms = 420000,
+                Ms = 840000,
                 Line = "the road is breathing. give it a minute"
             },
 
@@ -909,7 +909,7 @@ namespace Hoodrich.Economy
                 Time = 0.55f,
                 Run = 1f,
                 Takes = 0.6f,
-                Ms = 180000,
+                Ms = 360000,
                 DownMs = 45000,
                 Line = "..."
             }

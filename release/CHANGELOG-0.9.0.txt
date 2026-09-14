@@ -1,0 +1,60 @@
+0.9.0 -- 14 September 2026
+
+
+VERNON HAS A JOB NOW, AND IT IS THE ONE HE HAS BEEN TALKING ABOUT. The man on
+the wall outside Leroy's Electrical finally asks you for something. He walks
+you down into the basement he keeps calling square footage, shows you round an
+operation whose vault is a filing cabinet and whose extraction is a fan pointed
+up the stairs, and then puts it to you: a kilo off an Armenian at Rogers Scrap
+for twenty-two five, eight of it already paid, and he is coming with you
+because it is his money and he has never met the man. It goes how you expect
+and he does not. He carries the money out in a paper bag, puts it down to
+shoot, and goes back for it the moment the shooting stops.
+
+HE ALSO HAS A CAR. A black Dorado parked down the side of the shop, chrome
+rims, green tubes, smoked glass, OGVEE on a Sprunk plate, sat down on its back
+axle -- and locked, every hour of the save except the one he needs you for.
+The suspension is this mod's own rather than borrowed from a mod you might not
+have installed.
+
+A BAG YOU CAN LOSE. Twenty slots, worn on your back, dropped with a key and
+picked up off the pavement, and it is the only way to move weight. It keeps
+what is in it across a restart and across wherever you left it. Die wearing it
+and it comes off where you fell with everything still inside, which makes
+losing it something you decide by not walking back for it. Die without it and
+your pockets pay, the way they always did.
+
+DRUGS LAST TWICE AS LONG. Every high is doubled -- weed a hundred seconds to
+two hundred, cocaine five minutes to ten, heroin seven to fourteen. The
+comedown after them is untouched, because the wreckage is the price rather
+than the effect.
+
+THE FAM APP GETS THREE PAGES: your set, the map of who holds what, and who you
+have got beef with.
+
+EVERY VOICE AT THE SAME LEVEL. The pack was recorded over months and sounded
+like it -- fifteen decibels between the loudest man and the quietest. Every
+take is measured and levelled now, and the volume slider actually moves them,
+which it had not been doing at all.
+
+AND A LOT OF THINGS THAT WERE QUIETLY WRONG:
+
+  Ten rows on the settings screen wrote keys nothing reads, so moving them
+  changed nothing after a reload. All ten repointed.
+
+  Going down Vernon's stairs swapped Los Santos for the online map, for a room
+  that was in the story map all along.
+
+  D-pad right moved the inventory cursor AND put the thing under it in your
+  bag, which read as the mod eating your shopping.
+
+  The kit on a dead cat said Keon Peralta, 5'5", Hispanic, ninety eight
+  dollars. People only now.
+
+  Mission briefs from anybody but Lamar were filed under his name and never
+  played. Every one of Vernon's was silent.
+
+  The set's cars at a meet go back to West Coast Classics.
+
+  Bodies you drag are held by the wrist and ragdoll properly rather than
+  jolting into the air -- and you can start the drag off the loot card.
