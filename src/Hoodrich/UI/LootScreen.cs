@@ -226,6 +226,23 @@ namespace Hoodrich.UI
                 return;
             }
 
+            // HIM, OFF THIS SCREEN. The card closes first: the drag puts an animation on the
+            // player and holds a body against his hands, and neither of those is something to
+            // start underneath a full-screen panel.
+            if (Core.Undertaker.Present && (Pressed(Control.FrontendY) || Pressed(Control.Context)))
+            {
+                var who = _who != null && _who.Exists() ? _who.Handle : 0;
+
+                Close();
+
+                if (who != 0 && !Core.Undertaker.Take(who))
+                {
+                    Notify.Problem("can't get hold of him from there.");
+                }
+
+                return;
+            }
+
             if (Pressed(Control.PhoneCancel) || Pressed(Control.FrontendCancel))
             {
                 Hud.PlaySound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
@@ -774,13 +791,29 @@ namespace Hoodrich.UI
 
             UiKit.KeyRight(right, ky, UiKit.Back, _body.Female ? "LEAVE HER" : "LEAVE HIM", arrive);
 
-            if (_body.Items.Count == 0) return;
+            var kx = x;
 
-            var kx = UiKit.Key(x, ky, null, "arrow_leftright.png", "PICK", arrive);
+            if (_body.Items.Count > 0)
+            {
+                kx = UiKit.Key(kx, ky, null, "arrow_leftright.png", "PICK", arrive);
+                kx = UiKit.Key(kx, ky, UiKit.Confirm, null, "TAKE IT", arrive);
+                kx = UiKit.Key(kx, ky, UiKit.HoldConfirm, null, "THE LOT", arrive);
+            }
 
-            kx = UiKit.Key(kx, ky, UiKit.Confirm, null, "TAKE IT", arrive);
-
-            UiKit.Key(kx, ky, UiKit.HoldConfirm, null, "THE LOT", arrive);
+            // ---- AND THEN MOVE HIM, IF THE MOD THAT DOES THAT IS HERE ----
+            //
+            // THIS IS THE SCREEN YOU ARE ALREADY LOOKING AT WHEN YOU WANT HIM GONE. Five0
+            // Patrol has the drag and has its own prompt for it, which appears once the body
+            // has been searched -- so the sequence was: open this, read it, close it, find the
+            // other prompt. The last step is the one nobody should have to do.
+            //
+            // DRAWN ONLY WHEN IT WOULD WORK. See Core.Undertaker: no Five0, an older Five0, or
+            // the setting switched off all answer the same way, and a key on a footer that does
+            // nothing is worse than no key.
+            if (Core.Undertaker.Present)
+            {
+                UiKit.Key(kx, ky, UiKit.Swap, null, _body.Female ? "DRAG HER" : "DRAG HIM", arrive);
+            }
         }
 
         private static int Clamp(int v, int lo, int hi)
