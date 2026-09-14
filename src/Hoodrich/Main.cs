@@ -2907,7 +2907,13 @@ namespace Hoodrich
                     return beats.ToArray();
                 };
 
+                // AND HE TAKES IT BACK OFF YOU. The runner has always known how to finish his
+                // job; nothing had ever asked it in front of him. See VernonTalk.Ready.
+                _vernonTalk.Ready = () => _jobs != null && _jobs.OnVernonsJob && _jobs.ReadyToCollect;
+                _vernonTalk.Collect = () => _jobs == null ? null : _jobs.Collect();
+
                 _vernonTalk.Job = () =>
+
                 {
                     var job = VernonJob();
 

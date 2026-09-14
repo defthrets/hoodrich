@@ -117,6 +117,21 @@ namespace Hoodrich.Locations
         public Func<string> Again { get; set; }
 
         /// <summary>
+        /// Set by Main: whether his job is done and waiting to be handed in.
+        ///
+        /// EVERY OTHER JOB IN THE MOD IS HANDED IN TO LAMAR, and that is why this was missing.
+        /// The runner has known how to finish a Deal all along -- ReadyToCollect covers it --
+        /// but the only screen that ever asked was FixerTalk, which is Lamar's. So you drove
+        /// the kilo back to Strawberry, stood in front of the man who paid for it, and he said
+        /// "still on the wall": the objective never cleared, the money was never paid, and the
+        /// job could not be finished at all.
+        /// </summary>
+        public Func<bool> Ready { get; set; }
+
+        /// <summary>Set by Main: takes it off you, pays, and hands back what he says about it.</summary>
+        public Func<string> Collect { get; set; }
+
+        /// <summary>
         /// What he sounds like between sentences.
         ///
         /// Up, always. He is pleased you stopped -- being stopped for is the entire event of
@@ -183,6 +198,19 @@ namespace Hoodrich.Locations
         /// </summary>
         public DialogueNode Root()
         {
+            // FINISHED AND STOOD IN FRONT OF HIM BEATS EVERYTHING ELSE HE COULD SAY. Checked
+            // first, because every other branch here is a version of "that thing still needs
+            // doing" and he is looking at it in your hands.
+            if (Ready != null)
+            {
+                var owed = false;
+
+                try { owed = Ready(); }
+                catch { /* then he talks about the weather */ }
+
+                if (owed) return Paid();
+            }
+
             var met = _state != null && _state.MetVernon;
             var done = _state != null && _state.HasDone(JobId);
 
@@ -198,6 +226,51 @@ namespace Hoodrich.Locations
             }
 
             return done ? Since() : Owed();
+        }
+
+        /// <summary>
+        /// Handing it over.
+        ///
+        /// THE LINE IS THE JOB'S OWN, out of missions.json, which is where every closing line
+        /// in the mod lives -- and Collect is what pays and clears the job down, so it is called
+        /// exactly once, here, as the node is built. Root runs once per conversation, which is
+        /// what makes that safe.
+        /// </summary>
+        private DialogueNode Paid()
+        {
+            string said = null;
+
+            try { said = Collect == null ? null : Collect(); }
+            catch { /* the fallback below is still true */ }
+
+            if (string.IsNullOrEmpty(said))
+            {
+                said = "Man. MAN. Aight -- give it here. Give it -- I got it, I got it. " +
+                       "Downstairs. Now.";
+            }
+
+            var node = Node(said);
+
+            node.Say("You alright, Vee?", () => After(), "Let him breathe").MovesOn()
+                .WithIcon(Icons.Tick);
+
+            node.Leave("Later, Vee.");
+
+            return node;
+        }
+
+        /// <summary>The beat after, so it does not end on him counting his losses.</summary>
+        private DialogueNode After()
+        {
+            var node = Node(
+                "Am I -- nah. Nah, I'm good. I'm GOOD, Franklin. I got a kilo downstairs and a " +
+                "man who owes me an explanation, and one of them things is fixable tonight. " +
+                "Come see me in a bit. I'ma have somethin' for you.");
+
+            node.Say("Aight.", () => null, "Done").WithIcon(Icons.Tick);
+            node.Leave();
+
+            return node;
         }
 
         // ---- the first time ----------------------------------------------------

@@ -176,7 +176,30 @@ namespace Hoodrich.Missions
         private static readonly string[] Cars = { "schafter2", "oracle", "felon", "cavalcade" };
 
         /// <summary>What is in the boot, and what it is lying on when they are done.</summary>
-        private static readonly string[] Brick = { "prop_coke_block_01", "prop_drug_package_02" };
+        /// <summary>
+        /// What a kilo looks like on the floor of a scrap yard: a case, not a brick.
+        ///
+        /// THE BRICK WAS THE WRONG OBJECT FOR THE SCENE. Vernon hands over a briefcase of money
+        /// and the whole point of the turn is that he never gets what he paid for -- so what is
+        /// on the ground when it is over is THEIRS, the one they brought, and a man does not
+        /// bring a kilo to a scrap yard in his hands. The block is still the last fallback for
+        /// an install that has not got the case.
+        /// </summary>
+        private static readonly string[] Brick =
+            { "prop_attache_case_01", "hei_p_attache_case_shut", "prop_coke_block_01" };
+
+        /// <summary>What Vernon carries out of the shop: eight up front, in a case.</summary>
+        private static readonly string[] Money =
+            { "prop_cash_case_01", "prop_attache_case_01", "hei_p_attache_case_shut" };
+
+        /// <summary>
+        /// A man walking with a case in one hand, which is a whole movement set rather than a
+        /// clip. Off the install's own animation list rather than remembered.
+        /// </summary>
+        private const string Carrying = "move_p_m_one_briefcase";
+
+        /// <summary>The right hand. PH_R_Hand is where the game hangs a held object.</summary>
+        private const int HandBone = 28422;
 
         /// <summary>What they are doing before you get there.</summary>
         private static readonly string[] Waiting =
@@ -212,6 +235,14 @@ namespace Hoodrich.Missions
 
         private Vehicle _theirs;
         private Prop _brick;
+
+        /// <summary>Vernon's money, and where it went when he put it down to shoot.</summary>
+        private Prop _case;
+        private Vector3 _caseAt;
+        private bool _caseDown;
+
+        /// <summary>Whether the kilo is in Franklin's hand right now. See Collecting.</summary>
+        private bool _carrying;
         private Blip _brickMark;
 
         /// <summary>Vernon, who said he could not leave the store. See Locations.Vernon.Lend.</summary>
@@ -348,6 +379,14 @@ namespace Hoodrich.Missions
                 var now = Game.GameTime;
 
                 Vee(player, now);
+
+                // The money in his hand on the way out, on the floor while it is going off, and
+                // back in his hand when it stops. See Case and Mind.
+                Case();
+                Mind(now);
+
+                // And the kilo leaves your hands when you get in a car with it.
+                Stow(player);
 
                 switch (Phase)
                 {
@@ -741,6 +780,166 @@ namespace Hoodrich.Missions
         /// meet was called at. There is no version of this where the player arrives and there
         /// is nothing to pick up.
         /// </summary>
+        /// <summary>
+        /// Puts a prop in a man's right hand and makes him walk like he is holding it.
+        ///
+        /// TWO HALVES AND BOTH ARE NEEDED. Attaching it is what makes it visible in his hand;
+        /// the movement set is what stops him swinging both arms through it as he walks. One
+        /// without the other is a case floating beside a man jogging normally.
+        /// </summary>
+        private static void InHand(Ped who, Prop what)
+        {
+            if (who == null || !who.Exists() || what == null || !what.Exists()) return;
+
+            try
+            {
+                var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, who.Handle, HandBone);
+
+                // The offsets sit it in the fist rather than through the wrist. Taken from the
+                // way the game's own carried cases hang.
+                Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, what.Handle, who.Handle, bone,
+                              0.12f, 0.0f, -0.02f, 100f, 0f, 180f, false, false, false, false,
+                              2, true);
+
+                Function.Call(Hash.REQUEST_ANIM_SET, Carrying);
+                Function.Call(Hash.SET_PED_MOVEMENT_CLIPSET, who.Handle, Carrying, 1.0f);
+            }
+            catch
+            {
+                // Then he carries it invisibly, which is the old behaviour and not a crash.
+            }
+        }
+
+        /// <summary>Takes it out of his hand and stands it on the floor where he is.</summary>
+        private static Vector3 OutOfHand(Ped who, Prop what)
+        {
+            var at = Vector3.Zero;
+
+            try
+            {
+                if (who != null && who.Exists())
+                {
+                    Function.Call(Hash.RESET_PED_MOVEMENT_CLIPSET, who.Handle, 0.25f);
+                }
+
+                if (what == null || !what.Exists()) return at;
+
+                at = what.Position;
+
+                Function.Call(Hash.DETACH_ENTITY, what.Handle, true, true);
+                Function.Call(Hash.PLACE_OBJECT_ON_GROUND_PROPERLY, what.Handle);
+
+                at = what.Position;
+            }
+            catch
+            {
+                // Wherever it is.
+            }
+
+            return at;
+        }
+
+        /// <summary>
+        /// The case of money he brings, put in his hand as the ride starts.
+        ///
+        /// HE SAID HE GAVE THEM EIGHT UP FRONT AND THE REST IS IN THE CAR, so the rest is a
+        /// thing he is holding -- which is what makes the turn land. A man with empty hands
+        /// being robbed is a scene about him; a man holding the money is the reason there is a
+        /// gun out.
+        /// </summary>
+        private void Case()
+        {
+            if (_case != null && _case.Exists()) return;
+            if (_vee == null || !_vee.Exists() || !_vee.IsAlive) return;
+
+            foreach (var name in Money)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage || !model.Request(2000)) continue;
+
+                    _case = World.CreateProp(model, _vee.Position, false, false);
+                    model.MarkAsNoLongerNeeded();
+
+                    if (_case == null || !_case.Exists()) continue;
+
+                    _case.IsPersistent = true;
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, _case.Handle, true, true);
+
+                    InHand(_vee, _case);
+
+                    _caseDown = false;
+
+                    Core.Log.Info("Deal: Vernon has the money in a " + name + ".");
+                    return;
+                }
+                catch
+                {
+                    // Next name.
+                }
+            }
+        }
+
+        /// <summary>
+        /// He puts the money down to shoot, and picks it back up when it is over.
+        ///
+        /// NOBODY RETURNS FIRE ONE-HANDED WITH A BRIEFCASE. It goes on the floor where he was
+        /// standing when it started, which is also the most Vernon thing in the mission: the
+        /// money is on the ground in the middle of a gunfight and he is going to go back for it
+        /// the moment the shooting stops, because it is his.
+        /// </summary>
+        private void Mind(int now)
+        {
+            if (_case == null || !_case.Exists()) return;
+            if (_vee == null || !_vee.Exists() || !_vee.IsAlive) return;
+
+            var shooting = Phase == DealPhase.Turning || Phase == DealPhase.Fighting;
+
+            if (shooting)
+            {
+                if (_caseDown) return;
+
+                _caseAt = OutOfHand(_vee, _case);
+                _caseDown = true;
+
+                Core.Log.Info("Deal: Vernon put the money down at " + _caseAt + ".");
+                return;
+            }
+
+            if (!_caseDown) return;
+
+            // Over, so he goes and gets it. Close enough and it is back in his hand; otherwise
+            // he is walked to it, and re-asked now and then in case the task fell off him.
+            var gap = _vee.Position.DistanceTo(_case.Position);
+
+            if (gap <= 1.4f)
+            {
+                InHand(_vee, _case);
+                _caseDown = false;
+
+                Core.Log.Info("Deal: Vernon has his money back.");
+                return;
+            }
+
+            if (now - _mindedAt < 3000) return;
+
+            _mindedAt = now;
+
+            try
+            {
+                Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, _vee.Handle,
+                              _case.Position.X, _case.Position.Y, _case.Position.Z,
+                              1.0f, -1, 0f, 0.5f);
+            }
+            catch
+            {
+                // He stands there looking at it, which is also him.
+            }
+        }
+
+        private int _mindedAt;
+
         private void Drop()
         {
             var at = _lot;
@@ -810,10 +1009,16 @@ namespace Hoodrich.Missions
 
             if (player.Position.DistanceTo(at) > GrabWithin) return;
 
-            try { if (_brick != null && _brick.Exists()) _brick.Delete(); }
-            catch { /* it goes with the job */ }
+            // ---- INTO HIS HANDS, NOT INTO THIN AIR ----
+            //
+            // IT USED TO BE DELETED THE INSTANT YOU WALKED OVER IT, which is a pickup nobody
+            // sees: the case is there, then the objective changes, and you are carrying a kilo
+            // that exists only as a line of text. Now he holds it, and holds it all the way
+            // back across the yard -- which is the only part of this job where you are visibly
+            // carrying the thing you came for.
+            InHand(player, _brick);
 
-            _brick = null;
+            _carrying = true;
 
             Unmark(ref _brickMark);
 
@@ -830,6 +1035,45 @@ namespace Hoodrich.Missions
             }
 
             Log.Info("Deal: package collected. Back to Vernon.");
+        }
+
+        /// <summary>
+        /// The kilo goes away when he gets in a car with it.
+        ///
+        /// A MAN DOES NOT DRIVE HOLDING A BRIEFCASE. Left attached he sits at the wheel with it
+        /// through the windscreen, and the carry clipset fights the driving animation -- so the
+        /// moment he is in a seat it is put away, which reads exactly as putting it on the
+        /// passenger seat and is one less thing to go wrong on the way back to Strawberry.
+        ///
+        /// The job does not care where it is: Leaving is measured against Vernon, and what you
+        /// are carrying is the mission's business rather than the prop's.
+        /// </summary>
+        private void Stow(Ped player)
+        {
+            if (!_carrying) return;
+            if (player == null || !player.Exists()) return;
+            if (!player.IsInVehicle()) return;
+
+            _carrying = false;
+
+            try
+            {
+                Function.Call(Hash.RESET_PED_MOVEMENT_CLIPSET, player.Handle, 0.25f);
+
+                if (_brick != null && _brick.Exists())
+                {
+                    Function.Call(Hash.DETACH_ENTITY, _brick.Handle, true, true);
+                    _brick.Delete();
+                }
+            }
+            catch
+            {
+                // It streams out with the job.
+            }
+
+            _brick = null;
+
+            Core.Log.Info("Deal: the package is in the car.");
         }
 
         private void Leaving(Ped player, int now)
@@ -1436,10 +1680,30 @@ namespace Hoodrich.Missions
 
             _theirs = null;
 
+            // BOTH CASES, AND THE HANDS THAT WERE HOLDING THEM. A movement clipset is not
+            // tied to the prop: delete the case and leave the set on, and the man walks around
+            // Los Santos for the rest of the session holding an invisible briefcase.
+            try
+            {
+                var me = Game.Player.Character;
+                if (me != null && me.Exists()) Function.Call(Hash.RESET_PED_MOVEMENT_CLIPSET, me.Handle, 0.25f);
+
+                if (_vee != null && _vee.Exists()) Function.Call(Hash.RESET_PED_MOVEMENT_CLIPSET, _vee.Handle, 0.25f);
+            }
+            catch { /* they walk it off */ }
+
+            _carrying = false;
+            _caseDown = false;
+
             try { if (_brick != null && _brick.Exists()) _brick.Delete(); }
             catch { /* it streams out */ }
 
             _brick = null;
+
+            try { if (_case != null && _case.Exists()) _case.Delete(); }
+            catch { /* likewise */ }
+
+            _case = null;
 
             if (_vee != null && GiveBack != null)
             {
