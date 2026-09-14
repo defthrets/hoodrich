@@ -1370,6 +1370,7 @@ namespace Hoodrich
                     // right.
                     Camber = -1.5f,
                     Squat = -0.15f,
+                    Nose = 0.06f,
 
                     // Sprunk, which is the thirteenth plate and the loudest one the game has.
                     // The name is his and nobody else in Los Santos agrees with it.

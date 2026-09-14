@@ -205,6 +205,9 @@ namespace Hoodrich.Locations
         /// <summary>Degrees of lean on the REAR wheels, negative for tucked in. See Slammed.</summary>
         public float Camber;
 
+        /// <summary>Metres the FRONT sits by, positive to raise it. The rake. See Slammed.</summary>
+        public float Nose;
+
         /// <summary>Metres the REAR sits down by, negative to lower it. See Slammed.</summary>
         ///
         /// <remarks>Not Drop, which is the hydraulics putting the whole car on the floor.</remarks>
@@ -468,7 +471,7 @@ namespace Hoodrich.Locations
             // HELD WHETHER IT IS MOVING OR NOT. The thread inside Slammed is what makes that
             // possible: the fields the game takes back are written several times a frame rather
             // than once, so the wheel is ours on every frame instead of every other one.
-            if (_car != null && _car.Exists()) _stance.Hold(_car, Camber, Squat);
+            if (_car != null && _car.Exists()) _stance.Hold(_car, Camber, Squat, Nose);
 
             var now = Game.GameTime;
             if (now - _lastUpdate < UpdateIntervalMs) return;

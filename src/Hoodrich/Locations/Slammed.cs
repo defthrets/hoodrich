@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -121,12 +121,14 @@ namespace Hoodrich.Locations
         /// <param name="car">The car. Nothing happens to a car that is not there.</param>
         /// <param name="camber">Degrees of lean on the rear wheels. Negative is tucked in at the top.</param>
         /// <param name="drop">Metres the rear sits down by. Negative lowers it.</param>
-        public void Hold(Vehicle car, float camber, float drop)
+        /// <param name="nose">Metres the FRONT sits by. Positive raises it, and that is the rake.</param>
+        public void Hold(Vehicle car, float camber, float drop, float nose = 0f)
         {
             var leaning = Math.Abs(camber) >= Nothing;
             var lowering = Math.Abs(drop) >= Nothing;
+            var lifting = Math.Abs(nose) >= Nothing;
 
-            if (car == null || !car.Exists() || (!leaning && !lowering))
+            if (car == null || !car.Exists() || (!leaning && !lowering && !lifting))
             {
                 _jobs = new Job[0];
                 return;
@@ -141,20 +143,28 @@ namespace Hoodrich.Locations
                 {
                     var id = (int)wheel.BoneId;
 
-                    // THE FRONT AXLE IS LEFT ENTIRELY ALONE. A six-wheeler's middle axle follows
-                    // the rear, which is what it looks like anyway.
-                    if (id == (int)VehicleWheelBoneId.WheelLeftFront ||
-                        id == (int)VehicleWheelBoneId.WheelRightFront)
-                    {
-                        continue;
-                    }
+                    // FRONT IS THE FIRST AXLE AND EVERYTHING ELSE IS THE REAR. A six-wheeler's
+                    // middle axle has no number of its own and follows the back, which is what
+                    // it looks like anyway.
+                    var front = id == (int)VehicleWheelBoneId.WheelLeftFront ||
+                                id == (int)VehicleWheelBoneId.WheelRightFront;
+
+                    // THE FRONT ONLY EVER GETS A HEIGHT. The lean is a rear-axle idea here --
+                    // a car sat down at the back with its wheels tucked under it -- and a front
+                    // wheel leaning to match is a different and much more expensive-looking car.
+                    if (front && !lifting) continue;
 
                     var at = wheel.MemoryAddress;
                     if (at == IntPtr.Zero) continue;
 
-                    var job = new Job { At = at, Lean = float.NaN, Drop = lowering ? drop : 0f };
+                    var job = new Job
+                    {
+                        At = at,
+                        Lean = float.NaN,
+                        Drop = front ? nose : (lowering ? drop : 0f),
+                    };
 
-                    if (leaning)
+                    if (leaning && !front)
                     {
                         var angle = Came(at, id, lean);
 
