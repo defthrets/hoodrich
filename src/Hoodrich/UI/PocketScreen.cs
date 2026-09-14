@@ -116,16 +116,17 @@ namespace Hoodrich.UI
         /// <summary>
         /// How big a tile is.
         ///
-        /// UP FROM 0.044, WHICH WAS SIZED WHEN ONLY THE FOOD USED IT. Three or four food
-        /// pictures at that size sat in a corner and looked deliberate; a whole inventory of
-        /// them looks like a row of stamps, and the amount written across the bottom of one had
-        /// nowhere to go. Both bands share the constant, so both grow together.
+        /// THE SIZE BARE MINIMUM DRAWS ONE AT, which is what this screen was asked to look
+        /// like and is nearly twice what it was. 0.044 was sized when only the food used it and
+        /// 0.056 was a compromise for a grid drawn twice over -- and a tile that small with a
+        /// picture, an amount across its foot and a cut mark in its corner is three things
+        /// competing inside a square the size of a stamp. The other mod's pocket has one
+        /// picture per tile at 0.105 and reads at a glance, which is the whole argument.
+        ///
+        /// SIZED BY HEIGHT, and the width follows through the aspect, so it is square on
+        /// screen and the panel is as wide as five of them and no wider.
         /// </summary>
-        private const float FoodTile = 0.056f;
-
-        private const float FoodHead = 0.022f;
-        private const float FoodCap = 0.020f;
-        private const float FoodStrip = 0.014f + FoodHead + FoodTile + FoodCap;
+        private const float FoodTile = 0.105f;
 
         /// <summary>
         /// The product tiles, which are the food tiles.
@@ -137,7 +138,16 @@ namespace Hoodrich.UI
         /// they looked like two screens that had been glued.
         /// </summary>
         private const float Cell = FoodTile;
-        private const float CellGap = 0.006f;
+
+        /// <summary>
+        /// The air between tiles.
+        ///
+        /// NEARLY NOTHING, BECAUSE THE OTHER MOD'S TILES TOUCH. A six-thousandth gap between
+        /// twenty small squares is a grid with lines ruled through it; at this size the tile's
+        /// own dark plate is the separation and the gap only has to stop two plates fusing
+        /// into one block.
+        /// </summary>
+        private const float CellGap = 0.0018f;
         private const float CellCap = 0.020f;
 
         /// <summary>The bottom strip on a tile that carries the amount.</summary>
@@ -247,6 +257,13 @@ namespace Hoodrich.UI
 
             Rebuild();
 
+            // ON THE FIRST THING THERE IS, which with one grid is also which CONTAINER opens.
+            // The cursor's side is the side that is drawn, so a zero that happens to be in the
+            // bag opens the bag -- right -- and a zero that is in neither because there is
+            // nothing at all opens the pocket and says it is empty. Asked of First rather than
+            // assumed, so the two can never disagree.
+            _selected = First();
+
             _curtain.Open();
 
             Hud.PlaySound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
@@ -336,6 +353,26 @@ namespace Hoodrich.UI
         /// when it is sat on a tile you are not looking at. Taken from the boot screen, which
         /// has been telling two containers apart this way for as long as it has existed.
         /// </summary>
+        /// <summary>
+        /// The two containers as a pair of tabs, with the live one lit.
+        ///
+        /// SPLIT DOWN THE MIDDLE AND BOTH ALWAYS DRAWN. A tab that disappeared when its side
+        /// was empty would be a screen that changes shape as you use it, and worse, would hide
+        /// the fact that there is anywhere else to put anything. "Bag's empty" is information;
+        /// a missing tab is not.
+        ///
+        /// The count sits under the name rather than beside it, because at half the panel's
+        /// old width there is no longer room for "IN THE BAG" and "5 / 20" on one line and a
+        /// count that ellipsises is worse than no count.
+        /// </summary>
+        private void Tabs(float x, float y, float w, float arrive)
+        {
+            var half = w * 0.5f;
+
+            Cap(x, y, half - 0.004f, "ON YOU", PocketFigure(), 0, arrive, Overstuffed);
+            Cap(x + half + 0.004f, y, half - 0.004f, "IN THE BAG", BagFigure(), 1, arrive);
+        }
+
         private void Cap(float x, float y, float w, string label, string figure, int side, float arrive,
                          bool warn = false)
         {
@@ -992,7 +1029,7 @@ namespace Hoodrich.UI
             var at = list.IndexOf(_selected);
             if (at < 0) { Land(First()); return; }
 
-            var next = at + dir * PaneAcross;
+            var next = at + dir * Across;
 
             if (next >= 0 && next < list.Count) { Land(list[next]); return; }
 
@@ -1121,19 +1158,57 @@ namespace Hoodrich.UI
         // ---- drawing -----------------------------------------------------------
 
         /// <summary>Where the tiles start: the letterhead, then the meter under it.</summary>
-        private const float ContentTop = UiKit.HeadH + 0.044f;
+        /// <summary>
+        /// Where the grid starts, under the head and its one meter.
+        ///
+        /// ONE METER, NOT TWO. The head carried ON YOU and then, with a bag on, a second row
+        /// carrying BAG -- two bars stacked over two grids, saying in a readout what the tabs
+        /// under them now say by being tabs. The bag's count lives on its own tab.
+        /// </summary>
+        private const float ContentTop = UiKit.HeadH + 0.026f;
 
         /// <summary>The card under the tiles that says what the chosen one is.</summary>
         private const float CardH = 0.072f;
 
-        /// <summary>The seam between the two panes, so they read as two things. See the boot.</summary>
-        private const float Gutter = 0.014f;
-
+        
         /// <summary>The heading over a pane: its name on the left, its count on the right.</summary>
         private const float CapH = 0.026f;
 
         /// <summary>Tiles across ONE pane. Two panes, so the panel is twice this plus the seam.</summary>
-        private const int PaneAcross = 4;
+        /// <summary>
+        /// How many tiles across, and it is ONE GRID now rather than two.
+        ///
+        /// THE SCREEN WAS TWO OF EVERYTHING. Two meters, two headings, two four-wide grids
+        /// side by side in a panel half the width of the screen, and a card under the lot.
+        /// Every one of those pairs was defensible on its own -- the seam down the middle
+        /// really does say "this side is on you, that side is in the bag" -- and together they
+        /// were more furniture than inventory.
+        ///
+        /// So it is laid out the way Bare Minimum lays out a pocket: one grid, five across,
+        /// in a panel exactly as wide as the grid. Which container you are looking at is a
+        /// pair of tabs above it rather than a second grid beside it, and walking off the end
+        /// of one crosses to the other exactly as it did when they were both on screen --
+        /// Move has always worked a pane at a time, so nothing about moving around has
+        /// changed, only how much of it you can see at once.
+        /// </summary>
+        private const int Across = 5;
+
+        /// <summary>
+        /// How many rows are on screen at once, and why there is a limit at all.
+        ///
+        /// A TILE AT 0.105 IS TWICE THE HEIGHT IT WAS, and the panel grew with it. Eight drugs
+        /// carried as both bagged units and uncut weight is sixteen places before a sandwich
+        /// is counted, which at four across used to be four rows of small squares and at five
+        /// across is four rows of big ones -- fine. Past that the panel grows off the bottom of
+        /// the screen, and a screen that does that is one nobody can use precisely when they
+        /// have most to look at.
+        ///
+        /// Four rows is twenty tiles, which is Bare Minimum's page exactly. Over that the grid
+        /// scrolls by rows under the cursor rather than paging, because the cursor here walks
+        /// a flat list that crosses into the other container at its ends -- a page number
+        /// would be a third thing to keep in step with that, and a window is none.
+        /// </summary>
+        private const int MostRows = 4;
 
         /// <summary>The meter's needle, easing toward how full you are. See UI.Eased.</summary>
         private readonly Eased _meter = new Eased();
@@ -1164,16 +1239,14 @@ namespace Hoodrich.UI
 
             var pad = Hud.ToX(PadH);
 
-            // THE PANEL IS THE WIDTH OF ITS TWO PANES, NOT THE OTHER WAY ROUND.
+            // THE PANEL IS THE WIDTH OF ITS GRID, NOT THE OTHER WAY ROUND.
             //
-            // A fixed panel with two four-wide grids inside it does not fit: four tiles and
-            // their gaps are wider than half of it, so the right-hand pane started before the
-            // left one had finished and the seam went through the middle of a tile. Measured
-            // from the tiles, both panes are exactly as wide as what goes in them and the
-            // gutter is a real gap. Lifted from the boot screen, which says the same sentence
-            // in its own comment.
-            var paneTiles = PaneAcross * Hud.ToX(Cell) + (PaneAcross - 1) * Hud.ToX(CellGap);
-            var panelWidth = paneTiles * 2f + Gutter + pad * 2f;
+            // It used to be the width of TWO grids and a gutter, which on a wide monitor was
+            // most of the screen for twenty small squares. One grid, five tiles across, and
+            // the panel is that and its padding. Bare Minimum's pocket measures itself the
+            // same way and says so in its own comment; this is the same sentence.
+            var gridWide = Across * Hud.ToX(Cell) + (Across - 1) * Hud.ToX(CellGap);
+            var panelWidth = gridWide + pad * 2f;
 
             var left = 0.5f - panelWidth * 0.5f;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
@@ -1200,46 +1273,28 @@ namespace Hoodrich.UI
             UiKit.Meter(x, y + 0.004f, wide, "people.png", "ON YOU", UiKit.Holding(_pockets),
                       _meter.To(full), full, arrive);
 
-            // ---- and what is doing the carrying ----
-            //
-            // THE CAPACITY ALREADY MOVED AND NOTHING SAID WHY. With the bag on, the meter above
-            // reads 2400g instead of 400 -- which is correct, and is a number that appears to
-            // change on its own. A row that names the bag and counts its slots is the
-            // difference between a readout that grew and a thing you are carrying.
-            if (Carrying)
-            {
-                var slots = BagSlots == null ? 0 : BagSlots();
-                var used = BagUsed == null ? 0 : BagUsed();
-                var part = slots <= 0 ? 0f : used / (float)slots;
-
-                UiKit.Meter(x, y + 0.024f, wide, "stash.png", "BAG",
-                            used + " / " + slots, part, part, arrive);
-            }
-
             y = top + ContentTop;
 
             // Nothing wants the cursor until a tile asks for it this frame.
             _glide.Begin();
 
-            // ---- TWO SQUARES, AND THE SEAM BETWEEN THEM IS THE POINT ----
+            // ---- TWO TABS AND ONE GRID ----
             //
-            // They were one grid with a green corner on the bag tiles, which is a thing you
-            // have to be told to look for. Two panes side by side with their own headings and
-            // their own counts is the same information as a shape: this side is on you, that
-            // side is in the bag, and the gap down the middle is the thing you are moving
-            // across. The boot screen has drawn two containers this way since it was written.
-            var paneW = paneTiles;
-            var bagX = x + paneW + Gutter;
-
-            Cap(x, y, paneW, "ON YOU", PocketFigure(), 0, arrive, Overstuffed);
-            Cap(bagX, y, paneW, "IN THE BAG", BagFigure(), 1, arrive);
+            // The seam between the two containers is still the point; it is a pair of tabs
+            // now rather than a pair of grids. Half a screen of furniture said the same thing
+            // the word IN THE BAG says, and said it at the cost of every tile being half the
+            // size it should be.
+            //
+            // Walking off the end of one side still steps into the other -- see Move, which
+            // has always worked a pane at a time -- so the tab follows the cursor rather than
+            // being something else to press.
+            Tabs(x, y, gridWide, arrive);
 
             y += CapH;
 
             var lines = Lines();
 
-            Square(x, y, paneW, 0, lines, arrive);
-            Square(bagX, y, paneW, 1, lines, arrive);
+            Square(x, y, gridWide, SideOf(_selected), lines, arrive);
 
             y += lines * (Cell + CellGap) - CellGap + 0.010f;
 
@@ -1593,23 +1648,45 @@ namespace Hoodrich.UI
             var age = Game.GameTime - _shownAt;
             var grown = Theme.Grown(_pickedAt);
 
-            for (var i = 0; i < list.Count; i++)
+            // WHICH ROW THE GRID STARTS ON. Nought until there is more than fits, and then
+            // the smallest number that keeps the cursor on screen -- so it does not move at
+            // all until you walk off the bottom, and then it moves one row. See MostRows.
+            var from = 0;
+
+            var here = list.IndexOf(_selected);
+
+            if (here >= 0)
+            {
+                var onLine = here / Across;
+
+                if (onLine >= lines) from = onLine - lines + 1;
+            }
+
+            for (var i = from * Across; i < list.Count; i++)
             {
                 var at = list[i];
 
-                var col = i % PaneAcross;
-                var line = i / PaneAcross;
+                var col = i % Across;
+                var line = i / Across - from;
 
                 if (line >= lines) break;
 
                 // Staggered a frame or two apart, so the pocket is unpacked rather than
                 // switched on.
-                var land = UiKit.Landed(age, i * 45, EnterMs);
+                var land = UiKit.Landed(age, (i - from * Across) * 45, EnterMs);
 
                 var show = arrive * land;
                 if (show <= 0.01f) continue;
 
-                var tx = x + col * (tile + gap);
+                // CENTRED ON WHAT IS IN THE ROW, not filled from the left. The grid is five
+                // wide whatever you are carrying, so three things sat in the corner of a panel
+                // built for twenty with the rest of it empty. The panel cannot shrink -- the
+                // head has to fit its meter and the tabs their names -- so the tiles move to
+                // the middle of it instead. Straight out of Bare Minimum's pocket.
+                var rowFirst = (line + from) * Across;
+                var inRow = Math.Min(Across, list.Count - rowFirst);
+
+                var tx = x + (w - (inRow * tile + (inRow - 1) * gap)) * 0.5f + col * (tile + gap);
                 var ty = y + line * (Cell + CellGap) + EnterRise * 0.5f * (1f - land);
 
                 var picked = at == _selected;
@@ -1629,17 +1706,25 @@ namespace Hoodrich.UI
             }
         }
 
-        /// <summary>How many rows the panel needs: the taller of the two panes.</summary>
+        /// <summary>
+        /// How many rows the grid needs for the side being shown.
+        ///
+        /// THE SIDE YOU ARE ON, not the taller of the two. It used to be the larger of both
+        /// panes because both were drawn at once and a panel sized for one cut the other off;
+        /// with one grid on screen the panel is as tall as what is actually in it, so a pocket
+        /// with four things in it is a panel with one row in it rather than a panel sized for
+        /// whatever happens to be in the bag.
+        ///
+        /// One row minimum, so an empty side still has somewhere to say it is empty.
+        /// </summary>
         private int Lines()
         {
-            // THE TALLER OF THE TWO, because both panes share the panel and a panel sized for
-            // the left one cuts the right one off. One row minimum, so an empty screen still
-            // has somewhere to say it is empty.
-            var a = (_left.Count + PaneAcross - 1) / PaneAcross;
-            var b = (_right.Count + PaneAcross - 1) / PaneAcross;
+            var many = Pane(SideOf(_selected)).Count;
+            var rows = (many + Across - 1) / Across;
 
-            var most = Math.Max(a, b);
-            return most < 1 ? 1 : most;
+            if (rows > MostRows) rows = MostRows;
+
+            return rows < 1 ? 1 : rows;
         }
 
         /// <summary>One square of product: the picture, the amount across the foot, the cut mark.</summary>
