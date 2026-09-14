@@ -185,8 +185,12 @@ namespace Hoodrich.Missions
         /// bring a kilo to a scrap yard in his hands. The block is still the last fallback for
         /// an install that has not got the case.
         /// </summary>
+        /// SHUT, AND THE NAME IS THE ONLY WAY TO TELL. prop_attache_case_01 renders OPEN --
+        /// the same trap prop_cash_case_01 was -- so the kilo was carried back across Los
+        /// Santos in an open case with the contents on display. The props whose names end
+        /// _shut are the closed ones and there is no other way to know from a list.
         private static readonly string[] Brick =
-            { "prop_attache_case_01", "hei_p_attache_case_shut", "prop_coke_block_01" };
+            { "hei_p_attache_case_shut", "bkr_prop_biker_case_shut", "prop_coke_block_01" };
 
         /// <summary>
         /// What Vernon carries out of the shop: the money, in a paper bag.
