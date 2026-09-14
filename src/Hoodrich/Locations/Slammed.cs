@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using GTA;
@@ -114,6 +114,46 @@ namespace Hoodrich.Locations
                 // A car whose wheels cannot be read is a car with ordinary wheels, which is not
                 // a crash and is not worth a log line sixty times a second.
             }
+        }
+
+        /// <summary>
+        /// Gives the rear wheels back to the game, upright and at whatever height it says.
+        ///
+        /// THE HEIGHT NEEDS NOTHING DOING: it is an offset on a number the game is writing
+        /// every frame anyway, so the moment this stops taking the drop off it, the suspension
+        /// is simply the suspension again. The lean does, because the cosines HOLD -- that is
+        /// the half of it the car does not argue about -- and a wheel left leaning with nothing
+        /// maintaining it is a wheel that stays bent for the rest of the session.
+        /// </summary>
+        public void Let(Vehicle car)
+        {
+            if (car == null || !car.Exists() || _came.Count == 0) return;
+
+            try
+            {
+                foreach (var wheel in car.Wheels)
+                {
+                    var at = wheel.MemoryAddress;
+                    if (at == IntPtr.Zero) continue;
+
+                    float came;
+                    if (!_came.TryGetValue(at.ToInt64(), out came)) continue;
+
+                    var s = (float)Math.Sin(came);
+                    var c = (float)Math.Cos(came);
+
+                    Write(at, CosX, c);
+                    Write(at, CosZ, c);
+                    Write(at, Sin, s);
+                    Write(at, SinBack, -s);
+                }
+            }
+            catch
+            {
+                // The game puts the sines back on its own; the cosines are the loss.
+            }
+
+            _sat.Clear();
         }
 
         /// <summary>Forgets a car's wheels. Their addresses belong to something else now.</summary>

@@ -401,8 +401,24 @@ namespace Hoodrich.Locations
         private Vehicle _car;
         private int _lastUpdate;
 
-        /// <summary>The rear axle, held down. See Camber and Drop.</summary>
+        /// <summary>The rear axle, held down. See Camber and Squat.</summary>
         private readonly Slammed _stance = new Slammed();
+
+        /// <summary>
+        /// Whether it is standing still enough for a written suspension to stay written.
+        ///
+        /// Half a metre a second is a car that is parked, or one at a dead stop at a light --
+        /// both of which have a suspension the game has stopped moving. Above it the wheels are
+        /// working and they are the game's. See the note on the stance in Update.
+        /// </summary>
+        private bool Settled
+        {
+            get
+            {
+                try { return _car.Speed < 0.5f; }
+                catch { return false; }
+            }
+        }
 
         public ParkedCar(Vector3 where, float heading, int paint,
                          params string[] models)
@@ -448,11 +464,28 @@ namespace Hoodrich.Locations
             // ever applied to a car with a stereo, at night. See Latch.
             Latch();
 
-            // AND THE REAR AXLE, EVERY FRAME, FOR THE SAME REASON THE RADIO IS. The car's own
-            // code puts the camber back the frame after it is written, so a stance behind the
-            // throttle below is a wheel that is straight for fourteen frames out of fifteen.
-            // See Slammed, which does nothing at all for a car that was not asked for one.
-            if (_car != null && _car.Exists()) _stance.Hold(_car, Camber, Squat);
+            // ---- THE REAR AXLE, EVERY FRAME, WHILE IT IS STOOD STILL ----
+            //
+            // Every frame for the same reason the radio is: the car's own code puts the camber
+            // back the frame after it is written, so a stance behind the throttle below is a
+            // wheel that is straight for fourteen frames in fifteen.
+            //
+            // AND ONLY WHILE IT IS PARKED, WHICH IS THE HONEST LIMIT OF THIS TECHNIQUE. The
+            // height is an offset on a number the game moves as the suspension works, and a
+            // script tick writes it once a frame at whatever point in the frame the tick
+            // happens to land. Standing still that is stable -- the suspension is settled and
+            // nothing else is writing -- and moving it is not: the wheel takes the game's
+            // number one frame and ours the next, which is the back end juddering.
+            //
+            // Doing it properly on a moving car means a thread racing the game for the field,
+            // which is what the suspension mod on this machine does and is not a thing worth
+            // owning two of for one parked car. So the stance is what it was always for: how
+            // the Dorado sits outside the shop. Drive it and it drives like a Dorado.
+            if (_car != null && _car.Exists())
+            {
+                if (Settled) _stance.Hold(_car, Camber, Squat);
+                else _stance.Let(_car);
+            }
 
             var now = Game.GameTime;
             if (now - _lastUpdate < UpdateIntervalMs) return;
