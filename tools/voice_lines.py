@@ -168,21 +168,48 @@ def from_data(root, texts=False):
             if not who:
                 continue
 
-            for field in ("greeting", "buyLine", "sourceReply", "sourceTooSoon", "farewell",
-                          "numberLine"):
+            for field in ("greeting", "buyLine", "sourceReply", "sourceTooSoon", "farewell"):
                 add(who, block.get(field))
 
-            # NOBODY SPEAKS A TEXT. These four go through Dealer.SayCalled and its two
-            # neighbours into Notify.Text, which puts a message on the phone -- and Notify
-            # never calls Voice, so no recording of one has ever been played or ever could
-            # be. They sat on this list for months, sixteen of them for Hao alone, reading
-            # exactly like what they are: "im here!! come out come out" is not a
-            # performance.
+            # THE FOUR HE SAYS WHEN SOMETHING IS IN THE WAY, and the four he borrows when the
+            # file has not written him one.
+            #
+            # NONE OF THESE HAS EVER BEEN ON A LIST. DealerTalk.His takes the dealer's own line
+            # if there is one and a shared default if there is not -- so every plug in the mod
+            # speaks all four, and the only way any of them was ever discovered was by standing
+            # in front of somebody with a full stash house and reading the log afterwards. That
+            # is how "Stand aside. I'll put it inside for you." came to be silent for everybody
+            # who was not Gerald: it is a literal in the C# and nothing walks the C# looking for
+            # literals with a speaker attached to them.
+            #
+            # The shared text is repeated here rather than parsed out of DealerTalk.cs. A
+            # regex over source for the second argument of a two-argument call is a guess; four
+            # sentences copied across is a fact, and the assert below fails loudly the day one
+            # of them is reworded and this is not.
+            for field, shared in (("noRoomLine", "Come back when you got somewhere to put it."),
+                                  ("noSpaceLine", "You got nowhere to put it. Sort that out first."),
+                                  ("handOverLine", "Don't stand there holding it. Go on."),
+                                  ("walkItInLine", "Stand aside. I'll put it inside for you.")):
+                add(who, block.get(field) or shared)
+
+            # NOBODY SPEAKS A TEXT. These five go through Notify.Text, which puts a message on
+            # the phone -- and Notify never calls Voice, so no recording of one has ever been
+            # played or ever could be. They sat on this list for months, sixteen of them for
+            # Hao alone, reading exactly like what they are: "im here!! come out come out" is
+            # not a performance.
+            #
+            # numberLine IS ONE OF THEM and was on the spoken list until now. "Take my number"
+            # arrives as a message headed "here's my number" -- see DealerManager, which posts
+            # it through Notify.Text like the rest -- so every plug in the file has been
+            # carrying a to-record line that could never be heard. DealerTalk shows the same
+            # string on screen at the end of a conversation, which is reading it, not saying
+            # it.
             #
             # Listed on request rather than dropped, because somebody rewriting the courier's
             # messages still wants to see them.
             if texts:
                 add(who, block.get("openingText"))
+                add(who, block.get("numberLine"))
 
                 for field in ("textCalled", "textLeaving", "textOutside"):
                     for line in block.get(field) or []:
