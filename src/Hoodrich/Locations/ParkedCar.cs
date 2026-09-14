@@ -461,6 +461,7 @@ namespace Hoodrich.Locations
             if (_car != null && !_car.Exists())
             {
                 _car = null;
+                _stance.Forget();
                 Unseat();
             }
 
@@ -480,6 +481,7 @@ namespace Hoodrich.Locations
                     catch { /* it is already gone */ }
 
                     _car = null;
+                    _stance.Forget();
                 }
 
                 Unseat();
@@ -1117,6 +1119,7 @@ namespace Hoodrich.Locations
             catch { /* teardown */ }
 
             _car = null;
+            _stance.Forget();
             Unseat();
         }
 

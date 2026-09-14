@@ -1343,7 +1343,11 @@ namespace Hoodrich
                 // HUD and a HUD reports a man's PELVIS -- the same metre that had four Ballas
                 // loitering in mid-air in the hunt and the bag floating over Denise's carpet.
                 // ParkedCar settles what it makes, so the number here is the reading as taken.
-                _dorado = new ParkedCar(new Vector3(38.751f, -1450.349f, 28.934f), 320.177f,
+                // MOVED OFF THE KERB BY A DOOR'S WIDTH. Parked on the measured spot it was
+                // tight enough to the fence that the driver's door could not swing, so getting
+                // in was a man standing beside his own car pulling at a handle. Eight tenths of
+                // a metre along the car's own right, which is the side the driver is not on.
+                _dorado = new ParkedCar(new Vector3(39.365f, -1450.862f, 28.934f), 320.177f,
                                         GlossBlack, "dorado")
                 {
                     // His, and shut, unless the job has the keys. See Deal.

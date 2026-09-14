@@ -267,6 +267,17 @@ namespace Hoodrich.Locations
                 return;
             }
 
+            // ---- STILL TRYING TO GET IN, AND THIS IS AHEAD OF THE LENT RETURN ----
+            //
+            // THE CAR IS NOT THERE ON THE FRAME HE WALKS OUT. It is a ParkedCar and you have
+            // just been eight hundred metres away in Banning, so it was despawned and its own
+            // tick is on a one-and-a-half second throttle -- which means asking it for a
+            // Vehicle at the top of the stairs answers null, Board gives up, and he goes and
+            // leans on his wall while the job waits for a passenger who is never coming.
+            //
+            // So it is not one attempt. He keeps asking until the car exists and he is in it.
+            if (_boarding) { Boarding(); return; }
+
             // OUT ON THE JOB, SO THE WALL LETS GO OF HIM. Everything below is about a man
             // stood in one place in Strawberry -- it despawns him at a hundred and sixty
             // metres and settles him back into his scenario whenever he drifts -- and all of
@@ -497,11 +508,73 @@ namespace Hoodrich.Locations
 
             Keys();
 
-            if (Board()) return;
+            // ARMED RATHER THAN DECIDED. Whether the car is there yet is not a question to
+            // answer once, on the worst frame to ask it. See Boarding.
+            if (OnTheJob != null && OnTheJob())
+            {
+                _boarding = true;
+                _boardingFrom = Game.GameTime;
+
+                Board();
+                return;
+            }
 
             _returning = true;
             WalkTo(Spot, Heading);
         }
+
+        /// <summary>
+        /// Waiting for his own car to exist, and getting in it when it does.
+        ///
+        /// GIVES UP EVENTUALLY, because a man stood on a pavement reaching for a door handle
+        /// that is not there is worse than a man who walked back to his wall. The job can still
+        /// pick him up off the wall afterwards -- Deal.Vee puts him in whatever YOU get into --
+        /// so this failing is a lost bit of staging rather than a broken mission.
+        /// </summary>
+        private void Boarding()
+        {
+            if (_ped == null || !_ped.Exists() || !_ped.IsAlive) { _boarding = false; return; }
+
+            // In, and that is that. The job has him from here.
+            if (_ped.IsInVehicle())
+            {
+                _boarding = false;
+                _held = true;
+                return;
+            }
+
+            // The job ended while he was walking to it.
+            if (OnTheJob == null || !OnTheJob())
+            {
+                _boarding = false;
+                _returning = true;
+
+                WalkTo(Spot, Heading);
+                return;
+            }
+
+            if (Game.GameTime - _boardingFrom > BoardingMs)
+            {
+                _boarding = false;
+                _returning = true;
+
+                Log.Info("Vernon gave up getting in the Dorado; going back to the wall.");
+
+                WalkTo(Spot, Heading);
+                return;
+            }
+
+            Board();
+        }
+
+        /// <summary>How long he keeps reaching for a door before he goes back to the wall.</summary>
+        private const int BoardingMs = 40000;
+
+        private bool _boarding;
+        private int _boardingFrom;
+
+        /// <summary>The car he has already been told to get into, so he is not told twice.</summary>
+        private int _boardedAt;
 
         /// <summary>
         /// Into the passenger seat of his own car, if that is what this is.
@@ -521,12 +594,19 @@ namespace Hoodrich.Locations
                 if (!OnTheJob()) return false;
 
                 var car = Ride();
+
+                // Not made yet. He asks again on the next pass -- see Boarding.
                 if (car == null || !car.Exists()) return false;
+
+                // ALREADY ASKED, AND ASKING AGAIN RESTARTS THE WALK. A task given every pass is
+                // a man who steps towards the door, is told to approach the door, and steps
+                // towards it again for ever.
+                if (_boardedAt == car.Handle && Game.GameTime - _boardingFrom < BoardingMs) return true;
 
                 Function.Call(Hash.TASK_ENTER_VEHICLE, _ped.Handle, car.Handle, 20000, 0, 2f, 1, 0);
 
+                _boardedAt = car.Handle;
                 _returning = false;
-                _held = true;
 
                 Log.Info("Vernon is getting in the Dorado for the job.");
                 return true;
