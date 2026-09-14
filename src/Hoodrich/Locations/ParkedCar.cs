@@ -427,7 +427,28 @@ namespace Hoodrich.Locations
                 {
                     var now = Game.GameTime;
 
-                    if (Getting(Game.Player.Character) || Getting(_car.Driver))
+                    // ---- ANYBODY ON FOOT NEAR IT, NOT JUST THE ENTRY ANIMATION ----
+                    //
+                    // ASKING THE GAME WHETHER SOMEBODY IS "GETTING INTO A VEHICLE" WAS TOO
+                    // NARROW. It is true for part of the climb and not for the reach, the door
+                    // swing or the settle into the seat -- so the suspension was being written
+                    // underneath most of the interaction anyway and the door still snapped.
+                    //
+                    // A man on foot within a few metres of a parked car is either about to get
+                    // in it or walking past it, and the stance being paused for either is
+                    // invisible: the car is not moving, so there is nothing for the thread to
+                    // be winning. The moment he is IN it he is not on foot, and the thread has
+                    // the wheels back for the drive -- which is the whole reason it exists.
+                    var me = Game.Player.Character;
+
+                    if (me != null && me.Exists() && !me.IsInVehicle() &&
+                        me.Position.DistanceTo(_car.Position) <= ClimbNear)
+                    {
+                        _climbedAt = now;
+                        return true;
+                    }
+
+                    if (Getting(me) || Getting(_car.Driver))
                     {
                         _climbedAt = now;
                         return true;
@@ -441,6 +462,9 @@ namespace Hoodrich.Locations
                 }
             }
         }
+
+        /// <summary>How near on foot counts as about to open a door. See Climbing.</summary>
+        private const float ClimbNear = 4.5f;
 
         /// <summary>Whether that ped is climbing into THIS car specifically.</summary>
         private bool Getting(Ped who)
