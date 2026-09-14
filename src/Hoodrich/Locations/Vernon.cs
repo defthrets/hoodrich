@@ -206,6 +206,9 @@ namespace Hoodrich.Locations
         /// <summary>Set by Main: his Dorado, for the passenger seat. See Board.</summary>
         public Func<Vehicle> Ride;
 
+        /// <summary>Set by Main: the job is done and he is waiting to be handed it. See UpdatePrompt.</summary>
+        public Func<bool> HandingIn;
+
         public bool InReach => Within(TalkRange);
 
         /// <summary>Near enough to be shouted at. See ShoutRange.</summary>
@@ -781,7 +784,13 @@ namespace Hoodrich.Locations
             // Lend is the tell rather than the mission running: it is the moment the job takes
             // him off the wall, and it is already what every other rule in this file uses to
             // mean "he is not scenery at the moment".
-            if (_lent) return;
+            //
+            // EXCEPT WHEN THE JOB IS WAITING ON THIS CONVERSATION, which is what I broke by
+            // adding the line above. He is still lent when you get back to Strawberry -- the
+            // job does not let go of him until it is handed in -- so suppressing the prompt for
+            // the whole of the lend suppressed the one talk the job cannot finish without. You
+            // stood in front of him holding his kilo with nothing to press.
+            if (_lent && !Owed) return;
 
             if (Suppressed != null && Suppressed()) return;
 
@@ -847,6 +856,18 @@ namespace Hoodrich.Locations
         /// And not while he is out on the job: riding to La Puerta he sits a foot from your
         /// shoulder for the whole drive. See Lend.
         /// </summary>
+        /// <summary>Whether he is stood there waiting to be handed the thing he paid for.</summary>
+        private bool Owed
+        {
+            get
+            {
+                if (HandingIn == null) return false;
+
+                try { return HandingIn(); }
+                catch { return false; }
+            }
+        }
+
         private bool WillingToBeGreeted()
         {
             if (_lent) return false;

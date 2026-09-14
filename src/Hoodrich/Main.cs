@@ -2965,6 +2965,10 @@ namespace Hoodrich
                 _vernon.OnTheJob = () => _jobs != null && _jobs.OnVernonsJob;
                 _vernon.Ride = () => _dorado == null ? null : _dorado.Parked;
 
+                // And he can be talked to again the moment the job is waiting on it, lent or
+                // not. See Vernon.UpdatePrompt.
+                _vernon.HandingIn = () => _jobs != null && _jobs.OnVernonsJob && _jobs.ReadyToCollect;
+
                 // And not on the map until Gerald has started you off. See Started.
                 _vernon.Known = () => Started;
 
