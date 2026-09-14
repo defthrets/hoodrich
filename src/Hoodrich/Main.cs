@@ -4200,8 +4200,6 @@ namespace Hoodrich
                     _delivery.UpdatePrompt();
                     Core.Pace.At("_cutting.Update");
                     _cutting.Update();
-                    Core.Pace.At("_deadDrop.Update");
-                    _deadDrop.Update();
                     Core.Pace.At("_market.Update");
                     _market.Update(_drugs);
                     Core.Pace.At("_blocks.Update");
@@ -5192,6 +5190,21 @@ namespace Hoodrich
                 Notify.Failure("They held the block. You went down on it.");
             }
 
+            // AND WHOEVER SENT YOU, SAYING THE WORK IS STILL THERE. Held back from the frame
+            // he went down for the same reason as the two above -- see MissionRunner.Died,
+            // which used to post it straight into the black. Every one of those lines ends
+            // with the job being on, which is the whole point of sending it.
+            if (_jobs != null)
+            {
+                string face, who, said;
+
+                if (_jobs.TakeDeathText(out face, out who, out said))
+                {
+                    Notify.Text(face, who, "Los Santos", said, false);
+                    Core.Log.Info(who + " texted about the wipe.");
+                }
+            }
+
             // And whoever did it, still talking about it. Your people worrying and theirs
             // laughing, which is how waking up in Pillbox would actually arrive.
             if (_social != null && !string.IsNullOrEmpty(_killedByGang))
@@ -5778,7 +5791,6 @@ namespace Hoodrich
             try { _crew?.RestoreWorld(); } catch { /* teardown */ }
             try { _dealers?.RestoreWorld(); } catch { /* teardown */ }
             try { _delivery?.RestoreWorld(); } catch { /* teardown */ }
-            try { _deadDrop?.RestoreWorld(); } catch { /* teardown */ }
             try { _postUp?.RestoreWorld(); } catch { /* teardown */ }
             try { UI.Headshots.Clear(); } catch { /* teardown */ }
             try { _tow?.RestoreWorld(); } catch { /* teardown */ }

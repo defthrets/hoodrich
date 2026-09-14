@@ -1246,14 +1246,8 @@ namespace Hoodrich.UI
                   () => c.BustWantedStars, v => c.BustWantedStars = (int)v, 1f, 5f, 1f, "0");
             Slide("Lost when you die", "Risk", "LoseOnDeathPercent",
                   () => c.LoseOnDeathPercent, v => c.LoseOnDeathPercent = v, 0f, 100f, 5f, "0", "%");
-            Tick("The bag can be picked up", "Risk", "DeathBagRecoverable",
-                 () => c.DeathBagRecoverable, v => c.DeathBagRecoverable = v,
-                 "Off, and what you drop when you die is gone for good");
             Slide("Lost when you are nicked", "Risk", "LoseOnArrestPercent",
                   () => c.LoseOnArrestPercent, v => c.LoseOnArrestPercent = v, 0f, 100f, 5f, "0", "%");
-            Slide("A dropped bag lasts", "Risk", "DeadDropDespawnMinutes",
-                  () => c.DeadDropDespawnMinutes, v => c.DeadDropDespawnMinutes = v,
-                  0f, 60f, 1f, "0", "m", note: "0 leaves it there forever");
 
             Tick("The house gets turned over", "Hideouts", "StashRaidsEnabled",
                  () => c.StashRaidsEnabled, v => c.StashRaidsEnabled = v,

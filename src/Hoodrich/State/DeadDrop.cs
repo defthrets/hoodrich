@@ -44,12 +44,6 @@ namespace Hoodrich.State
         ///
         /// The packaged side had it right all along and is the shape being copied here.
         /// </summary>
-        private readonly Dictionary<string, Holding> _bagBulk = new Dictionary<string, Holding>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, Holding> _bagPackaged = new Dictionary<string, Holding>(StringComparer.OrdinalIgnoreCase);
-
-        private Prop _bag;
-        private Blip _bagBlip;
-        private int _bagDroppedAt;
 
         private bool _wasDead;
         private bool _wasArrested;
@@ -61,22 +55,11 @@ namespace Hoodrich.State
             _state = state;
         }
 
-        public bool HasBag => _bag != null && _bag.Exists();
-
-        /// <summary>The bag on the floor: its lifetime, and picking it up. From the playable tick.</summary>
         /// <summary>Set by Main: whether the bag is on his back right now.</summary>
         public Func<bool> Satchel;
 
         /// <summary>Set by Main: taking it off him where he fell. See Strap.DropWhereHeFell.</summary>
         public Action<Vector3, Ped> DropSatchel;
-
-        public void Update()
-        {
-            var player = Game.Player.Character;
-            if (player == null || !player.Exists()) return;
-
-            CheckBagLifetime(player);
-        }
 
         /// <summary>
         /// Dying and being arrested, watched EVERY FRAME, playable or not.
@@ -139,9 +122,14 @@ namespace Hoodrich.State
                 // with -- so the bag comes off where he fell, contents intact, and walking back
                 // for it is the cost. Losing it is then something he decides by not going.
                 //
-                // NOT WEARING IT, THE POCKETS PAY. Which is the rule that was always here, and
-                // it is now the price of going out without the bag rather than the price of
-                // dying.
+                // NOT WEARING IT, THE POCKETS PAY -- AND THEY PAY FOR GOOD. What is in a
+                // jacket goes down with the man in it. There is no second bag on the pavement
+                // and no blip to walk back to, because that was the bag's whole job and it
+                // made carrying one pointless: dying without the bag cost exactly what dying
+                // with it cost, one extra walk.
+                //
+                // So the two outcomes say two different things now. Wearing it is a walk back.
+                // Not wearing it is the reason to wear it.
                 if (Satchel != null && Satchel())
                 {
                     if (DropSatchel != null) DropSatchel(player.Position, player);
@@ -176,55 +164,27 @@ namespace Hoodrich.State
             var fraction = Clamp01(_cfg.LoseOnDeathPercent / 100f);
             if (fraction <= 0f) return;
 
-            // Going down twice without picking the first one up used to leave that bag behind
-            // as a persistent prop with a blip on it and nothing tracking either -- a marker
-            // pointing at a bag that no longer contained anything.
-            var lastBagGone = false;
+            // NOTHING IS WRITTEN DOWN, so there is nothing to hand back. Both dictionaries
+            // stay null: Confiscate records what it took only when it is given somewhere to
+            // record it, and this is the path whose whole point is that it is gone.
+            //
+            // THE "DeathBagRecoverable" SETTING WENT WITH IT. It was the entire recovery
+            // mechanism before the satchel existed, and once the satchel arrived it made the
+            // satchel pointless -- switched on, dying without the bag cost exactly what dying
+            // with it cost. Two switches for one rule, and the one on the settings screen
+            // contradicted the one in the fiction.
+            var taken = Confiscate(fraction, null, null);
 
-            if (HasBag)
-            {
-                ClearBag();
-                lastBagGone = true;
-            }
-
-            _bagBulk.Clear();
-            _bagPackaged.Clear();
-
-            // FOR GOOD, if the ini says so: nothing is written down, so there is nothing to
-            // hand back. Otherwise into the bag's own record, to be handed back at the spot.
-            var keep = _cfg.DeathBagRecoverable;
-
-            var taken = Confiscate(fraction, keep ? _bagBulk : null, keep ? _bagPackaged : null);
-
-            if (taken <= 0.005f)
-            {
-                if (lastBagGone) _notice = "~o~Whatever was in the last bag is gone.~s~";
-                return;
-            }
+            if (taken <= 0.005f) return;
 
             _state.Touch();
 
             // SAID LATER. This runs on the frame he goes down, behind the death fade, and a
             // notification behind a black screen is a notification thrown away. Main asks for
             // it once he is stood outside Pillbox -- see TakeDeathNotice.
-            if (!keep || !SpawnBag(where))
-            {
-                _bagBulk.Clear();
-                _bagPackaged.Clear();
+            _notice = "~r~You lost " + taken.ToString("0.#") + "g.~s~ It was in your pockets.";
 
-                _notice = "~r~You lost " + taken.ToString("0.#") + "g.~s~" +
-                          (keep ? " There was nowhere to drop it." : " It went down with you.");
-
-                Log.Info("Death: lost " + taken.ToString("0.##") + "g" + (keep ? " (no bag prop)." : " for good."));
-                return;
-            }
-
-            _bagDroppedAt = Game.GameTime;
-
-            _notice = (lastBagGone ? "~o~The last bag is gone.~s~ " : "") +
-                      "~o~You dropped " + taken.ToString("0.#") + "g.~s~ It's on your map -- go get it.";
-
-            Log.Info("Death: dropped " + taken.ToString("0.##") + "g at " + where + ".");
+            Log.Info("Death: lost " + taken.ToString("0.##") + "g out of his pockets, for good.");
         }
 
         /// <summary>What the death cost, handed over once there is a screen to read it on.</summary>
@@ -301,64 +261,6 @@ namespace Hoodrich.State
 
         // ---- the bag -----------------------------------------------------------
 
-        private bool SpawnBag(Vector3 where)
-        {
-            foreach (var name in BagModels)
-            {
-                try
-                {
-                    var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage) continue;
-                    if (!model.Request(1500)) continue;
-
-                    _bag = World.CreateProp(model, where, false, false);
-                    model.MarkAsNoLongerNeeded();
-
-                    if (_bag == null || !_bag.Exists()) continue;
-
-                    Function.Call(Hash.PLACE_OBJECT_ON_GROUND_PROPERLY, _bag.Handle);
-                    _bag.IsPersistent = true;
-
-                    _bagBlip = _bag.AddBlip();
-                    if (_bagBlip != null && _bagBlip.Exists())
-                    {
-                        _bagBlip.Sprite = BlipSprite.Package;
-                        _bagBlip.Color = BlipColor.Yellow;
-                        _bagBlip.Name = "Dropped product";
-                        _bagBlip.ShowRoute = false;
-                    }
-
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    Log.Debug("Bag model '" + name + "' failed: " + ex.Message);
-                }
-            }
-
-            Log.Warn("No usable bag prop; dropped product is lost.");
-            return false;
-        }
-
-        private void CheckBagLifetime(Ped player)
-        {
-            if (!HasBag) return;
-
-            var lifeMs = (int)(_cfg.DeadDropDespawnMinutes * 60_000f);
-            if (_cfg.DeadDropDespawnMinutes > 0f && Game.GameTime - _bagDroppedAt > lifeMs)
-            {
-                ClearBag();
-                Notify.Ticker("~o~Someone else found your bag.~s~");
-                Log.Info("Dead drop expired.");
-                return;
-            }
-
-            if (player.Position.DistanceTo(_bag.Position) > PickupRange) return;
-            if (!player.IsAlive) return;
-
-            Recover();
-        }
-
         /// <summary>
         /// Takes back as much as will fit, and leaves the rest in the bag.
         ///
@@ -367,123 +269,7 @@ namespace Hoodrich.State
         /// gram in it destroyed. Now what does not fit stays on the pavement where you dropped
         /// it, and the bag stays with it, so you can go and make room.
         /// </summary>
-        private void Recover()
-        {
-            var stash = _state.Stash;
-            var back = 0f;
-
-            var bulkLeft = new Dictionary<string, Holding>(StringComparer.OrdinalIgnoreCase);
-            var packagedLeft = new Dictionary<string, Holding>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var kv in _bagBulk)
-            {
-                // AddBulk blends what arrives into whatever is already held, weighted by grams,
-                // so a part-recovery into an existing pile averages correctly on its own. What
-                // stays behind in the bag keeps the strength it had -- the bag is not a mixer,
-                // it is the same product waiting where it was left.
-                var took = stash.AddBulk(kv.Key, kv.Value.Grams, kv.Value.Purity);
-                back += took;
-
-                var over = kv.Value.Grams - took;
-                if (over > 0.005f) bulkLeft[kv.Key] = new Holding { Grams = over, Purity = kv.Value.Purity };
-            }
-
-            foreach (var kv in _bagPackaged)
-            {
-                var took = stash.AddPackaged(kv.Key, kv.Value.Grams, kv.Value.Purity);
-                back += took;
-
-                var over = kv.Value.Grams - took;
-                if (over > 0.005f) packagedLeft[kv.Key] = new Holding { Grams = over, Purity = kv.Value.Purity };
-            }
-
-            _bagBulk.Clear();
-            _bagPackaged.Clear();
-
-            foreach (var kv in bulkLeft) _bagBulk[kv.Key] = kv.Value;
-            foreach (var kv in packagedLeft) _bagPackaged[kv.Key] = kv.Value;
-
-            var leftOver = _bagBulk.Count > 0 || _bagPackaged.Count > 0;
-
-            if (!leftOver) ClearBag();
-
-            _state.Touch();
-
-            Notify.Ticker(back > 0.005f
-                ? (leftOver
-                    ? "~g~Took what fits.~s~ " + back.ToString("0.#") + "g -- the rest is still there"
-                    : "~g~Picked your bag back up.~s~ " + back.ToString("0.#") + "g")
-                : "~o~No room for any of it.~s~ It's still on the floor");
-
-            Log.Info("Dead drop recovered: " + back.ToString("0.##") + "g" +
-                     (leftOver ? ", some left in the bag." : "."));
-        }
-
-        private void ClearBag()
-        {
-            try { if (_bagBlip != null && _bagBlip.Exists()) _bagBlip.Delete(); } catch { }
-            try
-            {
-                if (_bag != null && _bag.Exists())
-                {
-                    _bag.MarkAsNoLongerNeeded();
-                    _bag.Delete();
-                }
-            }
-            catch { }
-
-            _bag = null;
-            _bagBlip = null;
-        }
-
         private static float Clamp01(float v) => v < 0f ? 0f : v > 1f ? 1f : v;
 
-        /// <summary>
-        /// Everything ours, put back -- INCLUDING what is in the bag.
-        ///
-        /// This was one line, `ClearBag()`, which deletes the prop and the blip and walks away
-        /// from the two dictionaries holding the contents. A script reload with a bag on the
-        /// floor destroyed every gram in it, silently, and the save had already been touched
-        /// when it was dropped, so the loss was banked before anybody noticed.
-        ///
-        /// DroppedBags.RestoreWorld had this bug and fixed it; its comment is the argument for
-        /// this one too. Overflowing a full stash is strictly better than deleting the lot:
-        /// whatever will not fit is the only part lost.
-        ///
-        /// Logged rather than announced. A teardown may have no screen left to draw a ticker
-        /// on, and the log is the thing somebody reads afterwards to find out what happened.
-        /// </summary>
-        public void RestoreWorld()
-        {
-            try
-            {
-                var stash = _state == null ? null : _state.Stash;
-
-                if (stash != null)
-                {
-                    var back = 0f;
-
-                    foreach (var kv in _bagBulk) back += stash.AddBulk(kv.Key, kv.Value.Grams, kv.Value.Purity);
-                    foreach (var kv in _bagPackaged) back += stash.AddPackaged(kv.Key, kv.Value.Grams, kv.Value.Purity);
-
-                    if (back > 0.005f)
-                    {
-                        _state.Touch();
-
-                        Log.Info("Dead drop handed back on teardown: " + back.ToString("0.#") +
-                                 "g put in the stash rather than deleted with the bag.");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Could not hand the dead drop back: " + ex.Message);
-            }
-
-            _bagBulk.Clear();
-            _bagPackaged.Clear();
-
-            ClearBag();
-        }
     }
 }

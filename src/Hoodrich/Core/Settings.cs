@@ -438,13 +438,11 @@ namespace Hoodrich.Core
         public float LoseOnDeathPercent = 100f;
 
         /// <summary>Whether that bag is left where you fell to go back for. Off, and it is gone for good.</summary>
-        public bool DeathBagRecoverable = true;
 
         /// <summary>Percent of product the police keep when you are arrested. Not recoverable.</summary>
         public float LoseOnArrestPercent = 100f;
 
         /// <summary>Minutes a dropped bag survives before someone else takes it. 0 = forever.</summary>
-        public float DeadDropDespawnMinutes = 10f;
 
         // ---- dealer stock ------------------------------------------------------
 
@@ -891,11 +889,8 @@ namespace Hoodrich.Core
             s.MaskTexture = (int)Clamp(ini.GetInt("Mask", "Texture", s.MaskTexture), 0f, 64f);
             s.LoseOnDeathPercent =
                 Clamp(ini.GetFloat("Risk", "LoseOnDeathPercent", s.LoseOnDeathPercent), 0f, 100f);
-            s.DeathBagRecoverable = ini.GetBool("Risk", "DeathBagRecoverable", s.DeathBagRecoverable);
             s.LoseOnArrestPercent =
                 Clamp(ini.GetFloat("Risk", "LoseOnArrestPercent", s.LoseOnArrestPercent), 0f, 100f);
-            s.DeadDropDespawnMinutes =
-                Math.Max(0f, ini.GetFloat("Risk", "DeadDropDespawnMinutes", s.DeadDropDespawnMinutes));
 
             s.DealerMaxStockGrams =
                 Math.Max(1f, ini.GetFloat("Supply", "DealerMaxStockGrams", s.DealerMaxStockGrams));

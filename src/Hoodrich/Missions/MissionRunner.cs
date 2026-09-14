@@ -3273,17 +3273,53 @@ namespace Hoodrich.Missions
 
                 var lines = vees ? VeeDeathTexts : DeathTexts;
 
-                Notify.Text(vees ? null : "CHAR_LAMAR", vees ? "Vernon" : "Lamar", "Los Santos",
-                            lines[_rng.Next(lines.Length)], false);
+                // KEPT, NOT SENT. This runs on the frame he goes down -- it has to, see the
+                // note above about the gameplay tick being gated on IsPlayable -- and the
+                // frame he goes down is the first frame of the death fade. A text message
+                // posted behind a black screen is a text message nobody has ever read, and
+                // this file already knows that: the cost of the death and the war's ending are
+                // both held back to Pillbox for exactly this reason and the message was not.
+                //
+                // Which is why a man who died on Vernon's job was told nothing, and why the
+                // one line in it that matters -- come and see me, we ain't done -- never
+                // reached anybody. Main asks for it once he is stood outside the hospital.
+                _deathFace = vees ? null : "CHAR_LAMAR";
+                _deathWho = vees ? "Vernon" : "Lamar";
+                _deathSaid = lines[_rng.Next(lines.Length)];
 
                 Log.Info("Died on " + (giver == null ? "a job" : giver.Id) + "; " +
-                         (vees ? "Vernon" : "Lamar") + " texted.");
+                         _deathWho + " has something to say at Pillbox.");
             }
             catch (Exception ex)
             {
                 Log.Debug("Could not text about the wipe: " + ex.Message);
             }
         }
+
+        /// <summary>
+        /// The text he is owed, handed over once there is a screen to read it on.
+        ///
+        /// The same shape DeadDrop.TakeDeathNotice has, and for the same reason. Returns false
+        /// when nothing is waiting, so the caller can ask every frame without thinking.
+        /// </summary>
+        public bool TakeDeathText(out string face, out string who, out string said)
+        {
+            face = _deathFace;
+            who = _deathWho;
+            said = _deathSaid;
+
+            var got = !string.IsNullOrEmpty(said);
+
+            _deathFace = null;
+            _deathWho = null;
+            _deathSaid = null;
+
+            return got;
+        }
+
+        private string _deathFace;
+        private string _deathWho;
+        private string _deathSaid;
 
         /// <summary>
         /// What he sends after you have been carried into Pillbox.
