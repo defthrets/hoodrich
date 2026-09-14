@@ -1368,19 +1368,19 @@ namespace Hoodrich
                     // Slammed. Posted Up has no dependencies, so a car in Posted Up that only
                     // sits right when a second mod is installed is a car that does not sit
                     // right.
-                    // ---- DOWN AT BOTH ENDS, NOT JUST RAKED ----
+                    // ---- THESE ARE THE NUMBERS HE SET, AND THEY STAY THE NUMBERS HE SET ----
                     //
-                    // The rims are the reason it stood so tall. Benny's Originals on a body
-                    // this size are a bigger diameter than the wheel that came on it, and a
-                    // taller wheel lifts the whole car -- which the stance was then making
-                    // worse at the front, because +0.06 was a nose LIFT on a car that was
-                    // already up on its toes.
+                    // I moved the nose to -0.10 off my own theory about the rim diameter, which
+                    // was not what was asked for and is what stopped the car being enterable: a
+                    // front dropped ten centimetres puts the sills through the ground, and a
+                    // door that opens into the road is a door the game will not let you use.
                     //
-                    // So both axles come down, with the back still lower than the front. The
-                    // rake was never the problem; the ride height was.
+                    // Rear down fifteen and the nose up six, which is what "raise the front a
+                    // bit" meant. If it still stands too tall that is the WHEEL, not the
+                    // suspension, and the fix is a smaller rim than Lotta Chrome.
                     Camber = -1.5f,
                     Squat = -0.15f,
-                    Nose = -0.10f,
+                    Nose = 0.06f,
 
                     // Sprunk, which is the thirteenth plate and the loudest one the game has.
                     // The name is his and nobody else in Los Santos agrees with it.
