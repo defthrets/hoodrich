@@ -200,6 +200,105 @@ namespace Hoodrich.Missions
             "GENERIC_CHEER", "CHAT_STATE", "GENERIC_AGREE", "CHAT_RESP"
         };
 
+        // ======================================================================
+        // What he actually says
+        // ======================================================================
+        //
+        // THE GRUNTS WERE NEVER THE POINT, THEY WERE THE PLACEHOLDER. Everything above this is
+        // the game's own ambient speech -- CHAT_STATE, GENERIC_YES -- which is the noise of
+        // somebody being there and nothing else. It is right for a homie in the back; it is
+        // thin for the man who invited you, who talks for a living and has opinions about your
+        // mirrors.
+        //
+        // So these are written, spoken in his own voice and subtitled, on a much slower clock
+        // than the grunts: a line every half a minute or so, with the ambient noise carrying on
+        // underneath at its own pace. See Aside.
+        //
+        // ONE AT A TIME AND NOT TWICE. A shuffled bag rather than a random pick, or he says the
+        // same line about the mirrors three times on one ride out.
+
+        /// <summary>Out to the courts, with nothing having happened yet.</summary>
+        private static readonly string[] OutWords =
+        {
+            "I'ma be honest with you, Frank, I ain't been on a bike since I was fourteen. " +
+            "It's comin' back though. It's comin' back.",
+
+            "You know what I like about a bike? Can't nobody run they plate. That's called " +
+            "operational security, homie.",
+
+            "Slow down, slow down -- I'm settin' a pace. This is a PACE.",
+
+            "Every time we do somethin' like this I think about how my life coulda went. " +
+            "Then I think nah, this is pretty good.",
+        };
+
+        /// <summary>At the courts, squaring up.</summary>
+        private static readonly string[] CourtWords =
+        {
+            "Look at these fools. Look at 'em. Ain't one of 'em got a job neither, and " +
+            "somehow I'm the one gettin' judged.",
+
+            "Don't say nothin' yet. Let me work. I'm good at this part.",
+
+            "If this go bad, it go bad FAST. Just so you know where we at.",
+        };
+
+        /// <summary>Rolling up on the shop.</summary>
+        private static readonly string[] ShopWords =
+        {
+            "In and out. In and OUT. That's the whole plan, that's all it is.",
+
+            "Don't be lookin' at the cameras, Frank. Lookin' at 'em is how they know.",
+
+            "Aye -- if he go for somethin' under that counter, that's on him. I'm just sayin' " +
+            "it now so it ain't a conversation later.",
+        };
+
+        /// <summary>Getting off the block at speed.</summary>
+        private static readonly string[] AwayWords =
+        {
+            "GO. Go go go. Don't look back, that's how they get your face.",
+
+            "Left! LEFT! Aw, you went right. Aight. We doin' right.",
+
+            "This is why I said a bike. Try followin' a bike down a alley, I'll wait.",
+        };
+
+        /// <summary>The ride home, when it is done and funny.</summary>
+        private static readonly string[] HomeWords =
+        {
+            "See, THAT'S what I'm talkin' about. That right there. That was clean.",
+
+            "I'm tellin' Denise about this. Not the details. Just the energy.",
+
+            "My legs is GONE, dawg. That's the only part of this that went wrong.",
+
+            "Next one's bigger. I ain't sayin' nothin' else yet, but it's bigger.",
+        };
+
+        /// <summary>Whichever words belong to where the job has got to, or none.</summary>
+        private string[] WordsForNow()
+        {
+            switch (Phase)
+            {
+                case BikePhase.Words:
+                case BikePhase.Fight:
+                    return CourtWords;
+
+                case BikePhase.Rob:
+                    return ShopWords;
+
+                case BikePhase.Escape:
+                    return AwayWords;
+
+                case BikePhase.Home:
+                    return HomeWords;
+
+                default:
+                    return OutWords;
+            }
+        }
+
         /// <summary>Whichever set belongs to where the job has got to.</summary>
         private string[] LinesForNow()
         {
@@ -2918,7 +3017,58 @@ namespace Hoodrich.Missions
             {
                 // A missing line costs nothing.
             }
+
+            Aside();
         }
+
+        /// <summary>
+        /// One of his written lines, now and then, in his own voice and on the screen.
+        ///
+        /// SLOWER THAN THE GRUNTS ON PURPOSE. The ambient noise is texture and can run every
+        /// few seconds; a sentence you are meant to listen to cannot, or he is a podcast. This
+        /// is roughly every half a minute, and only while he is actually out here.
+        ///
+        /// SHUFFLED RATHER THAN PICKED AT RANDOM, and the bag is remembered per phase -- a
+        /// random pick from four lines says the same one twice inside a minute often enough to
+        /// notice, and the thing you notice is that it is a list.
+        /// </summary>
+        private void Aside()
+        {
+            if (Game.GameTime < _nextAside) return;
+
+            _nextAside = Game.GameTime + AsideGapMs + _rng.Next(AsideSpreadMs);
+
+            if (_lamar == null || !_lamar.Exists() || !_lamar.IsAlive) return;
+
+            var words = WordsForNow();
+            if (words == null || words.Length == 0) return;
+
+            // A new bag when the phase changes, or when this one is empty.
+            if (_bag == null || _bagFor != words || _bag.Count == 0)
+            {
+                _bagFor = words;
+                _bag = new List<string>(words);
+            }
+
+            var at = _rng.Next(_bag.Count);
+            var line = _bag[at];
+
+            _bag.RemoveAt(at);
+
+            try { Core.Voice.Say("lamar", line, null, true); }
+            catch { /* the subtitle still carries it */ }
+
+            try { GTA.UI.Screen.ShowSubtitle(Core.Lang.T("~y~LAMAR:~s~ " + line), 5000); }
+            catch { /* then it is audio only */ }
+        }
+
+        private int _nextAside;
+        private List<string> _bag;
+        private string[] _bagFor;
+
+        /// <summary>How often he says something with words in it. See Aside.</summary>
+        private const int AsideGapMs = 26000;
+        private const int AsideSpreadMs = 14000;
 
         /// <summary>True the frame the player actually fires, not merely holds something.</summary>
         private static bool PlayerFired(Ped player)

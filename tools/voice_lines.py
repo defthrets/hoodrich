@@ -389,7 +389,12 @@ PIECE = re.compile(r'"((?:[^"\\]|\\.)*)"')
 # catches the one shape that assigns a spoken line through a conditional before handing
 # it over -- "var line = down >= need ? this : that" -- which ASSIGN cannot see.
 WORD = re.compile(r'\bWord\(\s*((?:"(?:[^"\\]|\\.)*"\s*\+?\s*)+)', re.S)
-NAMED = re.compile(r'\bstring\[\]\s+(?:Nudges|Panic)\s*=\s*\{(.*?)\};', re.S)
+# A run of interchangeable lines, by the names those arrays get given. The *Words suffix is
+# the convention for "a spoken line with words in it" as opposed to the game's own ambient
+# speech lists sitting beside them -- see BikeRide, where RideLines is CHAT_STATE and OutWords
+# is a sentence. Only files listed in SPEECH are read at all, so the runner's own caption
+# arrays are not swept in by this.
+NAMED = re.compile(r'\bstring\[\]\s+(?:\w*Words|Nudges|Panic)\s*=\s*\{(.*?)\};', re.S)
 TERNARY = re.compile(r'\bvar\s+line\s*=\s*([^;]*?"[^;]*?);', re.S)
 
 
@@ -406,6 +411,47 @@ def from_source(root):
 
         seen.add(name)
         rows.append((name + ".mp3", speaker, tidy(line)))
+
+    def elements(blob):
+        """One entry per array element, with its own wrapped pieces still joined up.
+
+        THIS IS WHY THE LIST HAD HALF SENTENCES IN IT. An array of alternatives was read a
+        LITERAL at a time, which is right for a bag of short barks written one per line and
+        wrong the moment one of them is too long for a line and gets wrapped with a +. The
+        record list then carries "on you --" and "room at the house" as though they were
+        things somebody says, and the real line -- the whole sentence -- is on it nowhere.
+
+        So the split is on the COMMAS BETWEEN ELEMENTS, which means knowing which commas are
+        inside a string. Everything between two of them is one element however it is laid
+        out, and joined puts its pieces back together.
+        """
+        out, at, depth, start = [], 0, 0, 0
+        instr = False
+
+        while at < len(blob):
+            c = blob[at]
+
+            if instr:
+                if c == "\\":
+                    at += 2
+                    continue
+                if c == '"':
+                    instr = False
+            elif c == '"':
+                instr = True
+            elif c in "([{":
+                depth += 1
+            elif c in ")]}":
+                depth -= 1
+            elif c == "," and depth == 0:
+                out.append(blob[start:at])
+                start = at + 1
+
+            at += 1
+
+        out.append(blob[start:])
+
+        return [e for e in out if '"' in e]
 
     def joined(blob):
         # \n IS A LINE BREAK, NOT TWO CHARACTERS. Voice.Tidy flattens whitespace before it
@@ -457,11 +503,19 @@ def from_source(root):
         # A run of interchangeable lines, and a line chosen by a conditional. Each literal in
         # the region stands on its own rather than being joined to its neighbours -- these are
         # alternatives, not one sentence split across lines. See NAMED and TERNARY.
-        for rx in (NAMED, TERNARY):
-            for m in rx.finditer(body):
-                for piece in PIECE.findall(m.group(1)):
-                    for who in speakers:
-                        add(who, joined('"' + piece + '"'))
+        # An array: comma between elements, and an element may be wrapped over three lines.
+        for m in NAMED.finditer(body):
+            for element in elements(m.group(1)):
+                for who in speakers:
+                    add(who, joined(element))
+
+        # A conditional: the alternatives have a COLON between them and no comma at all, so
+        # elements() would hand back both halves as one sentence. Each literal stands alone
+        # here, which is what it was doing before and is right for this shape.
+        for m in TERNARY.finditer(body):
+            for piece in PIECE.findall(m.group(1)):
+                for who in speakers:
+                    add(who, joined('"' + piece + '"'))
 
         # A sentence that was given a name before it was said. See SAID.
         for m in SAID.finditer(body):
