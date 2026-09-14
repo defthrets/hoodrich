@@ -73,6 +73,22 @@ def candidates(slug, order):
     if starts:
         return starts, "head"
 
+    # THE SAME WORDS WITH THE PUNCTUATION TYPED DIFFERENTLY.
+    #
+    # An apostrophe becomes a dash on this side and simply vanishes on the recorder when
+    # whoever typed the line left it out -- "if he's still" against "if hes still" -- and
+    # the two slugs then diverge on a character nobody said out loud. Collapsing the dashes
+    # away asks the only question that matters: is it the same letters in the same order.
+    #
+    # Still a prefix test, so this cannot match two different sentences to each other.
+    bare = slug.replace("-", "")
+
+    same = [f for f in order
+            if bare and (f.replace("-", "").startswith(bare) or bare.startswith(f.replace("-", "")))]
+
+    if same:
+        return same, "head"
+
     inside = [f for f in order if slug in f]
     if inside:
         return inside, "inside"

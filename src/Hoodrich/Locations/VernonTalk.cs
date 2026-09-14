@@ -263,9 +263,10 @@ namespace Hoodrich.Locations
         private DialogueNode After()
         {
             var node = Node(
+                // HIS WORDING, NOT MINE. The take says "if he's still breathing" where this
+                // said "one of them things is fixable tonight" -- and the take is the line.
                 "Am I -- nah. Nah, I'm good. I'm GOOD, Franklin. I got a kilo downstairs and a " +
-                "man who owes me an explanation, and one of them things is fixable tonight. " +
-                "Come see me in a bit. I'ma have somethin' for you.");
+                "man who owes me an explanation, if he's still breathing.");
 
             node.Say("Aight.", () => null, "Done").WithIcon(Icons.Tick);
             node.Leave();
