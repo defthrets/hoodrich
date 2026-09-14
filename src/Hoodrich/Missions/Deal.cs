@@ -135,6 +135,16 @@ namespace Hoodrich.Missions
         /// <summary>Near enough to the brick on the floor to pick it up.</summary>
         private const float GrabWithin = 2.2f;
 
+        /// <summary>
+        /// How far behind he is allowed to get before he is simply moved.
+        ///
+        /// TWENTY METRES IS FURTHER THAN A MAN GETS BY WALKING SLOWLY. At that distance
+        /// something has gone wrong -- a gate, a fight, a car that pulled off without him --
+        /// and none of it is worth a mission that cannot be finished. Under it he walks, which
+        /// is the whole of the staging and is what you see ninety-nine times out of a hundred.
+        /// </summary>
+        private const float Stray = 20f;
+
         /// <summary>Near enough to Vernon's wall to call it back.</summary>
         private const float HomeWithin = 22f;
 
@@ -908,6 +918,7 @@ namespace Hoodrich.Missions
             try
             {
                 var car = player.CurrentVehicle;
+                var behind = _vee.Position.DistanceTo(player.Position);
 
                 if (car != null && car.Exists())
                 {
@@ -916,6 +927,28 @@ namespace Hoodrich.Missions
                     var seat = Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, car.Handle, 0)
                         ? 0
                         : 1;
+
+                    // ---- TOO FAR TO WALK TO A CAR THAT IS MOVING ----
+                    //
+                    // TASK_ENTER_VEHICLE IS A MAN WALKING TO A DOOR, and that is the right
+                    // thing at four metres and a joke at forty. You pull off while he is still
+                    // coming round the bonnet, or he never made it out of the shop at all, and
+                    // from then on he is a dot on the map jogging after a car doing fifty on
+                    // the Olympic Freeway -- so the job simply never arrives at Rogers Scrap.
+                    //
+                    // Put straight in the seat instead. It is a teleport and it looks like one
+                    // for a single frame in a mirror, and the alternative is a mission that
+                    // cannot be finished.
+                    if (behind > Stray)
+                    {
+                        Function.Call(Hash.SET_PED_INTO_VEHICLE, _vee.Handle, car.Handle, seat);
+
+                        _veeRiding = true;
+
+                        Core.Log.Info("Vernon was " + (int)behind + "m behind; put him in the " +
+                                      car.DisplayName + ".");
+                        return;
+                    }
 
                     Function.Call(Hash.TASK_ENTER_VEHICLE, _vee.Handle, car.Handle, 12000,
                                   seat, 2f, 1, 0);
@@ -931,6 +964,23 @@ namespace Hoodrich.Missions
 
                     _veeRiding = false;
                     return;
+                }
+
+                // ---- AND ON FOOT, THE SAME RULE ----
+                //
+                // He follows at a stride and a half, which he will do across a car park and
+                // will not do across Los Santos. Dropped far enough behind -- a fence he cannot
+                // path round, a fight he backed out of, a door that shut on him -- he is put
+                // behind you and picks the follow up from there.
+                //
+                // BEHIND, off the player's own facing, so he arrives where a man walking with
+                // you would be rather than appearing in front of you mid-stride.
+                if (behind > Stray)
+                {
+                    _vee.Position = player.Position - player.ForwardVector * 1.6f;
+                    _vee.Heading = player.Heading;
+
+                    Core.Log.Info("Vernon was " + (int)behind + "m behind on foot; put him at your shoulder.");
                 }
 
                 // On foot, a stride behind, and stood still once the talking starts.
