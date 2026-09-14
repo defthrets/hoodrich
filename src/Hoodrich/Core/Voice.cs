@@ -416,6 +416,128 @@ namespace Hoodrich.Core
             }
         }
 
+        /// <summary>
+        /// A copy of the line at the level asked for, because MCI will not turn a WAV down.
+        ///
+        /// THE VOLUME SETTING DID NOTHING AND HAD NOT FOR A WHILE. The header of this file says
+        /// it plainly -- SoundPlayer "plays WAV only and gives you no volume" -- and then MCI
+        /// was picked partly because it does, which is true of its mpegvideo device and not of
+        /// waveaudio. The pack is WAV and only WAV, because the mpeg driver refuses to load
+        /// inside GTA on this install. So every line played at the level it was recorded at and
+        /// the slider moved a number that reached nothing. setaudio returns an error saying so
+        /// and nobody was reading it.
+        ///
+        /// SO THE SAMPLES ARE SCALED AND A COPY IS PLAYED. It is sixteen-bit mono PCM at
+        /// 22050 -- take_voice.py converts every take to exactly that -- which is a few hundred
+        /// kilobytes a line and an arithmetic pass over it. Anything that is not plain PCM is
+        /// handed back untouched rather than guessed at.
+        ///
+        /// TWO SCRATCH FILES, USED IN TURN. MCI holds the file open for as long as it is
+        /// playing and a line can be cut off by the next one starting, so writing over the one
+        /// that is still open would fail and the new line would be the old line.
+        /// </summary>
+        private static string Quieter(string path, float want)
+        {
+            _scaled = false;
+
+            try
+            {
+                if (want >= 0.999f) return path;
+                if (!path.EndsWith(".wav", StringComparison.OrdinalIgnoreCase)) return path;
+
+                var raw = File.ReadAllBytes(path);
+
+                // RIFF....WAVE, then chunks. Anything shorter is not a wav.
+                if (raw.Length < 44) return path;
+                if (raw[0] != 'R' || raw[1] != 'I' || raw[2] != 'F' || raw[3] != 'F') return path;
+                if (raw[8] != 'W' || raw[9] != 'A' || raw[10] != 'V' || raw[11] != 'E') return path;
+
+                var bits = 0;
+                var format = 0;
+                var from = -1;
+                var count = 0;
+
+                var at = 12;
+
+                while (at + 8 <= raw.Length)
+                {
+                    var id = Encoding.ASCII.GetString(raw, at, 4);
+                    var size = BitConverter.ToInt32(raw, at + 4);
+
+                    if (size < 0 || at + 8 + size > raw.Length)
+                    {
+                        // A truncated chunk. The data may still be all there, so take what is
+                        // left of the file rather than throwing the line away.
+                        if (id == "data" && at + 8 < raw.Length)
+                        {
+                            from = at + 8;
+                            count = raw.Length - from;
+                        }
+
+                        break;
+                    }
+
+                    if (id == "fmt " && size >= 16)
+                    {
+                        format = BitConverter.ToInt16(raw, at + 8);
+                        bits = BitConverter.ToInt16(raw, at + 8 + 14);
+                    }
+                    else if (id == "data")
+                    {
+                        from = at + 8;
+                        count = size;
+                    }
+
+                    at += 8 + size + (size & 1);
+                }
+
+                // 1 is PCM. Anything else -- float, ADPCM, an mp3 in a wav coat -- is not
+                // something to multiply blind.
+                if (format != 1 || bits != 16 || from < 0 || count < 2) return path;
+
+                var copy = (byte[])raw.Clone();
+                var end = from + count;
+
+                if (end > copy.Length) end = copy.Length;
+
+                for (var i = from; i + 1 < end; i += 2)
+                {
+                    var sample = (short)(copy[i] | (copy[i + 1] << 8));
+                    var made = (int)Math.Round(sample * want);
+
+                    // Cannot clip going down, but the arithmetic is here and short.MinValue
+                    // has no positive twin, so it is said out loud rather than assumed.
+                    if (made > short.MaxValue) made = short.MaxValue;
+                    else if (made < short.MinValue) made = short.MinValue;
+
+                    copy[i] = (byte)(made & 0xFF);
+                    copy[i + 1] = (byte)((made >> 8) & 0xFF);
+                }
+
+                _turn = _turn == 0 ? 1 : 0;
+
+                var spare = Path.Combine(Path.GetTempPath(),
+                                         "hoodrich_voice_" +
+                                         _turn.ToString(CultureInfo.InvariantCulture) + ".wav");
+
+                File.WriteAllBytes(spare, copy);
+
+                _scaled = true;
+                return spare;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Voice: could not turn " + Path.GetFileName(path) + " down: " + ex.Message);
+                return path;
+            }
+        }
+
+        /// <summary>Whether the file being played is already at the level asked for.</summary>
+        private static bool _scaled;
+
+        /// <summary>Which of the two scratch files was written last. See Quieter.</summary>
+        private static int _turn;
+
         /// <summary>Stop whatever is talking. Safe to call when nothing is.</summary>
         public static void Hush()
         {
@@ -460,6 +582,18 @@ namespace Hoodrich.Core
 
             var alias = "hrvox" + (++_next).ToString(CultureInfo.InvariantCulture);
 
+            // The scale is the caller's, and it is applied to the setting rather than replacing
+            // it: a radio at four tenths means four tenths of however loud this player has the
+            // voices, not four tenths of the maximum. And the speaker's own level under both,
+            // off the file's name. See Level.
+            var level = Level(Path.GetFileNameWithoutExtension(path));
+
+            if (level < 0.999f)
+            {
+                Log.Debug("Voice: " + Path.GetFileName(path) + " at " +
+                          level.ToString("0.00", CultureInfo.InvariantCulture) + " of the level.");
+            }
+
             // TWO WAYS IN, because neither is reliable on its own.
             //
             // Naming the device is the documented way and does not depend on the file-type
@@ -470,9 +604,17 @@ namespace Hoodrich.Core
             //
             // Quoted either way, because the path runs through Program Files (x86) on nearly
             // every install and an unquoted space ends the argument early.
-            var file = "\"" + path + "\"";
+            // ---- TURNED DOWN BEFORE IT IS OPENED, BECAUSE MCI WILL NOT DO IT ----
+            //
+            // See Quieter. The setaudio call below is what this used to rely on and waveaudio
+            // does not implement it, so every line played at whatever level it was recorded at
+            // no matter where the slider was.
+            var want = Clamp(Volume, 0f, 1f) * Clamp(scale, 0f, 1f) * level;
+            var play = Quieter(path, want);
 
-            var kind = path.EndsWith(".wav", StringComparison.OrdinalIgnoreCase)
+            var file = "\"" + play + "\"";
+
+            var kind = play.EndsWith(".wav", StringComparison.OrdinalIgnoreCase)
                 ? "waveaudio"
                 : "mpegvideo";
 
@@ -496,20 +638,17 @@ namespace Hoodrich.Core
 
             _alias = alias;
 
-            // The scale is the caller's, and it is applied to the setting rather than
-            // replacing it: a radio at four tenths means four tenths of however loud this
-            // player has the voices, not four tenths of the maximum.
-            // And the speaker's own level under both, off the file's name. See Level.
-            var level = Level(Path.GetFileNameWithoutExtension(path));
-            if (level < 0.999f)
+            // ASKED FOR ANYWAY, AND IT COSTS NOTHING WHEN IT IS REFUSED. A device that does
+            // implement it -- anything that opens as mpegvideo -- gets the level this way and
+            // Quieter will have handed back the file untouched. waveaudio refuses, which is the
+            // whole reason Quieter exists.
+            if (!_scaled)
             {
-                Log.Debug("Voice: " + Path.GetFileName(path) + " at " +
-                          level.ToString("0.00", CultureInfo.InvariantCulture) + " of the level.");
-            }
+                var vol = (int)Math.Round(Clamp(want, 0f, 1f) * 1000f);
 
-            var vol = (int)Math.Round(Clamp(Volume, 0f, 1f) * Clamp(scale, 0f, 1f) * level * 1000f);
-            mciSendString("setaudio " + alias + " volume to " +
-                          vol.ToString(CultureInfo.InvariantCulture), null, 0, IntPtr.Zero);
+                mciSendString("setaudio " + alias + " volume to " +
+                              vol.ToString(CultureInfo.InvariantCulture), null, 0, IntPtr.Zero);
+            }
 
             // No "wait" -- that would block the script thread for the length of the line and
             // freeze the game while somebody talks.
