@@ -514,16 +514,43 @@ namespace Hoodrich.Core
                     copy[i + 1] = (byte)((made >> 8) & 0xFF);
                 }
 
-                _turn = _turn == 0 ? 1 : 0;
+                // ---- A RING OF SCRATCH FILES, NOT TWO ----
+                //
+                // EVERY SECOND LINE WAS COMING OUT AT FULL VOLUME. Two files used in turn is
+                // one file free and one file that was playing a moment ago, and MCI does not
+                // let go of a name the instant it is told to close -- so every other write
+                // landed on a handle Windows still had open, threw, and was caught by the
+                // fallback below, which hands back the ORIGINAL file. Turned down, full, turned
+                // down, full, all the way through a conversation.
+                //
+                // Eight, and each one is tried in turn until one takes. A line has to be
+                // interrupted eight times inside a couple of seconds to run out, and if it ever
+                // does the fallback is still there and now says so out loud.
+                for (var spare = 0; spare < Spares; spare++)
+                {
+                    _turn = (_turn + 1) % Spares;
 
-                var spare = Path.Combine(Path.GetTempPath(),
-                                         "hoodrich_voice_" +
-                                         _turn.ToString(CultureInfo.InvariantCulture) + ".wav");
+                    var where = Path.Combine(Path.GetTempPath(),
+                                             "hoodrich_voice_" +
+                                             _turn.ToString(CultureInfo.InvariantCulture) + ".wav");
 
-                File.WriteAllBytes(spare, copy);
+                    try
+                    {
+                        File.WriteAllBytes(where, copy);
+                    }
+                    catch
+                    {
+                        continue;
+                    }
 
-                _scaled = true;
-                return spare;
+                    _scaled = true;
+                    return where;
+                }
+
+                Log.Info("Voice: every scratch file was busy, so " + Path.GetFileName(path) +
+                         " is playing at the level it was recorded at.");
+
+                return path;
             }
             catch (Exception ex)
             {
@@ -535,8 +562,10 @@ namespace Hoodrich.Core
         /// <summary>Whether the file being played is already at the level asked for.</summary>
         private static bool _scaled;
 
-        /// <summary>Which of the two scratch files was written last. See Quieter.</summary>
+        /// <summary>Which scratch file was written last, and how many there are. See Quieter.</summary>
         private static int _turn;
+
+        private const int Spares = 8;
 
         /// <summary>Stop whatever is talking. Safe to call when nothing is.</summary>
         public static void Hush()
