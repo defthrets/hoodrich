@@ -368,7 +368,21 @@ namespace Hoodrich.Missions
         /// </summary>
         private DialogueNode Brief(MissionDef def, int beat = 0)
         {
-            if (beat < def.BriefMore.Count)
+            // ---- THE SHORT VERSION IS THE WHOLE BRIEF ----
+            //
+            // HE SAID "SAME AS BEFORE" AND THEN BRIEFED YOU FROM THE TOP ANYWAY. Opening hands
+            // back BriefAgain on a repeat, which is the one-paragraph version written precisely
+            // so nobody sits through the pitch twice -- and then "Go on." walked into BriefMore,
+            // which is the REST OF THE LONG ONE. So the short brief became a preface to the
+            // thing it exists to replace, and the whole point of writing it was lost.
+            //
+            // On a repeat there are no further beats. That is what makes it the short version.
+            var again = _state != null && _state.HasDone(def.Id) &&
+                        !string.IsNullOrEmpty(def.BriefAgain);
+
+            var beats = again ? 0 : def.BriefMore.Count;
+
+            if (beat < beats)
             {
                 var more = Node(beat == 0 ? Opening(def) : def.BriefMore[beat - 1]);
 
