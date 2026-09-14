@@ -1826,7 +1826,12 @@ namespace Hoodrich.Gangs
                 Function.Call(Hash.SET_VEHICLE_DIRT_LEVEL, car.Handle, 1f);
 
                 Function.Call(Hash.SET_VEHICLE_RADIO_ENABLED, car.Handle, true);
-                Function.Call(Hash.SET_VEH_RADIO_STATION, car.Handle, Core.Radio.Blonded);
+                // WEST COAST CLASSICS. It was Blonded for a while -- the DLC station, which
+                // is a real thing a car on this block would be playing -- and it is the wrong
+                // sound coming out of the set's own cars at a meet. The classics is what a
+                // lowrider is for and it is what the rest of the meet is already on: the
+                // hopper carrying the sound system at the car meet has been on it all along.
+                Function.Call(Hash.SET_VEH_RADIO_STATION, car.Handle, Core.Radio.WestCoast);
                 Function.Call(Hash.SET_VEHICLE_RADIO_LOUD, car.Handle, true);
 
                 // AND THE DONKS GET THE UNDERGLOW, WHICH NOTHING ELSE DOES.
