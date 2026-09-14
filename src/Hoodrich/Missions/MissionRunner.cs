@@ -3248,12 +3248,24 @@ namespace Hoodrich.Missions
 
             // And he hears about it. Not the mod telling you the job ended -- a man you know
             // saying he heard, and that the work is still there.
+            //
+            // WHOEVER GAVE IT TO YOU, which it was not. Lamar texted about every death on every
+            // job in the mod, including the one he has nothing to do with: you got shot in a
+            // scrap yard in La Puerta doing a favour for Vernon and Lamar rang up to say he had
+            // heard. The def knows who sent you -- see MissionDef.Giver -- and it is the one
+            // fact needed to send it from the right man.
             try
             {
-                Notify.Text("CHAR_LAMAR", "Lamar", "Los Santos",
-                            DeathTexts[_rng.Next(DeathTexts.Length)], false);
+                var vees = giver != null &&
+                           string.Equals(giver.Giver, "vernon", StringComparison.OrdinalIgnoreCase);
 
-                Log.Info("Died on " + (giver == null ? "a job" : giver.Id) + "; Lamar texted.");
+                var lines = vees ? VeeDeathTexts : DeathTexts;
+
+                Notify.Text(vees ? null : "CHAR_LAMAR", vees ? "Vernon" : "Lamar", "Los Santos",
+                            lines[_rng.Next(lines.Length)], false);
+
+                Log.Info("Died on " + (giver == null ? "a job" : giver.Id) + "; " +
+                         (vees ? "Vernon" : "Lamar") + " texted.");
             }
             catch (Exception ex)
             {
@@ -3268,6 +3280,32 @@ namespace Hoodrich.Missions
         /// ends by telling you the job is still on, because the point of the message is that
         /// dying costs you the run rather than the chain.
         /// </summary>
+        /// <summary>
+        /// What VERNON sends, which is not what Lamar sends.
+        ///
+        /// He is not a man who has had people shot for him before and it shows: he is worried
+        /// about you, he is worried about his money, and he cannot work out which of those to
+        /// say first. Every one of them still ends with the job being on, for the same reason
+        /// Lamar's do -- dying costs you the run, not the work.
+        /// </summary>
+        private static readonly string[] VeeDeathTexts =
+        {
+            "FRANKLIN. Franklin are you -- they told me. Is it bad? Don't answer that if it's " +
+            "bad. Come see me when you up, we ain't done",
+
+            "aight so that went how it went. i'm not askin about the money yet. i'm askin about " +
+            "YOU. come by the shop",
+
+            "man i have been sat in this basement for two hours. tell me you good. tell me and " +
+            "then come see me, i got a idea",
+
+            "ok so. lesson learned. for BOTH of us. come find me when you can walk proper and " +
+            "we do it again but smarter",
+
+            "they got you? THEY got YOU? nah. nah nah nah. come see me. i'm not lettin it go " +
+            "like that",
+        };
+
         private static readonly string[] DeathTexts =
         {
             "damn dawg. heard they got you. you good? come see me when you up, we run it back",

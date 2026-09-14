@@ -840,6 +840,14 @@ namespace Hoodrich
                 _bust = new Bust(_cfg, _state) { Turf = _turf };
                 _deadDrop = new DeadDrop(_cfg, _state);
 
+                // Dying with the bag on costs you the bag's whereabouts rather than a cut
+                // of your pockets. See DeadDrop.CheckDeath and Strap.DropWhereHeFell.
+                _deadDrop.Satchel = () => _state != null && _state.Bag.Worn;
+                _deadDrop.DropSatchel = (where, him) =>
+                {
+                    if (_bag != null) _bag.DropWhereHeFell(where, him);
+                };
+
                 _pricing = new Pricing(_cfg, _state) { Turf = _turf, Crew = _crew, Market = _market, Blocks = _blocks };
                 _raid = new StashRaid(_cfg, _state, _stash) { Crew = _crew };
                 _cutting = new Cutting(_state.Stash, _state);

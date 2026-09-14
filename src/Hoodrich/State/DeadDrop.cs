@@ -64,6 +64,12 @@ namespace Hoodrich.State
         public bool HasBag => _bag != null && _bag.Exists();
 
         /// <summary>The bag on the floor: its lifetime, and picking it up. From the playable tick.</summary>
+        /// <summary>Set by Main: whether the bag is on his back right now.</summary>
+        public Func<bool> Satchel;
+
+        /// <summary>Set by Main: taking it off him where he fell. See Strap.DropWhereHeFell.</summary>
+        public Action<Vector3, Ped> DropSatchel;
+
         public void Update()
         {
             var player = Game.Player.Character;
@@ -125,6 +131,23 @@ namespace Hoodrich.State
             if (dead && !_wasDead)
             {
                 _wasDead = true;
+
+                // ---- THE BAG TAKES IT, OR THE POCKETS DO ----
+                //
+                // WEARING IT, HE DROPS IT. Twenty slots is a night's work and losing a cut of
+                // it to a stray round in an alley is not a rule anybody would choose to play
+                // with -- so the bag comes off where he fell, contents intact, and walking back
+                // for it is the cost. Losing it is then something he decides by not going.
+                //
+                // NOT WEARING IT, THE POCKETS PAY. Which is the rule that was always here, and
+                // it is now the price of going out without the bag rather than the price of
+                // dying.
+                if (Satchel != null && Satchel())
+                {
+                    if (DropSatchel != null) DropSatchel(player.Position, player);
+                    return;
+                }
+
                 DropBag(player.Position);
             }
             else if (!dead && _wasDead)

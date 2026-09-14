@@ -607,6 +607,41 @@ namespace Hoodrich.Economy
                      " with " + bag.Used + " slot(s) in it.");
         }
 
+        /// <summary>
+        /// Off his back where he fell, with everything still in it.
+        ///
+        /// THE BAG IS THE THING THAT SURVIVES DYING. Everything else about going down takes a
+        /// cut of what was in his pockets -- see DeadDrop -- and a bag that went with him would
+        /// be twenty slots of work gone to a stray round in an alley. So it comes off and stays
+        /// exactly where he was standing, which is somewhere he can walk back to. Losing it is
+        /// then a thing he chooses, by not going back for it.
+        ///
+        /// QUIET, because this happens behind the fade. The thud and the ticker belong to a man
+        /// deciding to put it down, and he did not decide anything.
+        /// </summary>
+        public void DropWhereHeFell(Vector3 where, Ped me)
+        {
+            var bag = Bag;
+            if (bag == null || !bag.Worn) return;
+
+            bag.Worn = false;
+
+            bag.DownX = where.X;
+            bag.DownY = where.Y;
+            bag.DownZ = where.Z;
+
+            try { bag.DownHeading = me != null && me.Exists() ? me.Heading + 90f : bag.DownHeading; }
+            catch { /* whatever it was lying at */ }
+
+            try { if (me != null && me.Exists()) Unwear(me); }
+            catch { /* the respawn dresses him anyway */ }
+
+            try { _state.Touch(); }
+            catch { /* the save picks it up on its own clock */ }
+
+            Log.Info("Bag: came off where he went down, " + bag.Used + " slot(s) in it.");
+        }
+
         public void Take(Ped me)
         {
             var bag = Bag;
