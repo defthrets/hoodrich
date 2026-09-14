@@ -1243,7 +1243,19 @@ namespace Hoodrich.Missions
 
                 if (car != null && car.Exists())
                 {
-                    if (_veeRiding && _vee.IsInVehicle(car)) return;
+                    if (_veeRiding && _vee.IsInVehicle(car))
+                    {
+                        // BOTH IN, DOORS SHUT, AND HE HAS SOMETHING TO SAY. Checked on him
+                        // being SEATED rather than on the task being given, or he says it
+                        // walking round the back of the car. See RollOut.
+                        if (!_saidRolling && Phase == DealPhase.Riding)
+                        {
+                            _saidRolling = true;
+                            Vees(RollOut);
+                        }
+
+                        return;
+                    }
 
                     var seat = Function.Call<bool>(Hash.IS_VEHICLE_SEAT_FREE, car.Handle, 0)
                         ? 0
@@ -1378,12 +1390,26 @@ namespace Hoodrich.Missions
         private const string GrabIt = "Shit -- Franklin, grab the bag and lets go!";
         private const string Away = "Go go, Franklin, lets go!";
 
+        /// <summary>
+        /// What he says the moment you are both in and the doors are shut.
+        ///
+        /// THE ONE BEAT THE DRIVE WAS MISSING. You get in, and the objective changes, and a
+        /// man with fourteen and a half thousand dollars on his lap says nothing about where he
+        /// would like to be taken. It also puts the destination in his own mouth rather than
+        /// only on the map, and it is the last chance to be funny before anybody is shot at.
+        /// </summary>
+        private const string RollOut =
+            "Aight -- Rogers Scrap, out past the freeway. And take the surface streets, " +
+            "Franklin. I got the rest of this man's money in a paper bag on my lap and I ain't " +
+            "explainin' that to no police.";
+
         /// <summary>How often he is allowed to shout while it is going on.</summary>
         private const int PanicEveryMs = 7000;
 
         private int _panicAt;
         private bool _saidGrab;
         private bool _saidAway;
+        private bool _saidRolling;
 
         /// <summary>
         /// One line out of Vernon, if he is alive to say it.
@@ -1735,6 +1761,7 @@ namespace Hoodrich.Missions
             _panicAt = 0;
             _saidGrab = false;
             _saidAway = false;
+            _saidRolling = false;
 
             _def = null;
             _layFrom = 0;

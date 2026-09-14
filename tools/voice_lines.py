@@ -336,6 +336,10 @@ SPEECH = [
     # the ped, the wall and the walk to his car -- but he speaks on the way out of the shop,
     # and a line said outside a conversation is still a line somebody has to record.
     (r"src\Hoodrich\Locations\Vernon.cs",       ["Vernon"]),
+    # Vernon's job, and every word of it was invisible: this file was not listed at all, so
+    # the barks he shouts across that yard -- the panic, the grab, the drive out -- had never
+    # once appeared on a list of things to record.
+    (r"src\Hoodrich\Missions\Deal.cs",          ["Vernon"], {"Vees": "Vernon"}),
     (r"src\Hoodrich\Missions\FixerTalk.cs",     ["Lamar"]),
     (r"src\Hoodrich\Missions\BikeRide.cs",      ["Lamar"]),
     (r"src\Hoodrich\Missions\Hunt.cs",          ["Lamar"]),
@@ -480,6 +484,18 @@ def from_source(root):
             for m in rx.finditer(body):
                 if whole(m, 1):
                     add(who, joined(m.group(1)))
+
+            # AND THE SAME HELPER HANDED A NAME INSTEAD OF THE WORDS. Vees(RollOut) is the
+            # same act as Vees("..."), and a mission keeps its barks in consts because they
+            # are said from more than one beat. Only a name that resolves to a const string
+            # in this file counts -- see CONST -- so a variable or a parameter is passed
+            # over rather than guessed at.
+            named = re.compile(r"\b" + helper + r"\(\s*([A-Za-z_]\w*)\s*[,)]")
+
+            for m in named.finditer(body):
+                held = CONST(m.group(1)).search(body)
+                if held:
+                    add(who, joined(held.group(1)))
 
     return rows
 
