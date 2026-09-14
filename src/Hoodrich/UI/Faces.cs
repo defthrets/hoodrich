@@ -38,6 +38,12 @@ namespace Hoodrich.UI
             "CHAR_DENISE", "CHAR_FRANKLIN", "CHAR_TANISHA", "CHAR_MICHAEL", "CHAR_TREVOR",
             "CHAR_HAO",
 
+            // HIS FALLBACKS, WARMED WITH THE REST. FirstReady only hands back a dictionary it
+            // has actually seen load, so a fallback nobody ever asks for is not a fallback --
+            // and on a build with no CHAR_HAO in it Hao's picture would come out grey for ever
+            // with two perfectly good shop logos sat there unrequested. See For.
+            "CHAR_LS_CUSTOMS", "CHAR_MP_MECHANIC",
+
             // The father. Only ever needed once a save, and on the one text where a silhouette
             // would land worst -- the new man at the port introducing himself.
             "CHAR_CHENGSR"
@@ -141,7 +147,47 @@ namespace Hoodrich.UI
                 Core.Log.Info("Contact pictures: " + lost +
                               " had been unloaded and were asked for again.");
             }
+
+            Roll();
         }
+
+        /// <summary>
+        /// Says once which of these the build actually has.
+        ///
+        /// A CHAR_ NAME IS A GUESS UNTIL THE STREAMER ANSWERS. Not every contact picture is in
+        /// every build -- that is the whole reason FirstReady exists -- and up to now the only
+        /// way to find out which ones were missing was to look at a phone and see a grey
+        /// square. One line, after the set has had a few passes to load, and then never again.
+        ///
+        /// Not on the first pass: a dictionary asked for on frame one has not arrived by frame
+        /// two, and a roll call taken then would name every picture in the mod as missing.
+        /// </summary>
+        private static void Roll()
+        {
+            if (_rolled) return;
+
+            _passes++;
+
+            if (_passes < 3) return;
+
+            _rolled = true;
+
+            var missing = "";
+
+            foreach (var dict in Everyone)
+            {
+                if (Resident.Contains(dict)) continue;
+
+                missing += (missing.Length == 0 ? "" : ", ") + dict;
+            }
+
+            Core.Log.Info("Contact pictures: " + Resident.Count + " of " + Everyone.Length +
+                          " are in this build" +
+                          (missing.Length == 0 ? "." : ". Not here: " + missing));
+        }
+
+        private static bool _rolled;
+        private static int _passes;
 
         /// <summary>
         /// The picture if the game actually has it, and the silhouette if it does not.

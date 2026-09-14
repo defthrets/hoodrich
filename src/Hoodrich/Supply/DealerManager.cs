@@ -192,7 +192,11 @@ namespace Hoodrich.Supply
             ReplaceInts(def.RideNeon, node["rideNeon"]);
             def.Plate = node["plate"].AsString(def.Plate);
             def.OpeningText = node["openingText"].AsString(def.OpeningText);
-            def.Portrait = node["portrait"].AsString(FaceFor(def.Id));
+            // NO FALLBACK HERE ANY MORE. What the file says, and nothing if it says nothing
+            // -- see DealerDef.Face, which asks Faces at the moment the picture is drawn. The
+            // switch that used to sit here knew two of the three men in this file by id and
+            // gave the third the grey silhouette, permanently.
+            def.Portrait = node["portrait"].AsString(def.Portrait);
             // A string or a list of them, so an old file keeps working unchanged.
             ReadLines(node["textCalled"], def.CalledLines, ref def.TextCalled);
             ReadLines(node["textLeaving"], def.LeavingLines, ref def.TextLeaving);
@@ -577,22 +581,6 @@ namespace Hoodrich.Supply
             Log.Debug("Dealers restocked.");
         }
 
-        /// <summary>
-        /// Whose face goes on his messages, when the data does not say.
-        ///
-        /// A fallback rather than the source of truth -- dealers.json can name a portrait for
-        /// anybody -- but the two the mod ships with should not have to.
-        /// </summary>
-        private static string FaceFor(string id)
-        {
-            switch (id)
-            {
-                case "docks": return "CHAR_CHENG";
-                case GeraldId: return "CHAR_MP_GERALD";
-                default: return "CHAR_DEFAULT";
-            }
-        }
-
         public DealerDef Get(string id) =>
             _defs.Find(d => string.Equals(d.Id, id, StringComparison.OrdinalIgnoreCase));
 
@@ -662,7 +650,7 @@ namespace Hoodrich.Supply
 
             try
             {
-                UI.Notify.Text(def.Portrait, def.Name, "here's my number", def.NumberLine, true);
+                UI.Notify.Text(def.Face, def.Name, "here's my number", def.NumberLine, true);
                 Log.Info("Handed over " + def.Id + "'s number on the way out.");
             }
             catch
@@ -1025,7 +1013,7 @@ namespace Hoodrich.Supply
                     ? "whatever you need"
                     : string.Join(", ", def.Drugs.ToArray());
 
-                Notify.Text(def.Portrait, def.Name, "Los Santos",
+                Notify.Text(def.Face, def.Name, "Los Santos",
                             def.OpeningText.Length > 0
                                 ? def.OpeningText
                                 : "im good for " + carries + " when you are. hit me",

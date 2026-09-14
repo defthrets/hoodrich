@@ -1744,7 +1744,7 @@ namespace Hoodrich.Wheel
                 // He gets his phone out to send this one, so ours does not take it off him.
                 page.KeepsPhone();
 
-                page.WithIcon(Icons.Portrait(plug.Portrait));
+                page.WithIcon(Icons.Portrait(plug.Face));
             }
 
             return page;

@@ -63,14 +63,46 @@ namespace Hoodrich.Supply
         public string OpeningText = "";
 
         /// <summary>
-        /// The CHAR_ dictionary his texts put a face on.
+        /// The CHAR_ dictionary his texts put a face on, WHEN THE DATA NAMES ONE.
         ///
         /// This lived in Delivery as a switch on the id, which is the wrong home: whose face
         /// this is is a fact about the MAN, not about one journey he happens to be making --
         /// and the moment anything other than a delivery wanted to text you, it needed the
         /// same switch a second time.
+        ///
+        /// EMPTY BY DEFAULT NOW, AND THAT IS THE FIX. It used to be filled in at load with a
+        /// switch on the id that knew two men, so the third -- Hao -- was stamped CHAR_DEFAULT
+        /// the moment dealers.json was read and wore the grey silhouette in his own contacts
+        /// row for the rest of the save. See Face: an override belongs in the data and
+        /// everything else is a question for Faces, asked when the picture is wanted.
         /// </summary>
-        public string Portrait = "CHAR_DEFAULT";
+        public string Portrait = "";
+
+        /// <summary>
+        /// Whose face to draw, asked NOW rather than remembered from load.
+        ///
+        /// A CHAR_ dictionary is not a fact, it is a thing the streamer either has to hand or
+        /// does not -- some of them are not in every build at all, and the ones that are get
+        /// evicted under memory pressure and come back. Faces knows that and answers with what
+        /// is actually there; a value worked out once at start-up cannot.
+        ///
+        /// That is precisely how Hao ended up a silhouette: the answer was decided before the
+        /// game had been asked for his picture, and then never asked again.
+        ///
+        /// The data still wins. A portrait named in dealers.json is a deliberate choice and is
+        /// handed back untouched -- this is only what happens when the file is silent.
+        /// </summary>
+        public string Face
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(Portrait)) return Portrait;
+
+                var known = UI.Faces.For(Name);
+
+                return string.IsNullOrEmpty(known) ? UI.Faces.Nobody : known;
+            }
+        }
 
         /// <summary>
         /// The three texts a courier sends on a run: answering the call, setting off, and

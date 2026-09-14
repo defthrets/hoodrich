@@ -452,7 +452,7 @@ namespace Hoodrich.Supply
         /// than a broken message.
         /// </summary>
         private string Portrait =>
-            _def == null || string.IsNullOrEmpty(_def.Portrait) ? "CHAR_DEFAULT" : _def.Portrait;
+            _def == null ? UI.Faces.Nobody : _def.Face;
 
         /// <summary>Close enough to do business over the roof of the car.</summary>
         private const float TalkRange = 4.5f;
@@ -1634,16 +1634,20 @@ namespace Hoodrich.Supply
                     Function.Call(Hash.TASK_ENTER_VEHICLE, _driver.Handle, _car.Handle,
                                   -1, -1, 1f, 1, 0);
 
-                    // AND HERE IS WHERE HE SAYS GOODBYE. The box is down, he has turned round,
-                    // and he is walking to his own car -- which is the moment somebody who has
-                    // just done you a favour actually says it. The screen played it the instant
-                    // you stopped buying, so he was waving you off and then letting himself
-                    // into your house. See DealerTalk.Bye, which no longer sets it on delivery
-                    // nodes at all.
+                    // AND HE IS OWED A GOODBYE, WHICH HE SAYS AT HIS CAR RATHER THAN AT YOUR
+                    // DOOR. The box is down and he has turned round, and this used to be the
+                    // frame the farewell played on -- so a man who had walked the length of a
+                    // front garden said "text me anyway, I need people to go out with" to the
+                    // inside of your store room with his back to you, and then walked thirty
+                    // metres in silence.
                     //
-                    // Cue rather than Say: it is an event, and a goodbye you only ever hear
-                    // from a man once is not a goodbye.
-                    SayGoodbye();
+                    // It is a leaving line. He says it where somebody leaving says it: at the
+                    // door of his own car, with the walk behind him. See TickLeaving.
+                    //
+                    // (Before that it was played the instant you stopped buying, so he waved
+                    // you off and then let himself into your house. See DealerTalk.Bye, which
+                    // no longer sets it on delivery nodes at all.)
+                    _owedBye = true;
 
                     // Said again on the way out. Nothing has taken it off him, but the walk out
                     // is the longer of the two and the one where it is worth being certain.
@@ -1654,14 +1658,61 @@ namespace Hoodrich.Supply
         }
 
         /// <summary>
+        /// Whether he has walked back far enough to say it yet.
+        ///
+        /// THE FAREWELL IS A LEAVING LINE AND IT WAS PLAYED ON ARRIVAL AT THE STORE ROOM. He
+        /// put the box down, turned round, and said his goodbye to your shelves -- then walked
+        /// the whole way back to the kerb without a word. Hao's is the one that makes it
+        /// obvious, because his is an invitation: "text me anyway, I need people to go out
+        /// with" is something you say at a car door, not over your shoulder in a cupboard.
+        ///
+        /// So it waits for the walk. Three metres off his own car is close enough that he is
+        /// plainly going, and far enough that he is still out on the pavement saying it rather
+        /// than muffled behind glass.
+        /// </summary>
+        private void Nearly()
+        {
+            if (!_owedBye) return;
+
+            try
+            {
+                if (_driver == null || !_driver.Exists()) { _owedBye = false; return; }
+                if (_car == null || !_car.Exists()) { _owedBye = false; return; }
+
+                if (_driver.Position.DistanceTo(_car.Position) > ByeNear) return;
+            }
+            catch
+            {
+                _owedBye = false;
+                return;
+            }
+
+            SayGoodbye();
+        }
+
+        /// <summary>How close to his own car he is when he says it.</summary>
+        private const float ByeNear = 3f;
+
+        /// <summary>Set when the box goes down, cleared when the line has been said.</summary>
+        private bool _owedBye;
+
+        /// <summary>
         /// His recorded farewell, once, on his way to the car.
         ///
         /// Named the way the rest of his pack is -- slug of his name, hash of the sentence in
         /// dealers.json -- so nothing has to be recorded twice for this to work. A dealer with
         /// no farewell written down simply walks off, which is what he did before.
+        ///
+        /// ONCE, AND THE LATCH IS HERE rather than at the two places that ask. Nearly polls
+        /// every tick of the walk and the boarding path calls it as a backstop, so without
+        /// this he would say it once a tick for the last three metres.
         /// </summary>
         private void SayGoodbye()
         {
+            if (!_owedBye) return;
+
+            _owedBye = false;
+
             if (_def == null || string.IsNullOrEmpty(_def.Farewell)) return;
 
             try
@@ -1676,12 +1727,20 @@ namespace Hoodrich.Supply
 
         private void TickLeaving()
         {
+            // THREE METRES OFF HIS OWN CAR, which is where a man says goodbye. See ByeNear.
+            Nearly();
+
             if (Game.GameTime - _stateSince < LeaveMs)
             {
                 // Once he is behind the wheel, he goes.
                 if (_driver != null && _driver.Exists() && _car != null && _car.Exists() &&
                     _driver.IsInVehicle(_car))
                 {
+                    // AND IF HE NEVER GOT WITHIN THREE METRES ON A TICK, HE SAYS IT NOW.
+                    // A recorded line that is simply lost because the walk happened to be
+                    // sampled either side of the mark is worse than one said a second late.
+                    SayGoodbye();
+
                     // Said from the driver's seat, with the door shut, the way anybody says
                     // goodbye when they are already leaving.
                     Speak(Mine(_def == null ? null : _def.PartingLines, PortParting, CornerParting), LeavingLines);
