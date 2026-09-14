@@ -149,13 +149,9 @@
       ]
     },
     {
-      "id": "hit_grove",
-      "kind": "DriveBy",
-      "name": "Get 'em off Grove.",
-      "brief": "Ballas standin' on Grove. On GROVE, Frank. My granddaddy raised nine kids on that street. We buried that man out the church on the corner. And now I gotta hear about a whole line of purple leanin' on the same fence he painted with his own hands. Nah, dawg. Nah.",
-      "done": "THAT'S what I'm talkin' about! Didn't even slow down, cuz, just come through and it was done. Old heads on the porch tellin' it to each other like they was out there watchin', and can't none of 'em say who was in the car. Granddaddy woulda shook my hand behind this one. Yours too. But mine first.",
-      "briefAgain": "Purple on Grove again. I ain't even mad no more, I'm just tired. Take three, keep it rollin', don't stop on that street. Go.",
-      "doneAgain": "Off it again. Old heads seen it again too. Granddaddy ain't gotta hear about it twice, but he'd have liked knowin' it stayed ours. That's on both of us. Mostly me.",
+      "id": "rideout_davis",
+      "kind": "RideOut",
+      "name": "Hands only, Davis.",
       "targetGang": "ballas",
       "zone": "DAVIS",
       "x": 115.921,
@@ -163,21 +159,25 @@
       "z": 20.698,
       "targets": 4,
       "homies": 3,
-      "escapeHeat": true,
-      "heatStars": 2,
-      "payMin": 1700,
-      "payMax": 2500,
-      "rep": 70,
+      "escapeHeat": false,
+      "heatStars": 0,
+      "payMin": 900,
+      "payMax": 1400,
+      "rep": 80,
       "minRank": 2,
       "carX": -223.169,
       "carY": -1723.002,
       "carZ": 32.629,
       "carHeading": 54.779,
+      "brief": "Aight. Different one. Put the strap DOWN, Frank -- I'm serious, leave it in the car. This ain't that.",
       "briefMore": [
-        "And yeah, I know it's theirs on paper, everybody know that. But it's theirs on paper, and then it's them STANDIN' on it grinnin', and once the old heads quit callin' it ours it's gone for real. Then it ain't a set no more. It's just a street with a sign on it.",
-        "You don't stop on Grove. That's the whole thing. Take three homies, EVERYBODY carry, and you keep that car ROLLIN' -- past the fence, down the block, gone. Hands was for the courts, this ain't the courts, and a man standin' still on that street is a man on somebody porch camera. You gon' catch the laws comin' off it too, that's a promise, not a maybe. Don't you dare drag 'em back round here to me.",
-        "And you know the rest. German whip out front, that one don't get left nowhere -- laws first, then Hao. I ain't sayin' it twice."
-      ]
+        "Them Ballas on Davis been runnin' they mouth about the set. Not doin' nothin'. Just talkin'. And talk is the thing that turns into somethin' else if you let it sit, so we ain't lettin' it sit.",
+        "Four of 'em. Us and three of the homies. Hands. That's it, that's the whole thing -- 'cause the second a gun come out it's a different conversation and everybody on that block calls it in.",
+        "And I know what you gon' say. Yeah, we could just do it the other way and be home quicker. We could. But then it's a thing that happened, and this way it's a thing everybody SAW, and them two ain't the same."
+      ],
+      "briefAgain": "Same as before, cuz. Davis, four of 'em, hands. Leave the strap in the car.",
+      "done": "THAT'S what I'm talkin' about. Nobody dead, nobody locked up, and everybody on that street watched it happen. That's worth more than shootin' up a corner and you know it.",
+      "doneAgain": "Aight, same again. Word's gettin' round the way it's supposed to. Come get this."
     },
     {
       "id": "hunt_davis",
