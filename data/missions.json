@@ -149,37 +149,6 @@
       ]
     },
     {
-      "id": "rideout_davis",
-      "kind": "RideOut",
-      "name": "Hands only, Davis.",
-      "targetGang": "ballas",
-      "zone": "DAVIS",
-      "x": 115.921,
-      "y": -1949.503,
-      "z": 20.698,
-      "targets": 4,
-      "homies": 3,
-      "escapeHeat": false,
-      "heatStars": 0,
-      "payMin": 900,
-      "payMax": 1400,
-      "rep": 80,
-      "minRank": 2,
-      "carX": -223.169,
-      "carY": -1723.002,
-      "carZ": 32.629,
-      "carHeading": 54.779,
-      "brief": "Aight. Different one. Put the strap DOWN, Frank -- I'm serious, leave it in the car. This ain't that.",
-      "briefMore": [
-        "Them Ballas on Davis been runnin' they mouth about the set. Not doin' nothin'. Just talkin'. And talk is the thing that turns into somethin' else if you let it sit, so we ain't lettin' it sit.",
-        "Four of 'em. Us and three of the homies. Hands. That's it, that's the whole thing -- 'cause the second a gun come out it's a different conversation and everybody on that block calls it in.",
-        "And I know what you gon' say. Yeah, we could just do it the other way and be home quicker. We could. But then it's a thing that happened, and this way it's a thing everybody SAW, and them two ain't the same."
-      ],
-      "briefAgain": "Same as before, cuz. Davis, four of 'em, hands. Leave the strap in the car.",
-      "done": "THAT'S what I'm talkin' about. Nobody dead, nobody locked up, and everybody on that street watched it happen. That's worth more than shootin' up a corner and you know it.",
-      "doneAgain": "Aight, same again. Word's gettin' round the way it's supposed to. Come get this."
-    },
-    {
       "id": "hunt_davis",
       "kind": "Hunt",
       "name": "We goin' huntin'.",
