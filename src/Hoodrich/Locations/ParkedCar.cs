@@ -404,22 +404,6 @@ namespace Hoodrich.Locations
         /// <summary>The rear axle, held down. See Camber and Squat.</summary>
         private readonly Slammed _stance = new Slammed();
 
-        /// <summary>
-        /// Whether it is standing still enough for a written suspension to stay written.
-        ///
-        /// Half a metre a second is a car that is parked, or one at a dead stop at a light --
-        /// both of which have a suspension the game has stopped moving. Above it the wheels are
-        /// working and they are the game's. See the note on the stance in Update.
-        /// </summary>
-        private bool Settled
-        {
-            get
-            {
-                try { return _car.Speed < 0.5f; }
-                catch { return false; }
-            }
-        }
-
         public ParkedCar(Vector3 where, float heading, int paint,
                          params string[] models)
         {
@@ -481,11 +465,10 @@ namespace Hoodrich.Locations
             // which is what the suspension mod on this machine does and is not a thing worth
             // owning two of for one parked car. So the stance is what it was always for: how
             // the Dorado sits outside the shop. Drive it and it drives like a Dorado.
-            if (_car != null && _car.Exists())
-            {
-                if (Settled) _stance.Hold(_car, Camber, Squat);
-                else _stance.Let(_car);
-            }
+            // HELD WHETHER IT IS MOVING OR NOT. The thread inside Slammed is what makes that
+            // possible: the fields the game takes back are written several times a frame rather
+            // than once, so the wheel is ours on every frame instead of every other one.
+            if (_car != null && _car.Exists()) _stance.Hold(_car, Camber, Squat);
 
             var now = Game.GameTime;
             if (now - _lastUpdate < UpdateIntervalMs) return;
@@ -1179,7 +1162,12 @@ namespace Hoodrich.Locations
             catch { /* teardown */ }
 
             _car = null;
-            _stance.Forget();
+
+            // THE THREAD GOES WITH THE MOD, not with the car. Forget is enough between spawns;
+            // this is the teardown, so it is also the end of the thread -- a background thread
+            // left running after a script reload is a second one next time.
+            _stance.Stop();
+
             _latched = null;
             Unseat();
         }
