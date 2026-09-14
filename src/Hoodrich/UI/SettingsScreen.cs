@@ -647,8 +647,8 @@ namespace Hoodrich.UI
             _rows.Add(new Opt
             {
                 Kind = OptKind.Action,
-                Label = "Forget meeting Vernon",
-                Note = "He shouts at you across the pavement again next time you get near him",
+                Label = "Forget Vernon entirely",
+                Note = "The meeting, the tour, the tape and the job -- all of it, back to never met",
                 Do = () =>
                 {
                     if (MetVee == null || SetMetVee == null) return;
@@ -661,7 +661,7 @@ namespace Hoodrich.UI
 
                     SetMetVee(false);
 
-                    Notify.Ticker("~g~Forgot him.~s~  walk up on Strawberry and he starts it");
+                    Notify.Ticker("~g~Forgot him.~s~  walk up on Strawberry and he starts it again");
                 }
             });
 

@@ -2670,12 +2670,30 @@ namespace Hoodrich
 
                         _state.MetVernon = met;
 
-                        // THE TAPE GOES WITH THE MEETING. It is a record of an evening that,
-                        // as far as the save is now concerned, never happened -- and leaving
-                        // it behind would have him introduce himself to a stranger he has
-                        // already played his single to.
-                        if (met) _state.MarkDone(Locations.VernonTalk.HeardIt);
-                        else _state.Undo(Locations.VernonTalk.HeardIt);
+                        // ---- EVERY FLAG HE HAS, NOT JUST THE HANDSHAKE ----
+                        //
+                        // FORGETTING A MAN FORGETS WHAT HE TOLD YOU. Clearing the meeting alone
+                        // left the rest of his story exactly where it was, so a Vernon who had
+                        // never met you walked you down to his basement and opened with "same as
+                        // before" -- because vernon_tried was still set from the last run, and
+                        // that flag is the whole reason the short version of the brief exists.
+                        // The tour was still seen, the tape was still heard, the job was still
+                        // done. One of five things was being undone and the row said it was
+                        // undoing the man.
+                        //
+                        // So all of them go together. They are one person's worth of state and
+                        // there is no reading of "forget him" where you keep four fifths of it.
+                        foreach (var flag in new[]
+                                 {
+                                     Locations.VernonTalk.HeardIt,
+                                     Locations.VernonTalk.SawIt,
+                                     Locations.VernonTalk.TriedIt,
+                                     Locations.VernonTalk.JobId,
+                                 })
+                        {
+                            if (met) _state.MarkDone(flag);
+                            else _state.Undo(flag);
+                        }
 
                         // WRITTEN OUT NOW, NOT AT THE NEXT AUTOSAVE. The point of this row is
                         // to reload and watch him do it, and a reload before the next save
