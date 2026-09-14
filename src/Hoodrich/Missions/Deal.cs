@@ -148,6 +148,16 @@ namespace Hoodrich.Missions
         /// <summary>Near enough to Vernon's wall to call it back.</summary>
         private const float HomeWithin = 22f;
 
+        /// <summary>
+        /// Where you pull in coming back, which is not the same as where he stands.
+        ///
+        /// A WALL IS NOT SOMEWHERE TO DRIVE TO. The job ended by measuring you against Vernon
+        /// himself, which is a man on a pavement -- fine for walking up to and useless as the
+        /// end of a drive across the city. This is the kerb outside the shop, stood on and read
+        /// off a HUD, and it is what the marker and the arrival are both measured against now.
+        /// </summary>
+        private static readonly Vector3 Kerb = new Vector3(42.812f, -1445.898f, 29.312f);
+
         /// <summary>Vernon's wall, outside Leroy's. See Locations.Vernon.</summary>
         private static readonly Vector3 Home = new Vector3(51.057f, -1452.677f, 29.312f);
 
@@ -1102,9 +1112,41 @@ namespace Hoodrich.Missions
         {
             Mark();
 
-            if (player.Position.DistanceTo(Home) > HomeWithin) return;
+            // SOMETHING ON THE ROAD, not only a ring on the map. The drive back is the length
+            // of the city and the last twenty metres of it is a kerb outside a shop that looks
+            // like every other kerb outside every other shop.
+            Ring(Kerb, player);
+
+            if (player.Position.DistanceTo(Kerb) > HomeWithin) return;
 
             ReadyToCollect = true;
+        }
+
+        /// <summary>The cylinder on the road, until you are stood in it.</summary>
+        private static void Ring(Vector3 where, Ped player)
+        {
+            if (player == null || !player.Exists()) return;
+
+            var dx = player.Position.X - where.X;
+            var dy = player.Position.Y - where.Y;
+
+            const float radius = 3.5f;
+
+            if (dx * dx + dy * dy <= radius * radius) return;
+
+            try
+            {
+                Function.Call(Hash.DRAW_MARKER, (int)MarkerType.Cylinder,
+                              where.X, where.Y, where.Z - 0.9f,
+                              0f, 0f, 0f, 0f, 0f, 0f,
+                              radius, radius, 1.4f,
+                              60, 200, 80, 90,
+                              false, false, 2, false, 0, 0, false);
+            }
+            catch
+            {
+                // The blip still says where.
+            }
         }
 
         // ======================================================================
@@ -1580,7 +1622,7 @@ namespace Hoodrich.Missions
 
             try
             {
-                _mark = World.CreateBlip(stage == 1 ? Home : _lot, stage == 1 ? 20f : 35f);
+                _mark = World.CreateBlip(stage == 1 ? Kerb : _lot, stage == 1 ? 20f : 35f);
                 if (_mark == null || !_mark.Exists()) return;
 
                 _mark.Color = stage == 1 ? BlipColor.Green : BlipColor.Yellow;

@@ -809,7 +809,17 @@ namespace Hoodrich.Locations
             // Knows is MetVernon, which Root sets as it builds the meeting -- so the handover
             // between the two happens on its own, in one place, and cannot disagree with the
             // greeting he actually gives.
-            var greeting = !Knows && InEarshot && WillingToBeGreeted();
+            // ---- AND HE STARTS IT HIMSELF WHEN YOU BRING HIM HIS KILO ----
+            //
+            // The same as the first meeting and for the same reason: a man waiting on the thing
+            // in your hands does not stand there silently while you look for a button. You have
+            // driven across the city for this and the last instruction was a marker on a kerb,
+            // so arriving IS the input.
+            //
+            // On foot, or he starts the debrief through the windscreen while you are still
+            // pulling up. WillingToBeGreeted already refuses while you are in a car, in the
+            // air, in combat or wanted, which is every case this wants refusing too.
+            var greeting = (!Knows || Owed) && InEarshot && WillingToBeGreeted();
 
             if (!greeting)
             {
