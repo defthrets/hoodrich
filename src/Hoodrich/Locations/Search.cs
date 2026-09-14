@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Control = GTA.Control;
 using GTA;
 using GTA.Native;
@@ -422,6 +422,20 @@ namespace Hoodrich.Locations
                 {
                     if (ped == null || !ped.Exists() || ped.IsAlive) continue;
                     if (ped.Handle == player.Handle) continue;
+
+                    // ---- PEOPLE ONLY ----
+                    //
+                    // A DEAD CAT WAS COMING UP AS KEON PERALTA, 5'5", HISPANIC, WITH NINETY
+                    // EIGHT DOLLARS ON HIM. Every animal in Los Santos is a ped as far as the
+                    // game is concerned -- cats, coyotes, the chickens -- so a corpse scan that
+                    // asks for peds gets them, and then the card fills itself in from the
+                    // generators, because the card has never had a reason to doubt it was
+                    // looking at a person.
+                    //
+                    // Nothing else in here needs to change. The name, the date of birth and the
+                    // wallet are all correct for what they were asked about; they were asked
+                    // about a cat.
+                    if (!ped.IsHuman) continue;
 
                     if (_bodies != null && _bodies.Done(ped)) continue;
 
