@@ -1369,7 +1369,7 @@ namespace Hoodrich
                     // sits right when a second mod is installed is a car that does not sit
                     // right.
                     Camber = -1.5f,
-                    Squat = -0.26f,
+                    Squat = -0.15f,
 
                     // Sprunk, which is the thirteenth plate and the loudest one the game has.
                     // The name is his and nobody else in Los Santos agrees with it.
