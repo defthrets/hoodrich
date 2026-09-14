@@ -988,7 +988,24 @@ namespace Hoodrich.Economy
         /// What is left of you afterwards. One recipe for all of them, because being wrecked
         /// is being wrecked whatever did it -- what differs is how LONG, and that is per drug.
         /// </summary>
-        private static readonly string[] DownCycles = { "drug_deadman", "CAMERA_BW", "drug_wobbly" };
+        /// <summary>
+        /// ONE LOOK, HELD, AND IT IS WASHED OUT RATHER THAN APPLIED.
+        ///
+        /// It was three: drug_deadman over CAMERA_BW over drug_wobbly, stepping down to a
+        /// different pair after twenty seconds. Four separate pictures inside one comedown,
+        /// two of them changing under you, and the wobble carried on warping the world after
+        /// the drug that warranted it had gone. A comedown that keeps changing its mind is a
+        /// comedown you watch instead of one you feel.
+        ///
+        /// drug_deadman on its own is the drained, colourless look the game uses for a man who
+        /// has just been scraped off the floor -- exactly right for this and far too strong at
+        /// full weight, which is what the old step-down existed to work around. Held at a
+        /// third instead. Washed out, not black and white.
+        /// </summary>
+        private static readonly string[] DownCycles = { "drug_deadman", "CAMERA_BW" };
+
+        /// <summary>How much of it. A wash over the world rather than a filter on the lens.</summary>
+        private const float DownLook = 0.35f;
 
         /// <summary>
         /// What the come-down looks like once the grey has had its twenty seconds.
@@ -1003,14 +1020,37 @@ namespace Hoodrich.Economy
         /// So the grey is the arrival and this is the hangover. Same wobble, same ruined
         /// damage numbers, same injured walk -- the colour just comes back.
         /// </summary>
-        private static readonly string[] DownAfterGrey = { "drug_wobbly", "drug_flying_base" };
-
-        /// <summary>How long the colourless look lasts before it steps down.</summary>
-        private const int GreyMs = 20000;
+        /// <summary>
+        /// HOW LONG A COMEDOWN LASTS, AND IT IS THE SAME FOR ALL OF THEM NOW.
+        ///
+        /// It was per drug and ran from fifteen seconds to a minute, which meant the thing
+        /// that is supposed to be the price of the night was over before you had walked to the
+        /// car on some of them and outstayed its welcome on others. Two minutes, once, so it
+        /// is a state you come out of rather than a number you learn.
+        ///
+        /// A recipe's own DownMs still decides WHETHER there is one. Weed and acid say nought
+        /// and mean it -- see the notes on those two, which are about the shape of the drug
+        /// rather than about the length of anything.
+        /// </summary>
+        private const int DownFor = 120000;
 
         private const string DownClipset = "move_m@injured";
-        private const float DownShake = 0.18f;
-        private const float DownTakes = 1.6f;
+        /// <summary>
+        /// What is left of him, and all four are the mild version.
+        ///
+        /// THE OLD ONES WERE A PUNISHMENT. A fifth off his damage, sixty per cent more taken,
+        /// no healing at all, and a camera swaying at nearly a fifth for the whole minute --
+        /// which together are not "you feel rough", they are a window in which anything that
+        /// starts a fight with you wins it.
+        ///
+        /// The shake is nought now. It was the sway on top of running and turning that read as
+        /// the picture tearing, and a comedown does not need a moving camera to say what it
+        /// is: the colour being gone says it, every frame, without fighting the player's hands.
+        /// </summary>
+        private const float DownShake = 0f;
+        private const float DownTakes = 1.15f;
+        private const float DownHits = 0.92f;
+        private const float DownRun = 0.9f;
 
         // ---- where it is up to --------------------------------------------------
 
@@ -1072,7 +1112,6 @@ namespace Hoodrich.Economy
         private int _downUntil;
 
         /// <summary>When the colourless look gives way to the ordinary one, or 0.</summary>
-        private int _greyUntil;
 
         /// <summary>Whether this instance has cleared up after whatever came before it.</summary>
         private bool _swept;
@@ -1541,15 +1580,13 @@ namespace Hoodrich.Economy
 
                 if (now >= _downUntil) { Off(); return; }
 
-                // The grey steps down to the wobble, once. See DownAfterGrey.
-                if (_greyUntil != 0 && now >= _greyUntil)
-                {
-                    _greyUntil = 0;
-                    Cycle(DownAfterGrey, 1f);
-                }
+                // ONE LOOK AND IT DOES NOT MOVE. The step-down to a second pair of cycles is
+                // gone with the pair -- see DownCycles.
 
-                // NOT DRUNK. The comedown is exhaustion, not drink -- move_m@injured is a man
-                // who has been up all night, and he should not be falling over on it.
+                // NOT DRUNK, AND NOT SHAKING EITHER. The comedown is exhaustion, not drink:
+                // move_m@injured is a man who has been up all night. The camera used to sway
+                // through all of it at nearly a fifth, which on top of running and turning
+                // read as the picture tearing rather than as a man feeling rough.
                 Hold(me, DownClipset, DownShake, false, false);
             }
             catch (Exception ex)
@@ -2071,19 +2108,29 @@ namespace Hoodrich.Economy
             }
 
             _coming = true;
-            _downUntil = Game.GameTime + down;
+            _downUntil = Game.GameTime + DownFor;
 
-            Cycle(DownCycles, 1f);
-            _greyUntil = Game.GameTime + GreyMs;
+            Cycle(DownCycles, DownLook);
 
             try
             {
                 var player = Game.Player;
 
-                Function.Call(Hash.SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER, player.Handle, 1f);
-                Function.Call(Hash.SET_PLAYER_WEAPON_DAMAGE_MODIFIER, player.Handle, 0.8f);
+                // A TENTH OFF HIS LEGS, AND THAT IS THE WHOLE OF THE MOVEMENT PENALTY.
+                // Tiny on purpose: enough that getting somewhere is a bit of a trudge, not
+                // enough to be a thing you sit and wait out.
+                Function.Call(Hash.SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER, player.Handle, DownRun);
+
+                // AND THE NUMBERS COME IN RATHER THAN GOING OUT. They were a fifth off what he
+                // hits for and SIXTY PER CENT MORE off him when he is hit, with healing
+                // switched off entirely for the duration -- which is not "you feel terrible",
+                // it is a two minute window in which a fight you did not choose kills you.
+                Function.Call(Hash.SET_PLAYER_WEAPON_DAMAGE_MODIFIER, player.Handle, DownHits);
                 Function.Call(Hash.SET_PLAYER_WEAPON_DEFENSE_MODIFIER, player.Handle, DownTakes);
-                Function.Call(Hash.SET_PLAYER_HEALTH_RECHARGE_MULTIPLIER, player.Handle, 0f);
+
+                // Healing comes back, at half. Nought meant a man who had taken a beating
+                // before the drug wore off simply stayed on one bar until it did.
+                Function.Call(Hash.SET_PLAYER_HEALTH_RECHARGE_MULTIPLIER, player.Handle, 0.5f);
             }
             catch
             {
@@ -2605,17 +2652,19 @@ namespace Hoodrich.Economy
             _coming = true;
             _downUntil = Game.GameTime + WokeRoughMs;
 
-            Cycle(DownCycles, 1f);
-            _greyUntil = Game.GameTime + GreyMs;
+            // THE SAME STATE, BECAUSE IT IS THE SAME STATE. Coming round after a blackout
+            // and coming down off the last one are one condition with two doors into it, and
+            // they had two copies of these four lines that had already drifted apart.
+            Cycle(DownCycles, DownLook);
 
             try
             {
                 var player = Game.Player;
 
-                Function.Call(Hash.SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER, player.Handle, 1f);
-                Function.Call(Hash.SET_PLAYER_WEAPON_DAMAGE_MODIFIER, player.Handle, 0.8f);
+                Function.Call(Hash.SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER, player.Handle, DownRun);
+                Function.Call(Hash.SET_PLAYER_WEAPON_DAMAGE_MODIFIER, player.Handle, DownHits);
                 Function.Call(Hash.SET_PLAYER_WEAPON_DEFENSE_MODIFIER, player.Handle, DownTakes);
-                Function.Call(Hash.SET_PLAYER_HEALTH_RECHARGE_MULTIPLIER, player.Handle, 0f);
+                Function.Call(Hash.SET_PLAYER_HEALTH_RECHARGE_MULTIPLIER, player.Handle, 0.5f);
             }
             catch
             {
@@ -2761,7 +2810,6 @@ namespace Hoodrich.Economy
 
             _coming = false;
             _downUntil = 0;
-            _greyUntil = 0;
 
             // A teardown in the middle of a blackout must not leave the screen black -- there
             // would be nothing left running to bring it back.
