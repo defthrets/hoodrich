@@ -978,6 +978,11 @@ namespace Hoodrich.Missions
 
             for (var i = 0; i < Book.All.Count; i++)
             {
+                // HIS OWN, OR SOMEBODY ELSE'S WORK MOVES HIS CHAIN. The loop below already
+                // skips jobs that are not his; this one did not, so finishing Vernon's unlocked
+                // the next of Lamar's and left a hole where somebody else's row sat.
+                if (!His(Book.All[i])) continue;
+
                 if (_state.HasDone(Book.All[i].Id)) reached = i;
             }
 

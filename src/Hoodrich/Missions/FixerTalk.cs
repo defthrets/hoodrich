@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Color = System.Drawing.Color;
 using GTA;
 using GTA.Native;
@@ -19,6 +20,20 @@ namespace Hoodrich.Missions
     /// </summary>
     internal sealed class FixerTalk
     {
+        /// <summary>
+        /// Whether this is one of HIS. See MissionDef.Giver.
+        ///
+        /// A job with no giver named is Lamar's, because his were the only ones there were when
+        /// the field was added and every one of them says nothing. Anything that names somebody
+        /// else belongs on somebody else's board.
+        /// </summary>
+        private static bool Mine(MissionDef def)
+        {
+            return def != null &&
+                   (string.IsNullOrEmpty(def.Giver) ||
+                    string.Equals(def.Giver, "lamar", StringComparison.OrdinalIgnoreCase));
+        }
+
         private readonly Fixer _fixer;
         private readonly MissionBook _missions;
         private readonly MissionRunner _runner;
@@ -164,11 +179,30 @@ namespace Hoodrich.Missions
             // means when the list is worked through in order. Offering only the next undone one
             // hid jobs that were plainly available -- finish the third and the fourth is open,
             // whether or not you have gone back and done the second.
+            // ---- HIS LIST, NOT EVERY JOB IN THE FILE ----
+            //
+            // "ANYTHING, FRANKLIN." WAS SHOWING UP ON LAMAR'S BOARD. That is Vernon's job. The
+            // runner has always known the difference -- MissionDef.Giver, and the His() test
+            // beside NextInTheWindow -- and this screen simply never asked: it walked every
+            // mission in the book and offered the lot. So the man who has never heard of Vernon
+            // was handing out Vernon's work, and taking it from him started a job whose whole
+            // first act is Vernon walking you down his own stairs.
+            //
+            // AND IT MOVED HIS CHAIN. reached is the furthest row you have finished, and it was
+            // counted over the same unfiltered list -- so finishing Vernon's job unlocked the
+            // next of Lamar's, and doing Lamar's in order left a gap where somebody else's sat.
+            var his = new List<MissionDef>();
+
+            foreach (var def in _missions.All)
+            {
+                if (Mine(def)) his.Add(def);
+            }
+
             var reached = -1;
 
-            for (var i = 0; i < _missions.All.Count; i++)
+            for (var i = 0; i < his.Count; i++)
             {
-                if (_state.HasDone(_missions.All[i].Id)) reached = i;
+                if (_state.HasDone(his[i].Id)) reached = i;
             }
 
             var offered = 0;
@@ -182,9 +216,9 @@ namespace Hoodrich.Missions
             // and there was no way at all to find out that the fourth one wants a rank you have
             // not made. A locked row you can see is a reason to go and earn something; a row
             // that is not there is nothing.
-            for (var i = 0; i < _missions.All.Count; i++)
+            for (var i = 0; i < his.Count; i++)
             {
-                var def = _missions.All[i];
+                var def = his[i];
 
                 var pick = def;
                 var done = _state.HasDone(def.Id);
