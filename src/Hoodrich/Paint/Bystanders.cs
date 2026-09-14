@@ -27,18 +27,35 @@ namespace Hoodrich.Paint
         private const float Earshot = 16f;
 
         /// <summary>Roughly how often anybody pipes up, and how long before the same one does again.</summary>
-        /// <summary>
-        /// How many people are looked at in one pass. Each one that gets as far as the sight
-        /// line costs a raycast; see Gripe.
-        /// </summary>
-        private const int ProbesMost = 6;
-
         private const int GripeEveryMs = 7000;
         private const int GripeSpreadMs = 9000;
         private const int SamePersonMs = 45000;
 
         /// <summary>Already-raised events are cleared now and then, not every frame.</summary>
         private const int CalmEveryMs = 1500;
+
+        /// <summary>
+        /// How many people are looked at before a pass gives up, and how far apart the looks
+        /// are. One each, a frame or two apart -- NOT ALL OF THEM IN ONE TICK.
+        ///
+        /// WORTH ENDS ON A RAYCAST and a raycast is not free. The first version of this walked
+        /// every ped in earshot until one passed, which outside Gerald's with the block turned
+        /// out is thirty casts in a single frame; the tick watchdog measured it holding the
+        /// frame for forty-six to fifty-one milliseconds, three hundred and sixty-eight times
+        /// in one session, more than every other system in the mod put together.
+        ///
+        /// Capping it at six helped and did not fix it: six casts plus a whole-pool ped sweep
+        /// still measured FIFTY-TWO MILLISECONDS, two hundred and eighty-four times in a nine
+        /// hour session, which is three dropped frames every time somebody might have had
+        /// something to say. A cap makes the spike smaller. It does not stop it being a spike.
+        ///
+        /// So the six are SPREAD. One candidate per pass, a couple of frames apart, until one
+        /// of them bites or six have been tried -- the same six looks, over about half a
+        /// second of wall clock instead of inside one frame. Nothing about what the street
+        /// does changes; the work just stops arriving all at once.
+        /// </summary>
+        private const int ProbesMost = 6;
+        private const int ProbeGapMs = 90;
 
         /// <summary>
         /// What they say.
@@ -128,66 +145,103 @@ namespace Hoodrich.Paint
             Function.Call(Hash.REMOVE_ALL_SHOCKING_EVENTS, false);
         }
 
-        /// <summary>Somebody says what they think.</summary>
+        /// <summary>
+        /// Somebody says what they think -- looked for ONE PERSON AT A TIME. See ProbesMost.
+        ///
+        /// A pass is now a little run of frames rather than a single one. Starting it takes
+        /// the ped sweep and picks a random place in the list to begin; each frame after that
+        /// tests one of them, and the run ends the moment somebody bites or after six tries.
+        ///
+        /// THE LIST IS TAKEN ONCE AND KEPT FOR THE RUN. GetNearbyPeds walks the whole ped pool
+        /// and builds an object for every hit, which is the other half of the fifty-two
+        /// milliseconds -- doing it six times to spread six raycasts would have moved the cost
+        /// rather than removed it. Half a second of a pedestrian being where he was half a
+        /// second ago is not a mistake anybody can see.
+        /// </summary>
         private void Gripe()
         {
             var now = Game.GameTime;
-            if (now < _nextGripe) return;
-
-            _nextGripe = now + GripeEveryMs + _rng.Next(GripeSpreadMs);
 
             var me = Game.Player.Character;
             if (me == null || !me.Exists()) return;
 
+            // ---- mid-run: one look, then back next frame ----
+            if (_run != null)
+            {
+                if (now < _nextProbe) return;
+
+                _nextProbe = now + ProbeGapMs;
+
+                if (_tried >= ProbesMost || _tried >= _run.Length)
+                {
+                    // Nobody, and that is a normal answer. The next run comes round on the
+                    // ordinary clock and tries six different people.
+                    Done(now);
+                    return;
+                }
+
+                var one = _run[(_from + _tried) % _run.Length];
+                _tried++;
+
+                if (!Worth(one, me, now)) return;
+
+                Done(now);
+                Say(one, me, now);
+                return;
+            }
+
+            // ---- starting one ----
+            if (now < _nextGripe) return;
+
             var near = World.GetNearbyPeds(me, Earshot);
-            if (near == null || near.Length == 0) return;
+
+            if (near == null || near.Length == 0)
+            {
+                Done(now);
+                return;
+            }
 
             // Shuffled by starting somewhere random rather than always at the nearest, or the
             // same unlucky pedestrian narrates the entire session.
-            var start = _rng.Next(near.Length);
+            _run = near;
+            _from = _rng.Next(near.Length);
+            _tried = 0;
+            _nextProbe = now;
+        }
 
-            // A FEW OF THEM, NOT ALL OF THEM, AND THAT IS THE WHOLE OF THIS FIX.
-            //
-            // Worth ends on HAS_ENTITY_CLEAR_LOS_TO_ENTITY, which is a raycast, and this loop
-            // ran it on every ped in earshot until one passed. On a quiet street that is two
-            // casts; outside Gerald's with the block turned out it is thirty, in one tick,
-            // and the tick watchdog measured exactly that -- _street.Update holding the frame
-            // for forty-six to fifty-one milliseconds, three hundred and sixty-eight times in
-            // one session, more than every other system in the mod put together.
-            //
-            // Nothing is lost by stopping early. The point is that SOMEBODY says something,
-            // not that the most deserving candidate is found: a pass that finds nobody comes
-            // back in seven seconds and tries six different people, which from the pavement is
-            // the same thing and costs a fifth as much.
-            var tried = 0;
+        /// <summary>The run is over, whoever it found. The long clock starts again here.</summary>
+        private void Done(int now)
+        {
+            _run = null;
+            _tried = 0;
+            _nextGripe = now + GripeEveryMs + _rng.Next(GripeSpreadMs);
+        }
 
-            for (var i = 0; i < near.Length && tried < ProbesMost; i++)
+        /// <summary>Whoever it landed on, turning round and saying it.</summary>
+        private void Say(Ped ped, Ped me, int now)
+        {
+            _said[ped.Handle] = now;
+
+            try
             {
-                var ped = near[(start + i) % near.Length];
+                // Turned toward him first. A voice from somebody facing the other way is a
+                // sound effect; a man turning round to say it is a reaction.
+                Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, ped.Handle, me.Handle, 2500);
 
-                tried++;
-
-                if (!Worth(ped, me, now)) continue;
-
-                _said[ped.Handle] = now;
-
-                try
-                {
-                    // Turned toward him first. A voice from somebody facing the other way is a
-                    // sound effect; a man turning round to say it is a reaction.
-                    Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, ped.Handle, me.Handle, 2500);
-
-                    Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, ped.Handle,
-                                  Rude[_rng.Next(Rude.Length)], "SPEECH_PARAMS_FORCE");
-                }
-                catch
-                {
-                    // A silent bystander. Nothing else depends on it.
-                }
-
-                return;
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, ped.Handle,
+                              Rude[_rng.Next(Rude.Length)], "SPEECH_PARAMS_FORCE");
+            }
+            catch
+            {
+                // A silent bystander. Nothing else depends on it.
             }
         }
+
+        /// <summary>The sweep a run is working through, where it started, and how far it got.</summary>
+        private Ped[] _run;
+        private int _from;
+        private int _tried;
+        private int _nextProbe;
 
         /// <summary>Whether this one is in a position to have an opinion.</summary>
         private bool Worth(Ped ped, Ped me, int now)
@@ -231,6 +285,12 @@ namespace Hoodrich.Paint
             if (!_quieted) return;
 
             _quieted = false;
+
+            // A HALF-FINISHED RUN GOES WITH IT. It holds Ped objects for a street that is
+            // about to stop being looked at, and resuming one when the can comes back out
+            // would test handles from wherever you were standing minutes ago.
+            _run = null;
+            _tried = 0;
 
             try
             {
