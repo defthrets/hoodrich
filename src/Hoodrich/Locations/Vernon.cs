@@ -278,6 +278,15 @@ namespace Hoodrich.Locations
             // So it is not one attempt. He keeps asking until the car exists and he is in it.
             if (_boarding) { Boarding(); return; }
 
+            // ---- AND ARMED AGAIN WHEN YOU GET TO THE CAR ----
+            //
+            // The walk out of the shop is not the only time he has to get in. He can be talked
+            // to on the way, give up waiting, be left on the wall while you go and find a
+            // different car and come back -- and in all of those the job is still on and he is
+            // still meant to be in the passenger seat. So walking up to the Dorado with the job
+            // running arms it again, wherever he happens to be standing.
+            if (Wanted(player)) { Boarding(); return; }
+
             // OUT ON THE JOB, SO THE WALL LETS GO OF HIM. Everything below is about a man
             // stood in one place in Strawberry -- it despawns him at a hundred and sixty
             // metres and settles him back into his scenario whenever he drifts -- and all of
@@ -567,6 +576,41 @@ namespace Hoodrich.Locations
             Board();
         }
 
+        /// <summary>
+        /// Whether he ought to be getting in right now: the job is on, he is out here, he is
+        /// not already in something, and you are stood at the car.
+        /// </summary>
+        private bool Wanted(Ped player)
+        {
+            if (OnTheJob == null || Ride == null) return false;
+            if (_ped == null || !_ped.Exists() || !_ped.IsAlive) return false;
+            if (_talking) return false;
+
+            try
+            {
+                if (!OnTheJob()) return false;
+                if (_ped.IsInVehicle()) return false;
+
+                var car = Ride();
+                if (car == null || !car.Exists()) return false;
+
+                if (player.Position.DistanceTo(car.Position) > AtTheCar) return false;
+
+                _boarding = true;
+                _boardingFrom = Game.GameTime;
+                _boardedAt = 0;
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Near enough to the car that you are plainly about to get in it.</summary>
+        private const float AtTheCar = 14f;
+
         /// <summary>How long he keeps reaching for a door before he goes back to the wall.</summary>
         private const int BoardingMs = 40000;
 
@@ -726,6 +770,18 @@ namespace Hoodrich.Locations
             // where he finds out, because nothing else tells him.
             if (Talk.IsOpen) { TickAct(); return; }
             if (_talking) ReleaseFromTalk();
+
+            // ---- NOT WHILE HE IS ON THE JOB ----
+            //
+            // He sits a foot from your shoulder for the whole drive to La Puerta, which means
+            // InReach is true for twenty minutes and the prompt was up for every one of them --
+            // so a man riding to a deal he set up could be asked, at eighty miles an hour, if
+            // he had any work going. And answer "still on the wall", from the passenger seat.
+            //
+            // Lend is the tell rather than the mission running: it is the moment the job takes
+            // him off the wall, and it is already what every other rule in this file uses to
+            // mean "he is not scenery at the moment".
+            if (_lent) return;
 
             if (Suppressed != null && Suppressed()) return;
 

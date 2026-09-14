@@ -407,6 +407,55 @@ namespace Hoodrich.Locations
         /// <summary>The rear axle, held down. See Camber and Squat.</summary>
         private readonly Slammed _stance = new Slammed();
 
+        /// <summary>
+        /// Whether anybody is in the middle of getting into this car.
+        ///
+        /// GETTING IN IS AN ANIMATION PINNED TO THE CAR, and the stance moves the car under it
+        /// -- a thousand suspension writes a second while a man has his hand on the door. The
+        /// door snaps, he lets go, and it starts again. So for the couple of seconds it takes,
+        /// nothing touches the wheels.
+        ///
+        /// AND FOR A BEAT AFTER, because the animation finishes a little after the game stops
+        /// calling it an entry, and resuming into the last frame of it is the same problem in
+        /// miniature.
+        /// </summary>
+        private bool Climbing
+        {
+            get
+            {
+                try
+                {
+                    var now = Game.GameTime;
+
+                    if (Getting(Game.Player.Character) || Getting(_car.Driver))
+                    {
+                        _climbedAt = now;
+                        return true;
+                    }
+
+                    return now - _climbedAt < ClimbSettleMs;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>Whether that ped is climbing into THIS car specifically.</summary>
+        private bool Getting(Ped who)
+        {
+            if (who == null || !who.Exists()) return false;
+            if (!Function.Call<bool>(Hash.IS_PED_GETTING_INTO_A_VEHICLE, who.Handle)) return false;
+
+            return Function.Call<int>(Hash.GET_VEHICLE_PED_IS_ENTERING, who.Handle) == _car.Handle;
+        }
+
+        /// <summary>How long after the last entry frame before the wheels are ours again.</summary>
+        private const int ClimbSettleMs = 900;
+
+        private int _climbedAt;
+
         public ParkedCar(Vector3 where, float heading, int paint,
                          params string[] models)
         {
@@ -471,7 +520,13 @@ namespace Hoodrich.Locations
             // HELD WHETHER IT IS MOVING OR NOT. The thread inside Slammed is what makes that
             // possible: the fields the game takes back are written several times a frame rather
             // than once, so the wheel is ours on every frame instead of every other one.
-            if (_car != null && _car.Exists()) _stance.Hold(_car, Camber, Squat, Nose);
+            //
+            // EXCEPT WHILE SOMEBODY IS CLIMBING IN. See Climbing, and Slammed.Pause.
+            if (_car != null && _car.Exists())
+            {
+                if (Climbing) _stance.Pause();
+                else _stance.Hold(_car, Camber, Squat, Nose);
+            }
 
             var now = Game.GameTime;
             if (now - _lastUpdate < UpdateIntervalMs) return;

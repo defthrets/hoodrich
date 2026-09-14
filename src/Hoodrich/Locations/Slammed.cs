@@ -279,6 +279,22 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>
+        /// Stops writing without giving anything back or forgetting anything.
+        ///
+        /// FOR THE FEW SECONDS SOMEBODY IS CLIMBING IN. Getting into a car is an animation
+        /// pinned to the car, and the car is being moved under it -- this thread rewrites the
+        /// bottom of the suspension line about a thousand times a second, and every one of
+        /// those is the body shifting a centimetre and a half while a man has his hand on the
+        /// roof. Let would be wrong here: it hands the height back, so the car would drop as
+        /// the door opened and rise again as it shut. This simply stops, and the bookkeeping
+        /// survives so it picks up exactly where it was.
+        /// </summary>
+        public void Pause()
+        {
+            _jobs = new Job[0];
+        }
+
         /// <summary>Forgets a car's wheels. Their addresses belong to something else now.</summary>
         public void Forget()
         {
