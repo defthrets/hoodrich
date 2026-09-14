@@ -722,7 +722,33 @@ namespace Hoodrich.Economy
                 Doing = Pop,
                 Cycles = new[] { "drug_flying_base", "drug_wobbly" },
                 Strength = 0.6f,
-                Clipset = "move_m@drunk@verydrunk",
+
+                // ---- THE WALK, AND ONLY THE WALK ----
+                //
+                // THE FIRST ONE WALKS LIKE COCAINE DOES, WHICH IS TO SAY NOT AT ALL. Cocaine
+                // has no clipset -- its whole movement effect is the speed -- and that is the
+                // shape asked for here: one bar leaves his gait alone and moves him along a
+                // bit, and it is the SECOND that changes how he carries himself.
+                //
+                // Nothing had to be added for the first half of that. A recipe's clipset is
+                // only ever applied at a full dose -- see Live.Power and the loop in
+                // Recombine, where a clipset waits for p to reach one -- so the first of
+                // anything has always left the walk alone. What was missing was the other
+                // half: something for that first one to DO to him.
+                //
+                // AND THE DOUBLE GETS METH'S GAIT RATHER THAN THE VERY DRUNK ONE.
+                // move_m@drunk@verydrunk is a man about to fall over, and it was doing the
+                // one thing this mod keeps learning not to do -- taking the game off you.
+                // move_m@hurry@a is the same clipset meth uses, a man moving with purpose and
+                // not much control, and it reads as a drug without wading.
+                Clipset = "move_m@hurry@a",
+
+                // The speed the first one buys, on cocaine's own number. Scaled by the dose
+                // like everything else, so one bar is about a quarter quicker and two are
+                // half again -- there is no separate first-dose rule anywhere in here and
+                // this does not add one.
+                Run = 1.49f,
+
                 Shake = 0.45f,
                 Time = 0.92f,
                 Takes = 0.7f,
@@ -940,10 +966,15 @@ namespace Hoodrich.Economy
                 Doing = Needle,
                 Cycles = new[] { "DRUG_2_TRAILS", "drug_flying_02", "drug_flying_base", "drug_wobbly" },
                 Fx = "PeyoteEndOut",
-                Clipset = "move_m@drunk@verydrunk",
+
+                // THE SAME TWO CHANGES THE BARS GOT, AND FOR THE SAME REASON. See there.
+                // The first one leaves his walk alone and moves him along; the second gives
+                // him meth's gait instead of a man about to go over.
+                Clipset = "move_m@hurry@a",
+
                 Shake = 0.20f,
                 Time = 0.55f,
-                Run = 1f,
+                Run = 1.49f,
                 Takes = 0.6f,
                 Ms = 360000,
                 DownMs = 45000,
