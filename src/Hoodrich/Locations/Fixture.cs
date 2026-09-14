@@ -151,7 +151,10 @@ namespace Hoodrich.Locations
                 try
                 {
                     var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
+                    // ASKED FOR, NOT WAITED ON. See Core.Streamer -- this line used to stop
+                    // the whole script for up to 1.2 seconds per candidate, twice over, and
+                    // the HUD was dark for every frame of it.
+                    if (!Core.Streamer.Here(model)) continue;
 
                     _prop = World.CreateProp(model, _where, false, false);
                     model.MarkAsNoLongerNeeded();

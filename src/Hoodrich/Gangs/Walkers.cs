@@ -1164,7 +1164,9 @@ namespace Hoodrich.Gangs
                 var name = Dogs[_rng.Next(Dogs.Length)];
 
                 var model = new Model(name);
-                if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) return;
+                // Asked for rather than waited on. See Core.Streamer. The dog is picked at
+                // random anyway, so no dog this pass is no dog for a second or two.
+                if (!Core.Streamer.Here(model)) return;
 
                 var at = Ground(owner.Position.Around(1.2f));
 

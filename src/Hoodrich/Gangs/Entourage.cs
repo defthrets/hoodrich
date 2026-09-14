@@ -1239,7 +1239,10 @@ namespace Hoodrich.Gangs
                 try
                 {
                     var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
+                    // Asked for rather than waited on. See Core.Streamer. The order above is
+                    // already rotated from a random start, so "whichever is loaded" is the
+                    // same kind of answer it was always giving.
+                    if (!Core.Streamer.Here(model)) continue;
 
                     // Asked once the model is known, because the question is about THIS man
                     // rather than about the mark: a woman stood where a man is going is two
