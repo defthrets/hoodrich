@@ -899,9 +899,29 @@ namespace Hoodrich.Economy
 
                 Fx2 = "DrugsMichaelAliensFight",
 
-                // A drift, not a sway. Anything heavier reads as drunk and there is already a
-                // drunk drug.
-                Shake = 0.16f,
+                // A SWAY, AND YES IT READS AS DRUNK. THAT IS THE POINT NOW.
+                //
+                // It was a drift at 0.16 -- barely a sixth of what the camera will do -- on
+                // the reasoning that anything heavier would be treading on the bars, which
+                // are the drug that makes you walk into things. That was the wrong line to
+                // draw. The bars are drunk in the BODY: the gait, the stumble, the balance.
+                // Acid is drunk in the PICTURE, and none of that body is on this recipe --
+                // no clipset, no SET_PED_IS_DRUNK, no damage either way -- so the two never
+                // meet however far this goes.
+                //
+                // Over the bars on purpose. The strongest wobble in the mod belongs to the
+                // one drug whose entire character is what the world looks like, and 0.16 was
+                // a colour wash on a world that otherwise sat perfectly still.
+                //
+                // THE STUMBLE STILL CANNOT COME WITH IT. Hold ties SET_PED_IS_DRUNK to the
+                // GAIT rather than to the shake -- see the note there, which is a bug that
+                // was fixed once already -- and acid sets no gait. So this is a camera that
+                // will not hold still and a man who walks perfectly well through it, which
+                // is exactly the right way round for this one.
+                //
+                // The summed cap is 0.9 and the dose halves it: 0.28 on the first tab and
+                // 0.55 on the second, so there is still somewhere for the second one to go.
+                Shake = 0.55f,
 
                 // The world slightly behind you. Not heroin's half speed -- you can still
                 // drive on this, you just should not.
