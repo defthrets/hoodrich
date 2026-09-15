@@ -63,6 +63,25 @@ namespace Hoodrich.Locations
         public const string TriedIt = "vernon_tried";
 
         /// <summary>
+        /// HE IS OWED ANOTHER GO, BECAUSE THE LAST ONE WENT WRONG.
+        ///
+        /// THE JOB WAS BEING RE-OFFERED EVERY TIME YOU WALKED UP TO HIM. The branch below
+        /// asked HasDone(JobId) and nothing else, so anything that left that flag unset put
+        /// Vernon straight back into pitching a job you had already finished -- and the save
+        /// proves it can be unset after a completion: vernon_intro is missing from missionsDone
+        /// on a game where the log says it paid out twice. The settings screen can clear it
+        /// too, and the basement door reads the same flag for its own reasons.
+        ///
+        /// So the rule is written down rather than inferred. This is set when the job FAILS --
+        /// you went down, you were nicked, or Vernon did -- and cleared the moment you hand the
+        /// package over. He pitches when it is set, and talks about his tape when it is not.
+        ///
+        /// A flag that says what happened cannot be confused by a flag that says what you have
+        /// unlocked.
+        /// </summary>
+        public const string Owes = "vernon_owed";
+
+        /// <summary>
         /// He has just told you to go down them stairs, and he is right behind you.
         ///
         /// THE ONLY WAY DOWN BEFORE THE JOB IS DONE. The basement is not a room you can visit;
@@ -212,8 +231,6 @@ namespace Hoodrich.Locations
             }
 
             var met = _state != null && _state.MetVernon;
-            var done = _state != null && _state.HasDone(JobId);
-
             if (!met)
             {
                 if (_state != null)
@@ -225,7 +242,24 @@ namespace Hoodrich.Locations
                 return Meeting();
             }
 
-            return done ? Since() : Owed();
+            // ---- HE PITCHES ON TWO OCCASIONS AND NO OTHERS ----
+            //
+            // You have never taken it, or the last go ended badly. That is the whole rule.
+            //
+            // IT USED TO ASK HasDone(JobId) AND THAT FLAG IS ABOUT A DOOR. The settings screen
+            // has a switch reading "Lock Leroy's basement again", and because the basement and
+            // the job are the same flag, locking the door UN-COMPLETES THE MISSION -- so
+            // Vernon went straight back to pitching a job you had finished. The save shows
+            // exactly that: vernon_intro missing from missionsDone on a game whose log says it
+            // paid out twice.
+            //
+            // So the offer no longer reads that flag. TriedIt says you took it; Owes says it
+            // went wrong. Neither has anything to do with a door, and neither can be toggled
+            // from a menu.
+            var tried = _state != null && _state.HasDone(TriedIt);
+            var owes = _state != null && _state.HasDone(Owes);
+
+            return tried && !owes ? Since() : Owed();
         }
 
         /// <summary>

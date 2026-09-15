@@ -3170,6 +3170,12 @@ namespace Hoodrich.Missions
             _state.AddRespect(rep * 0.5f);
             _state.MarkDone(def.Id);
 
+            // AND HE IS NOT OWED ONE ANY MORE. The package is in his hands, so whatever
+            // went wrong last time is settled. See VernonTalk.Owes -- he pitches again on
+            // a failure and only on a failure.
+            try { _state.Undo(Locations.VernonTalk.Owes); }
+            catch { /* he asks again, which is the smaller of the two wrongs */ }
+
             // And the one job that leaves you with a phone number afterwards.
             MaybeUnlockHomies(def);
             _state.Touch();
@@ -3373,6 +3379,24 @@ namespace Hoodrich.Missions
             if (!IsRunning) return;
 
             var id = _def == null ? "?" : _def.Id;
+
+            // ---- AND IF IT WAS VERNON'S, HE IS OWED ANOTHER GO ----
+            //
+            // Written down rather than left to be worked out from the unlock flags. See
+            // VernonTalk.Owes -- he pitches again on a failure and only on a failure, so this
+            // is the one place that can say a failure happened.
+            try
+            {
+                if (_state != null &&
+                    string.Equals(id, Locations.VernonTalk.JobId, StringComparison.OrdinalIgnoreCase))
+                {
+                    _state.MarkDone(Locations.VernonTalk.Owes);
+                }
+            }
+            catch
+            {
+                // He offers it off HasDone alone, which is where this started.
+            }
             Clear();
 
             if (!string.IsNullOrEmpty(reason)) Notify.Failure(reason);
