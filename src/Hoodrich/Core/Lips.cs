@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using GTA;
 using GTA.Native;
 
@@ -79,6 +79,20 @@ namespace Hoodrich.Core
 
                 if (speaker.Handle != _mouth || now >= _nextPlay)
                 {
+                    // ---- AND THE LAST MOUTH SHUTS BEFORE THIS ONE OPENS ----
+                    //
+                    // BOTH MEN WERE TALKING AT ONCE. The chatter facial is a looping animation
+                    // on a ped: it runs until something else is played over it. This handed it
+                    // to whoever spoke next and simply moved _mouth across -- so the man who
+                    // had just finished was left mouthing away through the other one's line,
+                    // and a conversation between two people looked like two people ignoring
+                    // each other.
+                    //
+                    // Rest calms whoever _mouth points at, so it is called BEFORE the handover
+                    // rather than only when the talking stops altogether. It zeroes _mouth on
+                    // its way out, which is why the assignment below still has to happen.
+                    if (_mouth != 0 && _mouth != speaker.Handle) Rest();
+
                     Function.Call(Hash.PLAY_FACIAL_ANIM, speaker.Handle, Clip, Dict);
 
                     _mouth = speaker.Handle;

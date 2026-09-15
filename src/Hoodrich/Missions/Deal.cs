@@ -794,6 +794,36 @@ namespace Hoodrich.Missions
             Phase = DealPhase.Collecting;
             _phaseFrom = now;
 
+            // ---- AND VERNON IS OUT OF THE FIGHT ----
+            //
+            // HE WAS LEFT IN IT AND THAT IS WHY HE GOT STUCK. Guard hands him a
+            // TASK_COMBAT_PED when the shooting starts and nothing ever took it off him -- so
+            // with every Armenian on the floor he stood in the yard running a combat task
+            // against nobody, and the follow task Vee issues every two and a half seconds
+            // could not get a word in, because combat outranks it.
+            //
+            // AND HIS EARS GO BACK ON. Lend unblocks his non-temporary events so he can react
+            // to being shot at, which is right for the fight and wrong the moment it ends: a
+            // yard full of fresh corpses and gunfire echoes keeps handing him reactions that
+            // cancel whatever he has just been told to do. Blocked again, he takes the follow
+            // and keeps it.
+            try
+            {
+                if (_vee != null && _vee.Exists() && _vee.IsAlive)
+                {
+                    Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, _vee.Handle, true);
+                    Function.Call(Hash.CLEAR_PED_TASKS, _vee.Handle);
+
+                    // So the next Vee pass tasks him at once rather than in two and a half
+                    // seconds of him standing there with nothing to do.
+                    _veeAt = 0;
+                }
+            }
+            catch
+            {
+                // He follows on the next pass, or he does not and the leash drags him.
+            }
+
             Drop();
 
             if (!_saidGrab)
