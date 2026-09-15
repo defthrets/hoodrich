@@ -654,9 +654,47 @@ if ($Publish) {
         & gh release create $version --title "Posted Up $version" --notes-file $body | Out-Null
     }
 
+    # ---- EVERY UPLOAD IS CHECKED, AND RETRIED, AND THEN PROVED ----
+    #
+    # THIS SAID "BOTH ZIPS ATTACHED" WHILE ONE OF THEM HAD FAILED. On 0.9.4 the -full
+    # upload died on a TCP timeout to uploads.github.com, gh printed the error, and
+    # this loop ignored it -- because `| Out-Null` swallows the output and nothing ever
+    # looked at $LASTEXITCODE. The script then printed Published and exited 0, and the
+    # release page had one download on it while the build claimed two.
+    #
+    # A NINETY MEGABYTE UPLOAD OVER A DOMESTIC LINE WILL FAIL SOMETIMES. That is not a
+    # reason to fail the release; it is a reason to try again. Three goes with a pause
+    # between them, and only then give up.
     foreach ($z in $zips) {
-        Write-Host "  uploading $(Split-Path $z -Leaf) ..." -ForegroundColor DarkGray
-        & gh release upload $version $z --clobber | Out-Null
+        $leaf = Split-Path $z -Leaf
+        $ok = $false
+
+        for ($try = 1; $try -le 3 -and -not $ok; $try++) {
+            Write-Host "  uploading $leaf ..." -ForegroundColor DarkGray
+
+            $out = (& gh release upload $version $z --clobber 2>&1)
+
+            if ($LASTEXITCODE -eq 0) { $ok = $true; break }
+
+            Write-Host "    attempt $try failed: $out" -ForegroundColor Yellow
+            if ($try -lt 3) { Start-Sleep -Seconds 5 }
+        }
+
+        if (-not $ok) { throw "$leaf would not upload after three tries. The release is INCOMPLETE." }
+    }
+
+    # ---- AND THE PAGE IS ASKED WHAT IT ACTUALLY HAS ----
+    #
+    # The upload returning zero is gh's opinion. This is the release page's, which is
+    # the one that matters to somebody clicking download. Both names, both in the
+    # uploaded state, or this is not a release.
+    $onPage = (& gh release view $version --json assets --jq '.assets[] | select(.state == "uploaded") | .name')
+
+    foreach ($z in $zips) {
+        $leaf = Split-Path $z -Leaf
+        if ($onPage -notcontains $leaf) {
+            throw "$leaf is not on the release page as an uploaded asset. The release is INCOMPLETE."
+        }
     }
 
     $url = (& gh release view $version --json url --jq .url)
