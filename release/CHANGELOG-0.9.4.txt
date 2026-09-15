@@ -1,0 +1,50 @@
+0.9.4 -- 15 September 2026
+
+
+FOUR FAULTS IN 0.9.3, ALL OF THEM MINE, ALL FOUND BY READING IT BACK RATHER
+THAN BY ANYBODY HAVING TO PLAY IT.
+
+
+THE BLOCK WOULD HAVE GONE QUIET. 0.9.3 put a world-is-full check on every
+ambient spawner, which was the right fix for the crashes -- and the ceiling
+for VEHICLES was set at 140 on no evidence at all. Four hundred and fifty
+four samples out of the log say cars average 137 and sit at or above 140 for
+fifty-seven per cent of them. More than half the time, every spawner in the
+mod would have stood down: empty corners, takeovers that never fill, meets
+that never happen. That is worse than the crash it was added to stop, and it
+looks exactly like the mod being broken.
+
+230 now, which is above the ninety-ninth percentile of ordinary play and
+below the worst ever seen. Peds were checked the same way and 190 was already
+right -- they average 99 and reach it one time in a hundred.
+
+
+AND THE MEET WOULD HAVE GIVEN UP ON ITSELF. A car meet abandons a parking
+space after four failed sends and moves to the next one, which is right when
+the space is the problem. "The world is full this second" is not the space's
+fault and passes on its own -- but it was being counted as a miss, so a busy
+spell would have burned through every space in the meet, four tries at a
+time, and given up on the whole thing. The check happens before the counter
+now.
+
+
+THE REAL PHONE WOULD HAVE BEEN TAKEN OFF YOU. The fix for both phones opening
+at once ended the game's handset whenever this mod's phone was AVAILABLE,
+rather than only while it was open -- which is most of the time you are
+walking about. A story call that is ringing rather than connected would have
+gone with it. Two phones at once can only happen while ours is up, so that is
+the only time it happens now.
+
+
+AND THE DOGS STOPPED. Asking the game for a model no longer stops the script,
+which is what took the seconds of dark HUD out of 0.9.3 -- and the dog a
+walking crew is rolled is asked for exactly once, at the moment the crew is
+made. So the first attempt now finds the model still loading and the dog is
+never created at all. The crew remembers it is owed one and keeps asking for
+eight seconds, which is what the waiting used to buy by standing there.
+
+
+Everything else in 0.9.3 stands: the ammo that read zero after a reload, both
+phones opening, the fridge that said nothing, the spawn budget behind the
+crashes, the models that no longer stop the script, Vernon, the comedown, the
+walks and the inventory.

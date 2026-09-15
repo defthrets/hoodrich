@@ -603,6 +603,22 @@ namespace Hoodrich.Locations
                 return;
             }
 
+            // ---- A FULL WORLD IS NOT A BAD SPACE ----
+            //
+            // Below, a space is given up on after four failed sends and the meet moves to the
+            // next one, which is right when the space itself is the problem -- blocked,
+            // occupied, no room. It is wrong for "the world is full at this moment", which has
+            // nothing to do with the space and passes on its own. Counted as a miss, a busy
+            // spell would burn through every space four tries at a time and abandon the meet.
+            //
+            // Asked here, ahead of the miss counter and ahead of the send clock, so the space
+            // is simply tried again in a moment. Send keeps its own check as a backstop.
+            if (Core.Crowded.Busy)
+            {
+                Core.Crowded.HeldOff("CarMeet");
+                return;
+            }
+
             _lastSend = now;
 
             var spot = _spots[_next];
