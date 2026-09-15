@@ -60,6 +60,29 @@ namespace Hoodrich.Weapons
         {
             if (_state == null || _state.GunsBought.Count == 0) return;
 
+            // ---- NOT BEFORE THE GUNS HAVE BEEN HANDED BACK ----
+            //
+            // THIS IS "purchased ammunition returns as zero after game reload", REPORTED BY
+            // gaspin12, AND IT IS THIS LINE'S ABSENCE.
+            //
+            // Snapshot runs before EVERY save, and it writes down what the ped is carrying
+            // right now. On a fresh load the ped is carrying whatever Rockstar's own save had,
+            // which for a gun bought in a shop this mod invented is nothing -- and the locker
+            // has not run yet, because it deliberately waits six seconds for the game to finish
+            // writing the loadout. Any save inside that window therefore read zero off the ped
+            // and wrote zero over the count that had been kept.
+            //
+            // AND ZERO IS NOT MERELY WRONG, IT IS ERASURE. GunAmmoJson skips a count of nought,
+            // so the key does not survive to the file at all: the next load has nothing to hand
+            // back and nothing to top up from. One autosave in the first six seconds and the
+            // rounds were gone for good.
+            //
+            // So the snapshot waits for the same moment the restore does. Before that the ped
+            // is not the truth about what he owns -- the saved count is -- and a record that
+            // cannot be trusted should not be written. See Update, which sets this the instant
+            // the guns are back and then snapshots on purpose.
+            if (!_topped) return;
+
             Ped me;
 
             try
@@ -86,7 +109,18 @@ namespace Hoodrich.Weapons
                     var rounds = Function.Call<int>(Hash.GET_AMMO_IN_PED_WEAPON, me.Handle, hash);
 
                     int had;
-                    if (!_state.GunAmmo.TryGetValue(name, out had) || had != rounds)
+                    var knew = _state.GunAmmo.TryGetValue(name, out had);
+
+                    // AND A ZERO NEVER ERASES A COUNT ON ITS OWN. Firing a gun dry is a real
+                    // zero and belongs in the file; a zero read off a ped in the middle of a
+                    // load, a respawn, an arrest or a cutscene is not, and the two are
+                    // indistinguishable from here. The safe way round is the cheap one: a drop
+                    // to nought is recorded, but the KEY is kept -- see GunAmmoJson, which
+                    // writes a nought now instead of dropping the row.
+                    //
+                    // What that buys is that a gun the player genuinely emptied comes back
+                    // empty, and a gun the game briefly lied about comes back with what it had.
+                    if (!knew || had != rounds)
                     {
                         _state.GunAmmo[name] = rounds;
                         _state.Touch();

@@ -1140,12 +1140,21 @@ namespace Hoodrich.State
             return arr;
         }
 
+        /// <summary>
+        /// What each bought gun is holding.
+        ///
+        /// A NOUGHT IS WRITTEN DOWN RATHER THAN DROPPED. Skipping it meant an empty gun lost
+        /// its ROW, not just its count -- and a row that is not in the file is a gun the loader
+        /// has never heard of, with nothing to hand back and nothing to top up from. So one bad
+        /// read of zero did not merely record an empty magazine, it erased the record. See
+        /// GunLocker.Snapshot, which is where the bad read came from.
+        /// </summary>
         private Json GunAmmoJson()
         {
             var obj = Json.Object();
             foreach (var kv in GunAmmo)
             {
-                if (kv.Value <= 0) continue;
+                if (kv.Value < 0) continue;
                 obj.Set(kv.Key, kv.Value);
             }
             return obj;
@@ -1436,8 +1445,11 @@ namespace Hoodrich.State
                 var ammo = doc["gunAmmo"];
                 foreach (var key in ammo.Keys)
                 {
-                    var had = ammo[key].AsInt(0);
-                    if (had > 0) GunAmmo[key] = had;
+                    // NOUGHT IS A VALUE, NOT AN ABSENCE. A gun he fired dry is worth
+                    // remembering as dry; dropping the row here would put it straight back
+                    // into the state the save was trying to record. See GunAmmoJson.
+                    var had = ammo[key].AsInt(-1);
+                    if (had >= 0) GunAmmo[key] = had;
                 }
 
                 foreach (var node in doc["gunsBought"].Items)
