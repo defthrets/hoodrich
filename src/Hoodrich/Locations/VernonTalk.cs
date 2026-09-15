@@ -257,7 +257,7 @@ namespace Hoodrich.Locations
             // went wrong. Neither has anything to do with a door, and neither can be toggled
             // from a menu.
             var tried = _state != null && _state.HasDone(TriedIt);
-            var owes = _state != null && _state.HasDone(Owes);
+            var owes = _state != null && _state.HasBeenOffered(Owes);
 
             return tried && !owes ? Since() : Owed();
         }

@@ -3173,7 +3173,7 @@ namespace Hoodrich.Missions
             // AND HE IS NOT OWED ONE ANY MORE. The package is in his hands, so whatever
             // went wrong last time is settled. See VernonTalk.Owes -- he pitches again on
             // a failure and only on a failure.
-            try { _state.Undo(Locations.VernonTalk.Owes); }
+            try { _state.ForgetOffered(Locations.VernonTalk.Owes); }
             catch { /* he asks again, which is the smaller of the two wrongs */ }
 
             // And the one job that leaves you with a phone number afterwards.
@@ -3385,12 +3385,18 @@ namespace Hoodrich.Missions
             // Written down rather than left to be worked out from the unlock flags. See
             // VernonTalk.Owes -- he pitches again on a failure and only on a failure, so this
             // is the one place that can say a failure happened.
+            //
+            // KEPT IN THE OFFERED LIST RATHER THAN THE DONE ONE. MarkDone stamps LastJobAtUtc
+            // on its way past -- the ten minute breather before Lamar has anything -- so
+            // recording a FAILURE through it would have started that clock. Fail a job and be
+            // told to wait before you can take another is being punished twice for one
+            // mistake, and it would have been a side effect of where a flag was filed.
             try
             {
                 if (_state != null &&
                     string.Equals(id, Locations.VernonTalk.JobId, StringComparison.OrdinalIgnoreCase))
                 {
-                    _state.MarkDone(Locations.VernonTalk.Owes);
+                    _state.MarkOffered(Locations.VernonTalk.Owes);
                 }
             }
             catch

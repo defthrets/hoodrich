@@ -1,4 +1,49 @@
-﻿0.9.4 -- 15 September 2026
+﻿0.9.5 -- 15 September 2026
+
+
+VERNON STOPS ASKING YOU TO DO A JOB YOU HAVE ALREADY DONE. Walking up to him
+after the buy put him straight back into pitching it, and the cause was that
+the offer read a flag about a DOOR: the basement on Strawberry is locked
+behind "vernon_intro", and the settings screen has a switch reading "Lock
+Leroy's basement again" which takes that flag off. One flag, two jobs -- lock
+the door and the mission is un-completed.
+
+He pitches on two occasions now and no others: you have never taken it, or the
+last go ended badly. Death, arrest and Vernon being killed all travel the same
+road, so all three put him back to asking; handing the package over settles it.
+Neither flag has anything to do with a door and neither can be toggled from a
+menu.
+
+
+TWO MEN STOP TALKING AT ONCE. The chatter facial is a looping animation and it
+runs until something is played over it -- so when Ardo started, Vernon carried
+on mouthing away underneath him, and a conversation between two people looked
+like two people ignoring each other. The last mouth is closed on the handover
+now.
+
+
+AND VERNON STOPS GETTING STUCK IN THE YARD. He is handed a combat task when the
+shooting starts and nothing ever took it off him, so with every Armenian on the
+floor he stood there running a fight against nobody -- and the follow task
+could not get a word in, because combat outranks it. He is taken out of it when
+the last one goes down, and his reactions are switched back off with it: a yard
+full of fresh corpses kept handing him things to react to that cancelled
+whatever he had just been told.
+
+
+UNDERNEATH: failing a job no longer starts the ten minute wait before Lamar has
+anything. That was never intended -- it came of filing a "this went wrong" note
+in the same place as "this is finished" -- and it meant failing a job was
+punished twice.
+
+
+AND THE BUILD CAN NO LONGER LIE ABOUT A RELEASE. On 0.9.4 one of the two
+downloads failed to upload on a network timeout and the script printed
+"Published, both attached" anyway, because nothing ever checked. Uploads are
+retried and then the release page itself is asked what it actually has.
+
+
+0.9.4 -- 15 September 2026
 
 
 FOUR FAULTS IN 0.9.3, ALL OF THEM MINE, ALL FOUND BY READING IT BACK RATHER
