@@ -46,8 +46,51 @@ namespace Hoodrich.Core
         public static int Peds { get { Look(); return _peds; } }
         public static int Vehicles { get { Look(); return _cars; } }
 
+        /// <summary>
+        /// Where a world full of CARS starts.
+        ///
+        /// PEDS WERE THE ONLY POOL BEING COUNTED, AND THEY ARE NOT THE ONE THAT WAS FAILING.
+        /// kocabac's report is ERR_MEM_EMBEDDEDALLOC -- a GTA memory-pool exhaustion -- and it
+        /// went away when they turned the ROLLERS off, which is a spawner of cars and bikes.
+        /// A takeover puts thirty more on one junction. Counting only peds let every one of
+        /// those through a check that was looking the other way.
+        /// </summary>
+        public const int CarsBusy = 140;
+
         /// <summary>True when the world is full enough that ours should stop adding to it.</summary>
-        public static bool Busy => Peds >= PedsBusy;
+        public static bool Busy => Peds >= PedsBusy || Vehicles >= CarsBusy;
+
+        /// <summary>
+        /// Says, once in a while and per caller, that somebody stood down.
+        ///
+        /// A SPAWNER THAT SILENTLY DOES NOTHING IS INDISTINGUISHABLE FROM A BROKEN ONE, and
+        /// "the block is empty tonight" is a bug report somebody will send. Rate limited hard
+        /// -- these are asked several times a second -- so it is a line a minute per system
+        /// rather than a wall.
+        /// </summary>
+        public static void HeldOff(string who)
+        {
+            try
+            {
+                var now = Game.GameTime;
+
+                int last;
+                if (_said.TryGetValue(who, out last) && now - last < SaidEveryMs) return;
+
+                _said[who] = now;
+
+                Log.Info(who + " is holding off -- " + Line() + ".");
+            }
+            catch
+            {
+                // A line that cannot be written is not worth failing a spawn over.
+            }
+        }
+
+        private static readonly System.Collections.Generic.Dictionary<string, int> _said =
+            new System.Collections.Generic.Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        private const int SaidEveryMs = 60000;
 
         private static void Look()
         {
@@ -74,7 +117,8 @@ namespace Hoodrich.Core
         /// <summary>What is out there, for a log line. See GangWar's heartbeat.</summary>
         public static string Line()
         {
-            return Peds + " ped(s) and " + Vehicles + " vehicle(s) in the world" +
+            return Peds + " ped(s) of " + PedsBusy + " and " + Vehicles + " vehicle(s) of " +
+                   CarsBusy + " in the world" +
                    (Busy ? " -- FULL, ours are holding off" : "");
         }
 

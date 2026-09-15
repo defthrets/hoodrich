@@ -1671,6 +1671,15 @@ namespace Hoodrich.Locations
         /// </summary>
         private bool Somebody()
         {
+
+            // NOR ANOTHER FACE IN THE CROWD. See Core.Crowded and In -- sixty spectators is
+            // the other half of what a takeover puts in the world, and the pools do not care
+            // which half filled them.
+            if (Core.Crowded.Busy)
+            {
+                Core.Crowded.HeldOff("Takeover crowd");
+                return false;
+            }
             try
             {
                 // MOSTLY ON THE CORNERS, AND THAT IS WHAT A CROWD DOES.
@@ -5304,6 +5313,19 @@ namespace Hoodrich.Locations
             var stage = Free();
 
             if (stage < 0) return false;
+
+            // NOT INTO A WORLD THAT IS ALREADY FULL. See Core.Crowded.
+            //
+            // THIS IS THE BIGGEST SPAWNER IN THE MOD BY A LONG WAY -- thirty cars round a
+            // junction and sixty people watching them -- and it was asking nobody. Felony83's
+            // "intense FPS drop and makes my game crash" and kocabac's ERR_MEM_EMBEDDEDALLOC
+            // are both the shape of a world with nothing left in its pools, and a takeover is
+            // the one thing here capable of emptying them on its own.
+            if (Core.Crowded.Busy)
+            {
+                Core.Crowded.HeldOff("Takeover");
+                return false;
+            }
 
             try
             {

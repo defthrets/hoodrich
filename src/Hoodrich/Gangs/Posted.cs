@@ -120,6 +120,15 @@ namespace Hoodrich.Gangs
 
         private void Fill()
         {
+
+            // NOT INTO A WORLD THAT IS ALREADY FULL. See Core.Crowded.
+            //
+            // Corner crews are topped up on a clock rather than against a budget.
+            if (Core.Crowded.Busy)
+            {
+                Core.Crowded.HeldOff("Posted");
+                return;
+            }
             var gang = _gangs == null ? null : _gangs.Get(_gangId);
             if (gang == null || gang.MemberModels.Count == 0) return;
 

@@ -1561,6 +1561,15 @@ namespace Hoodrich.Dealing
 
         private void SpawnDriveBy(Ped player, GangDef gang)
         {
+
+            // NOT INTO A WORLD THAT IS ALREADY FULL. See Core.Crowded.
+            //
+            // A carload of shooters, on a timer, while you stand on a corner.
+            if (Core.Crowded.Busy)
+            {
+                Core.Crowded.HeldOff("PostUp");
+                return;
+            }
             var carModel = PickModel(GangCars);
             if (carModel == null) return;
 
@@ -1900,6 +1909,15 @@ namespace Hoodrich.Dealing
         /// </summary>
         private void RollPatrol(Ped player)
         {
+
+            // NOT INTO A WORLD THAT IS ALREADY FULL. See Core.Crowded.
+            //
+            // And a police cruiser on top of it, on its own timer.
+            if (Core.Crowded.Busy)
+            {
+                Core.Crowded.HeldOff("PostUp");
+                return;
+            }
             if (_patrolCar != null && _patrolCar.Exists()) return;
             if (State == PostState.Investigated || State == PostState.Questioned) return;
             if (Game.GameTime < _nextPatrolAt) return;

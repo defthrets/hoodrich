@@ -711,6 +711,15 @@ namespace Hoodrich.Locations
         /// </summary>
         private Runner Send(MeetSpot spot, int now)
         {
+
+            // NOT INTO A WORLD THAT IS ALREADY FULL. See Core.Crowded.
+            //
+            // A meet is the second biggest thing this mod puts on a street.
+            if (Core.Crowded.Busy)
+            {
+                Core.Crowded.HeldOff("CarMeet");
+                return null;
+            }
             try
             {
                 var names = spot.IsHopper ? Hoppers : (Cars == null ? null : Cars());

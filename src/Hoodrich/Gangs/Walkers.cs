@@ -1156,6 +1156,15 @@ namespace Hoodrich.Gangs
         /// </summary>
         private void Walkies(Crew crew)
         {
+
+            // NOT INTO A WORLD THAT IS ALREADY FULL. See Core.Crowded.
+            //
+            // Pairs of walkers are added for as long as you are on the block, with nothing counting.
+            if (Core.Crowded.Busy)
+            {
+                Core.Crowded.HeldOff("Walkers");
+                return;
+            }
             var owner = crew.Lead;
             if (owner == null || !owner.Exists()) return;
 

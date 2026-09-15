@@ -33,6 +33,15 @@ namespace Hoodrich.Gangs
         /// </summary>
         public static Ped OnFoot(GangDef gang, IEnumerable<string> models, Vector3 at, float heading)
         {
+
+            // NOT INTO A WORLD THAT IS ALREADY FULL. See Core.Crowded.
+            //
+            // Every corner ped in the mod comes through here, from several systems at once.
+            if (Core.Crowded.Busy)
+            {
+                Core.Crowded.HeldOff("GangPeds");
+                return null;
+            }
             if (gang == null || models == null) return null;
 
             foreach (var name in models)

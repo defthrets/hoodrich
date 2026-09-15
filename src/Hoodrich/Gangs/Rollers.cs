@@ -1665,6 +1665,15 @@ namespace Hoodrich.Gangs
         /// </summary>
         private Vehicle Make(bool bike, Vector3 at, Vehicle matching)
         {
+
+            // NOT INTO A WORLD THAT IS ALREADY FULL. See Core.Crowded.
+            //
+            // kocabac's ERR_MEM_EMBEDDEDALLOC went away when they turned the rollers OFF, which is this spawner naming itself in a crash report.
+            if (Core.Crowded.Busy)
+            {
+                Core.Crowded.HeldOff("Rollers");
+                return null;
+            }
             // A third of the cars are donks. Bikes are never one, for reasons. A bike is
             // an engine or a BMX, decided here rather than by how many of each the list
             // happened to hold.

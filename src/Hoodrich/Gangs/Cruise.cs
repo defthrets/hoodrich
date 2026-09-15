@@ -327,6 +327,15 @@ namespace Hoodrich.Gangs
 
         private Vehicle Make(List<string> makes, Vector3 at, float heading)
         {
+
+            // NOT INTO A WORLD THAT IS ALREADY FULL. See Core.Crowded.
+            //
+            // A car at a time, for ever, on top of everything else out there.
+            if (Core.Crowded.Busy)
+            {
+                Core.Crowded.HeldOff("Cruise");
+                return null;
+            }
             while (makes.Count > 0)
             {
                 var name = makes[_rng.Next(makes.Count)];

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GTA;
 using GTA.Math;
@@ -155,6 +155,15 @@ namespace Hoodrich.Gangs
 
         private bool Place(GangDef gang, BlockSpot spot, bool female, bool loafing)
         {
+
+            // NOT INTO A WORLD THAT IS ALREADY FULL. See Core.Crowded.
+            //
+            // The block fills itself in and never asked how full the world already was.
+            if (Core.Crowded.Busy)
+            {
+                Core.Crowded.HeldOff("BlockLife");
+                return false;
+            }
             // Scattered rather than stacked, and settled onto the ground only when the ground
             // agrees with the height that was authored from standing there.
             var at = Ground(spot.Where.Around(1.5f + (float)_rng.NextDouble() * spot.Roam * 0.7f));
