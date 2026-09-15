@@ -458,7 +458,34 @@ namespace Hoodrich.Phone
             Game.DisableControlThisFrame(Control.PhoneCancel);
 
             Function.Call(Hash.HIDE_HUD_COMPONENT_THIS_FRAME, HudCellphone);
+
+            // AND IF IT HAS COME UP ANYWAY, IT GOES BACK DOWN. The controls above stop it being
+            // RAISED, and there are other ways for it to arrive -- a scripted call, another
+            // mod, a contact ringing -- none of which the button suppression can see. Asked
+            // rarely rather than every frame: destroying a phone that is not up is free, and
+            // doing it sixty times a second on the off chance is not.
+            var now = Game.GameTime;
+
+            if (now - _lastHangUp < HangUpEveryMs) return;
+
+            _lastHangUp = now;
+
+            try
+            {
+                if (Function.Call<bool>(Hash.IS_MOBILE_PHONE_CALL_ONGOING)) return;
+
+                Function.Call(Hash.DESTROY_MOBILE_PHONE);
+            }
+            catch
+            {
+                // The hide above is still holding it off the screen.
+            }
         }
+
+        /// <summary>When the game's handset was last put down. See SuppressVanillaPhone.</summary>
+        private static int _lastHangUp;
+
+        private const int HangUpEveryMs = 1000;
 
         /// <summary>
         /// One line in the log, the first time the phone button is pressed.
@@ -734,6 +761,23 @@ namespace Hoodrich.Phone
 
         private void OpenPhone()
         {
+            // ---- AND THE GAME'S OWN PHONE GOES DOWN, PROPERLY ----
+            //
+            // "Both the mod phone and in-game phone open simultaneously" -- Vorx4643, on the
+            // mod page. This is what was missing.
+            //
+            // SuppressVanillaPhone hides the cellphone HUD COMPONENT every frame, and hiding a
+            // component is not closing a phone: the game's cellphone script carries on running
+            // underneath, holding its own state, with its own handset in his hand. If it was
+            // already up when ours opened -- which is exactly what happens when you reach for
+            // the phone and then decide you wanted this one -- you get two, and only one of
+            // them is being drawn.
+            //
+            // DESTROY_MOBILE_PHONE is the one that actually ends it, and it is safe on a phone
+            // that was never up.
+            try { Function.Call(Hash.DESTROY_MOBILE_PHONE); }
+            catch { /* it was not up, which is the ordinary case */ }
+
             WheelPage root;
             try
             {
