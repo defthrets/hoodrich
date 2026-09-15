@@ -785,6 +785,12 @@ namespace Hoodrich
                 _state = new PlayerState();
                 _crew = new Affiliation(_gangs);
                 _stash = new StashHouse(_cfg);
+                // WHETHER HE WALKED IN HOLDING WORK. See StashHouse -- the house says where
+                // product goes on the first visit and never again, and the fridge is where
+                // everybody looks for it afterwards.
+                _stash.Loaded = () => _state != null && _state.Stash != null
+                                      && _state.Stash.Total > 0.01f;
+
                 _stash.Told = () => _state.SeenHouse;
                 _stash.Tell = () => { _state.SeenHouse = true; _state.Touch(); };
 

@@ -66,6 +66,9 @@ namespace Hoodrich.Locations
         /// <summary>Set by Main: they have been said now.</summary>
         public Action Tell;
 
+        /// <summary>Set by Main: whether he walked in carrying work. See Update.</summary>
+        public Func<bool> Loaded;
+
         public StashHouse(Settings cfg)
         {
             _capacity = Math.Max(1f, cfg.HideoutStashCapacity);
@@ -149,6 +152,32 @@ namespace Hoodrich.Locations
                 return;
             }
 
+            // ---- AND AGAIN IF HE WALKS IN HOLDING SOMETHING ----
+            //
+            // "Everything in this mod seems to be working great except when I stand by the
+            // fridge in Franklin's house" -- NordCyborg, who then worked it out himself:
+            // "ive figured out you need to open the phone inside the house and then open the
+            // stash app allowing you to transfer".
+            //
+            // THE HOUSE ONLY EVER SAID IT ONCE. The tickers below fire on the first visit and
+            // never again, and the guide page that says the same thing is a first-visit screen
+            // too -- so somebody who came home on their third night with pockets full of work
+            // was stood in a kitchen with a fridge in it and nothing anywhere telling them
+            // where product goes. A fridge is the obvious place to look and it belongs to
+            // another mod entirely.
+            //
+            // So it is said again, on the one occasion it matters: walking in CARRYING
+            // something. Not on an empty-handed visit, which is most of them, and not more
+            // than once in a while -- a house that repeats itself every time you step through
+            // the door is worse than one that said it once.
+            if (_inside && Told != null && Told() && Loaded != null && Loaded()
+                && Game.GameTime - _saidLoaded > LoadedHintGapMs)
+            {
+                _saidLoaded = Game.GameTime;
+
+                Notify.Ticker("~g~You're carrying.~s~ Open your inventory to put it away.");
+            }
+
             if (_inside && !(Told != null && Told()))
             {
                 Notify.Ticker("~g~You're at the spot.~s~ Open your inventory to move work in or out.");
@@ -169,6 +198,16 @@ namespace Hoodrich.Locations
                 _sayCutAt = 0;
             }
         }
+
+        /// <summary>
+        /// When the carrying reminder was last given.
+        ///
+        /// FIVE MINUTES. Long enough that walking out to the bins and back does not earn a
+        /// second one, short enough that a session which started an hour ago still gets it.
+        /// </summary>
+        private int _saidLoaded;
+
+        private const int LoadedHintGapMs = 300000;
 
         /// <summary>When to mention the kitchen, or 0 for not pending.</summary>
         private int _sayCutAt;
