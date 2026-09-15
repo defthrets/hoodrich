@@ -447,7 +447,7 @@ namespace Hoodrich.Phone
         /// live meant navigating our list ALSO drove a vanilla phone that was not visible --
         /// so putting ours away left the real one sitting on whatever it had wandered onto.
         /// </summary>
-        private static void SuppressVanillaPhone()
+        private void SuppressVanillaPhone()
         {
             Game.DisableControlThisFrame(Control.Phone);
             Game.DisableControlThisFrame(Control.PhoneUp);
@@ -464,6 +464,19 @@ namespace Hoodrich.Phone
             // mod, a contact ringing -- none of which the button suppression can see. Asked
             // rarely rather than every frame: destroying a phone that is not up is free, and
             // doing it sixty times a second on the off chance is not.
+            // ---- AND ONLY WHILE OURS IS ACTUALLY UP ----
+            //
+            // SUPPRESSION RUNS WHENEVER THE PHONE IS AVAILABLE, NOT ONLY WHEN OURS IS OPEN --
+            // which is nearly all the time, walking down the street. Tearing the game's handset
+            // down once a second in that state is not fixing an overlap, it is taking the real
+            // phone away from somebody who is not even looking at ours; and a story call that
+            // rings but has not been answered is not an ONGOING call, so the check below would
+            // not have saved it.
+            //
+            // The reported bug is two phones AT ONCE. That can only happen while ours is open,
+            // so that is the only time this fires.
+            if (!_menu.IsOpen) return;
+
             var now = Game.GameTime;
 
             if (now - _lastHangUp < HangUpEveryMs) return;

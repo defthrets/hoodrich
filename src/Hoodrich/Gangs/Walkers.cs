@@ -39,6 +39,18 @@ namespace Hoodrich.Gangs
         public int Nudges;
         public int BornAt;
 
+        /// <summary>
+        /// He was rolled a dog and has not got one yet. See Walkers.Walkies.
+        ///
+        /// THE DOG USED TO BE A ONE-SHOT and the model request used to BLOCK, so by the time
+        /// the roll came round the model was always there. Asking without waiting -- see
+        /// Core.Streamer -- means the first attempt usually finds it still loading, and a
+        /// one-shot that fires early is a dog nobody ever sees. So the roll is remembered and
+        /// tried again until it lands.
+        /// </summary>
+        public bool WantsDog;
+        public int DogSince;
+
         /// <summary>When one of them next says something, and who answers him, with what, when.</summary>
         public int NextWord;
         public Ped Replier;
@@ -384,6 +396,29 @@ namespace Hoodrich.Gangs
                 Prune(now);
                 Greet(now);
                 Scrap(now);
+
+                // ---- THE DOG, ASKED AGAIN UNTIL IT LANDS ----
+                //
+                // The roll for a dog happens once, when a crew is made, and the model request
+                // no longer waits -- see Core.Streamer -- so the first attempt very often
+                // finds it still loading. A one-shot that fires early is a dog nobody ever
+                // sees, which is what this change quietly did to every walker on the block.
+                //
+                // Tried again on each tick until it lands or the patience runs out. The
+                // request itself is what warms the model, so the second or third attempt is
+                // the one that works and it costs a handful of native calls in between.
+                foreach (var crew in _out)
+                {
+                    if (!crew.WantsDog) continue;
+
+                    if (now - crew.DogSince > DogPatienceMs)
+                    {
+                        crew.WantsDog = false;
+                        continue;
+                    }
+
+                    Walkies(crew);
+                }
 
                 if (!Enabled)
                 {
@@ -1131,7 +1166,13 @@ namespace Hoodrich.Gangs
 
             crew.Lead = crew.Men[0].Man;
 
-            if (_rng.Next(100) < DogChance) Walkies(crew);
+            if (_rng.Next(100) < DogChance)
+            {
+                crew.WantsDog = true;
+                crew.DogSince = Game.GameTime;
+
+                Walkies(crew);
+            }
 
             _out.Add(crew);
             Aim(crew, Game.GameTime);
@@ -1154,6 +1195,9 @@ namespace Hoodrich.Gangs
         /// physics, and physics on a ped is a ragdoll -- so the walking is a follow task at an
         /// offset and the rope is only ever the thing you can see between them.
         /// </summary>
+        /// <summary>How long a crew keeps trying for the dog it was rolled.</summary>
+        private const int DogPatienceMs = 8000;
+
         private void Walkies(Crew crew)
         {
 
@@ -1200,6 +1244,7 @@ namespace Hoodrich.Gangs
 
                 crew.Dog = dog;
                 crew.Owner = owner;
+                crew.WantsDog = false;
 
                 Heel(crew);
                 Leash(crew);

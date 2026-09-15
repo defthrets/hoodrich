@@ -37,6 +37,8 @@ namespace Hoodrich.Core
         /// count goes in the log either way -- so a crash report from somebody running out at
         /// a lower number arrives with the evidence in it.
         /// </summary>
+        /// Checked against the same 454 samples: peds average 99 and reach 190 in one per cent
+        /// of them, so this one was already in the right place and stays where it is.
         public const int PedsBusy = 190;
 
         private static int _at;
@@ -55,7 +57,18 @@ namespace Hoodrich.Core
         /// A takeover puts thirty more on one junction. Counting only peds let every one of
         /// those through a check that was looking the other way.
         /// </summary>
-        public const int CarsBusy = 140;
+        /// SET FROM THIS MACHINE'S OWN LOG RATHER THAN GUESSED, because the first guess was
+        /// 140 and that is BELOW WHAT ORDINARY PLAY ALREADY HOLDS. 454 samples across two
+        /// sessions: cars average 137 and sit at or above 140 for fifty-seven per cent of them.
+        /// A ceiling there would have held every ambient spawner off more than half the time --
+        /// empty blocks, takeovers that never fill, meets that never happen -- which is a worse
+        /// bug than the one it was added to fix, and indistinguishable from the mod being
+        /// broken.
+        ///
+        /// The distribution: p50 146, p75 172, p90 187, p95 199, p99 225, max 262. 230 sits
+        /// above the ninety-ninth percentile of normal play and below the worst seen, so it
+        /// answers yes only when the world genuinely is stuffed.
+        public const int CarsBusy = 230;
 
         /// <summary>True when the world is full enough that ours should stop adding to it.</summary>
         public static bool Busy => Peds >= PedsBusy || Vehicles >= CarsBusy;
