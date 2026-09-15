@@ -1,0 +1,80 @@
+0.9.3 -- 15 September 2026
+
+
+THE THINGS YOU REPORTED
+
+  Bought ammunition read ZERO after a reload. Two faults together: the count
+  was written down before the locker had handed the guns back, so it recorded
+  whatever the base game had -- nothing -- and a count of zero dropped the
+  whole ROW from the save rather than storing a zero, so one autosave in the
+  first six seconds erased the rounds for good. Both fixed. Thanks gaspin12.
+
+  Both phones opened at once. Hiding the cellphone HUD component is not
+  closing a phone: the game's own script carried on underneath with its own
+  handset. It is properly ended now, and again if anything raises it while
+  ours is up. Thanks Vorx4643.
+
+  Standing at the fridge did nothing. The house tells you where product goes
+  on your first visit and never again -- so coming home on your third night
+  with full pockets, in a kitchen with a fridge in it, nothing said a word.
+  It says it again when you walk in CARRYING something. Thanks NordCyborg.
+
+  Crashes and frame drops around busy blocks. The mod has always had a
+  world-is-full check and exactly one system consulted it. Thirty others
+  spawned people and cars without ever asking. Every ambient spawner asks
+  now -- the takeover and its crowd, car meets, rollers, cruises, walkers,
+  block life, corner crews, drive-bys and patrols -- and vehicles are counted
+  as well as people, which is the pool that was actually running out. Missions
+  and anything you personally called for are untouched. Thanks kocabac and
+  Felony83.
+
+
+AND THE MOD STOPS DROPPING FRAMES OF ITS OWN
+
+  Asking the game for a model USED TO STOP THE SCRIPT. Every fixture, crew and
+  walker waited up to 1.2 seconds per model with the whole mod's HUD switched
+  off -- three and a half seconds of dark screen to put a crate down on a
+  corner, every time you walked back to it. They ask and come back now.
+
+  The graffiti bystander scan did a ped sweep and six raycasts inside one
+  frame, 284 times in a nine hour session. The same six looks are spread over
+  half a second instead.
+
+
+VERNON
+
+  He texts you after the buy, and he sells. Powder to the house at a price
+  nobody else in the mod does -- under the port -- and two kilos a call,
+  because he is a man with a basement rather than a dock. The text arrives
+  once you have driven away, not while he is stood in front of you.
+
+  His messages have his face on them. He is a story ped with no contact
+  picture in the game at all, so his is photographed.
+
+  Kill him on his own job and the job ends. It could not have finished
+  anyway: the hand-in is walking up to Vernon.
+
+
+DRUGS
+
+  The comedown is ONE washed out grey for two minutes, and the camera stops
+  swaying through it. It was four pictures, two of them changing under you,
+  with a shake running the whole time -- which on top of running and turning
+  read as the screen tearing. The numbers are milder too: it was a window in
+  which anything that picked a fight with you won it.
+
+  Acid warps properly. The colours are untouched; it is the world that moves.
+
+  The bars and heroin walk like cocaine on the first one -- which is to say
+  not at all, just quicker -- and like meth on the double.
+
+
+AND
+
+  Die with the bag on and you drop it, with everything in it. Die without it
+  and your pockets are simply gone: the bag is the walk back now, rather than
+  both being the same walk.
+
+  The inventory is laid out like Bare Minimum's pocket -- one grid, five
+  across, tiles twice the size, in a panel a third of the screen instead of
+  over half.
