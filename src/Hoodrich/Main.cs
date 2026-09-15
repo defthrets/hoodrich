@@ -756,6 +756,12 @@ namespace Hoodrich
 
                 // Before anything is drawn: the table is looked up at draw time, and the
                 // first thing drawn is the splash.
+                //
+                // ITS OWN STEP. This said "reading Hoodrich.ini" when it fell over in here,
+                // because the breadcrumb was last set before Settings.Load and never moved --
+                // so a loader mismatch that died in Lang.Use was reported to the player as a
+                // problem with their ini, which is a file they would then go and stare at.
+                Preflight.Step = "setting the language";
                 Core.Lang.Use(_cfg.Language);
 
                 // Copied rather than read live, because the conversation screen has no config
@@ -3585,7 +3591,20 @@ namespace Hoodrich
                 // gets its reason attached to the crash: nine times in ten the exception is a
                 // symptom of the missing file or the wrong loader, and reporting both together
                 // is the difference between a fix and a guess.
-                var why = Preflight.Check();
+                // INSIDE ITS OWN TRY, because this one is in the catch.
+                //
+                // Anything thrown from here escapes the constructor, and a constructor that
+                // throws is a script SHVDN reports as a bare load failure -- so a fault in the
+                // fault-finder would take away the very explanation it exists to give, and do
+                // it only for the people whose install is already broken.
+                List<Fault> why;
+
+                try { why = Preflight.Check(); }
+                catch (Exception inner)
+                {
+                    why = new List<Fault>();
+                    Log.Error("The preflight itself failed: " + inner.Message);
+                }
 
                 why.Add(new Fault
                 {

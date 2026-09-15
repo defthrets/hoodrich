@@ -91,6 +91,50 @@ namespace Hoodrich.Core
             }
         }
 
+        /// <summary>
+        /// WHICH ScriptHookVDotNet THIS DLL WAS COMPILED AGAINST.
+        ///
+        /// Not a number anybody types in. The compiler stamps the exact version of every
+        /// reference assembly into the output, and this reads it back out of our own metadata
+        /// -- so it is right by construction, it moves the day the build machine's loader
+        /// moves, and it cannot drift out of step with a readme the way "3.6 or newer" did.
+        ///
+        /// WHY IT IS WORTH KNOWING. A method that changed shape between the loader we built
+        /// against and the loader running us is a MissingMethodException, and the .NET runtime
+        /// throws that when it COMPILES the method containing the call -- not when the call
+        /// runs. So a try/catch around the call cannot catch it, and a branch that would never
+        /// have been taken kills the method anyway: a player on English lost the whole mod to
+        /// a line that only ever speaks to somebody running it in Chinese.
+        ///
+        /// Nothing can be done about that from inside the method. What CAN be done is to
+        /// notice the mismatch and say which way round it is, which is the whole of this.
+        /// </summary>
+        public static Version ShvdnBuiltAgainst
+        {
+            get
+            {
+                try
+                {
+                    var refs = Assembly.GetExecutingAssembly().GetReferencedAssemblies();
+
+                    for (var i = 0; i < refs.Length; i++)
+                    {
+                        if (refs[i].Name != null &&
+                            refs[i].Name.StartsWith("ScriptHookVDotNet", StringComparison.OrdinalIgnoreCase))
+                        {
+                            return refs[i].Version ?? new Version(0, 0);
+                        }
+                    }
+                }
+                catch
+                {
+                    // Reading our own manifest is not worth failing a startup over.
+                }
+
+                return new Version(0, 0);
+            }
+        }
+
         /// <summary>Which ScriptHookVDotNet is actually running us.</summary>
         public static Version Shvdn
         {
@@ -183,6 +227,40 @@ namespace Hoodrich.Core
                           "name and are not interchangeable."
                         : "Update ScriptHookV to the build that matches your game version, " +
                           "then update ScriptHookVDotNet. The game updated and the loader did not."
+                });
+            }
+
+            // AND THE PLAIN CASE: A LOADER OLDER THAN THE ONE THIS WAS BUILT ON.
+            //
+            // THIS IS THE COMMONEST REPORT ON THE PAGE AND IT HAD NO ANSWER. It arrives as
+            // "MissingMethodException: Method not found: GTA.FeedPost GTA.UI.Notification
+            // .PostTicker(String, Boolean, Boolean)" and the mod, having no idea, signed it
+            // off as "this is one for the mod author" -- sending somebody to wait on me for a
+            // thing they could fix in thirty seconds by updating their loader.
+            //
+            // The two numbers are read, not assumed: ShvdnBuiltAgainst comes out of our own
+            // manifest and Shvdn out of the assembly running us. Older is a mismatch; the same
+            // or newer says nothing, which is why a healthy install never sees this.
+            var built = ShvdnBuiltAgainst;
+
+            if (built > new Version(0, 0) && Shvdn > new Version(0, 0) && Shvdn < built)
+            {
+                faults.Add(new Fault
+                {
+                    Fatal = true,
+                    What = "ScriptHookVDotNet " + Shvdn + " is older than the " + built +
+                           " this was built against",
+                    // ToString(3) THROWS on a version with fewer than three parts, and this
+                    // runs inside the handler that reports a startup that already failed. A
+                    // metadata version always has four, but "always" is doing work there that
+                    // a conditional can do for nothing.
+                    Fix = "Install ScriptHookVDotNet v" +
+                          (built.Build >= 0 ? built.ToString(3) : built.ToString()) +
+                          " or newer from " +
+                          "github.com/scripthookvdotnet/scripthookvdotnet/releases. Replace " +
+                          "ScriptHookVDotNet.asi AND ScriptHookVDotNet3.dll together -- a new " +
+                          ".asi with an old .dll fails exactly the same way. Nightly builds " +
+                          "move the API about and are not what this is tested on."
                 });
             }
 
@@ -320,7 +398,15 @@ namespace Hoodrich.Core
                 Log.Info("  " + Build.Name + " " + Build.Version);
                 Log.Info("  game build   " + GameBuild + (IsEnhanced ? "  (Enhanced)" : "  (Legacy)"));
                 Log.Info("  ScriptHookV  " + ScriptHookV);
-                Log.Info("  SHVDN        " + Shvdn);
+                // BOTH NUMBERS, ALWAYS. Somebody pasting this block into a comment should
+                // not need me to ask them what their loader is -- the mismatch that breaks the
+                // mod is visible on the line itself.
+                var built = ShvdnBuiltAgainst;
+                Log.Info("  SHVDN        " + Shvdn +
+                         (built > new Version(0, 0) ? "  (built against " + built + ")" : "") +
+                         (built > new Version(0, 0) && Shvdn > new Version(0, 0) && Shvdn < built
+                             ? "  <-- TOO OLD, update ScriptHookVDotNet"
+                             : ""));
                 Log.Info("  runtime      " + Environment.Version + "  " +
                          (Environment.Is64BitProcess ? "64-bit" : "32-bit"));
                 Log.Info("  scripts      " + Paths.Scripts);
