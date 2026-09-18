@@ -315,6 +315,19 @@ namespace Hoodrich.Supply
         public int RideSecondary = -1;
         public int RidePearl = -1;
 
+        /// <summary>
+        /// Which family of wheels the rim index in rideMods belongs to, and the glass.
+        ///
+        /// A RIM INDEX MEANS NOTHING WITHOUT ITS FAMILY. Slot 23 counts within whatever wheel
+        /// type the car is currently set to, so "rim 16" is Lotta Chrome under Benny's and
+        /// some other wheel entirely under Sport -- and Own set the rims without ever saying
+        /// which set. Vernon's Dorado is the one parked down the side of his shop, and that
+        /// one is on Benny's with smoked glass; a delivery in the same model on stock wheels
+        /// and clear windows was not the same car. Below zero leaves each as it was.
+        /// </summary>
+        public int RideWheelType = -1;
+        public int RideTint = -1;
+
         public readonly List<int> RideMods = new List<int>();
         public readonly List<int> RideToggles = new List<int>();
 

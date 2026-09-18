@@ -614,18 +614,24 @@ namespace Hoodrich.UI
                 }
             });
 
-            // THE DOOR VERNON STANDS IN FRONT OF. The lock is right -- he says out loud that
-            // nobody goes down there before they have done something for him -- and this is
-            // the row that skips the job, the way every other unlock on this screen does.
+            // VERNON'S JOB, SKIPPED OR PUT BACK. The door on Strawberry follows the job --
+            // he says out loud that nobody goes down there before they have done something
+            // for him -- so counting the job done is what opens it, the way every other
+            // unlock on this screen works.
             //
-            // A toggle, because being able to lock it again is what makes it safe to press.
+            // A toggle, because being able to undo it is what makes it safe to press. And
+            // the undo is the WHOLE job, not the door: it used to read "lock the basement
+            // again" and take one flag off, which left him convinced he had already sent you
+            // out and unable to send you again. Un-counted, he pitches it from the top.
             _rows.Add(new Opt
             {
                 Kind = OptKind.Action,
                 Label = VeeDone != null && VeeDone()
-                    ? "Lock Leroy's basement again"
+                    ? "Un-count Vernon's job"
                     : "Count Vernon's job as done",
-                Note = "Opens the door on Strawberry without doing the job at Rogers Scrap",
+                Note = VeeDone != null && VeeDone()
+                    ? "He asks you to do it again, and the door on Strawberry locks until you have"
+                    : "Opens the door on Strawberry without doing the job at Rogers Scrap",
                 Do = () =>
                 {
                     if (VeeDone == null || SetVeeDone == null) return;
@@ -635,7 +641,7 @@ namespace Hoodrich.UI
 
                     Notify.Ticker(open
                         ? "~g~Vernon walked you down.~s~  the door on Strawberry opens"
-                        : "~o~Locked again.~s~  Vernon wants that job doing first");
+                        : "~o~Job's back on.~s~  walk up to Vernon and he pitches it again");
                 }
             });
 

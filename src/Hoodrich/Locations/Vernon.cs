@@ -214,6 +214,17 @@ namespace Hoodrich.Locations
         /// </summary>
         public Action Numbered;
 
+        /// <summary>
+        /// Set by Main: true while HE is the one driving a delivery to your door.
+        ///
+        /// THE DELIVERY IS A SECOND VERNON. It makes its own ig_vernon behind the wheel of
+        /// its own Dorado, and the house it drives to is sixty-seven metres from this wall
+        /// -- inside SpawnRange -- so the man leaning here and the man pulling up outside
+        /// were going to be visible in the same street at the same time. While he is out, the
+        /// wall is empty; when he is back, it is not.
+        /// </summary>
+        public Func<bool> Away;
+
         public bool InReach => Within(TalkRange);
 
         /// <summary>Near enough to be shouted at. See ShoutRange.</summary>
@@ -246,6 +257,26 @@ namespace Hoodrich.Locations
 
             // AND THE NUMBER, ONCE YOU ARE GONE. See Number.
             Number(player);
+
+            // ---- OUT DELIVERING, SO THE WALL IS EMPTY ----
+            //
+            // Not while a job holds him: that ped is the mission's, and the mission is what
+            // hands it back. See Away.
+            if (Away != null && Away())
+            {
+                if (!_lent && !_talking && _ped != null) Despawn();
+
+                // And nothing about where he WAS survives it. A man taken off the basement
+                // floor here would otherwise be walked "out of the shop" when the delivery
+                // ends, and one taken off a walk back to the wall would be re-made in the
+                // doorway to finish it -- both of them a spawn dressed up as a return, and
+                // both of them past the check below that waits for the wall to be off camera.
+                _down = false;
+                _returning = false;
+
+                _wasAway = true;
+                return;
+            }
 
             // OUT ON THE JOB, SO THE WALL LETS GO OF HIM. Everything below is about a man
             // stood in one place in Strawberry -- it despawns him at a hundred and sixty
@@ -317,6 +348,12 @@ namespace Hoodrich.Locations
             if (_ped == null || !_ped.Exists())
             {
                 if (_returning) OutAfterYou();
+
+                // BACK FROM A DELIVERY, AND NOT WHILE YOU ARE LOOKING AT THE WALL. The house
+                // is close enough to see the shop from, and a man appearing against a
+                // shutter in the middle of the frame is a spawn, not a return. He is put back
+                // the first time the wall is off camera or out of range.
+                else if (_wasAway && Seen()) return;
                 else Spawn();
             }
             else if (_returning) Returning();
@@ -327,7 +364,25 @@ namespace Hoodrich.Locations
         {
             if (!Make(Spot, Heading, "on the wall at Leroy's")) return;
 
+            _wasAway = false;
+
             Settle();
+        }
+
+        /// <summary>He was out delivering and the wall has not been refilled yet. See Away.</summary>
+        private bool _wasAway;
+
+        /// <summary>Whether the camera can see his spot on the wall right now.</summary>
+        private static bool Seen()
+        {
+            try
+            {
+                return Function.Call<bool>(Hash.IS_SPHERE_VISIBLE, Spot.X, Spot.Y, Spot.Z + 0.6f, 3f);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>
@@ -940,7 +995,11 @@ namespace Hoodrich.Locations
 
         private bool WillingToBeGreeted()
         {
-            if (_lent) return false;
+            // LENT, UNLESS THE THING HE IS WAITING FOR IS IN YOUR HANDS. He is still the
+            // job's until it is handed in, so this refused the one greeting UpdatePrompt was
+            // written to give -- the debrief starting as you walk up with his kilo -- and you
+            // had to find the button instead. See Owed.
+            if (_lent && !Owed) return false;
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return false;
@@ -1015,6 +1074,22 @@ namespace Hoodrich.Locations
             Rest();
 
             if (_ped == null || !_ped.Exists()) return;
+
+            // The job's man while the job has him. Settling him here put him in his lean in
+            // the middle of his own basement the moment the accept screen closed, and the
+            // deal had to task him out of it.
+            if (_lent) return;
+
+            // OFF HIS WALL, SO BACK TO IT. A conversation can happen anywhere he is stood --
+            // the kerb at the hand-in, halfway back from the door -- and a lean is a thing
+            // you do against a wall, not on a pavement wherever you happen to have stopped.
+            if (_ped.Position.DistanceTo(Spot) > PostedRange)
+            {
+                _returning = true;
+                WalkTo(Spot, Heading);
+                return;
+            }
+
             Settle();
         }
 
@@ -1482,9 +1557,14 @@ namespace Hoodrich.Locations
                     return;
                 }
 
-                _ped.Task.ClearAll();
-                _ped.Position = Spot;
-                _ped.Heading = Heading;
+                // WALKED, NOT MOVED. This is called from inside Collect, which is called as
+                // the hand-in conversation is being built -- so a teleport here put him on
+                // his wall ten metres away in the same frame the talk camera turned to look
+                // at him, and the debrief was said to a man who had wandered off mid-sentence.
+                // He walks back once the conversation lets go of him: see ReleaseFromTalk,
+                // which sends him, and Returning, which gets him there.
+                _returning = true;
+                WalkTo(Spot, Heading);
             }
             catch
             {

@@ -186,6 +186,8 @@ namespace Hoodrich.Supply
             def.RideOwn = node["rideOwn"].AsBool(def.RideOwn);
             def.RideSecondary = node["rideSecondary"].AsInt(def.RideSecondary);
             def.RidePearl = node["ridePearl"].AsInt(def.RidePearl);
+            def.RideWheelType = node["rideWheelType"].AsInt(def.RideWheelType);
+            def.RideTint = node["rideTint"].AsInt(def.RideTint);
 
             ReplaceInts(def.RideMods, node["rideMods"]);
             ReplaceInts(def.RideToggles, node["rideToggles"]);

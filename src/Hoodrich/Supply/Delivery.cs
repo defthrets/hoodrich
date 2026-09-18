@@ -918,6 +918,14 @@ namespace Hoodrich.Supply
                 Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, h, def.RidePearl, 0);
             }
 
+            // THE WHEEL FAMILY BEFORE THE RIM, or the rim index counts in the wrong set. See
+            // DealerDef.RideWheelType -- the same order ParkedCar.Paint uses, for the same
+            // reason.
+            if (def.RideWheelType >= 0)
+            {
+                Function.Call(Hash.SET_VEHICLE_WHEEL_TYPE, h, def.RideWheelType);
+            }
+
             for (var i = 0; i + 1 < def.RideMods.Count; i += 2)
             {
                 Function.Call(Hash.PRELOAD_VEHICLE_MOD, h, def.RideMods[i], def.RideMods[i + 1]);
@@ -931,6 +939,11 @@ namespace Hoodrich.Supply
             foreach (var slot in def.RideToggles)
             {
                 Function.Call(Hash.TOGGLE_VEHICLE_MOD, h, slot, true);
+            }
+
+            if (def.RideTint >= 0)
+            {
+                Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, h, def.RideTint);
             }
 
             // AND THE TUBES UNDER IT. All four sides or none -- three lit corners is a fault,

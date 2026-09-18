@@ -63,25 +63,6 @@ namespace Hoodrich.Locations
         public const string TriedIt = "vernon_tried";
 
         /// <summary>
-        /// HE IS OWED ANOTHER GO, BECAUSE THE LAST ONE WENT WRONG.
-        ///
-        /// THE JOB WAS BEING RE-OFFERED EVERY TIME YOU WALKED UP TO HIM. The branch below
-        /// asked HasDone(JobId) and nothing else, so anything that left that flag unset put
-        /// Vernon straight back into pitching a job you had already finished -- and the save
-        /// proves it can be unset after a completion: vernon_intro is missing from missionsDone
-        /// on a game where the log says it paid out twice. The settings screen can clear it
-        /// too, and the basement door reads the same flag for its own reasons.
-        ///
-        /// So the rule is written down rather than inferred. This is set when the job FAILS --
-        /// you went down, you were nicked, or Vernon did -- and cleared the moment you hand the
-        /// package over. He pitches when it is set, and talks about his tape when it is not.
-        ///
-        /// A flag that says what happened cannot be confused by a flag that says what you have
-        /// unlocked.
-        /// </summary>
-        public const string Owes = "vernon_owed";
-
-        /// <summary>
         /// He has just told you to go down them stairs, and he is right behind you.
         ///
         /// THE ONLY WAY DOWN BEFORE THE JOB IS DONE. The basement is not a room you can visit;
@@ -107,13 +88,19 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
-        /// Set by Main: starts his job.
+        /// Set by Main: starts his job. Null once it is on; a refusal, in the runner's own
+        /// words, when it is not -- "you're already on something", "you don't run with nobody".
+        ///
+        /// IT HAS TO SAY WHICH, because Accept writes TriedIt on the strength of it. An Action
+        /// that swallowed the refusal left the flag set for a job that never started, and that
+        /// flag was what the offer routed on -- so one "not right now" from the runner was a
+        /// Vernon who never pitched again.
         ///
         /// Null until the job exists, and the accept row handles that rather than hiding --
         /// hiding it would mean the whole conversation ends in small talk and nobody could tell
         /// whether that was the writing or a bug.
         /// </summary>
-        public Action Job { get; set; }
+        public Func<string> Job { get; set; }
 
         /// <summary>
         /// Set by Main: the beats of his pitch, in order, out of the job's own definition.
@@ -242,24 +229,26 @@ namespace Hoodrich.Locations
                 return Meeting();
             }
 
-            // ---- HE PITCHES ON TWO OCCASIONS AND NO OTHERS ----
+            // ---- DONE IS DONE, AND NOT DONE IS THE PITCH ----
             //
-            // You have never taken it, or the last go ended badly. That is the whole rule.
+            // One question, and it is the job's own flag: handed in, he has nothing left to
+            // ask for and plays you the new verse. Not handed in -- never taken, failed, quit
+            // out of halfway, or un-counted from the settings screen -- he pitches it, and
+            // Pitch says the short version if he has already said the long one.
             //
-            // IT USED TO ASK HasDone(JobId) AND THAT FLAG IS ABOUT A DOOR. The settings screen
-            // has a switch reading "Lock Leroy's basement again", and because the basement and
-            // the job are the same flag, locking the door UN-COMPLETES THE MISSION -- so
-            // Vernon went straight back to pitching a job you had finished. The save shows
-            // exactly that: vernon_intro missing from missionsDone on a game whose log says it
-            // paid out twice.
+            // IT WAS ROUTED OFF TWO OTHER FLAGS AND THAT DEAD-ENDED HIM. "Taken and not
+            // failed" was read as "done", which is also what a job looks like when Start
+            // refused it -- you were on something of Lamar's, or not in a set yet -- and what
+            // a job looks like after quitting the game with it running, and what the settings
+            // switch left behind. All three put him on "don't go down on your own, I'll walk
+            // you down" in front of a door he would never open again, with no pitch anywhere.
             //
-            // So the offer no longer reads that flag. TriedIt says you took it; Owes says it
-            // went wrong. Neither has anything to do with a door, and neither can be toggled
-            // from a menu.
-            var tried = _state != null && _state.HasDone(TriedIt);
-            var owes = _state != null && _state.HasBeenOffered(Owes);
+            // The flag is trustworthy because the only two things that touch it are handing
+            // the package over and the settings row -- and the row now un-counts the job
+            // properly rather than half of it. See Main, SetVeeDone.
+            if (_state != null && _state.HasDone(JobId)) return Since();
 
-            return tried && !owes ? Since() : Owed();
+            return Owed();
         }
 
         /// <summary>
@@ -752,6 +741,24 @@ namespace Hoodrich.Locations
 
             node.Say("Let's go.", () =>
             {
+                string no;
+
+                try { no = Job(); }
+                catch (Exception ex)
+                {
+                    Core.Log.Debug("Vernon's job would not start: " + ex.Message);
+                    no = "not right now.";
+                }
+
+                // REFUSED, SO NOTHING IS WRITTEN DOWN. You are still stood in his basement
+                // and he still owes you the pitch; the next time you walk up he makes it
+                // again in full, which is right for a job that never began.
+                if (!string.IsNullOrEmpty(no))
+                {
+                    Notify.Problem("Can't go right now: " + no);
+                    return null;
+                }
+
                 // WRITTEN DOWN AS YOU LEAVE, not as you succeed. Whether it went well is the
                 // mission's business; whether he has already explained it is this file's.
                 try { if (_state != null) _state.MarkDone(TriedIt); }
@@ -760,9 +767,6 @@ namespace Hoodrich.Locations
                 // And the stairs shut behind you. He walked you down to ask; you are going to
                 // the scrap yard now, not back to the basement. See WalkingYouDown.
                 WalkingYouDown = false;
-
-                try { Job(); }
-                catch (Exception ex) { Core.Log.Debug("Vernon's job would not start: " + ex.Message); }
 
                 return null;
             }, "Start it").MovesOn();

@@ -2752,12 +2752,30 @@ namespace Hoodrich
                     {
                         if (_state == null) return;
 
-                        // THE JOB, AND THE JOB IS ENOUGH AGAIN. The stairs were locked behind
-                        // the tape for a while and this had to set both; they are locked behind
-                        // the job being done again -- see the door in Places -- so one flag is
-                        // the whole of it.
-                        if (on) _state.MarkDone(Locations.VernonTalk.JobId);
-                        else _state.Undo(Locations.VernonTalk.JobId);
+                        // THE WHOLE JOB, BOTH WAYS. Counting it done is a man who walked you
+                        // down, showed you the shelf and sent you to the yard, so the flags
+                        // that say so go with it. Un-counting it takes the same ones back --
+                        // and that last part is what was missing: the row took the done flag
+                        // off and left "he has explained it" on, and the offer read those two
+                        // together as a job that was finished. Vernon stood there saying he
+                        // would walk you down, in front of a door this row had just locked,
+                        // and never pitched again. See VernonTalk.Root.
+                        foreach (var flag in new[]
+                                 {
+                                     Locations.VernonTalk.JobId,
+                                     Locations.VernonTalk.TriedIt,
+                                     Locations.VernonTalk.SawIt,
+                                 })
+                        {
+                            if (on) _state.MarkDone(flag);
+                            else _state.Undo(flag);
+                        }
+
+                        // Written out now, for the same reason the row above does it: the
+                        // point of pressing this is to reload and watch him.
+                        _state.Touch();
+                        SnapshotGuns();
+                        SaveGame.Save(_state, _crew, _market, _stash, true, _jobs.Paint, _blocks);
                     };
                 }
 
@@ -2951,8 +2969,10 @@ namespace Hoodrich
                 _vernonTalk.Ready = () => _jobs != null && _jobs.OnVernonsJob && _jobs.ReadyToCollect;
                 _vernonTalk.Collect = () => _jobs == null ? null : _jobs.Collect();
 
+                // AND IT SAYS WHETHER IT STARTED. Accept writes the "he has explained it"
+                // flag off this answer, so a refusal has to come back as one rather than as a
+                // ticker nobody upstream can see. See VernonTalk.Job.
                 _vernonTalk.Job = () =>
-
                 {
                     var job = VernonJob();
 
@@ -2960,12 +2980,10 @@ namespace Hoodrich
                     {
                         Core.Log.Warn("Vernon's job is not in missions.json -- looked for " +
                                       Locations.VernonTalk.JobId + ".");
-                        return;
+                        return "that job ain't written down nowhere.";
                     }
 
-                    var no = _jobs.Start(job);
-
-                    if (!string.IsNullOrEmpty(no)) UI.Notify.Problem("Can't go right now: " + no);
+                    return _jobs.Start(job);
                 };
 
                 _vernon.Talk = _talk;
@@ -3000,6 +3018,15 @@ namespace Hoodrich
 
                 // And not on the map until Gerald has started you off. See Started.
                 _vernon.Known = () => Started;
+
+                // AND OFF THE WALL WHILE HE IS DRIVING TO YOUR DOOR. The delivery makes its
+                // own ig_vernon to drive the Dorado, and the house is sixty-odd metres from
+                // his wall -- inside the range that keeps the wall one spawned -- so an order
+                // was going to be two of him in one street. See Vernon.Away.
+                _vernon.Away = () => _delivery != null && _delivery.IsActive &&
+                                     _delivery.Def != null &&
+                                     string.Equals(_delivery.Def.Id, "vernon",
+                                                   StringComparison.OrdinalIgnoreCase);
 
                 // HIS NUMBER IS THE REST OF THE PAY. Once the buy is done and you have driven
                 // off, he is a plug -- powder, at a price nobody else in the mod does. The text

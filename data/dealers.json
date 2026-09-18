@@ -361,6 +361,11 @@
       ],
       "id": "vernon",
       "deliveryOnly": true,
+      "_models": "The man himself, and the cutscene copy behind him -- the same pair his wall uses, in the same order. He had NO models at all, and a dealer with no models is a delivery that cancels itself with 'nobody could make the run' every single time.",
+      "models": [
+        "ig_vernon",
+        "csb_vernon"
+      ],
       "plate": "OGVEE",
       "name": "Vernon",
       "tag": "VEE",
@@ -372,6 +377,12 @@
       "priceMultiplier": 0.62,
       "minRank": 0,
       "maxOrderGrams": 2000,
+      "_lot": "The door screen sizes his rows off lotValue, not maxOrderGrams: one lot is coke's five kilos scaled by lotValue over the port's hundred thousand, and the rows are that x1, x2 and x4. Ten thousand makes a lot five hundred grams, so the rows read 500g, 1kg and 2kg -- two kilos a call is the biggest thing on the list rather than a number nothing reads. Pure, because it is the same brick that came out of the yard; he passes it through, he does not step on it.",
+      "lotValue": 10000,
+      "lotStep": 500,
+      "priceFloor": 500,
+      "priceStep": 500,
+      "purity": 1.0,
       "openHour": 0,
       "closeHour": 24,
       "_rides": "His own Dorado, the one you rode to La Puerta in. It is the car the whole job happened in and the one parked down the side of the shop, so a delivery in anything else would be a stranger pulling up.",
@@ -379,14 +390,64 @@
         "dorado"
       ],
       "rideOwn": true,
+      "_ride": "The car parked down the side of the shop, to the bolt: gloss black over black, Benny's Originals with Lotta Chrome on them (wheel family 7, rim 16), dark smoke on the glass, green tubes underneath. Main builds the parked one from the same numbers.",
       "ridePaint": 0,
+      "rideSecondary": 0,
+      "rideWheelType": 7,
+      "rideMods": [
+        23, 16
+      ],
+      "rideTint": 2,
+      "rideNeon": [60, 220, 70],
       "greeting": "There he is. Come on then, I ain't stood out here for my health.",
       "buyLine": "Powder. Charlie. White. Coca-- na. That's it, that's the list. Say how much.",
       "sourceReply": "You KNOW where I get it. You high, Franklin? You drove me there. Sat in the car and everything.",
       "sourceTooSoon": "",
       "farewell": "Aight. And Franklin -- the price is the price 'cause it's you. Don't be tellin' people.",
       "openingText": "franklin. its vee. that basement is stocked now and it ain't stocked for my health. you want powder, you text me -- and im doin you a number i ain't doin nobody else, on account of you was there. dont go tellin the whole of strawberry",
-      "numberLine": "Take my number. Powder only, and don't be askin' me for pills like I'm a chemist."
+      "numberLine": "Take my number. Powder only, and don't be askin' me for pills like I'm a chemist.",
+      "_lines": "What he says at your door. shopLine and the amount prompt are named takes (vernon_shop, vernon_amount); noRoom, noSpace, walkItIn and the four pools below hash off their own words, so the file is named off the sentence. The three text pools are read off the phone and never spoken.",
+      "shopLine": "Powder. That's the menu, Franklin, I told you I ain't a chemist. Same brick you carried out that yard, untouched, at YOUR number. Say how much.",
+      "shopCutLine": "Powder. And I'ma be straight with you 'cause it's you -- this batch been stepped on a little. Still better than what you was payin' street for. Say how much.",
+      "noRoomLine": "Franklin. Where you gon' PUT it? You ain't got a spot. Get a spot, then text me -- I ain't drivin' a kilo round Strawberry for exercise.",
+      "noSpaceLine": "That house full, homie. I can see it from here. Move somethin' or sell somethin', then we talk.",
+      "walkItInLine": "Nah nah, stand aside, I got it -- this how it's done proper. Where you want it? ... Don't answer that, I'll find the fridge.",
+      "textCalled": [
+        "aight. gimme a minute, im lockin the shop",
+        "on it. dont be stood in the road when i get there, i got a reputation",
+        "comin. and i aint drivin fast so dont text me again",
+        "yeah yeah. let me find my keys, theyre somewhere in this basement"
+      ],
+      "textLeaving": [
+        "rollin. black dorado, you know the one, you drove it",
+        "on my way. surface streets, same as before",
+        "leavin now. if you hear the bass before you see the car thats me"
+      ],
+      "textOutside": [
+        "outside. dont leave me stood on this pavement, come open the door",
+        "im out front. mind the rims",
+        "here. and i brought it in a bag this time, a PROPER bag"
+      ],
+      "arrivalLines": [
+        "Franklin! Ayy. See, I told you: door to door. That's service.",
+        "Aight, aight. I'm here. Don't nobody look at the car.",
+        "That's your house? ... Nah, it's nice. It's nice. Got a porch."
+      ],
+      "carryLines": [
+        "Careful with -- nah, I got it. I got it. Mind the step.",
+        "Two hands, Franklin. This is the same brick. THE brick.",
+        "Don't rush me, I'm carryin' inventory."
+      ],
+      "dropLines": [
+        "There. Book it in the notebook, date and who took it. That's a system.",
+        "And that's stock. See? Shelf ain't empty no more. Neither's yours.",
+        "Down. It's down. Don't hold it like that -- put it in the fridge."
+      ],
+      "partingLines": [
+        "And that's the last time I'm doin' the drive myself. Next time you come to the shop. ... Nah. Nah, I'll come.",
+        "I'm gone. Tape's still on downstairs if you ever wanna hear the second half.",
+        "Later, Franklin. Text me. Not too often. But text me."
+      ]
     }
   ],
   "later": [

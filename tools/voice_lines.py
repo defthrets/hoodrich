@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 What to record, and what to call the file when you have.
 
@@ -164,6 +164,14 @@ def from_data(root, texts=False):
         # every line in it is a line somebody says out loud -- and no list has ever included
         # one of them, so his whole part has been invisible to whoever was recording.
         for block in (d, d.get("afterCheng") or {}):
+            # AN EMPTY SECOND BLOCK IS NOT A SECOND MAN. Every dealer without an afterCheng
+            # came through here twice, the second time as an empty dict -- which has no lines
+            # of its own, so the four shared fallbacks below were listed under his name even
+            # when he had written all four himself. Vernon's list carried "Come back when you
+            # got somewhere to put it" next to the line he actually says instead of it.
+            if not block:
+                continue
+
             who = block.get("name") or d.get("name", "")
             if not who:
                 continue
@@ -190,6 +198,13 @@ def from_data(root, texts=False):
                                   ("noSpaceLine", "You got nowhere to put it. Sort that out first."),
                                   ("handOverLine", "Don't stand there holding it. Go on."),
                                   ("walkItInLine", "Stand aside. I'll put it inside for you.")):
+                # THE HAND-TO-HAND LINE IS FOR A MAN YOU WALK UP TO. DealerTalk says it when
+                # Who is set, which is the corner trade; a deliveryOnly dealer is only ever
+                # reached through the delivery, where the box is walked in instead. Listing it
+                # under his name is a take that could never play.
+                if field == "handOverLine" and d.get("deliveryOnly"):
+                    continue
+
                 add(who, block.get(field) or shared)
 
             # NOBODY SPEAKS A TEXT. These five go through Notify.Text, which puts a message on
@@ -215,6 +230,17 @@ def from_data(root, texts=False):
                     for line in block.get(field) or []:
                         add(who, line)
 
+            # THE FOUR HE SAYS ON THE DOORSTEP, WHICH ARE SPOKEN AND WERE NEVER LISTED.
+            # Delivery.Speak cues Voice.Key(def.Name, line) for arriving, carrying it in,
+            # putting it down and leaving -- his own pool if the file has one, a shared set
+            # if not -- and there is no caption under any of them, so a line with no take is
+            # a man moving his mouth in silence. Only his own are listed: the shared sets are
+            # keyed under HIS name too, but they are written for the port and the corner and
+            # a dealer with pools of his own never reaches them.
+            for field in ("arrivalLines", "carryLines", "dropLines", "partingLines"):
+                for line in block.get(field) or []:
+                    add(who, line)
+
         # And the shop line, which the source builds with the money on you and the room at the
         # house stapled to the end, so it names itself rather than hashing: <slug>_shop when
         # the stock is whole, <slug>_shopcut when it has been stepped on. The recording leaves
@@ -235,6 +261,14 @@ def from_data(root, texts=False):
                         continue
                 except (TypeError, ValueError):
                     pass
+
+            # HIS OWN WORDS ON THE NAMED FILE. The file is named by tag whatever is said,
+            # and DealerTalk says the dealer's shopLine when he has one -- so the text to
+            # record for vernon_shop is Vernon's line, not the shared one this used to print.
+            if tag == "shop" and d.get("shopLine"):
+                text = d["shopLine"]
+            elif tag == "shopcut" and d.get("shopCutLine"):
+                text = d["shopCutLine"]
 
             name = slug(d.get("name", "")) + "_" + tag
             if name not in seen:

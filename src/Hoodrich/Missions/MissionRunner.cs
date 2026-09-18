@@ -3170,12 +3170,6 @@ namespace Hoodrich.Missions
             _state.AddRespect(rep * 0.5f);
             _state.MarkDone(def.Id);
 
-            // AND HE IS NOT OWED ONE ANY MORE. The package is in his hands, so whatever
-            // went wrong last time is settled. See VernonTalk.Owes -- he pitches again on
-            // a failure and only on a failure.
-            try { _state.ForgetOffered(Locations.VernonTalk.Owes); }
-            catch { /* he asks again, which is the smaller of the two wrongs */ }
-
             // And the one job that leaves you with a phone number afterwards.
             MaybeUnlockHomies(def);
             _state.Touch();
@@ -3380,29 +3374,10 @@ namespace Hoodrich.Missions
 
             var id = _def == null ? "?" : _def.Id;
 
-            // ---- AND IF IT WAS VERNON'S, HE IS OWED ANOTHER GO ----
-            //
-            // Written down rather than left to be worked out from the unlock flags. See
-            // VernonTalk.Owes -- he pitches again on a failure and only on a failure, so this
-            // is the one place that can say a failure happened.
-            //
-            // KEPT IN THE OFFERED LIST RATHER THAN THE DONE ONE. MarkDone stamps LastJobAtUtc
-            // on its way past -- the ten minute breather before Lamar has anything -- so
-            // recording a FAILURE through it would have started that clock. Fail a job and be
-            // told to wait before you can take another is being punished twice for one
-            // mistake, and it would have been a side effect of where a flag was filed.
-            try
-            {
-                if (_state != null &&
-                    string.Equals(id, Locations.VernonTalk.JobId, StringComparison.OrdinalIgnoreCase))
-                {
-                    _state.MarkOffered(Locations.VernonTalk.Owes);
-                }
-            }
-            catch
-            {
-                // He offers it off HasDone alone, which is where this started.
-            }
+            // NOTHING TO WRITE DOWN FOR VERNON. A failed job is a job that is not done, and
+            // not-done is the whole of what his offer reads -- see VernonTalk.Root. There was
+            // an "owed another go" flag filed here for a while; it existed to paper over the
+            // offer routing on the wrong things, and went with the routing.
             Clear();
 
             if (!string.IsNullOrEmpty(reason)) Notify.Failure(reason);
