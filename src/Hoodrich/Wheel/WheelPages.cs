@@ -1174,7 +1174,11 @@ namespace Hoodrich.Wheel
             page.Add("Inventory", "*", ShowInventory,
                 detail: _stash.AtDoor ? "Move product between your pockets and the house" : "Everything you are carrying",
                 value: _stash.AtDoor ? "at the house" : CarriedSummary());
-            page.WithIcon(Icons.FromFile("duffel.png"));
+            // THE BACKPACK, WHICH IS THE ONE THAT WAS LIKED. This tile wore Icons.Stash --
+            // the backpack drawn on 09-09 -- until the pixel flipbook took the grid over on
+            // 09-12, and then a drawn duffel from the 18th. Both of those were asked to go:
+            // the backpack was the bag people knew the app by, and it is back on the tile.
+            page.WithIcon(Icons.Stash);
 
             // Its own wedge rather than a line inside something else. What the block is saying
             // about you is not a sub-heading of your inventory, and burying it two levels down
