@@ -1,4 +1,77 @@
-﻿0.9.6 -- 18 September 2026
+﻿0.9.7 -- 18 September 2026
+
+
+IT LOADS ON ANY SCRIPTHOOKVDOTNET 3. The mod was compiled against the 3.9.0
+fork, the compiler stamps that number into the dll, and the loader will not
+run a script that asks for a newer ScriptHookVDotNet than itself -- so 3.6,
+every 3.7 nightly, and anything that was not the fork got either a bare load
+failure or "MissingMethodException: PostTicker" with the mod switched off.
+That was the commonest report on the page under half a dozen names. It is
+built against 3.6.0 now, the way Fumes is, and everything that only existed
+in 3.9 is on the older name or on the native underneath. You do not need
+3.9.0.0 any more; whatever ScriptHookVDotNet 3 you have will do.
+
+
+THE MARK THAT DROVE OFF ON SOMEBODY ELSE'S CAR. His Buffalo and his bike
+were marked with a blip attached to the vehicle, and the game streams a
+vehicle out without telling its blip -- the handle goes to whatever spawns
+next, and his car's mark was on a stranger's Sentinel doing forty down
+Vespucci. The same on two wheels: a bike that "spawned in with a green blip"
+was a traffic bike that had been handed the old handle. One blip on the map
+now, placed by coordinate and moved with the car, attached to nothing.
+
+
+THE CAR THAT VANISHED OFF HAO'S LOT. Buy one, put your own plate on it, and
+some of them were gone when you came back -- the Toros and the Sentinel in
+the report. The lot keeps a handle for each display car and trusted it as
+long as it still existed; a handle the game had recycled onto the car you
+had just bought passed that test, so the lot counted it as stock and deleted
+it with the stock when you walked off. Every display car carries its sale
+plate from the day it is put out, and the lot deletes nothing it cannot
+prove is its own by model and plate. The green sale marker is gone as well:
+it was a second blip attached to the car, and the keys OwnedCars puts on it
+were already there.
+
+
+THE BIKE SWAP WAS TAKING ANY BAGGER. Franklin's Bagger becomes the bike in
+the ini, and so did every Bagger with nobody on it inside a hundred and
+twenty metres of him -- the Lost's, the ones the game parks. Only the one on
+his own drive is his.
+
+
+THE WAR DOES NOT START ON A FULL BLOCK. The carloads and the defenders held
+off once the world was full, and that was the whole of the protection -- so
+a war could still open at two hundred and seventeen peds, put three cars
+and twelve men down before the first hold-off fired, and take the game down
+with it. That is kocabac's log, every line of it saying FULL from the one
+that announces the war. It is not started while the world is over the line
+now, it fights out of two car models rather than nine (ERR_MEM_EMBEDDEDALLOC
+is a streaming pool, and variety is what fills it), and the lines are
+yours: [Block] PedsBusy and CarsBusy in Hoodrich.ini. Lower them if a busy
+block is crashing you; the log says what the counts were.
+
+
+THE BAG LANDS ON THE GROUND. It came off where you died, and dying mid-air
+put that in the sky -- off a bike over the hills, out of a helicopter -- so
+the bag was frozen fifty metres over the blip or under the slope, and gone.
+It goes on the ground under where you died now, or where you last stood
+when there is nothing under you, a placed bag is checked against the floor
+before it is frozen, and a lost one can be brought to your feet from the
+settings screen: "Bring my bag here". [Dealing] BagProp names any prop for
+the bag on the floor.
+
+
+THE PHONE BUTTON IS YOURS TO KEEP. [Phone] PhoneButton=false in Hoodrich.ini
+gives the up arrow back to the game -- Franklin's own phone comes up on it
+like it always did -- and only the key (F2 by default) opens this one. For
+anybody whose other mods live on the arrow keys.
+
+
+AND HIS CAR CAN BE LEFT ALONE. [Cars] FranklinsCar= turns the Buffalo swap
+off, the way FranklinsBike= always could. Blank leaves the game's own car.
+
+
+0.9.6 -- 18 September 2026
 
 
 VERNON SELLS YOU POWDER NOW. He was meant to from the day he got his number:
