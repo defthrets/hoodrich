@@ -596,6 +596,9 @@ namespace Hoodrich.UI
                  "Groups of ours walking the back streets, drinking and smoking");
             Slide("Crews at once", "Block", "WalkerCrews",
                   () => c.WalkerCrews, v => c.WalkerCrews = (int)v, 0f, 5f, 1f, "0");
+            Tick("A kickabout on the block", "Block", "KickaboutEnabled",
+                 () => c.KickaboutEnabled, v => c.KickaboutEnabled = v,
+                 "Three of ours passing a ball about, on one of five spots, and it moves round");
 
             // ONE PRESS, BECAUSE A MEET IS A THING THAT HAPPENS RATHER THAN A SETTING. There
             // is nothing to configure here -- where the cars park is twelve coordinates in

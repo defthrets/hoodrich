@@ -63,6 +63,8 @@ T = {
 "On the straights, when they have the room for it": "Dans les lignes droites, quand ils ont la place",
 "Crews on foot": "Équipes à pied",
 "Groups of ours walking the back streets, drinking and smoking": "Des groupes des nôtres dans les ruelles, à boire et à fumer",
+"A kickabout on the block": "Un foot sur le block",
+"Three of ours passing a ball about, on one of five spots, and it moves round": "Trois des nôtres qui se font des passes, sur un des cinq spots, et ça tourne",
 "Crews at once": "Équipes en même temps",
 "The takeover": "La prise de contrôle",
 "It happens": "Ça arrive",

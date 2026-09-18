@@ -623,6 +623,12 @@ namespace Hoodrich.Core
         public int WalkerDogs = 25;
 
         /// <summary>
+        /// Whether three of ours kick a ball about on one of the block's spots. One spot at
+        /// a time, moving every few game hours. See Gangs.Kickabout.
+        /// </summary>
+        public bool KickaboutEnabled = true;
+
+        /// <summary>
         /// Where the mod treats the world as full and stops adding to it: peds, and vehicles.
         /// See Core.Crowded, which these are copied into.
         /// </summary>
@@ -971,6 +977,7 @@ namespace Hoodrich.Core
             s.WalkersEnabled = ini.GetBool("Block", "WalkersEnabled", s.WalkersEnabled);
             s.WalkerCrews = (int)Clamp(ini.GetInt("Block", "WalkerCrews", s.WalkerCrews), 0f, 8f);
             s.WalkerDogs = (int)Clamp(ini.GetInt("Block", "WalkerDogs", s.WalkerDogs), 0f, 100f);
+            s.KickaboutEnabled = ini.GetBool("Block", "KickaboutEnabled", s.KickaboutEnabled);
             s.PedsBusy = (int)Clamp(ini.GetInt("Block", "PedsBusy", s.PedsBusy), 60f, 600f);
             s.CarsBusy = (int)Clamp(ini.GetInt("Block", "CarsBusy", s.CarsBusy), 60f, 600f);
 
