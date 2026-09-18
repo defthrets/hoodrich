@@ -3910,6 +3910,7 @@ namespace Hoodrich
 
                 Core.Pace.At("Core.Larder.Tick");
                 Core.Larder.Tick();
+                HandBagShelfAcross();
 
                 // What is on you owns the screen the same way moving it does. Closed if the
                 // mod goes unavailable underneath it, so a screen cannot outlive the thing it
@@ -5776,6 +5777,73 @@ namespace Hoodrich
                 return "the block";
             }
         }
+
+        /// <summary>When the old shelf was last offered across. See HandBagShelfAcross.</summary>
+        private int _shelfOfferedAt;
+
+        /// <summary>
+        /// The satchel's own food shelf, handed to Bare Minimum's, once theirs can be reached.
+        ///
+        /// THERE WERE TWO SHELVES FOR ONE BAG -- see Larder.BagShelf -- and the save on this
+        /// machine had twelve things to eat on ours while theirs said the bag was empty.
+        /// Theirs is the shelf now, so whatever is still on ours goes across the first time
+        /// their bridge answers, and again every few seconds for as long as anything is left:
+        /// their shelf can refuse for want of room, and a sandwich that does not fit today
+        /// waits on ours rather than being thrown away. Nothing is deleted here, ever; a
+        /// thing only leaves our shelf once theirs has said it took it.
+        ///
+        /// Quiet on an install without them, or with a build of theirs older than the shelf:
+        /// BagShelf is false, ours stays the shelf, and this returns on its first line.
+        /// </summary>
+        private void HandBagShelfAcross()
+        {
+            try
+            {
+                if (_state == null || _state.Bag == null || _state.Bag.Food.Count == 0) return;
+                if (!Core.Larder.BagShelf) return;
+
+                var now = Game.GameTime;
+                if (now - _shelfOfferedAt < ShelfOfferEveryMs) return;
+                _shelfOfferedAt = now;
+
+                var moved = 0;
+                var keys = new List<string>(_state.Bag.Food.Keys);
+
+                foreach (var id in keys)
+                {
+                    var have = _state.Bag.Food[id];
+                    var went = 0;
+
+                    for (; went < have; went++)
+                    {
+                        if (!Core.Larder.BagGive(id)) break;
+                    }
+
+                    if (went <= 0) continue;
+
+                    moved += went;
+
+                    if (went >= have) _state.Bag.Food.Remove(id);
+                    else _state.Bag.Food[id] = have - went;
+                }
+
+                if (moved <= 0) return;
+
+                _state.Touch();
+
+                var left = 0;
+                foreach (var kv in _state.Bag.Food) left += kv.Value;
+
+                Log.Info("Bag: handed " + moved + " thing(s) to eat across to Bare Minimum's shelf" +
+                         (left > 0 ? "; " + left + " still waiting on ours for room over there." : "."));
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Bag: the shelf would not go across: " + ex.Message);
+            }
+        }
+
+        private const int ShelfOfferEveryMs = 8000;
 
         private void OnAborted(object sender, EventArgs e)
         {

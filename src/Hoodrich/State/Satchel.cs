@@ -113,9 +113,28 @@ namespace Hoodrich.State
         {
             get
             {
+                // THEIR SHELF WHEN THEY KEEP ONE. See Larder.BagShelf: the food in the bag is
+                // Bare Minimum's to keep on a build of theirs that can, and the slots it
+                // spends are counted off the same twenty as the product. Ours is the shelf on
+                // an install without them, or with an older build of them.
+                if (Core.Larder.BagShelf) return Core.Larder.BagTotal;
+
                 var n = 0;
                 foreach (var kv in Food) n += kv.Value;
                 return n;
+            }
+        }
+
+        /// <summary>
+        /// The slots the product alone is in: one per hundred grams, rounded up. Published
+        /// on the bag's channel so the other side's shelf can leave them alone. See Strap.
+        /// </summary>
+        public int ProductSlots
+        {
+            get
+            {
+                var grams = Stash.Total;
+                return grams <= 0.005f ? 0 : (int)Math.Ceiling(grams / SlotGrams);
             }
         }
 
@@ -127,16 +146,7 @@ namespace Hoodrich.State
         /// get roomier because the parcel is small. It also stops a player carrying nineteen
         /// separate almost-nothings and calling the bag empty.
         /// </summary>
-        public int Used
-        {
-            get
-            {
-                var grams = Stash.Total;
-                var taken = grams <= 0.005f ? 0 : (int)Math.Ceiling(grams / SlotGrams);
-
-                return taken + FoodCount;
-            }
-        }
+        public int Used => ProductSlots + FoodCount;
 
         public int Free => Math.Max(0, Slots - Used);
 

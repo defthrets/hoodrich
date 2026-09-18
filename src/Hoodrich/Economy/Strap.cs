@@ -67,7 +67,14 @@ namespace Hoodrich.Economy
         private const int SWorn = 0;
         private const int SUsed = 1;
         private const int SSlots = 2;
-        private const int SSize = 3;
+
+        /// <summary>
+        /// The fourth int: how many of the slots the product is in, so Bare Minimum's shelf
+        /// in the same bag can reserve them. Used is product AND their food, which they
+        /// cannot read back without counting their own food twice. See Satchel.ProductSlots.
+        /// </summary>
+        private const int SProduct = 3;
+        private const int SSize = 4;
 
         /// <summary>The last drop request answered, so one ask is not answered twice.</summary>
         private int _asked;
@@ -291,6 +298,7 @@ namespace Hoodrich.Economy
                 row[SWorn] = bag.Worn ? 1 : 0;
                 row[SUsed] = bag.Used;
                 row[SSlots] = Satchel.Slots;
+                row[SProduct] = bag.ProductSlots;
             }
             catch
             {

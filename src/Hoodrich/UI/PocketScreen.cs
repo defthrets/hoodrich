@@ -226,15 +226,55 @@ namespace Hoodrich.UI
             }
         }
 
-        /// <summary>How many of one thing the bag is carrying.</summary>
+        /// <summary>How many of one thing the bag is carrying: their count when they keep the shelf, ours otherwise.</summary>
         private int Held(string id)
         {
-            var shelf = Shelf;
+            if (!Carrying || string.IsNullOrEmpty(id)) return 0;
 
-            if (shelf == null || string.IsNullOrEmpty(id)) return 0;
+            if (Core.Larder.BagShelf) return Core.Larder.BagCountOf(id);
+
+            var shelf = Shelf;
+            if (shelf == null) return 0;
 
             return shelf.TryGetValue(id, out var many) ? many : 0;
         }
+
+        /// <summary>
+        /// One onto the bag's shelf, whichever shelf that is. See Larder.BagShelf.
+        ///
+        /// THEIRS IS ASKED, OURS IS WRITTEN. Their shelf can refuse -- it is twenty slots
+        /// between two mods and it knows how many the product is in -- so the answer
+        /// matters and every caller reads it.
+        /// </summary>
+        private bool BagPutOne(string id)
+        {
+            if (Core.Larder.BagShelf) return Core.Larder.BagGive(id);
+
+            var shelf = Shelf;
+            if (shelf == null) return false;
+
+            shelf[id] = Held(id) + 1;
+            return true;
+        }
+
+        /// <summary>One off the bag's shelf, whichever shelf that is. False, nothing moved, when there is none.</summary>
+        private bool BagTakeOne(string id)
+        {
+            if (Core.Larder.BagShelf) return Core.Larder.BagTake(id);
+
+            var shelf = Shelf;
+            if (shelf == null || Held(id) <= 0) return false;
+
+            var left = Held(id) - 1;
+
+            if (left <= 0) shelf.Remove(id);
+            else shelf[id] = left;
+
+            return true;
+        }
+
+        /// <summary>Whether their pocket has a place free, which is where anything leaving the bag goes.</summary>
+        private static bool PocketRoom => Core.Larder.Total < Core.Larder.Slots;
 
         public bool IsOpen => _curtain.Showing;
 
@@ -304,13 +344,26 @@ namespace Hoodrich.UI
             // the ones actually in there, not the whole catalogue the way the pocket lists it.
             _bagFood.Clear();
 
-            var shelf = Shelf;
-
-            if (shelf != null)
+            // WHAT IS ON THE BAG'S SHELF, whichever shelf that is. This used to walk the
+            // POCKET's ids and keep the ones the shelf also had, so a sandwich in the bag
+            // with no sandwich in the pocket was in the bag and not on the screen.
+            if (Carrying)
             {
-                foreach (var id in Core.Larder.Ids())
+                if (Core.Larder.BagShelf)
                 {
-                    if (shelf.TryGetValue(id, out var many) && many > 0) _bagFood.Add(id);
+                    foreach (var id in Core.Larder.BagIds()) _bagFood.Add(id);
+                }
+                else
+                {
+                    var shelf = Shelf;
+
+                    if (shelf != null)
+                    {
+                        foreach (var kv in shelf)
+                        {
+                            if (kv.Value > 0) _bagFood.Add(kv.Key);
+                        }
+                    }
                 }
             }
 
@@ -566,21 +619,27 @@ namespace Hoodrich.UI
                 // lost, rather than a burger disappearing on the way to his mouth.
                 if (FoodInBag(_selected))
                 {
-                    var shelf = Shelf;
+                    if (Held(id) <= 0) return;
 
-                    if (shelf == null || Held(id) <= 0) return;
-
-                    if (!Core.Larder.Give(id))
+                    // POCKET ROOM FIRST. Their Give falls through to the bag when the pocket
+                    // is full -- see their Stow -- which would take the sandwich off the
+                    // shelf and put it straight back with a "moved", and then eat it out of
+                    // a pocket it is not in.
+                    if (!PocketRoom || !BagTakeOne(id))
                     {
                         Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
                         Notify.Problem("no room in your pockets.");
                         return;
                     }
 
-                    var left = Held(id) - 1;
+                    if (!Core.Larder.Give(id))
+                    {
+                        BagPutOne(id);
 
-                    if (left <= 0) shelf.Remove(id);
-                    else shelf[id] = left;
+                        Hud.PlaySound("ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                        Notify.Problem("no room in your pockets.");
+                        return;
+                    }
                 }
 
                 // QUEUED, NOT EATEN HERE. The phone is an animation as well as a screen, and
@@ -784,10 +843,10 @@ namespace Hoodrich.UI
         /// </summary>
         private void ShiftFood(bool everything)
         {
-            var shelf = Shelf;
             var id = FoodAt(_selected);
 
-            if (shelf == null || string.IsNullOrEmpty(id)) return;
+            if (string.IsNullOrEmpty(id)) return;
+            if (!Core.Larder.BagShelf && Shelf == null) return;
 
             var toBag = !FoodInBag(_selected);
 
@@ -811,17 +870,28 @@ namespace Hoodrich.UI
 
                     if (!Core.Larder.Take(id)) break;
 
-                    shelf[id] = Held(id) + 1;
+                    if (!BagPutOne(id))
+                    {
+                        // Their shelf would not take it: back in the pocket it came out of.
+                        Core.Larder.Give(id);
+                        break;
+                    }
                 }
                 else
                 {
                     if (Held(id) <= 0) break;
-                    if (!Core.Larder.Give(id)) break;
 
-                    var left = Held(id) - 1;
+                    // POCKET ROOM FIRST, for the reason the eating path gives: their Give
+                    // overflows into the bag, and a sandwich moved from the bag to the bag
+                    // is a sandwich that has not moved.
+                    if (!PocketRoom) break;
+                    if (!BagTakeOne(id)) break;
 
-                    if (left <= 0) shelf.Remove(id);
-                    else shelf[id] = left;
+                    if (!Core.Larder.Give(id))
+                    {
+                        BagPutOne(id);
+                        break;
+                    }
                 }
 
                 moved++;

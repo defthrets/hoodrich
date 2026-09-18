@@ -52,6 +52,10 @@ namespace Hoodrich.Core
         private static MethodInfo _descOf, _categoryOf;
         private static MethodInfo _give, _take;
 
+        /// <summary>Their bag shelf. Null on a build of theirs older than the shelf. See BagShelf.</summary>
+        private static MethodInfo _bagIds, _bagCountOf, _bagGive, _bagTake;
+        private static PropertyInfo _bagTotal;
+
         /// <summary>Their own pocket screen, asked for rather than copied. See Open.</summary>
         private static MethodInfo _open;
         private static MethodInfo _notSleep;
@@ -150,6 +154,15 @@ namespace Hoodrich.Core
                     // what happened before this existed.
                     _notSleep = type.GetMethod("NotSleep", BindingFlags.Public | BindingFlags.Static);
                     _drain = type.GetMethod("Drain", BindingFlags.Public | BindingFlags.Static);
+
+                    // THE BAG'S SHELF, THEIRS. Optional the same way, and the whole reason
+                    // the satchel still has a shelf of its own: a build of theirs from before
+                    // it keeps the food the way it always did. See BagShelf.
+                    _bagIds = type.GetMethod("BagIds", BindingFlags.Public | BindingFlags.Static);
+                    _bagCountOf = type.GetMethod("BagCountOf", BindingFlags.Public | BindingFlags.Static);
+                    _bagTotal = type.GetProperty("BagTotal", BindingFlags.Public | BindingFlags.Static);
+                    _bagGive = type.GetMethod("BagGive", BindingFlags.Public | BindingFlags.Static);
+                    _bagTake = type.GetMethod("BagTake", BindingFlags.Public | BindingFlags.Static);
 
                     _type = type;
 
@@ -500,6 +513,76 @@ namespace Hoodrich.Core
             {
                 if (!Present || _take == null) return false;
                 return (bool)_take.Invoke(null, new object[] { id, many });
+            }
+            catch { return false; }
+        }
+
+        // ---- the bag's shelf, theirs -----------------------------------------------
+
+        /// <summary>
+        /// Whether their build keeps the food that is in the bag.
+        ///
+        /// THERE WERE TWO SHELVES FOR ONE BAG. This mod sells the bag and kept a food shelf
+        /// in it -- see Satchel.Food -- and Bare Minimum keeps the food and, since its 0.8.2,
+        /// keeps a shelf in the same bag. Food moved across on the phone went on ours; food
+        /// looted or bought went on theirs; the bag said "twelve things" on one screen and
+        /// "empty" on the other. Theirs is the shelf now, wherever it exists: they own the
+        /// food, the eating and the pocket it comes out of, so the bag's food is theirs to
+        /// keep too. Ours stays for a build of theirs older than the shelf, and for the
+        /// hand-over -- see Main.HandBagShelfAcross.
+        /// </summary>
+        public static bool BagShelf =>
+            Present && _bagIds != null && _bagCountOf != null && _bagGive != null && _bagTake != null;
+
+        /// <summary>What is on their bag shelf, oldest first. Never null.</summary>
+        public static string[] BagIds()
+        {
+            try
+            {
+                if (!BagShelf) return new string[0];
+                return _bagIds.Invoke(null, null) as string[] ?? new string[0];
+            }
+            catch { return new string[0]; }
+        }
+
+        public static int BagCountOf(string id)
+        {
+            try
+            {
+                if (!BagShelf) return 0;
+                return (int)_bagCountOf.Invoke(null, new object[] { id });
+            }
+            catch { return 0; }
+        }
+
+        /// <summary>Things on their bag shelf in total. The satchel counts it as slots spent.</summary>
+        public static int BagTotal
+        {
+            get
+            {
+                try { return !BagShelf || _bagTotal == null ? 0 : (int)_bagTotal.GetValue(null, null); }
+                catch { return 0; }
+            }
+        }
+
+        /// <summary>Puts some on their bag shelf. False, nothing moved, when they will not fit.</summary>
+        public static bool BagGive(string id, int many = 1)
+        {
+            try
+            {
+                if (!BagShelf) return false;
+                return (bool)_bagGive.Invoke(null, new object[] { id, many });
+            }
+            catch { return false; }
+        }
+
+        /// <summary>Takes some off their bag shelf without eating them. False, nothing moved, when there are not that many.</summary>
+        public static bool BagTake(string id, int many = 1)
+        {
+            try
+            {
+                if (!BagShelf) return false;
+                return (bool)_bagTake.Invoke(null, new object[] { id, many });
             }
             catch { return false; }
         }
