@@ -2125,9 +2125,13 @@ namespace Hoodrich
                 // ON THE TABLE with the money and the bag, on the spot read off a player
                 // stood on it, rather than on the concrete behind the couch where it sat
                 // like something somebody had put down and forgotten.
+                // TWO SPEAKERS AND NOTHING ELSE. The ferris wheel that used to sit at the
+                // end of this list as a can't-miss placeholder was placed for real the day the
+                // loader stopped waiting on the streamer -- see Fixture.Place -- and a Del
+                // Perro ferris wheel on a card table is not a fallback anybody wants.
                 _partyDecks = new Boombox(new Vector3(-203.764f, -1727.046f, 33.396f), 2.149f,
                                           "ba_prop_battle_speaker_01a",
-                                          "prop_boombox_01", "prop_ld_ferris_wheel");
+                                          "prop_boombox_01");
 
                 // THE BOXES BY GERALD'S STAIRS ARE NOT PLACED FROM HERE ANY MORE. They were a
                 // fixture with fallbacks, and a fixture is the one thing Menyoo cannot save

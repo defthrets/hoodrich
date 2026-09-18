@@ -144,22 +144,81 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>Which candidate is being waited on, and since when. See Place.</summary>
+        private int _trying;
+        private int _tryingSince;
+
+        /// <summary>How long one candidate gets to stream in before the next is asked for.</summary>
+        private const int GiveUpMs = 6000;
+
+        /// <summary>The candidate at the front of the queue is dropped, and the reason said once.</summary>
+        private void Skip(string why)
+        {
+            if (_trying < _models.Length)
+            {
+                Log.Debug("Fixture at " + _where + ": " + _models[_trying] + " skipped -- " + why + ".");
+            }
+
+            _trying++;
+            _tryingSince = 0;
+        }
+
+        /// <summary>
+        /// Puts the prop down, as the FIRST model on its list that this install can stream.
+        ///
+        /// IN ORDER, ONE AT A TIME, AND THAT IS THE WHOLE FIX. When the loader stopped waiting
+        /// on the streamer (see Core.Streamer -- a wait here held the whole script for a
+        /// second per candidate with the HUD dark) it kept the old loop shape: walk the list,
+        /// take the first that is loaded, ask for the rest on the way past. On the first pass
+        /// nothing on the list is loaded yet, so the winner was whichever candidate happened
+        /// to be RESIDENT already -- which is how the party's second speaker came up as
+        /// prop_ld_ferris_wheel, its last-resort placeholder, forty metres across, sat on the
+        /// table with the DJ decks somewhere inside it. And a list whose front is the DLC
+        /// model and whose back is the plain one placed the plain one every time.
+        ///
+        /// So the list is a queue. The front candidate is asked for and given six seconds to
+        /// arrive; only one this install has not got, or one that never arrives, hands over
+        /// to the next. Nothing waits inside a frame, and the first model on the list is the
+        /// one you get, which is what the list was written to mean.
+        /// </summary>
         private void Place()
         {
-            foreach (var name in _models)
+            var now = Game.GameTime;
+
+            while (_trying < _models.Length)
             {
+                var name = _models[_trying];
+
                 try
                 {
                     var model = new Model(name);
-                    // ASKED FOR, NOT WAITED ON. See Core.Streamer -- this line used to stop
-                    // the whole script for up to 1.2 seconds per candidate, twice over, and
-                    // the HUD was dark for every frame of it.
-                    if (!Core.Streamer.Here(model)) continue;
+
+                    if (!model.IsValid || !model.IsInCdImage)
+                    {
+                        Skip("this install has not got it");
+                        continue;
+                    }
+
+                    // ASKED FOR, NOT WAITED ON. Here requests it and answers no until it is
+                    // in; this is called again every couple of seconds until it says yes, or
+                    // until the candidate has had its six seconds.
+                    if (!Core.Streamer.Here(model))
+                    {
+                        if (_tryingSince == 0) _tryingSince = now;
+                        if (now - _tryingSince < GiveUpMs) return;
+
+                        Skip("it never streamed in");
+                        continue;
+                    }
 
                     _prop = World.CreateProp(model, _where, false, false);
                     model.MarkAsNoLongerNeeded();
 
-                    if (_prop == null || !_prop.Exists()) continue;
+                    if (_prop == null || !_prop.Exists())
+                    {
+                        Skip("it would not create");
+                        continue;
+                    }
 
                     _prop.Heading = _heading;
                     _prop.IsPersistent = true;
@@ -180,7 +239,7 @@ namespace Hoodrich.Locations
                 }
                 catch
                 {
-                    // Try the next model.
+                    Skip("it threw");
                 }
             }
 
@@ -259,6 +318,11 @@ namespace Hoodrich.Locations
             // offered any.
             _grounded = false;
             _settled = false;
+
+            // And the queue starts from the front again next time you are near, so a model
+            // that was slow once is not skipped for the rest of the session.
+            _trying = 0;
+            _tryingSince = 0;
 
             Seating.Withdraw(this);
 
