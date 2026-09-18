@@ -1711,7 +1711,10 @@ namespace Hoodrich.Missions
             "Goddamn it, Franklin, hurry the hell up!"
         };
 
-        private const string GrabIt = "Shit -- Franklin, grab the bag and lets go!";
+        // THE CASE, NOT THE BAG. The bag is his -- the paper one with the money in it, on
+        // the floor by his feet -- and the thing you are being sent for is theirs, and it is
+        // an attache case. "Grab the bag" had you looking at the wrong object.
+        private const string GrabIt = "Shit -- Franklin, grab the case and lets go!";
         private const string Away = "Go go, Franklin, lets go!";
 
         /// <summary>

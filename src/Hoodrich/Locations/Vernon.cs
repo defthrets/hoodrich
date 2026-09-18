@@ -520,7 +520,13 @@ namespace Hoodrich.Locations
         /// </summary>
         private void Keys()
         {
-            if (_state != null && _state.HasDone(Locations.VernonTalk.JobId)) return;
+            // ONLY WHEN THERE IS SOMEWHERE TO DRIVE TO. It was "not while the job is done",
+            // which also meant a man who had heard the pitch, said not today and come back up
+            // the stairs was told to mind the rims of a car he was not getting into.
+            if (OnTheJob == null) return;
+
+            try { if (!OnTheJob()) return; }
+            catch { return; }
 
             _keysAt = Game.GameTime + KeysAfterMs;
         }
@@ -756,6 +762,22 @@ namespace Hoodrich.Locations
 
             try
             {
+                // OUT OF THE CAR FIRST. He was still sat in the Dorado when the hand-in
+                // conversation opened -- you pull up at the kerb, get out, and he is greeted
+                // out of the passenger seat before the job has told him to leave it -- and a
+                // walk task handed to a seated man does nothing at all. So he sat there, in a
+                // car with smoked glass that had just locked itself, for as long as you cared
+                // to look for him: "OG Vee disappeared when the mission was finished."
+                // Returning asks again in a few seconds, by which time he is on the pavement.
+                if (_ped.IsInVehicle())
+                {
+                    var car = _ped.CurrentVehicle;
+
+                    Function.Call(Hash.TASK_LEAVE_VEHICLE, _ped.Handle,
+                                  car == null ? 0 : car.Handle, 0);
+                    return;
+                }
+
                 _ped.Task.ClearAll();
 
                 Function.Call(Hash.TASK_GO_STRAIGHT_TO_COORD, _ped.Handle,
@@ -800,6 +822,18 @@ namespace Hoodrich.Locations
         /// </summary>
         private void Settle()
         {
+            // Not from inside a car. Returning gets him out and walks him; see WalkTo.
+            try
+            {
+                if (_ped.IsInVehicle())
+                {
+                    _returning = true;
+                    WalkTo(Spot, Heading);
+                    return;
+                }
+            }
+            catch { /* then the lean, which is the old behaviour */ }
+
             for (var i = _leaning; i < Leaning.Length; i++)
             {
                 try
