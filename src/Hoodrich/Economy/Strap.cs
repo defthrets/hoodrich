@@ -596,7 +596,7 @@ namespace Hoodrich.Economy
 
                 var centre = _thing.Position;
 
-                float front, back, starboard, port;
+                float front = 0f, back = 0f, starboard = 0f, port = 0f;
                 bool read;
 
                 Function.Call(Hash.SET_ENTITY_COLLISION, _thing.Handle, false, false);
