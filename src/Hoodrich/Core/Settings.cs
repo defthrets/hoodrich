@@ -636,10 +636,6 @@ namespace Hoodrich.Core
         public int CarsBusy = 230;
 
         /// <summary>
-        /// What Franklin's own bike is, in place of the Bagger the game gives him, and which
-        /// of its liveries it wears. Blank, or "bagger", leaves the game's own.
-        /// </summary>
-        /// <summary>
         /// Which dog Trigger is.
         ///
         /// Any of the eleven the game has a petting animation for -- see Trigger.Breeds. The
@@ -650,12 +646,16 @@ namespace Hoodrich.Core
         /// </summary>
         public string TriggerBreed = "a_c_rottweiler";
 
-        public string FranklinsBike = "sanchez";
-        public int FranklinsBikeLivery = 0;
-
         /// <summary>
-        /// What Franklin's own Buffalo S becomes, the way FranklinsBike works for the Bagger.
-        /// Blank, "buffalo" or "buffalo2" leaves the game's own car as it is.
+        /// What Franklin's own Buffalo S becomes: swapped for this the first time he gets in
+        /// it, same plate and paint. Blank, "buffalo" or "buffalo2" leaves the game's own car
+        /// as it is.
+        ///
+        /// THE BIKE IS NOT SWAPPED ANY MORE. The Bagger outside his house used to become a
+        /// Sanchez the same way, and it went at Michael's request on 2026-09-19: the game
+        /// re-supplies its Bagger and the swap had to run every time he came home, which is
+        /// one more thing happening on his own drive than the drive needed. The car keeps
+        /// its swap; it happens once and the game does not put the old one back.
         /// </summary>
         public string FranklinsCar = "buffalo4";
 
@@ -982,8 +982,6 @@ namespace Hoodrich.Core
             s.CarsBusy = (int)Clamp(ini.GetInt("Block", "CarsBusy", s.CarsBusy), 60f, 600f);
 
             s.TriggerBreed = (ini.GetString("Cars", "TriggerBreed", s.TriggerBreed) ?? "").Trim();
-            s.FranklinsBike = (ini.GetString("Cars", "FranklinsBike", s.FranklinsBike) ?? "").Trim();
-            s.FranklinsBikeLivery = (int)Clamp(ini.GetInt("Cars", "FranklinsBikeLivery", s.FranklinsBikeLivery), 0f, 30f);
             s.FranklinsCar = (ini.GetString("Cars", "FranklinsCar", s.FranklinsCar) ?? "").Trim();
 
             // Never read until now. It was declared, documented and written into the ini, and
