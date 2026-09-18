@@ -509,8 +509,10 @@ namespace Hoodrich.Economy
 
                     Function.Call(Hash.PLACE_OBJECT_ON_GROUND_PROPERLY, _thing.Handle);
 
-                    // AND LEVELLED AGAIN AFTERWARDS. The settle can tip it to follow a slope,
-                    // which is right for a crate on a hill and wrong for this on a rug.
+                    // AND LEVELLED AGAIN AFTERWARDS, so that Lay below starts from a known
+                    // pose. The settle tips it to whatever it happened to touch first, which
+                    // on a kerb edge is a bag stood on one corner; Lay reads the ground under
+                    // both ends and lies it on that instead.
                     _thing.Rotation = new Vector3(0f, 0f, Bag.DownHeading);
 
                     // AND CHECKED AGAINST THE GROUND. PLACE_OBJECT_ON_GROUND_PROPERLY only
@@ -531,6 +533,12 @@ namespace Hoodrich.Economy
                                  "m off the ground; put on the ground.");
                     }
 
+                    // AND LAID ON THE GROUND IT IS ACTUALLY ON. Level is right on a rug and
+                    // wrong on a pavement: a bag held dead flat over slabs that slope has one
+                    // end in the concrete and the other in the air, which is the "crooked" in
+                    // the screenshot -- crooked against the ground, not against the world.
+                    Lay();
+
                     Function.Call(Hash.FREEZE_ENTITY_POSITION, _thing.Handle, true);
 
                     return;
@@ -540,6 +548,107 @@ namespace Hoodrich.Economy
                     // Next name.
                 }
             }
+        }
+
+        /// <summary>
+        /// Tips the bag to lie along the ground under it.
+        ///
+        /// THE GROUND IS READ AT ITS ENDS, NOT GUESSED FROM A NORMAL. Four probes -- front and
+        /// back along its length, either side across its width, out at the edges of the model
+        /// itself -- give a pitch and a roll straight off the height difference, which is the
+        /// same arithmetic a spirit level does. A kerb edge under one end, a slab that has
+        /// lifted, a verge: all of them come out as "this end is higher by so much", which is
+        /// the only thing a bag lying across them needs to know.
+        ///
+        /// APPLIED, THEN CHECKED, because which way round the game's pitch and roll turn is a
+        /// thing to measure rather than remember. The front is put where the higher ground is;
+        /// if the front came out lower, that axis is flipped and set again. Two probes of the
+        /// entity's own offsets settle it either way, and a sign that was remembered wrong
+        /// would have leant the bag INTO the slope, which is worse than level.
+        ///
+        /// Its own collision is off while the ground is read, or the probes at its ends land
+        /// on the bag rather than the pavement. A lean past LeanMost is a probe that found a
+        /// wall or a wheel, and the bag stays level rather than standing on end.
+        /// </summary>
+        private void Lay()
+        {
+            if (_thing == null || !_thing.Exists()) return;
+
+            try
+            {
+                var min = new OutputArgument();
+                var max = new OutputArgument();
+
+                Function.Call(Hash.GET_MODEL_DIMENSIONS, _thing.Model.Hash, min, max);
+
+                var lo = min.GetResult<Vector3>();
+                var hi = max.GetResult<Vector3>();
+
+                // Half its width and half its length, in the model's own axes, and never so
+                // small that two probes land on the same slab.
+                var w = Math.Max(0.12f, (hi.X - lo.X) * 0.5f);
+                var l = Math.Max(0.12f, (hi.Y - lo.Y) * 0.5f);
+
+                // Its axes on the ground, from the heading it was laid at.
+                var rad = Bag.DownHeading * (float)(Math.PI / 180.0);
+                var forward = new Vector3(-(float)Math.Sin(rad), (float)Math.Cos(rad), 0f);
+                var right = new Vector3((float)Math.Cos(rad), (float)Math.Sin(rad), 0f);
+
+                var centre = _thing.Position;
+
+                float front, back, starboard, port;
+                bool read;
+
+                Function.Call(Hash.SET_ENTITY_COLLISION, _thing.Handle, false, false);
+
+                try
+                {
+                    read = Under(centre + forward * l, out front) && Under(centre - forward * l, out back) &&
+                           Under(centre + right * w, out starboard) && Under(centre - right * w, out port);
+                }
+                finally
+                {
+                    Function.Call(Hash.SET_ENTITY_COLLISION, _thing.Handle, true, false);
+                }
+
+                if (!read) return;
+
+                var pitch = (float)(Math.Atan2(front - back, 2f * l) * 180.0 / Math.PI);
+                var roll = (float)(Math.Atan2(starboard - port, 2f * w) * 180.0 / Math.PI);
+
+                if (Math.Abs(pitch) > LeanMost || Math.Abs(roll) > LeanMost) return;
+                if (Math.Abs(pitch) < 0.5f && Math.Abs(roll) < 0.5f) return;
+
+                _thing.Rotation = new Vector3(pitch, roll, Bag.DownHeading);
+
+                // The check. Front and back of the model, in the world, as it is now lying.
+                var f = Function.Call<Vector3>(Hash.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS, _thing.Handle, 0f, l, 0f);
+                var b = Function.Call<Vector3>(Hash.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS, _thing.Handle, 0f, -l, 0f);
+
+                if ((f.Z - b.Z) * (front - back) < 0f) pitch = -pitch;
+
+                var s = Function.Call<Vector3>(Hash.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS, _thing.Handle, w, 0f, 0f);
+                var p = Function.Call<Vector3>(Hash.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS, _thing.Handle, -w, 0f, 0f);
+
+                if ((s.Z - p.Z) * (starboard - port) < 0f) roll = -roll;
+
+                _thing.Rotation = new Vector3(pitch, roll, Bag.DownHeading);
+
+                Log.Debug("Bag: lying at " + pitch.ToString("0.0") + " pitch, " + roll.ToString("0.0") + " roll.");
+            }
+            catch
+            {
+                // Level, then, which is what it was.
+            }
+        }
+
+        /// <summary>The most a bag is allowed to lean before the ground it was read off is called wrong.</summary>
+        private const float LeanMost = 25f;
+
+        /// <summary>The ground under a point, looked for from a little above it.</summary>
+        private static bool Under(Vector3 at, out float z)
+        {
+            return Core.Ground.Probe(new Vector3(at.X, at.Y, at.Z + 0.6f), out z);
         }
 
         private void Unmake()
