@@ -228,6 +228,47 @@ namespace Hoodrich.Economy
             return taken;
         }
 
+        // ---- between two of these ----------------------------------------------
+
+        /// <summary>
+        /// One lot across, from one of these to another, and it never leaves more than it
+        /// takes. How much actually crossed.
+        ///
+        /// The same order the stash and the boot use: offer it to the destination, ask what
+        /// went in, take exactly that much out of the source, and put back anything the source
+        /// could not actually give up. Product that goes missing between two containers is the
+        /// one bug in an inventory nobody ever forgives.
+        ///
+        /// HERE RATHER THAN ON THE POCKET SCREEN, where it was written, because the screen is
+        /// no longer the only thing that carries between two of these: Api.Drugs moves the
+        /// bag's product for the screen next door, and it has to do it the same way or the two
+        /// screens disagree about a gram.
+        /// </summary>
+        public static float Carry(Stash from, Stash to, string id, float grams, bool bagged)
+        {
+            if (from == null || to == null || grams <= 0.005f) return 0f;
+
+            var purity = bagged ? from.PurityOf(id) : from.BulkPurityOf(id);
+
+            var took = bagged
+                ? to.AddPackaged(id, grams, purity)
+                : to.AddBulk(id, grams, purity);
+
+            if (took <= 0.005f) return 0f;
+
+            var gone = bagged ? from.RemovePackaged(id, took) : from.RemoveBulk(id, took);
+
+            if (gone < took - 0.005f)
+            {
+                // The source had less than it said. Hand the difference back rather than
+                // minting it.
+                if (bagged) to.RemovePackaged(id, took - gone);
+                else to.RemoveBulk(id, took - gone);
+            }
+
+            return gone;
+        }
+
         // ---- queries -----------------------------------------------------------
 
         public List<DrugDef> WithPackaged(Drugs catalogue)

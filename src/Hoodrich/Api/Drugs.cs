@@ -285,5 +285,205 @@ namespace Hoodrich.Api
                 return "Could not";
             }
         }
+
+        // ---- the bag -----------------------------------------------------------
+
+        /// <summary>
+        /// Whether the bag is on his back. False without one, and false before Ready.
+        /// </summary>
+        ///
+        /// <remarks>
+        /// THE BAG'S SIDE OF THE SAME SURFACE, for the other mod's bag screen. That screen
+        /// stands in for the pocket the whole time a bag is on his back, and it could see the
+        /// pocket's product and not the bag's -- so a man wearing a bag had two ways into his
+        /// inventory and neither showed a gram of what he had just looted into it. Everything
+        /// from here down is the bag's product, read and moved: the same Stash the phone's own
+        /// pocket screen carries between, through the same Stash.Carry, so nothing is minted
+        /// or lost between two containers that both belong to this mod.
+        ///
+        /// ADDED WITHOUT BUMPING ApiVersion, the way Bare Minimum added its bag shelf: a
+        /// caller that asks for these is newer than the surface, and an older caller never
+        /// asks.
+        /// </remarks>
+        public static bool BagWorn
+        {
+            get
+            {
+                try { return Ready && _state.Bag != null && _state.Bag.Worn; }
+                catch { return false; }
+            }
+        }
+
+        /// <summary>The ids of everything street-ready in the bag, on his back or not.</summary>
+        public static string[] BagIds()
+        {
+            try
+            {
+                if (!Ready || _state.Bag == null) return new string[0];
+
+                var found = new List<string>();
+                foreach (var d in _catalogue.All)
+                {
+                    if (_state.Bag.Stash.PackagedOf(d.Id) > 0.005f) found.Add(d.Id);
+                }
+
+                return found.ToArray();
+            }
+            catch { return new string[0]; }
+        }
+
+        /// <summary>Grams of street-ready product of that kind in the bag. Zero for anything unknown.</summary>
+        public static float BagGramsOf(string id)
+        {
+            try { return Ready && _state.Bag != null ? _state.Bag.Stash.PackagedOf(id) : 0f; }
+            catch { return 0f; }
+        }
+
+        /// <summary>Grams of product in the bag, bulk and bagged together.</summary>
+        public static float BagCarried
+        {
+            get
+            {
+                try { return Ready && _state.Bag != null ? _state.Bag.Stash.Total : 0f; }
+                catch { return 0f; }
+            }
+        }
+
+        /// <summary>
+        /// Moves street-ready product from his pockets into the bag. How much went, which is
+        /// nought when none of it fit or the bag is not on him.
+        ///
+        /// NOUGHT OR LESS MEANS THE LOT. The other side moves a tile, and a tile is however
+        /// much of that drug there is.
+        ///
+        /// ONLY INTO A BAG HE IS WEARING, for the reason Api.Pantry.Give gives coming the
+        /// other way: putting product into a bag lying on a pavement two streets off is worse
+        /// than refusing it.
+        ///
+        /// AS MUCH AS FITS BY SLOTS, not by grams. The bag is twenty slots between two mods --
+        /// a slot per hundred grams of product, one per item of food -- and Satchel.GramsFree
+        /// is what is left once their food shelf has been counted.
+        /// </summary>
+        public static float ToBag(string id, float grams)
+        {
+            try
+            {
+                if (!Ready || string.IsNullOrEmpty(id)) return 0f;
+
+                var bag = _state.Bag;
+                if (bag == null || !bag.Worn) return 0f;
+
+                var have = _state.Stash.PackagedOf(id);
+                var want = grams <= 0.005f ? have : Math.Min(grams, have);
+
+                want = Math.Min(want, bag.GramsFree);
+                if (want <= 0.005f) return 0f;
+
+                var moved = Economy.Stash.Carry(_state.Stash, bag.Stash, id, want, true);
+
+                if (moved > 0.005f)
+                {
+                    Core.Log.Info("Bag: " + moved.ToString("0.#") + "g of " + NameOf(id) +
+                                  " into the bag off the screen next door -- bag " +
+                                  bag.Used + " of " + State.Satchel.Slots + " slots.");
+                }
+
+                return moved;
+            }
+            catch (Exception ex)
+            {
+                Core.Log.Debug("Api.Drugs.ToBag failed: " + ex.Message);
+                return 0f;
+            }
+        }
+
+        /// <summary>
+        /// Moves street-ready product out of the bag into his pockets. How much went, which
+        /// is nought when the pockets are full or the bag is not on him. Nought or less asks
+        /// for the lot.
+        /// </summary>
+        public static float ToPocket(string id, float grams)
+        {
+            try
+            {
+                if (!Ready || string.IsNullOrEmpty(id)) return 0f;
+
+                var bag = _state.Bag;
+                if (bag == null || !bag.Worn) return 0f;
+
+                var have = bag.Stash.PackagedOf(id);
+                var want = grams <= 0.005f ? have : Math.Min(grams, have);
+                if (want <= 0.005f) return 0f;
+
+                var moved = Economy.Stash.Carry(bag.Stash, _state.Stash, id, want, true);
+
+                if (moved > 0.005f)
+                {
+                    Core.Log.Info("Bag: " + moved.ToString("0.#") + "g of " + NameOf(id) +
+                                  " out of the bag into his pockets off the screen next door -- pockets " +
+                                  _state.Stash.Total.ToString("0.#") + "g of " +
+                                  _state.Stash.Capacity.ToString("0") + "g.");
+                }
+
+                return moved;
+            }
+            catch (Exception ex)
+            {
+                Core.Log.Debug("Api.Drugs.ToPocket failed: " + ex.Message);
+                return 0f;
+            }
+        }
+
+        /// <summary>
+        /// Takes one out of the bag: into his pockets first, then the same act as Use.
+        ///
+        /// THROUGH THE POCKETS RATHER THAN A SECOND Use, so there is one act and one set of
+        /// refusals. Refused before anything moves; and if the landing refuses after the unit
+        /// has crossed, it goes back in the bag, so a refusal leaves the bag exactly as it
+        /// found it. Null when it happened, a sentence for a screen when it did not.
+        /// </summary>
+        public static string UseFromBag(string id)
+        {
+            try
+            {
+                if (!Ready) return "Not ready";
+                if (string.IsNullOrEmpty(id)) return "Nothing to take";
+
+                var bag = _state.Bag;
+                if (bag == null || !bag.Worn) return "The bag is not on you";
+
+                var def = _catalogue.Get(id);
+                if (def == null) return "Never heard of it";
+
+                if (bag.Stash.PackagedOf(id) < UseUnit - 0.001f) return "You have none of that in the bag";
+
+                var no = _highs.Refusal(id);
+                if (no != null) return no;
+
+                var crossed = Economy.Stash.Carry(bag.Stash, _state.Stash, id, UseUnit, true);
+
+                if (crossed < UseUnit - 0.001f)
+                {
+                    // Not even one would fit in his pockets. Whatever did cross goes back.
+                    if (crossed > 0.005f) Economy.Stash.Carry(_state.Stash, bag.Stash, id, crossed, true);
+                    return "No room in your pockets";
+                }
+
+                var late = Use(id);
+
+                if (late != null)
+                {
+                    // Refused after crossing. Back in the bag, so the bag is as it was.
+                    Economy.Stash.Carry(_state.Stash, bag.Stash, id, UseUnit, true);
+                }
+
+                return late;
+            }
+            catch (Exception ex)
+            {
+                Core.Log.Debug("Api.Drugs.UseFromBag failed: " + ex.Message);
+                return "Could not";
+            }
+        }
     }
 }
