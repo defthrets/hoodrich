@@ -50,6 +50,7 @@ namespace Hoodrich.UI
             public bool Bagged;            // product only
             public string Icon = "";       // guns: the art pack name; food: a full path
             public float You, Boot;        // grams, or counts, or 0/1 for a gun
+            public uint Hash;              // guns: the registry's hash, so nothing re-derives it from the id
             public string YouTag = "", BootTag = "";
             public float YouPurity, BootPurity;
             public Color Tint = Palette.Text;
@@ -304,7 +305,7 @@ namespace Hoodrich.UI
                     into.Add(new Item
                     {
                         Kind = Kind.Gun,
-                        Id = def.Id, Name = def.Name, Icon = def.Icon ?? "",
+                        Id = def.Id, Name = def.Name, Icon = def.Icon ?? "", Hash = def.Hash,
                         You = has ? 1 : 0, Boot = saved != null ? 1 : 0,
                         YouTag = has ? Rounds(me, def.Hash) : "-",
                         BootTag = saved != null ? SavedRounds(saved) : "-"
@@ -321,6 +322,7 @@ namespace Hoodrich.UI
                 into.Add(new Item
                 {
                     Kind = Kind.Gun, Id = id, Name = Named(id), Boot = 1,
+                    Hash = Function.Call<uint>(Hash.GET_HASH_KEY, WeaponRegistry.GameName(id)),
                     YouTag = "-", BootTag = SavedRounds(row)
                 });
             }
@@ -640,7 +642,14 @@ namespace Hoodrich.UI
             var me = Game.Player.Character;
             if (me == null || !me.Exists()) return false;
 
-            var hash = Function.Call<uint>(Hash.GET_HASH_KEY, item.Id);
+            // THE REGISTRY'S HASH, AND THE GAME'S NAME. This hashed the bare id off
+            // weapons.json -- MICROSMG -- which is not WEAPON_MICROSMG and is not a weapon at
+            // all, so HAS_PED_GOT_WEAPON said no to every gun he was holding and nothing ever
+            // went in; the same number on the way out would have given him nothing and dropped
+            // the row. The row was built with the real hash; it is used. See
+            // WeaponRegistry.GameName for the rest of the mod's namespaces.
+            var game = WeaponRegistry.GameName(item.Id);
+            var hash = item.Hash != 0 ? item.Hash : Function.Call<uint>(Hash.GET_HASH_KEY, game);
             if (hash == 0) return false;
 
             if (inward)
@@ -650,13 +659,13 @@ namespace Hoodrich.UI
                 if (!Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, me.Handle, hash, false)) return false;
 
                 var ammo = Function.Call<int>(Hash.GET_AMMO_IN_PED_WEAPON, me.Handle, hash);
-                var parts = Attachments.On(me, item.Id) ?? new List<string>();
+                var parts = Attachments.On(me, game) ?? new List<string>();
 
                 _trunk.Guns.Add(item.Id + "|" + Math.Max(0, ammo) +
                                 (parts.Count > 0 ? "|" + string.Join("|", parts.ToArray()) : ""));
 
                 Function.Call(Hash.REMOVE_WEAPON_FROM_PED, me.Handle, hash);
-                _locker?.Stowed(item.Id);
+                _locker?.Stowed(game);
                 return true;
             }
 
@@ -673,14 +682,14 @@ namespace Hoodrich.UI
             Function.Call(Hash.GIVE_WEAPON_TO_PED, me.Handle, hash, Math.Max(0, rounds), false, false);
 
             // The locker's order: what was on it first, the big magazine only into an empty slot.
-            Attachments.GiveTo(me, item.Id, back);
+            Attachments.GiveTo(me, game, back);
 
             var chose = false;
             foreach (var p in back) if (p.IndexOf("_CLIP_", StringComparison.OrdinalIgnoreCase) >= 0) chose = true;
-            if (!chose) ExtendedClips.GiveTo(me, item.Id);
+            if (!chose) ExtendedClips.GiveTo(me, game);
 
             _trunk.Guns.Remove(saved);
-            _locker?.Bought(item.Id);
+            _locker?.Bought(game);
             return true;
         }
 
@@ -834,6 +843,11 @@ namespace Hoodrich.UI
         private string Figure(int side, out bool full)
         {
             full = false;
+
+            // ON ITS WAY DOWN. Close lets go of the trunk and the pockets at once and the
+            // curtain keeps drawing for a few frames after, so this was read off a null and
+            // failed the tick -- once per boot, right after the lid shut.
+            if (_trunk == null || _pockets == null) return "";
 
             var picked = Picked();
             var kind = picked == null ? Kind.Product : picked.Kind;

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using GTA;
 using GTA.Native;
 using Hoodrich.Core;
@@ -78,7 +78,9 @@ namespace Hoodrich.Weapons
         public static string For(string weaponId)
         {
             if (string.IsNullOrEmpty(weaponId)) return null;
-            return Clips.TryGetValue(weaponId, out var c) ? c : null;
+
+            // The table is keyed the game's way; a bare id off weapons.json is made to match.
+            return Clips.TryGetValue(WeaponRegistry.GameName(weaponId), out var c) ? c : null;
         }
 
         /// <summary>
@@ -95,7 +97,7 @@ namespace Hoodrich.Weapons
 
             try
             {
-                var weapon = Function.Call<uint>(Hash.GET_HASH_KEY, weaponId);
+                var weapon = Function.Call<uint>(Hash.GET_HASH_KEY, WeaponRegistry.GameName(weaponId));
                 var part = Function.Call<uint>(Hash.GET_HASH_KEY, component);
 
                 Function.Call(Hash.GIVE_WEAPON_COMPONENT_TO_PED, ped.Handle, weapon, part);

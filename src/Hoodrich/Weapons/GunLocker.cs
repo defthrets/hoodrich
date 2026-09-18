@@ -193,7 +193,12 @@ namespace Hoodrich.Weapons
         public void Bought(string weapon)
         {
             if (_state == null || string.IsNullOrEmpty(weapon)) return;
-            if (_state.GunsBought.Contains(weapon)) return;
+
+            // The game's name, whichever the caller had. The list is hashed straight, so a
+            // bare id on it is an entry that can never be handed back.
+            weapon = WeaponRegistry.GameName(weapon);
+
+            if (_state.GunsBought.FindIndex(w => string.Equals(w, weapon, StringComparison.OrdinalIgnoreCase)) >= 0) return;
 
             _state.GunsBought.Add(weapon);
             _state.Touch();
@@ -208,7 +213,11 @@ namespace Hoodrich.Weapons
         public void Stowed(string weapon)
         {
             if (_state == null || string.IsNullOrEmpty(weapon)) return;
-            if (!_state.GunsBought.Remove(weapon)) return;
+
+            weapon = WeaponRegistry.GameName(weapon);
+
+            var gone = _state.GunsBought.RemoveAll(w => string.Equals(w, weapon, StringComparison.OrdinalIgnoreCase));
+            if (gone == 0) return;
 
             _state.Touch();
             Log.Info("Locker: " + weapon + " is in a boot (" + _state.GunsBought.Count + " held).");

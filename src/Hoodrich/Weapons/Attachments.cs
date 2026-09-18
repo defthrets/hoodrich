@@ -133,6 +133,9 @@ namespace Hoodrich.Weapons
         {
             if (ped == null || !ped.Exists() || string.IsNullOrEmpty(weapon)) return null;
 
+            // Either form of the name. See WeaponRegistry.GameName.
+            weapon = WeaponRegistry.GameName(weapon);
+
             uint hash;
 
             try
@@ -182,6 +185,8 @@ namespace Hoodrich.Weapons
         public static int GiveTo(Ped ped, string weapon, List<string> parts)
         {
             if (ped == null || !ped.Exists() || parts == null || parts.Count == 0) return 0;
+
+            weapon = WeaponRegistry.GameName(weapon);
 
             uint hash;
 

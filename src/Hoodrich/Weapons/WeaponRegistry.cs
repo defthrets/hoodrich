@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using GTA;
@@ -38,6 +38,26 @@ namespace Hoodrich.Weapons
     {
         /// <summary>WEAPON_UNARMED. Always available, and never listed in a slot.</summary>
         public const uint UnarmedHash = 2725352035; // WEAPON_UNARMED, 0xA2719263
+
+        /// <summary>
+        /// The name the game hashes a weapon under, from either form of ours.
+        ///
+        /// TWO NAMESPACES, AND THE BOOT FELL DOWN THE GAP. weapons.json names a gun by its bare
+        /// id -- MICROSMG, DAGGER -- and carries the real hash beside it; the game, the locker's
+        /// list and the clip table all speak in WEAPON_MICROSMG. Anything that hashes the bare
+        /// id gets a number the game has no weapon under, and every native asked with it says
+        /// no: which is how a gun could never be put in the boot ("would not move MICROSMG
+        /// in"), and how one taken out would have been handed back as nothing.
+        ///
+        /// So the helpers ask this before they hash anything, and a caller may say either.
+        /// </summary>
+        public static string GameName(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return "";
+
+            var up = id.Trim().ToUpperInvariant();
+            return up.StartsWith("WEAPON_", StringComparison.Ordinal) ? up : "WEAPON_" + up;
+        }
 
         /// <summary>The vanilla wheel's slots, in the order it draws them.</summary>
         public static readonly string[] SlotOrder =
