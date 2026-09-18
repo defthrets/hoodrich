@@ -1094,7 +1094,11 @@ namespace Hoodrich.Wheel
             // THE GRID IS PIXEL ART NOW, one flipbook a tile, split out of GIFs by
             // tools/gif2frames.py: the first frame is the icon, the rest play while the
             // cursor is on it. See WheelItem.IconFrames.
-            page.WithIcon(Icons.FromFile("nokia_0.png")).WithFlipbook("nokia", 9, 150);
+            // THE DRAWN SET, NOT THE FLIPBOOKS. The grid wore pixel-art frames for a week
+            // -- nokia_0..8 and the rest are still in data\icons -- and the drawn white set
+            // the phone had before them was the better look on the phone. WithFlipbook still
+            // works for anything that wants it; nothing on the home screen does.
+            page.WithIcon(Icons.FromFile("mobile.png"));
 
             // SECOND, right under the real phone, because it is the thing on here you open
             // most and the one with something waiting in it. Dealing moved down to sit beside
@@ -1120,7 +1124,7 @@ namespace Hoodrich.Wheel
             // until now the two were the same grey. See WheelItem.Urgent.
             page.WhenWaiting(Inbox.Unread > 0);
 
-            page.WithIcon(Icons.FromFile("bubble_0.png")).WithFlipbook("bubble", 9, 150);
+            page.WithIcon(Icons.FromFile("reply.png"));
 
             // Contacts sits on the RIGHT, two slots off Socials rather than next to it. The
             // wheel fills clockwise from the top, so where a wedge is added is where it lands
@@ -1129,7 +1133,7 @@ namespace Hoodrich.Wheel
             page.AddSub("Contacts", "#", BuildContactsPage,
                 detail: "Everyone you can reach, and what you can say to them",
                 value: ContactsSummary());
-            page.WithIcon(Icons.FromFile("faces_0.png")).WithFlipbook("faces", 9, 150);
+            page.WithIcon(Icons.FromFile("people.png"));
 
             // A baggie, not a bong. The old one was a picture of SMOKING and this menu is
             // about selling, which is the one thing nobody in it ever does with the product.
@@ -1140,7 +1144,7 @@ namespace Hoodrich.Wheel
                 disabledReason: "You're working the counter");
             // The pixel baggie, still until the cursor lands on it and shaking while it is
             // there: the first frame is the icon, the other fifteen are the selection.
-            page.WithIcon(Icons.FromFile("baggie_0.png")).WithFlipbook("baggie", 16, 130);
+            page.WithIcon(Icons.FromFile("baggie.png"));
 
             // IN THE MIDDLE OF THE GRID, swapped with Luber. It is the app with something
             // new in it most often, and it was sat on its own on a fourth row underneath three
@@ -1156,21 +1160,21 @@ namespace Hoodrich.Wheel
             // The handset with a heart on the screen, so it cannot be confused with the Phone
             // app. mobile.png put a feed on the screen, and at twenty pixels a feed is three
             // smudges -- exactly what a phone with nothing on it looks like.
-            page.WithIcon(Icons.FromFile("likes_0.png")).WithFlipbook("likes", 9, 150);
+            page.WithIcon(Icons.FromFile("socials.png"));
 
             page.AddSub("Gangs", "%", BuildGangsPage,
                 detail: _crew.IsAffiliated
                     ? "You run with " + _crew.Current.Name
                     : "Nobody has put you on yet",
                 value: _crew.IsAffiliated ? _crew.Current.Tag : "SOLO");
-            page.WithIcon(Icons.FromFile("ganghead_0.png")).WithFlipbook("ganghead", 9, 150);
+            page.WithIcon(Icons.FromFile("bandana.png"));
 
             // What you are carrying, rather than how you are doing -- the stats moved under
             // Gangs, because who rates you is a gang question.
             page.Add("Inventory", "*", ShowInventory,
                 detail: _stash.AtDoor ? "Move product between your pockets and the house" : "Everything you are carrying",
                 value: _stash.AtDoor ? "at the house" : CarriedSummary());
-            page.WithIcon(Icons.FromFile("duffel_0.png")).WithFlipbook("duffel", 9, 150);
+            page.WithIcon(Icons.FromFile("duffel.png"));
 
             // Its own wedge rather than a line inside something else. What the block is saying
             // about you is not a sub-heading of your inventory, and burying it two levels down
@@ -1188,7 +1192,7 @@ namespace Hoodrich.Wheel
                 value: "",
                 enabled: ShowSettings != null,
                 disabledReason: "Not wired up");
-            page.WithIcon(Icons.FromFile("balance_0.png")).WithFlipbook("balance", 9, 150);
+            page.WithIcon(Icons.FromFile("scales.png"));
 
             // Between Inventory and Settings rather than at the end. It is a thing you
             // carry and use, not a thing you configure, so it belongs with the other two apps
@@ -1221,7 +1225,7 @@ namespace Hoodrich.Wheel
             // THE STOCK ONE of the three. The fat cap's nozzle is the biggest and survives
             // being shrunk best, which is an argument for it and not a good enough one: the
             // stock cap is the one that comes on the can, and it is the better drawing.
-            page.WithIcon(Icons.FromFile("spraycan_0.png")).WithFlipbook("spraycan", 16, 130);
+            page.WithIcon(Icons.FromFile("cap_stock.png"), CapMark);
 
             // NO MASK TILE. The balaclava is still in the mod -- the shop, the setting, the
             // toggle -- but it is not an app: a thing you pull on in the street does not
@@ -1244,7 +1248,7 @@ namespace Hoodrich.Wheel
             // You|Tube lockup with the halves swapped, and it looked it; and the three little
             // pictures say what the app does, which no arrangement of the name can. See
             // tools/make_luber.py.
-            page.WithIcon(Icons.FromFile("burger_0.png")).WithFlipbook("burger", 9, 150);
+            page.WithIcon(Icons.FromFile("luber.png"), LuberMark);
 
             return page;
         }

@@ -802,6 +802,47 @@ def stash():
     save(img, "stash.png")
 
 
+def duffel():
+    """The holdall on his back, and on the pavement when it is not.
+
+    A DUFFEL, NOT THE BACKPACK. stash() is a backpack and it stood in for the inventory for a
+    while; the bag the mod actually gives him -- prop_cs_heist_bag_01, the one that comes off
+    where he drops it -- is a holdall, and the tile should be the thing you are carrying.
+
+    The same rules as the rest of the kit: a flat silhouette, the parts separated by CLEAR
+    gaps rather than by tone, the planes that sit back at MID. Lying on its side, handles up,
+    the way it sits on the floor in the game.
+    """
+    img, d = canvas()
+
+    # The two handles, behind everything: loops that rise off the top of the body.
+    stroke(d, arc(210, 196, 92, 200, 340, 28), 24, MID)
+    stroke(d, arc(302, 196, 92, 200, 340, 28), 24)
+
+    # The body: a long rounded block with the ends rounder than the middle.
+    rrect(d, 40, 176, 472, 420, 96)
+
+    # The end panels, sat back, so it reads as a cylinder rather than a pill.
+    ellipse(d, 92, 298, 46, 110, MID)
+    ellipse(d, 420, 298, 46, 110, MID)
+
+    # The zip, along the top of the body, as a gap with the teeth showing through.
+    rrect(d, 120, 214, 392, 236, 11, CLEAR)
+    for x in range(140, 380, 24):
+        rect(d, x, 219, x + 10, 231, LOW)
+
+    # The zip pull.
+    rrect(d, 372, 204, 404, 246, 10, CLEAR)
+    rrect(d, 378, 210, 398, 240, 7)
+
+    # A side pocket on the front, standing proud, the way the backpack's does.
+    rrect(d, 158, 292, 354, 392, 34, CLEAR)
+    rrect(d, 168, 302, 344, 382, 28)
+    rrect(d, 200, 328, 312, 348, 9, CLEAR)
+
+    save(img, "duffel.png")
+
+
 def bed():
     img, d = canvas()
 
@@ -903,5 +944,5 @@ ALL = [wifi, arrow_right, arrow_left, arrow_updown, arrow_leftright,
        warning, locked, key, eyes, footfall, rank, people, pin, deal,
        socials, mobile, phone, megaphone, music, tattoo, health, scales, crown, skull, police,
        mask, bandana,
-       garage, car, tow, bank, card, cash, money, crate, box, brick, stash, bed, dog, fire, spray,
+       garage, car, tow, bank, card, cash, money, crate, box, brick, stash, duffel, bed, dog, fire, spray,
        cap, gang_f]
