@@ -340,6 +340,29 @@ namespace Hoodrich.Supply
         public readonly List<int> RideNeon = new List<int>();
 
         /// <summary>
+        /// How his car sits: degrees of lean on the rear wheels (negative tucks them in),
+        /// metres the rear sits down by (negative lowers it), metres the front sits up by.
+        /// All nought for a car that sits how it came.
+        ///
+        /// THE SAME THREE NUMBERS AS THE ONE PARKED DOWN THE SIDE OF THE SHOP. Vernon's
+        /// Dorado is sat on its back axle with the nose up, held by this mod's own stance
+        /// thread rather than a suspension slot -- see Locations.Slammed, on why a slot is
+        /// not a stance -- and the one he delivered in was arriving at factory height, which
+        /// is the same car standing differently. Here, beside the rims and the tubes, because
+        /// it is the same kind of fact; Main builds the parked one from these as well, so
+        /// there is one place to change how it sits.
+        /// </summary>
+        public float RideCamber;
+        public float RideSquat;
+        public float RideNose;
+
+        /// <summary>Whether any of the three is worth holding. See Locations.Slammed.Hold.</summary>
+        public bool HasStance =>
+            Math.Abs(RideCamber) >= 0.0005f ||
+            Math.Abs(RideSquat) >= 0.0005f ||
+            Math.Abs(RideNose) >= 0.0005f;
+
+        /// <summary>
         /// What it says on the back of his car.
         ///
         /// The same reasoning as the paint: two men turning up in identical black cars with

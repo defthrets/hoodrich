@@ -192,6 +192,9 @@ namespace Hoodrich.Supply
             ReplaceInts(def.RideMods, node["rideMods"]);
             ReplaceInts(def.RideToggles, node["rideToggles"]);
             ReplaceInts(def.RideNeon, node["rideNeon"]);
+            def.RideCamber = node["rideCamber"].AsFloat(def.RideCamber);
+            def.RideSquat = node["rideSquat"].AsFloat(def.RideSquat);
+            def.RideNose = node["rideNose"].AsFloat(def.RideNose);
             def.Plate = node["plate"].AsString(def.Plate);
             def.OpeningText = node["openingText"].AsString(def.OpeningText);
             // NO FALLBACK HERE ANY MORE. What the file says, and nothing if it says nothing

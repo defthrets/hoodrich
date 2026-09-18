@@ -1391,6 +1391,14 @@ namespace Hoodrich
                 // tight enough to the fence that the driver's door could not swing, so getting
                 // in was a man standing beside his own car pulling at a handle. Eight tenths of
                 // a metre along the car's own right, which is the side the driver is not on.
+                // THE THREE STANCE NUMBERS LIVE IN dealers.json NOW, as rideCamber, rideSquat
+                // and rideNose on his entry, because the Dorado he delivers in sits on the
+                // same three -- see Delivery.Stance -- and one car with two copies of its own
+                // numbers is a car that drifts apart. The numbers below are what they were
+                // the day they moved, and are only read when the file has none.
+                var vernon = _dealers == null ? null : _dealers.Find("vernon");
+                var sat = vernon != null && vernon.HasStance;
+
                 _dorado = new ParkedCar(new Vector3(39.365f, -1450.862f, 28.934f), 320.177f,
                                         GlossBlack, "dorado")
                 {
@@ -1422,9 +1430,9 @@ namespace Hoodrich
                     // Rear down fifteen and the nose up six, which is what "raise the front a
                     // bit" meant. If it still stands too tall that is the WHEEL, not the
                     // suspension, and the fix is a smaller rim than Lotta Chrome.
-                    Camber = -1.5f,
-                    Squat = -0.15f,
-                    Nose = 0.06f,
+                    Camber = sat ? vernon.RideCamber : -1.5f,
+                    Squat = sat ? vernon.RideSquat : -0.15f,
+                    Nose = sat ? vernon.RideNose : 0.06f,
 
                     // Sprunk, which is the thirteenth plate and the loudest one the game has.
                     // The name is his and nobody else in Los Santos agrees with it.

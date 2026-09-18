@@ -388,6 +388,15 @@ namespace Hoodrich.Supply
         private Vehicle _car;
         private Blip _blip;
 
+        /// <summary>How his car sits, held for as long as the car is in the world. See Sit.</summary>
+        private readonly Locations.Slammed _stance = new Locations.Slammed();
+
+        /// <summary>The car under the stance: his, and kept past Cancel until the game has recycled it.</summary>
+        private Vehicle _sat;
+
+        private float _camber, _squat, _nose;
+        private int _climbedAt;
+
         private int _stateSince;
         private int _lastRetask;
 
@@ -689,6 +698,9 @@ namespace Hoodrich.Supply
 
         public void Update()
         {
+            // BEFORE THE ACTIVE CHECK, because the stance outlives the run. See Sit.
+            Sit();
+
             if (!IsActive) return;
 
             var player = Game.Player.Character;
@@ -785,6 +797,7 @@ namespace Hoodrich.Supply
 
                 _car.IsPersistent = true;
                 BlackOut(_car, _def, _def == null ? "" : _def.Plate);
+                Stance(_car, _def);
 
                 var pedModel = ResolveDriverModel();
                 if (pedModel == null)
@@ -958,6 +971,137 @@ namespace Hoodrich.Supply
                 Function.Call(Hash.SET_VEHICLE_NEON_COLOUR, h,
                               def.RideNeon[0], def.RideNeon[1], def.RideNeon[2]);
             }
+        }
+
+        // ---- how his car sits -----------------------------------------------------
+
+        /// <summary>How near on foot counts as about to open a door. See Climbing.</summary>
+        private const float ClimbNear = 4.5f;
+
+        /// <summary>How long after the last entry frame before the wheels are ours again.</summary>
+        private const int ClimbSettleMs = 900;
+
+        /// <summary>CTaskExitVehicle, in GET_IS_TASK_ACTIVE's numbering.</summary>
+        private const int ExitTask = 2;
+
+        /// <summary>
+        /// Puts his own car on its stance, if he has one.
+        ///
+        /// THE DORADO OUTSIDE THE SHOP SITS DOWN AT THE BACK WITH ITS NOSE UP, and the Dorado
+        /// he delivered in did not: Own dressed it to the bolt -- rims, glass, tubes -- and
+        /// then it rolled up outside the house at factory height, which is the same car
+        /// standing differently. The three numbers are his now, in dealers.json beside the
+        /// rims, and Main builds the parked one from the same three. This holds them on the
+        /// delivery car the way ParkedCar holds them on the parked one: through Slammed,
+        /// every frame, for as long as the car exists.
+        ///
+        /// NOT IN Own, because Own is a one-off dressing and a stance is a thing held every
+        /// frame -- see Slammed, on why the game keeps taking the wheels back.
+        /// </summary>
+        private void Stance(Vehicle car, DealerDef def)
+        {
+            // Whatever was under the last one, forgotten: its wheels are somebody else's now.
+            _stance.Forget();
+            _sat = null;
+
+            if (car == null || !car.Exists() || def == null || !def.RideOwn || !def.HasStance) return;
+
+            _camber = def.RideCamber;
+            _squat = def.RideSquat;
+            _nose = def.RideNose;
+            _sat = car;
+            _climbedAt = 0;
+
+            Log.Info("Delivery: " + def.Name + "'s " + car.DisplayName + " sits camber " +
+                     _camber.ToString("0.##") + ", rear " + _squat.ToString("0.##") +
+                     " m, nose " + _nose.ToString("0.##") + " m.");
+        }
+
+        /// <summary>
+        /// Holds the stance, every frame, on whichever car is under it.
+        ///
+        /// PAST THE END OF THE RUN ON PURPOSE. Cancel hands the car back to the game and he
+        /// drives off in it, and a car that rises fifteen centimetres at the back as it pulls
+        /// away is the mod letting go where you can see it. So the car is kept here rather
+        /// than in _car, until the game has recycled it -- and this clears on the frame it
+        /// goes, which is the one-frame window Slammed is written around.
+        /// </summary>
+        private void Sit()
+        {
+            if (_sat == null) return;
+
+            try
+            {
+                if (!_sat.Exists())
+                {
+                    _sat = null;
+                    _stance.Forget();
+                    return;
+                }
+
+                if (Climbing(_sat)) _stance.Pause();
+                else _stance.Hold(_sat, _camber, _squat, _nose);
+            }
+            catch
+            {
+                // A car whose wheels could not be read this frame. Next frame.
+            }
+        }
+
+        /// <summary>
+        /// Whether anybody is in the middle of getting into or out of his car.
+        ///
+        /// THE SAME TEST ParkedCar MAKES, for the same reason: getting in is an animation
+        /// pinned to the car, and the stance moves the car under it. A man on foot within a
+        /// few metres of it is either about to open a door or walking past, and pausing for
+        /// either is invisible on a car that is not moving. HIM AS WELL AS YOU, because he is
+        /// the one who gets out of it, walks the bag in and gets back in -- and getting OUT
+        /// is asked of the task list, since the game does not count it as getting in.
+        /// </summary>
+        private bool Climbing(Vehicle car)
+        {
+            try
+            {
+                var now = Game.GameTime;
+                var me = Game.Player.Character;
+                var him = _driver != null && _driver.Exists() ? _driver : car.Driver;
+
+                if (Afoot(me, car) || Afoot(him, car) ||
+                    Getting(me, car) || Getting(him, car) || Leaving(him))
+                {
+                    _climbedAt = now;
+                    return true;
+                }
+
+                return now - _climbedAt < ClimbSettleMs;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>On foot, and near enough to have a hand on a door.</summary>
+        private static bool Afoot(Ped who, Vehicle car)
+        {
+            return who != null && who.Exists() && !who.IsInVehicle() &&
+                   who.Position.DistanceTo(car.Position) <= ClimbNear;
+        }
+
+        /// <summary>Whether that ped is climbing into THIS car specifically.</summary>
+        private static bool Getting(Ped who, Vehicle car)
+        {
+            if (who == null || !who.Exists()) return false;
+            if (!Function.Call<bool>(Hash.IS_PED_GETTING_INTO_A_VEHICLE, who.Handle)) return false;
+
+            return Function.Call<int>(Hash.GET_VEHICLE_PED_IS_ENTERING, who.Handle) == car.Handle;
+        }
+
+        /// <summary>Whether that ped is on his way out of a car.</summary>
+        private static bool Leaving(Ped who)
+        {
+            return who != null && who.Exists() &&
+                   Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, who.Handle, ExitTask);
         }
 
         /// <summary>
@@ -2758,6 +2902,13 @@ namespace Hoodrich.Supply
             _box = null;
         }
 
-        public void RestoreWorld() => Cancel(null);
+        public void RestoreWorld()
+        {
+            Cancel(null);
+
+            // THE THREAD GOES WITH THE MOD, not with the car -- the same as ParkedCar. A
+            // background thread left running after a script reload is a second one next time.
+            _stance.Stop();
+        }
     }
 }
