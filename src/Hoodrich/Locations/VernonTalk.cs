@@ -826,14 +826,27 @@ namespace Hoodrich.Locations
             // AFTER IT WENT WRONG, HE WAS THERE. "That thing I mentioned? Still standin'" is a
             // man who has never sent you anywhere; a man who sat in a scrap yard with a
             // pistol while you went down does not talk about it as a thing he mentioned.
+            //
+            // ONE NODE CALL PER LINE, NOT A TERNARY INSIDE ONE. tools/voice_lines.py reads the
+            // sentences out of Node(...) calls, and a line hidden behind a ?: is a line that
+            // never reaches the record list and so never gets a take.
             var tried = _state != null && _state.HasDone(TriedIt);
 
-            var node = Node(tried
-                ? "Ayy. You alright? ... Nah, don't -- I know. I was there. I ain't sayin' " +
-                  "nothin' about it out here neither, so you already know where we goin'."
-                : "Ayy, my guy. Still on the wall. That thing I mentioned? Still standin', still " +
-                  "need doin' -- and it ain't a pavement conversation, so you already know where " +
-                  "we goin'.");
+            DialogueNode node;
+
+            if (tried)
+            {
+                node = Node(
+                    "Ayy. You alright? ... Nah, don't -- I know. I was there. I ain't sayin' " +
+                    "nothin' about it out here neither, so you already know where we goin'.");
+            }
+            else
+            {
+                node = Node(
+                    "Ayy, my guy. Still on the wall. That thing I mentioned? Still standin', still " +
+                    "need doin' -- and it ain't a pavement conversation, so you already know where " +
+                    "we goin'.");
+            }
 
             node.Say(tried ? "Downstairs." : "Tell me again.", () => TheAsk(), "The work").MovesOn();
             node.Say("Spit that verse again.", () => Bars());
@@ -854,13 +867,23 @@ namespace Hoodrich.Locations
             try { below = Below != null && Below(); }
             catch { /* the pavement, then */ }
 
-            var node = Node(below
-                ? "Told you. Six months of a grown man's own money, and now there's " +
-                  "somethin' on that shelf. Sit down, sit down -- the tape's on. Don't talk " +
-                  "over the second half."
-                : "Franklin! The man himself. Nah, don't go down on your own -- I said I'd walk " +
-                  "you down, so I'm walkin' you down. Mind that third step, it's a whole " +
-                  "situation. And the tape's already on, so don't talk over the second half.");
+            DialogueNode node;
+
+            // One Node call per line, for the record list. See Owed.
+            if (below)
+            {
+                node = Node(
+                    "Told you. Six months of a grown man's own money, and now there's " +
+                    "somethin' on that shelf. Sit down, sit down -- the tape's on. Don't talk " +
+                    "over the second half.");
+            }
+            else
+            {
+                node = Node(
+                    "Franklin! The man himself. Nah, don't go down on your own -- I said I'd walk " +
+                    "you down, so I'm walkin' you down. Mind that third step, it's a whole " +
+                    "situation. And the tape's already on, so don't talk over the second half.");
+            }
 
             node.Say("Let me hear the new one.", () => NewBars(), "He has a new one");
             node.Leave();
