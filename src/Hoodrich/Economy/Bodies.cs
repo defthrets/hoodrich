@@ -224,11 +224,21 @@ namespace Hoodrich.Economy
 
             var gone = new List<int>();
 
+            // A BODY BEING DRAGGED IS ALIVE. Five0 Patrol brings a corpse back to life to take
+            // hold of it -- only the living ragdoll, and only a ragdoll can be held by the
+            // hand -- and kills him again when he is put down. For the minute in between he
+            // answers IsAlive, and a sweep that forgot him for it handed the same man a fresh
+            // set of pockets the moment he was set down: searchable again, everything back
+            // in them, and the other mod's drag prompt waiting on a search that had already
+            // happened. While their hands are full, nobody alive is forgotten.
+            var held = Core.Undertaker.Holding;
+
             foreach (var pair in _known)
             {
                 var ped = Entity.FromHandle(pair.Key) as Ped;
 
-                if (ped == null || !ped.Exists() || ped.IsAlive) gone.Add(pair.Key);
+                if (ped == null || !ped.Exists()) { gone.Add(pair.Key); continue; }
+                if (ped.IsAlive && !held) gone.Add(pair.Key);
             }
 
             // AND THE OPENED SET GOES WITH IT, for exactly the same reason the table does: a
@@ -812,9 +822,52 @@ namespace Hoodrich.Economy
                     case LootKind.Drug:
                         if (State == null || State.Stash == null) { why = "nowhere to put it"; return false; }
 
-                        var took = State.Stash.AddPackaged(item.Id, item.Grams, item.Purity);
+                        // HIS POCKETS FIRST, AND THEN THE BAG ON HIS BACK. Packaged product
+                        // lives in a jacket -- see Satchel -- but a jacket holds four hundred
+                        // grams and a man working a corner has most of that spoken for. "No
+                        // room on you" with fifteen empty slots hanging off his shoulder was
+                        // the mod refusing the one container he could see, and what a refused
+                        // take looks like from the pavement is product that never turned up.
+                        // The pocket screen already lets him carry bagged product across by
+                        // hand; this does the same thing at the body.
+                        var bag = State.Bag != null && State.Bag.Worn && State.Bag.Stash != null
+                            ? State.Bag : null;
 
-                        if (took <= 0.005f) { why = "no room on you"; return false; }
+                        var pocketed = State.Stash.AddPackaged(item.Id, item.Grams, item.Purity);
+                        var bagged = 0f;
+
+                        var left = item.Grams - pocketed;
+
+                        if (left > 0.005f && bag != null)
+                        {
+                            var room = Math.Min(left, bag.GramsFree);
+                            if (room > 0.005f) bagged = bag.Stash.AddPackaged(item.Id, room, item.Purity);
+                        }
+
+                        var took = pocketed + bagged;
+
+                        if (took <= 0.005f)
+                        {
+                            why = bag != null ? "no room on you or in the bag" : "no room on you";
+                            Log.Info("Loot: would not take " + item.Grams.ToString("0.#") + "g of " + item.Name +
+                                     " off " + body.Name + " -- " + why + " (pockets " +
+                                     State.Stash.Total.ToString("0.#") + "g of " +
+                                     State.Stash.Capacity.ToString("0") + "g" +
+                                     (bag != null ? ", bag " + bag.Used + " of " + Satchel.Slots + " slots" : "") + ").");
+                            return false;
+                        }
+
+                        // WRITTEN DOWN, WITH WHERE IT WENT. Nothing about a take was ever logged,
+                        // so "the drugs I took off him aren't in my pocket" arrived with no way
+                        // to tell a take that failed from a take that landed somewhere he was
+                        // not looking.
+                        Log.Info("Loot: " + took.ToString("0.#") + "g of " + item.Name + " off " + body.Name +
+                                 " into " + (bagged > 0.005f
+                                                ? (pocketed > 0.005f ? "his pockets and the bag" : "the bag")
+                                                : "his pockets") +
+                                 " -- pockets " + State.Stash.Total.ToString("0.#") + "g of " +
+                                 State.Stash.Capacity.ToString("0") + "g" +
+                                 (bag != null ? ", bag " + bag.Used + " of " + Satchel.Slots + " slots" : "") + ".");
 
                         // PART OF IT IS STILL A TAKE. A pocket with room for four grams of a
                         // six-gram bag takes four and leaves two, which is what a pocket does.
@@ -837,6 +890,13 @@ namespace Hoodrich.Economy
             }
 
             body.Items.Remove(item);
+
+            if (item.Kind != LootKind.Drug)
+            {
+                Log.Info("Loot: took the " + item.Name + (string.IsNullOrEmpty(item.Tag) ? "" : " (" + item.Tag + ")") +
+                         " off " + body.Name + ".");
+            }
+
             return true;
         }
 
