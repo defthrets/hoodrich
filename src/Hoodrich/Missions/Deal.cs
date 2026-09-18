@@ -200,7 +200,12 @@ namespace Hoodrich.Missions
         /// Santos in an open case with the contents on display. The props whose names end
         /// _shut are the closed ones and there is no other way to know from a list.
         private static readonly string[] Brick =
-            { "hei_p_attache_case_shut", "bkr_prop_biker_case_shut", "prop_coke_block_01" };
+        {
+            "hei_p_attache_case_shut", "bkr_prop_biker_case_shut", "prop_coke_block_01",
+
+            // AND TWO THE BASE GAME HAS FOR CERTAIN, behind them.
+            "prop_drug_package_02", "prop_cs_heist_bag_01"
+        };
 
         /// <summary>
         /// What Vernon carries out of the shop: the money, in a paper bag.
@@ -267,6 +272,108 @@ namespace Hoodrich.Missions
 
         /// <summary>Whether the kilo is in Franklin's hand right now. See Collecting.</summary>
         private bool _carrying;
+
+        /// <summary>Where the package was put down, prop or no prop. See Drop and Collecting.</summary>
+        private Vector3 _dropAt;
+
+        /// <summary>When he was first stood near the package without it in hand. See Collecting.</summary>
+        private int _nearSince;
+
+        /// <summary>
+        /// Near enough, across the yard, that he has plainly found the blip; and how long he
+        /// is left stood there before the case is brought to him.
+        /// </summary>
+        private const float NearButNot = 4.5f;
+        private const int NearButNotMs = 6000;
+
+        /// <summary>
+        /// A prop that ended up under the yard is put back on top of it.
+        ///
+        /// PLACE_OBJECT_ON_GROUND_PROPERLY looks for the ground BELOW the object, so a case
+        /// created a metre under a slab -- a pelvis read off a corpse that was lying down, a
+        /// probe that missed -- is settled onto whatever is under the map, which is nothing
+        /// anybody can walk to. So the ground over the spot is asked for and anything more
+        /// than a hand's width beneath it comes up.
+        /// </summary>
+        private static void OnTheFloor(Prop prop)
+        {
+            if (prop == null || !prop.Exists()) return;
+
+            try
+            {
+                var p = prop.Position;
+                float ground;
+
+                if (Core.Ground.Probe(new Vector3(p.X, p.Y, p.Z + 2.5f), out ground) && ground - p.Z > 0.15f)
+                {
+                    prop.Position = new Vector3(p.X, p.Y, ground + 0.05f);
+                    Function.Call(Hash.PLACE_OBJECT_ON_GROUND_PROPERLY, prop.Handle);
+
+                    Log.Info("Deal: the package was " + (ground - p.Z).ToString("0.0") + "m under the yard; brought up.");
+                }
+            }
+            catch
+            {
+                // Wherever it is.
+            }
+        }
+
+        /// <summary>
+        /// The case, brought to his feet.
+        ///
+        /// FOR THE ONE THAT WENT SOMEWHERE A MAN CANNOT STAND. Through the floor, onto the
+        /// roof under the bridge, into the boot of their car: the blip is where it is and
+        /// the prop is nowhere you can get within arm's reach of it, and the job sits on
+        /// "take the package" for as long as you are willing to look. Stood on the blip for
+        /// a few seconds with nothing in hand is the whole of the evidence needed.
+        /// </summary>
+        private void Rescue(Ped player)
+        {
+            var at = player.Position;
+
+            try { at = player.Position + player.ForwardVector * 1.4f; }
+            catch { /* his own feet, then */ }
+
+            at = Stood(at);
+
+            try
+            {
+                if (_brick != null && _brick.Exists())
+                {
+                    _brick.Position = at + new Vector3(0f, 0f, 0.05f);
+                    Function.Call(Hash.PLACE_OBJECT_ON_GROUND_PROPERLY, _brick.Handle);
+                    OnTheFloor(_brick);
+                }
+            }
+            catch
+            {
+                // Then it is the coordinate, which is enough on its own.
+            }
+
+            _dropAt = at;
+            _nearSince = 0;
+
+            Unmark(ref _brickMark);
+
+            try
+            {
+                _brickMark = _brick != null && _brick.Exists() ? _brick.AddBlip() : World.CreateBlip(at);
+
+                if (_brickMark != null && _brickMark.Exists())
+                {
+                    _brickMark.Sprite = (BlipSprite)51;
+                    _brickMark.Color = BlipColor.White;
+                    _brickMark.Scale = 0.8f;
+                    _brickMark.Name = "The package";
+                }
+            }
+            catch
+            {
+                // The objective still says what to do.
+            }
+
+            Log.Info("Deal: the package was out of reach; it is at his feet now, " + at + ".");
+        }
         private Blip _brickMark;
 
         /// <summary>Vernon, who said he could not leave the store. See Locations.Vernon.Lend.</summary>
@@ -640,6 +747,31 @@ namespace Hoodrich.Missions
             }
 
             Log.Info("Deal: " + Ambush.Length + " more of them, and one of them is up top.");
+
+            // THE CASE IS ASKED FOR NOW, NOT WHEN THE LAST MAN DROPS. The fight is the loading
+            // window; asked here and on every pass of it, the model is resident long before
+            // there is anybody left to take it off.
+            WantTheCase();
+        }
+
+        /// <summary>The first case on the list this install has, asked for and not waited on.</summary>
+        private static void WantTheCase()
+        {
+            foreach (var name in Brick)
+            {
+                try
+                {
+                    var model = new Model(name);
+                    if (!model.IsValid || !model.IsInCdImage) continue;
+
+                    Core.Streamer.Here(model);
+                    return;
+                }
+                catch
+                {
+                    // The next name.
+                }
+            }
         }
 
         /// <summary>
@@ -777,6 +909,9 @@ namespace Hoodrich.Missions
         {
             if (Standing > 0)
             {
+                // See WantTheCase: kept asked for, for as long as the fight lasts.
+                WantTheCase();
+
                 // HIS ORDERS RUN OUT WHEN HIS MAN DOES. Guard points him at one Armenian and
                 // that is all he is ever told; from the moment that one drops he is
                 // freelancing, which is the state the group above exists to make harmless and
@@ -832,7 +967,7 @@ namespace Hoodrich.Missions
                 Vees(GrabIt);
             }
 
-            Log.Info("Deal: all of them down. The package is on the floor.");
+            Log.Info("Deal: all of them down.");
         }
 
         // ======================================================================
@@ -1033,14 +1168,41 @@ namespace Hoodrich.Missions
                 at = _theirs.Position + _theirs.ForwardVector * -3f;
             }
 
+            // NOT INSIDE THEIR CAR. The talker dies where he dies, and a man shot beside his
+            // own car goes down half under it -- and a case put down at his coordinate is a
+            // case inside a Schafter, which is a blip you can stand on and a prop you cannot
+            // see or reach. Anything within a car's width of the car goes round the back of it.
+            try
+            {
+                if (_theirs != null && _theirs.Exists() && at.DistanceTo(_theirs.Position) < 2.8f)
+                {
+                    at = _theirs.Position + _theirs.ForwardVector * -3.2f;
+                }
+            }
+            catch
+            {
+                // Where he fell, then.
+            }
+
             at = Stood(at);
+
+            // WHERE IT WENT, whatever it turned out to be. Collecting measures against this
+            // when there is no prop to measure against -- it used to measure against the
+            // meeting spot, so with no case the blip said one place and the pickup was
+            // somewhere else.
+            _dropAt = at;
+
+            var placedAs = "";
 
             foreach (var name in Brick)
             {
                 try
                 {
                     var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(2000)) continue;
+                    if (!model.IsValid || !model.IsInCdImage) continue;
+
+                    // Resident already, from WantTheCase -- or given its two seconds here.
+                    if (!Core.Streamer.Here(model) && !model.Request(2000)) continue;
 
                     _brick = World.CreateProp(model, at + new Vector3(0f, 0f, 0.05f), false, false);
                     model.MarkAsNoLongerNeeded();
@@ -1051,12 +1213,28 @@ namespace Hoodrich.Missions
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, _brick.Handle, true, true);
                     Function.Call(Hash.PLACE_OBJECT_ON_GROUND_PROPERLY, _brick.Handle);
 
+                    OnTheFloor(_brick);
+
+                    placedAs = name;
                     break;
                 }
                 catch
                 {
                     // Next name.
                 }
+            }
+
+            // SAID TRUTHFULLY. "The package is on the floor" was logged whether or not
+            // anything had been put on it, and never where.
+            if (placedAs.Length > 0)
+            {
+                _dropAt = _brick.Position;
+                Log.Info("Deal: the package is a " + placedAs + " at " + _brick.Position + ".");
+            }
+            else
+            {
+                Log.Warn("Deal: none of " + Brick.Length + " case models would spawn; the package " +
+                         "is the blip at " + at + ", and walking onto it is enough.");
             }
 
             try
@@ -1082,9 +1260,26 @@ namespace Hoodrich.Missions
 
         private void Collecting(Ped player, int now)
         {
-            var at = _brick != null && _brick.Exists() ? _brick.Position : _lot;
+            // The prop if there is one; where it was put if there is not. See _dropAt.
+            var at = _brick != null && _brick.Exists() ? _brick.Position
+                   : _dropAt != Vector3.Zero ? _dropAt : _lot;
 
-            if (player.Position.DistanceTo(at) > GrabWithin) return;
+            if (player.Position.DistanceTo(at) > GrabWithin)
+            {
+                // FOUND THE BLIP AND NOT THE CASE. Across the yard he is on it; in three
+                // dimensions he is not, and has not been for a while. See Rescue.
+                var flat = new Vector3(player.Position.X - at.X, player.Position.Y - at.Y, 0f).Length();
+
+                if (flat > NearButNot) { _nearSince = 0; return; }
+
+                if (_nearSince == 0) _nearSince = now;
+
+                var stuck = Math.Abs(player.Position.Z - at.Z) > 1.8f || now - _nearSince > NearButNotMs;
+                if (!stuck) return;
+
+                Rescue(player);
+                return;
+            }
 
             // ---- INTO HIS HANDS, NOT INTO THIN AIR ----
             //
@@ -1941,6 +2136,8 @@ namespace Hoodrich.Missions
 
             _carrying = false;
             _caseDown = false;
+            _dropAt = Vector3.Zero;
+            _nearSince = 0;
 
             try { if (_brick != null && _brick.Exists()) _brick.Delete(); }
             catch { /* it streams out */ }
