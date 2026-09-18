@@ -548,6 +548,19 @@ namespace Hoodrich.Locations
                 var model = new Model(owned.Model);
                 if (!model.IsValid || !model.IsInCdImage || !model.Request(1500)) return false;
 
+                // NOT ON TOP OF WHATEVER IS STANDING THERE. Find did not see our plate, so a
+                // car in the space is somebody else's -- or ours wearing a plate the record
+                // has lost, which is the copy-on-a-copy this class has had before. Either
+                // way it waits, and RebuildGapMs brings it back round. See Standing.
+                var standing = Standing(owned.Where, null);
+
+                if (standing != null)
+                {
+                    Log.Info("Owned car " + owned.Id + " is not where it was left, and a " +
+                             Describe(standing) + " is standing there. Not putting one back on top of it.");
+                    return false;
+                }
+
                 // Asked for BEFORE the car exists, so the streamer has the whole of the create
                 // to work in rather than being told about the road once something is stood on it.
                 try
@@ -686,6 +699,67 @@ namespace Hoodrich.Locations
         public static string Plate(string id)
         {
             return PlateFor(id);
+        }
+
+        /// <summary>How close another vehicle has to be to a space before the space counts as taken.</summary>
+        private const float SpaceTaken = 3.0f;
+
+        /// <summary>
+        /// Whatever is standing in a space that is not the car asked about, or null for a
+        /// space that is clear.
+        ///
+        /// NOTHING IS PUT DOWN ON TOP OF A CAR. Three things in this mod put a car on a space
+        /// -- the lot stocking a row, a car sold back being driven to its own space, and one of
+        /// yours being stood back up where it was left -- and none of them looked first. A car
+        /// created inside another car is two cars fighting for one place, and the game settles
+        /// it by throwing one of them onto its roof, which is what a second car on Hao's
+        /// forecourt lying upside down behind the one you bought looks like. Now each of the
+        /// three asks, and waits or stays put when the answer is somebody's car.
+        ///
+        /// ANY VEHICLE COUNTS, not only ours. A stranger's car parked across a space is still
+        /// a car you would land on. The one exception is the car being placed itself, which
+        /// is passed in so that a car already sat on its own space is not in its own way.
+        /// </summary>
+        public static Vehicle Standing(Vector3 spot, Vehicle except)
+        {
+            try
+            {
+                Vehicle nearest = null;
+                var best = SpaceTaken;
+
+                foreach (var v in World.GetNearbyVehicles(spot, SpaceTaken + 2f))
+                {
+                    if (v == null || !v.Exists()) continue;
+                    if (except != null && v.Handle == except.Handle) continue;
+
+                    var d = v.Position.DistanceTo(spot);
+                    if (d > best) continue;
+
+                    best = d;
+                    nearest = v;
+                }
+
+                return nearest;
+            }
+            catch
+            {
+                // A scan that fell over is not a car in the way.
+                return null;
+            }
+        }
+
+        /// <summary>A car, named for the log: what it is and what it wears.</summary>
+        public static string Describe(Vehicle car)
+        {
+            try
+            {
+                var plate = (Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle) ?? "").Trim();
+                return car.DisplayName + (plate.Length > 0 ? " on plate " + plate : "");
+            }
+            catch
+            {
+                return "car";
+            }
         }
 
         /// <summary>

@@ -110,6 +110,9 @@ namespace Hoodrich.Locations
         private readonly PlayerState _state;
         private readonly List<CarLot> _stock = new List<CarLot>();
 
+        /// <summary>Rows whose space had a car in it last time, so the log says so once rather than every pass.</summary>
+        private readonly HashSet<string> _taken = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         private Ped _ped;
         private Blip _blip;
         private int _lastUpdate;
@@ -464,8 +467,22 @@ namespace Hoodrich.Locations
                     Function.Call(Hash.TASK_LEAVE_VEHICLE, me.Handle, car.Handle, 16);
                 }
 
-                car.Position = lot.Spot;
-                car.Heading = lot.Heading;
+                // INTO ITS OWN SPACE IF THE SPACE IS CLEAR, and left where it stands if it is
+                // not. Driving it onto a car already parked there is what put one on its roof;
+                // a car sold back and left by the shutter is still his, still locked, and goes
+                // to its space the next time the lot is stocked with the space clear.
+                var standing = OwnedCars.Standing(lot.Spot, car);
+
+                if (standing == null)
+                {
+                    car.Position = lot.Spot;
+                    car.Heading = lot.Heading;
+                }
+                else
+                {
+                    Log.Info("Sold " + lot.Id + " back with a " + OwnedCars.Describe(standing) +
+                             " standing in its space; it stays where it was left.");
+                }
 
                 car.Speed = 0f;
 
@@ -654,6 +671,25 @@ namespace Hoodrich.Locations
                 if (car.Live != null && car.Live.Exists() && !Ours(car.Live, car)) car.Live = null;
 
                 if (car.Live != null && car.Live.Exists() && car.Live.IsDriveable) continue;
+
+                // NOT ONTO A CAR ALREADY STANDING THERE. A car you bought and parked across a
+                // space, a stranger's, anything -- a display car made inside it is the pair
+                // of them thrown apart and one on its roof. The row waits until the space is
+                // clear, and says once whose car it is waiting on. See OwnedCars.Standing.
+                var standing = OwnedCars.Standing(car.Spot, car.Live);
+
+                if (standing != null)
+                {
+                    if (_taken.Add(car.Id))
+                    {
+                        Log.Info("Hao's lot: the " + car.Id + " space has a " + OwnedCars.Describe(standing) +
+                                 " standing in it. Nothing is put out there until it is clear.");
+                    }
+
+                    continue;
+                }
+
+                _taken.Remove(car.Id);
 
                 try
                 {
