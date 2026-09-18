@@ -189,7 +189,7 @@ namespace Hoodrich.Core
     /// </summary>
     internal static class Build
     {
-        public const string Version = "0.9.5";
+        public const string Version = "0.9.6";
         public const string Name = "Posted Up";
 
         /// <summary>

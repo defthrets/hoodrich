@@ -1,0 +1,46 @@
+0.9.6 -- 18 September 2026
+
+
+VERNON SELLS YOU POWDER NOW. He was meant to from the day he got his number:
+finish his job, drive off, and he texts to say the basement is stocked -- and
+then every order off him ended in "Vernon: nobody could make the run",
+because his entry in dealers.json named no model for the man behind the
+wheel. He drives his own Dorado to the house now, the one parked down the
+side of the shop, rims and glass and green tubes and all, and walks it in
+himself.
+
+
+AND HE CANNOT BE LOST ANY MORE. There were three ways to end up with a Vernon
+who would never pitch the job again -- stood there telling you he would walk
+you down, in front of a door he would never open. Accept it while you were on
+one of Lamar's, or before you were in a set, and the runner refused but the
+"he has explained it" flag was already written. Quit the game with the job
+running. Or press the settings row, which un-did the mission and nothing
+else. All three read as "taken and not failed", which is what the offer used
+to route on. It routes on the job being DONE now and nothing else; accepting
+only counts once the runner has actually started it; and the settings row
+un-counts the whole job, so he asks you again from the top.
+
+
+TWO KILOS A CALL, AS WRITTEN. The door screen never read his order cap --
+the rows come off the lot size -- so he was offering three, six and twelve
+kilos. The rows are 500g, 1kg and 2kg.
+
+
+AND THE SMALLER THINGS AROUND HIM. He starts the debrief himself when you
+walk up with his kilo, instead of waiting for a button he was refusing to
+show. He is not teleported onto his wall as the hand-in conversation opens
+any more -- he walks back to it after, from wherever the talk left him. The
+wall is empty while he is the one driving to your door, so there is one of
+him in the street rather than two. And the record list tells the truth about
+his lines: his own on the named files, none of the shared fallbacks he does
+not say, and the four doorstep pools it had never listed.
+
+
+IT SAYS WHEN YOUR SCRIPTHOOKVDOTNET IS TOO OLD. The commonest report on the
+page is a MissingMethodException naming a native the loader does not have,
+and the mod had no answer for it -- it signed the crash off as one for the
+author. It reads the version it was built against out of its own manifest
+now, compares it with the one running it, and says which is older and where
+to get the newer one, on screen and in the log. A loader that is the same or
+newer sees nothing.
