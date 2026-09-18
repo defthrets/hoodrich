@@ -117,6 +117,31 @@ namespace Hoodrich.Economy
 
         public float FreeSpace => Math.Max(0f, Capacity - Total);
 
+        /// <summary>
+        /// How many more KINDS of packaged product this will take, or null for as many as
+        /// there are. Only the pockets have one. See Main, which wires it.
+        ///
+        /// A KIND IS A PLACE, THE SAME AS A PACKET OF CRISPS. Bare Minimum's pocket is five
+        /// places, and it counts one for every kind of product on him -- see its
+        /// Pantry.Reserved -- so its own food stopped at the cap and ours did not: seven
+        /// kinds in a five-place pocket, with the count in amber, because the only limit
+        /// these pockets ever had was grams. Asked rather than stored, because the answer
+        /// changes every time he eats a sandwich; and asked only when the kind is NEW,
+        /// because more of a kind already on him takes no place it has not already got.
+        /// </summary>
+        public Func<int> Places;
+
+        /// <summary>Kinds of packaged product in here right now. What Places is measured against.</summary>
+        public int PackagedKinds
+        {
+            get
+            {
+                var n = 0;
+                foreach (var h in _packaged.Values) if (h.Grams > 0.005f) n++;
+                return n;
+            }
+        }
+
         // ---- bulk --------------------------------------------------------------
 
         public float BulkOf(string drugId)
@@ -192,10 +217,33 @@ namespace Hoodrich.Economy
 
         /// <summary>
         /// Adds street-ready product, blending purity by weight. Returns how much fit.
+        ///
+        /// REGARDLESS IS FOR PUTTING SOMETHING BACK WHERE IT CAME FROM: a refusal after the
+        /// charge, the cupboard handing back what it could not take, a dropped bag coming
+        /// home at teardown. A place that was his a moment ago is still his, and a pocket
+        /// already over its places -- which lowering nothing takes anything off -- would
+        /// otherwise refuse the last gram of a kind back in and lose it. The grams are still
+        /// the grams; only the place is waived.
         /// </summary>
-        public float AddPackaged(string drugId, float grams, float purity)
+        public float AddPackaged(string drugId, float grams, float purity, bool regardless = false)
         {
             if (string.IsNullOrEmpty(drugId) || grams <= 0f) return 0f;
+
+            // A NEW KIND NEEDS A PLACE. See Places.
+            if (!regardless && Places != null && PackagedOf(drugId) <= 0.005f)
+            {
+                int free;
+
+                try { free = Places(); }
+                catch { free = int.MaxValue; }
+
+                if (free <= 0)
+                {
+                    Log.Info("Stash: no place in the pockets for " + drugId + " -- " +
+                             PackagedKinds + " kind(s) on him already, and " + free + " free.");
+                    return 0f;
+                }
+            }
 
             var accepted = Math.Min(grams, FreeSpace);
             if (accepted <= 0f) return 0f;

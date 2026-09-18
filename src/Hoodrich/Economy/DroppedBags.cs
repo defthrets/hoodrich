@@ -307,8 +307,10 @@ namespace Hoodrich.Economy
                 {
                     if (Pockets != null && bag != null && bag.Grams > 0.005f)
                     {
+                        // Regardless of places: this is teardown, and a bag on the floor
+                        // that cannot come home is a bag that is deleted.
                         var back = bag.Bagged
-                            ? Pockets.AddPackaged(bag.DrugId, bag.Grams, bag.Purity)
+                            ? Pockets.AddPackaged(bag.DrugId, bag.Grams, bag.Purity, true)
                             : Pockets.AddBulk(bag.DrugId, bag.Grams, bag.Purity);
 
                         if (back > 0.005f)

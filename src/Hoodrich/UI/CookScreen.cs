@@ -242,7 +242,9 @@ namespace Hoodrich.UI
                 if (taken <= 0f) continue;
 
                 var put = _house.AddPackaged(drug.Id, taken, purity);
-                if (put < taken - 0.005f) _stash.AddPackaged(drug.Id, taken - put, purity);
+
+                // Back where it was, regardless of places: it had one a line ago.
+                if (put < taken - 0.005f) _stash.AddPackaged(drug.Id, taken - put, purity, true);
             }
         }
 

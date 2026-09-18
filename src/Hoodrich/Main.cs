@@ -839,6 +839,25 @@ namespace Hoodrich
                 // than being told to wait -- the caller has no way to tell the two apart.
                 Api.Drugs.Wire(_state, _drugs, _highs);
 
+                // THE POCKETS ARE FIVE PLACES WHEN BARE MINIMUM IS HERE. Their pocket counts
+                // a place for every kind of product on him and stops its own food at the
+                // cap; ours stopped at grams and nothing else, so it read seven of five. A
+                // new kind now asks whether there is a place for it -- their slots, less
+                // their food, less the kinds already on him -- and goes to the bag, or is
+                // refused, when there is not. Nothing is taken off a pocket already over.
+                //
+                // NO RULE WITHOUT THEM, which is what the pockets always were; and none
+                // while they are still starting, when their slot count reads nought -- a
+                // pocket of no places would refuse everything, and theirs is never fewer
+                // than one. See Stash.Places.
+                _state.Stash.Places = () =>
+                {
+                    var slots = Core.Larder.Slots;
+                    if (slots <= 0) return int.MaxValue;
+
+                    return slots - Core.Larder.Total - _state.Stash.PackagedKinds;
+                };
+
                 // Wired after the save is read, not before, or the first conversation of a
                 // session would decide nothing had ever been heard.
                 Core.Voice.Heard = key => _state.VoiceHeard.Contains(key);

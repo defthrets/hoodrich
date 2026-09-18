@@ -271,7 +271,7 @@ namespace Hoodrich.Api
                 {
                     // It refused after being charged. Put it back at the purity it left at,
                     // which is what PurityOf still reports for the rest of the bag.
-                    try { _state.Stash.AddPackaged(id, got, _state.Stash.PurityOf(id)); }
+                    try { _state.Stash.AddPackaged(id, got, _state.Stash.PurityOf(id), true); }
                     catch { /* better to lose a gram than to double it */ }
 
                     return late;
