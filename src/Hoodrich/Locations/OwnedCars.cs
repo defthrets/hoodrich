@@ -701,8 +701,11 @@ namespace Hoodrich.Locations
             return PlateFor(id);
         }
 
-        /// <summary>How close another vehicle has to be to a space before the space counts as taken.</summary>
-        private const float SpaceTaken = 3.0f;
+        /// <summary>How far past its own body a car still counts as over a space's mark. Half a door.</summary>
+        private const float SpaceMargin = 0.35f;
+
+        /// <summary>How far round a space to look for anything that might be over it.</summary>
+        private const float SpaceLook = 7f;
 
         /// <summary>
         /// Whatever is standing in a space that is not the car asked about, or null for a
@@ -719,33 +722,50 @@ namespace Hoodrich.Locations
         /// ANY VEHICLE COUNTS, not only ours. A stranger's car parked across a space is still
         /// a car you would land on. The one exception is the car being placed itself, which
         /// is passed in so that a car already sat on its own space is not in its own way.
+        ///
+        /// BY THE CAR'S OWN BODY, NOT BY A RADIUS. This started as "anything within three
+        /// metres", and Hao's spaces are two and a half metres apart: the Sentinel in its own
+        /// space was three metres from the Asterope's mark, so the Asterope's row waited on a
+        /// neighbour that was never going to move and the lot lost a car. A space is taken
+        /// when the mark is under a car -- inside that car's own box, seen from the car, with
+        /// half a door of margin -- and a car parked properly next door is not over it.
         /// </summary>
         public static Vehicle Standing(Vector3 spot, Vehicle except)
         {
             try
             {
-                Vehicle nearest = null;
-                var best = SpaceTaken;
-
-                foreach (var v in World.GetNearbyVehicles(spot, SpaceTaken + 2f))
+                foreach (var v in World.GetNearbyVehicles(spot, SpaceLook))
                 {
                     if (v == null || !v.Exists()) continue;
                     if (except != null && v.Handle == except.Handle) continue;
 
-                    var d = v.Position.DistanceTo(spot);
-                    if (d > best) continue;
-
-                    best = d;
-                    nearest = v;
+                    if (Over(v, spot)) return v;
                 }
 
-                return nearest;
+                return null;
             }
             catch
             {
                 // A scan that fell over is not a car in the way.
                 return null;
             }
+        }
+
+        /// <summary>Whether that point on the ground is under this car's body.</summary>
+        private static bool Over(Vehicle car, Vector3 point)
+        {
+            var local = Function.Call<Vector3>(Hash.GET_OFFSET_FROM_ENTITY_GIVEN_WORLD_COORDS,
+                                               car.Handle, point.X, point.Y, point.Z);
+
+            var lo = new OutputArgument();
+            var hi = new OutputArgument();
+            Function.Call(Hash.GET_MODEL_DIMENSIONS, car.Model.Hash, lo, hi);
+
+            var min = lo.GetResult<Vector3>();
+            var max = hi.GetResult<Vector3>();
+
+            return local.X >= min.X - SpaceMargin && local.X <= max.X + SpaceMargin &&
+                   local.Y >= min.Y - SpaceMargin && local.Y <= max.Y + SpaceMargin;
         }
 
         /// <summary>A car, named for the log: what it is and what it wears.</summary>

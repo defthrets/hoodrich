@@ -250,6 +250,13 @@ namespace Hoodrich.Locations
         public string Buy(CarLot car)
         {
             if (car == null) return "pick something first.";
+
+            // THE CAR HAS TO BE STANDING THERE. This took the money and wrote the sale down
+            // whether or not there was a car on the handle -- a model this install has not
+            // got, a row whose space something else is standing in -- and handed over
+            // nothing. A car you cannot see is a car he cannot sell you.
+            if (car.Live == null || !car.Live.Exists()) return "it ain't out right now. Give it a minute.";
+
             if (Game.Player.Money < car.Price) return "you ain't got it. Come back with it.";
 
             UI.Cash.Take(car.Price);
@@ -493,6 +500,15 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.SET_VEHICLE_HAS_BEEN_OWNED_BY_PLAYER, car.Handle, false);
                 Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, car.Handle, true, true);
 
+                // AND THE LOT'S PLATE BACK ON IT. The plate is how the lot tells its own car
+                // from a stranger's on the same handle -- see Ours -- and a car sold back
+                // wearing the plate you put on it at the plate screen failed that test. So
+                // the lot let go of it when you walked off instead of deleting it, and made a
+                // fresh one on top of it when you came back: a Hellfire on plate FAM4LYF
+                // stood in its own space with a second Hellfire thrown onto its roof.
+                Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle, OwnedCars.Plate(lot.Id));
+                Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT_INDEX, car.Handle, 0);
+
                 car.IsPersistent = true;
                 car.PlaceOnGround();
 
@@ -680,6 +696,30 @@ namespace Hoodrich.Locations
 
                 if (standing != null)
                 {
+                    // A CAR OF THE RIGHT MAKE, LOCKED TO EVERYBODY, STANDING IN ITS OWN SPACE
+                    // IS THE DISPLAY CAR, whatever plate it wears. That is what a buy-back
+                    // that kept your plate looks like from here, and it is what one looks like
+                    // on a lot that has been through it already: not for sale, not deletable,
+                    // and in the way of the row it belongs to. Taken back as the row's car,
+                    // dressed, and on the lot's plate again. Nothing anybody can drive is
+                    // touched -- a car locked to everybody is nobody's ride.
+                    if (Adoptable(standing, car))
+                    {
+                        var wore = OwnedCars.Describe(standing);
+
+                        car.Live = standing;
+                        Dress(standing, car);
+
+                        try { Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT_INDEX, standing.Handle, 0); }
+                        catch { /* whichever style it had */ }
+
+                        _taken.Remove(car.Id);
+
+                        Log.Info("Hao's lot: the " + wore + " standing in the " + car.Id +
+                                 " space is its display car again, on plate " + OwnedCars.Plate(car.Id) + ".");
+                        continue;
+                    }
+
                     if (_taken.Add(car.Id))
                     {
                         Log.Info("Hao's lot: the " + car.Id + " space has a " + OwnedCars.Describe(standing) +
@@ -926,6 +966,33 @@ namespace Hoodrich.Locations
                 var plate = (Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle) ?? "").Trim();
 
                 return string.Equals(plate, OwnedCars.Plate(def.Id), StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Whether a car standing in a row's space can be taken as that row's display car:
+        /// the row's model, locked to everybody, and not on anybody's books. See StockTheYard.
+        /// </summary>
+        private bool Adoptable(Vehicle car, CarLot def)
+        {
+            if (car == null || def == null || !car.Exists()) return false;
+
+            try
+            {
+                if (car.Model != Named(def.Model)) return false;
+
+                // 2 is locked for everybody -- what the lot puts on its own cars and what a
+                // buy-back is left with. A car anybody can open is somebody's.
+                // Through the wrapper: the native's name is not in the vendored 3.6 enum.
+                if (car.LockStatus != VehicleLockStatus.CannotEnter) return false;
+
+                if (Owned != null && Owned.Which(car) != null) return false;
+
+                return true;
             }
             catch
             {
