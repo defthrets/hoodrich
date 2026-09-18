@@ -73,19 +73,37 @@ namespace Hoodrich.Locations
         /// <summary>
         /// The mouth of the lot: inside this they drive like people in a car park.
         ///
-        /// THIS IS THE CRASH FIX. Out on the road they come in at speed and stop for nothing,
-        /// which is right for a car that has to actually arrive. Inside fifty-five metres
-        /// there are eleven other cars, twenty people on foot and one car park entrance, and
-        /// a car doing twenty-four metres a second through that hits something. So the drive
-        /// is re-issued at walking-pace-for-a-car with STOP for vehicles and STOP for people
-        /// switched on: a car that finds another one parking in front of it waits, which is
-        /// what a queue at a meet looks like.
+        /// THIS IS THE CRASH FIX. Out on the road they come in at speed, which is right for a
+        /// car that has to actually arrive. Inside the lot there are eleven other cars,
+        /// twenty people on foot and one car park entrance, and a car doing road speed
+        /// through that hits something. So the drive is re-issued at walking pace with STOP
+        /// for vehicles and STOP for people switched on: a car that finds another one
+        /// parking in front of it waits, which is what a queue at a meet looks like.
+        ///
+        /// EIGHTY METRES OUT AND HALF THE PACE IT WAS. Fifty-five metres was the distance a
+        /// car doing twenty-four metres a second covers in two seconds, so it was still doing
+        /// road speed across the entrance and only slowing once it was among the people.
+        /// Seven metres a second is a car park at twenty-five kilometres an hour, which is a
+        /// car that cannot stop for the man who steps out from behind the next bay; sixteen
+        /// is one that can.
         /// </summary>
-        private const float LotFrom = 55f;
-        private const float LotSpeed = 7f;
+        private const float LotFrom = 80f;
+        private const float LotSpeed = 4.5f;
 
-        /// <summary>Near enough to the bay to stop driving and start parking.</summary>
-        private const float ParkFrom = 26f;
+        /// <summary>
+        /// Near enough to the bay to stop driving and start parking.
+        ///
+        /// TWELVE, NOT TWENTY-SIX. The game's parking task steers round nothing: it has no
+        /// driving style, it does not stop for people and it does not stop for cars, and it
+        /// was being handed the last twenty-six metres -- the whole width of the lot, with
+        /// the crowd in it. Everybody run over at a meet was run over by a car that was
+        /// parking. The drive that DOES stop for people now brings the car to within a few
+        /// lengths of its bay, and the blind manoeuvre is the swing into it and nothing more.
+        /// The drive's own stopping range is inside this, so it is still moving when the
+        /// hand-over happens rather than stopped short and waiting for nothing.
+        /// </summary>
+        private const float ParkFrom = 12f;
+        private const float LotStopRange = 6f;
 
         /// <summary>
         /// Near enough, and slow enough, to be squared up on the exact spot.
@@ -129,13 +147,26 @@ namespace Hoodrich.Locations
         /// <summary>
         /// How they drive here, out on the road.
         ///
-        /// AVOID THINGS, STOP FOR NOTHING. 4|8|16|32 is go round cars, empty cars, people and
-        /// objects, and no stopping at lights. A car obeying every light between here and
-        /// half a mile out does not arrive, it queues, and what that looks like from the meet
-        /// is eleven empty bays. They still go ROUND everything.
+        /// GO ROUND THINGS, BRAKE FOR THINGS, AND NO LIGHTS. 1|2 is stop for vehicles and
+        /// stop for people; 4|8|16|32 is steer round cars, stopped cars, people and objects;
+        /// 524288 is change lanes round an obstruction. What is still NOT in here is 128,
+        /// the traffic lights: a car obeying every light between here and half a mile out
+        /// does not arrive, it queues, and what that looks like from the meet is eleven
+        /// empty bays.
+        ///
+        /// IT WAS "AVOID THINGS, STOP FOR NOTHING", and a car that may only swerve hits
+        /// whatever it cannot swerve round -- the car in front at a junction, the man on the
+        /// crossing. Braking is not queueing. A car that brakes for a pedestrian and goes on
+        /// still arrives; it arrives with nobody under it.
         /// </summary>
-        private const int RoadStyle = 4 | 8 | 16 | 32;
-        private const float RoadSpeed = 24f;
+        private const int RoadStyle = 1 | 2 | 4 | 8 | 16 | 32 | 524288;
+
+        /// <summary>
+        /// Eighteen metres a second, not twenty-four. Sixty-five an hour down a residential
+        /// street is quick enough to be a car arriving and slow enough that "stop for
+        /// people" is a thing the car can actually do before it reaches them.
+        /// </summary>
+        private const float RoadSpeed = 18f;
 
         /// <summary>
         /// How they drive inside the lot: stop for vehicles (1), stop for people (2), steer
@@ -144,9 +175,13 @@ namespace Hoodrich.Locations
         /// </summary>
         private const int LotStyle = 1 | 2 | 8 | 16 | 32;
 
-        /// <summary>How they leave: the game's ordinary careful traffic style.</summary>
+        /// <summary>
+        /// How they leave: the game's ordinary careful traffic style, at a pace that is still
+        /// a car park for the first few seconds of it. The wander is issued once and the car
+        /// is stood in a bay with the crowd round it when it is.
+        /// </summary>
         private const int HomeStyle = 786603;
-        private const float HomeSpeed = 14f;
+        private const float HomeSpeed = 10f;
 
         /// <summary>How many of the twelve get neons, and how many bring somebody.</summary>
         private const int NeonChance = 70;
@@ -215,14 +250,20 @@ namespace Hoodrich.Locations
         // ======================================================================
 
         /// <summary>
-        /// At a nose with the lid up. VEHICLE_MECHANIC is the one scenario in the game of a
-        /// man leaning INTO an engine bay, and one of those with two beside him talking is the
-        /// exact picture. INSPECT_STAND is a man looking down at something with his hands on
-        /// his hips.
+        /// At a nose with the lid up. INSPECT_STAND is a man looking down at something with
+        /// his hands on his hips, which over an open engine bay is exactly the picture, so it
+        /// is in twice.
+        ///
+        /// VEHICLE_MECHANIC IS GONE, AND IT WAS NEVER WHAT THE COMMENT SAID. It was described
+        /// here as the one scenario of a man leaning INTO an engine bay. It is not: it is the
+        /// mechanic on his back on the ground with his arms up under the sill, and at a meet
+        /// with the lids up it was a man lying down under a parked car. There is no standing
+        /// engine-bay scenario in the game's list, and the one that lies down is worse than
+        /// none.
         /// </summary>
         private static readonly string[] AtNose =
         {
-            "WORLD_HUMAN_VEHICLE_MECHANIC", "WORLD_HUMAN_HANG_OUT_STREET",
+            "WORLD_HUMAN_INSPECT_STAND", "WORLD_HUMAN_HANG_OUT_STREET",
             "WORLD_HUMAN_HANG_OUT_STREET", "WORLD_HUMAN_MOBILE_FILM_SHOCKING",
             "WORLD_HUMAN_INSPECT_STAND", "WORLD_HUMAN_STAND_MOBILE"
         };
@@ -859,7 +900,7 @@ namespace Hoodrich.Locations
                 {
                     Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle, r.Car.Handle,
                                   r.Spot.At.X, r.Spot.At.Y, r.Spot.At.Z,
-                                  LotSpeed, 0, r.Car.Model.Hash, LotStyle, 8f, true);
+                                  LotSpeed, 0, r.Car.Model.Hash, LotStyle, LotStopRange, true);
                 }
                 catch
                 {
@@ -1328,7 +1369,7 @@ namespace Hoodrich.Locations
         /// <summary>
         /// Across the nose, three abreast a hand's width apart, facing back at the engine,
         /// which is the shape people make when there is something to look at under a lid.
-        /// The middle slot is the mechanic's if the driver wants it.
+        /// The driver mostly stands looking down into his own bay, hands on hips.
         /// </summary>
         private void Nose(Runner car, out Vector3 stand, out float face, out string doing, bool owner)
         {
@@ -1352,8 +1393,11 @@ namespace Hoodrich.Locations
             stand = Ground(stand);
             face = Toward(v.Position, stand);
 
+            // HIS OWN CAR, HIS OWN ENGINE. The owner used to lie down under it more often
+            // than not -- see AtNose for what VEHICLE_MECHANIC actually is. He looks into
+            // the bay instead.
             doing = owner && _rng.Next(100) < 55
-                ? "WORLD_HUMAN_VEHICLE_MECHANIC"
+                ? "WORLD_HUMAN_INSPECT_STAND"
                 : AtNose[_rng.Next(AtNose.Length)];
         }
 
