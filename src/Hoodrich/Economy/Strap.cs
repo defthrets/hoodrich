@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -98,6 +99,35 @@ namespace Hoodrich.Economy
         /// <summary>Set by Main: whether some screen is up and the buttons belong to it.</summary>
         public Func<bool> Busy;
 
+        /// <summary>
+        /// Set by Main: a prop of the player's own choosing for the bag on the floor, out of
+        /// Hoodrich.ini. Tried first; the built-in list stands behind it for a name this
+        /// install has not got. See Settings.BagProp.
+        /// </summary>
+        public Func<string> PropModel;
+
+        /// <summary>The ini's prop first, if there is one, then the built-in list.</summary>
+        private IEnumerable<string> Candidates()
+        {
+            string own = null;
+
+            try { own = PropModel == null ? null : (PropModel() ?? "").Trim(); }
+            catch { /* the list, then */ }
+
+            if (!string.IsNullOrEmpty(own)) yield return own;
+
+            foreach (var name in Props) yield return name;
+        }
+
+        /// <summary>
+        /// The last place he stood on something. See Landed.
+        ///
+        /// Kept while the bag is on his back, every look, whenever he is on his feet and not
+        /// in the air, falling, swimming or on the floor -- so that a death somewhere the bag
+        /// cannot lie has a place it can.
+        /// </summary>
+        private Vector3 _footing;
+
         public Strap(PlayerState state)
         {
             _state = state;
@@ -142,12 +172,101 @@ namespace Hoodrich.Economy
 
             if (bag.Worn)
             {
+                Footing(me);
                 Clear();
                 Wear(me);
                 return;
             }
 
             Down(me, now);
+        }
+
+        /// <summary>Remembers where he is, if it is somewhere a bag could lie. See _footing.</summary>
+        private void Footing(Ped me)
+        {
+            try
+            {
+                if (me.IsInAir || me.IsFalling || me.IsSwimming || me.IsRagdoll) return;
+
+                _footing = me.Position;
+            }
+            catch
+            {
+                // The last answer stands.
+            }
+        }
+
+        /// <summary>
+        /// Somewhere a bag can actually lie, for a man who died somewhere one cannot.
+        ///
+        /// DYING MID-AIR LOST THE BAG FOR GOOD. Off a bike over the hills, out of a helicopter,
+        /// down a cliff: the bag came off at the coordinate he died at, which was a point in
+        /// the sky, and a prop made there is either frozen in the air above the blip or fell
+        /// through a slope the game had not loaded and lay under it -- "looked all around the
+        /// blip and I can't see it". The whole promise of the bag is that it survives dying.
+        ///
+        /// So the ground under the death is asked for first -- straight down from where he was
+        /// -- and if that answers with a sane distance the bag goes on it. Where there is no
+        /// ground to be had, over water or over nothing, it goes back to the last place he was
+        /// stood on his feet, which is a place he can walk to.
+        /// </summary>
+        private Vector3 Landed(Vector3 where)
+        {
+            float floor;
+
+            if (Core.Ground.Probe(new Vector3(where.X, where.Y, where.Z + 1f), out floor))
+            {
+                var drop = where.Z - floor;
+
+                if (drop >= -2f && drop <= 150f) return new Vector3(where.X, where.Y, floor);
+            }
+
+            if (_footing != Vector3.Zero)
+            {
+                Log.Info("Bag: nowhere to lie where he died; it is where he last stood.");
+                return _footing;
+            }
+
+            return where;
+        }
+
+        /// <summary>
+        /// Brings the bag to his feet, wherever it was.
+        ///
+        /// For a bag that cannot be reached: dropped somewhere before Landed existed, or
+        /// somewhere Landed still got wrong. A settings row rather than a key, because it is
+        /// a repair and not a move -- picking it up by walking to it is the game.
+        /// </summary>
+        public string Recall(Ped me)
+        {
+            var bag = Bag;
+
+            if (bag == null) return "not right now.";
+            if (bag.Worn) return "it's on your back.";
+            if (me == null || !me.Exists() || !me.IsAlive) return "not right now.";
+
+            var where = me.Position;
+
+            try { where = me.Position + me.ForwardVector * 0.7f; }
+            catch { /* his own coordinate will do */ }
+
+            bag.DownX = where.X;
+            bag.DownY = where.Y;
+            bag.DownZ = where.Z;
+
+            try { bag.DownHeading = me.Heading + 90f; }
+            catch { /* whatever it was lying at */ }
+
+            // The old prop and the old mark go; Down makes the new ones on the next look.
+            Clear();
+
+            try { _state.Touch(); }
+            catch { /* the save picks it up on its own clock */ }
+
+            Log.Info("Bag: called back to " + where.X.ToString("0") + ", " + where.Y.ToString("0") +
+                     " with " + bag.Used + " slot(s) in it.");
+
+            return null;
         }
 
         /// <summary>
@@ -365,7 +484,7 @@ namespace Hoodrich.Economy
         {
             if (_thing != null && _thing.Exists()) return;
 
-            foreach (var name in Props)
+            foreach (var name in Candidates())
             {
                 try
                 {
@@ -393,6 +512,24 @@ namespace Hoodrich.Economy
                     // AND LEVELLED AGAIN AFTERWARDS. The settle can tip it to follow a slope,
                     // which is right for a crate on a hill and wrong for this on a rug.
                     _thing.Rotation = new Vector3(0f, 0f, Bag.DownHeading);
+
+                    // AND CHECKED AGAINST THE GROUND. PLACE_OBJECT_ON_GROUND_PROPERLY only
+                    // settles a thing that is already close to a surface; a coordinate that
+                    // was written down in mid-air -- an old save from before Landed existed --
+                    // is a bag frozen fifty metres over a hillside, or under it, with a blip
+                    // on the map and nothing under the blip. So the floor is asked for
+                    // directly, and a prop that is nowhere near it is put on it.
+                    float floor;
+
+                    if (Core.Ground.Probe(new Vector3(where.X, where.Y, where.Z + 1f), out floor) &&
+                        Math.Abs(_thing.Position.Z - floor) > 3f)
+                    {
+                        _thing.Position = new Vector3(where.X, where.Y, floor + 0.05f);
+                        _thing.Rotation = new Vector3(0f, 0f, Bag.DownHeading);
+
+                        Log.Info("Bag: its spot was " + (where.Z - floor).ToString("0") +
+                                 "m off the ground; put on the ground.");
+                    }
 
                     Function.Call(Hash.FREEZE_ENTITY_POSITION, _thing.Handle, true);
 
@@ -625,6 +762,9 @@ namespace Hoodrich.Economy
             if (bag == null || !bag.Worn) return;
 
             bag.Worn = false;
+
+            // Somewhere it can lie, rather than exactly where he stopped. See Landed.
+            where = Landed(where);
 
             bag.DownX = where.X;
             bag.DownY = where.Y;

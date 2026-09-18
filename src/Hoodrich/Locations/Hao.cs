@@ -263,24 +263,12 @@ namespace Hoodrich.Locations
 
                     car.Live.IsPersistent = true;
 
-                    // Yours on the map until you have actually found it once.
-                    //
-                    // KEPT, so it can be taken down. This used to be a local that was
-                    // configured and dropped on the floor -- nothing stored it, nothing deleted
-                    // it, and the vehicle it is attached to is persistent, so it was never
-                    // cleaned up with the car either. OwnedCars then drew its own marker for
-                    // the same vehicle, so a car you had just bought carried two blips: a blue
-                    // one that vanished when you got in, and a green one that followed you
-                    // around for the rest of the session.
-                    var blip = car.Live.AddBlip();
-                    if (blip != null && blip.Exists()) _sold.Add(blip);
-                    if (blip != null && blip.Exists())
-                    {
-                        Function.Call(Hash.SET_BLIP_SPRITE, blip.Handle, Sprite);
-                        blip.Color = BlipColor.Green;
-                        blip.Scale = 0.8f;
-                        blip.Name = car.Name;
-                    }
+                    // NO MARK OF ITS OWN. OwnedCars puts the keys on a car you own from the
+                    // moment it is written down, by coordinate, and takes them off while you
+                    // drive it. The green one this used to add was attached to the vehicle --
+                    // and a blip attached to a vehicle outlives the vehicle: the game streams
+                    // the car out, hands the handle to the next thing it spawns, and the mark
+                    // drives off on a stranger's car. That is the second blip in the reports.
                 }
             }
             catch (Exception ex)
@@ -662,6 +650,9 @@ namespace Hoodrich.Locations
         {
             foreach (var car in _stock)
             {
+                // A handle that is not our car any more is let go of, not deleted. See Ours.
+                if (car.Live != null && car.Live.Exists() && !Ours(car.Live, car)) car.Live = null;
+
                 if (car.Live != null && car.Live.Exists() && car.Live.IsDriveable) continue;
 
                 try
@@ -750,6 +741,9 @@ namespace Hoodrich.Locations
         /// </summary>
         private void ParkHisRide()
         {
+            // The same rule as the stock. See Ours.
+            if (_ride != null && _ride.Exists() && !HisOwn(_ride)) _ride = null;
+
             if (_ride != null && _ride.Exists() && _ride.IsDriveable) return;
 
             try
@@ -870,9 +864,71 @@ namespace Hoodrich.Locations
             return new Model(what);
         }
 
+        /// <summary>
+        /// Whether this vehicle is the lot's own car for this row, and not a stranger's that
+        /// happens to be wearing the row's old handle.
+        ///
+        /// HANDLES ARE RECYCLED AND Exists() CANNOT TELL. A display car the game has towed or
+        /// streamed out leaves its handle free, the next vehicle made anywhere nearby gets it,
+        /// and from then on car.Live points at that -- Exists true, IsDriveable true, model
+        /// possibly the same. The lot then treated it as its own: skipped restocking the row,
+        /// and DELETED it when you walked off the lot. Which is how a Toros or a Sentinel you
+        /// had just bought and re-plated vanished: the sale left it standing on a spot, some
+        /// other row's stale handle landed on it, and Despawn cleared it with the stock.
+        ///
+        /// So a row's car is the model AND the plate every display car is stamped with -- see
+        /// Dress -- and anything else on the handle is simply not ours to touch.
+        /// </summary>
+        private static bool Ours(Vehicle car, CarLot def)
+        {
+            if (car == null || def == null || !car.Exists()) return false;
+
+            try
+            {
+                if (car.Model != Named(def.Model)) return false;
+
+                var plate = (Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle) ?? "").Trim();
+
+                return string.Equals(plate, OwnedCars.Plate(def.Id), StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>The same question about his Penumbra: the model, and the plate he puts on it.</summary>
+        private static bool HisOwn(Vehicle car)
+        {
+            if (car == null || !car.Exists()) return false;
+
+            try
+            {
+                if (car.Model != new Model(RideModel)) return false;
+
+                var plate = (Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle) ?? "").Trim();
+
+                return string.Equals(plate, RidePlate, StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private static void Dress(Vehicle car, CarLot def)
         {
             var h = car.Handle;
+
+            // THE PLATE IT WILL SELL ON, FROM THE DAY IT IS PUT OUT. The sale used to stamp it
+            // -- see OwnedCars.Bought, which still does -- so this changes nothing about a car
+            // you buy. What it adds is a way to tell a display car from any other vehicle on
+            // the same handle. See Ours.
+            if (def != null && !string.IsNullOrEmpty(def.Id))
+            {
+                try { Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, h, OwnedCars.Plate(def.Id)); }
+                catch { /* it sells on whatever the game gave it, as it always did */ }
+            }
 
             // Painted first, because a colour set after the mod kit is a colour the kit can
             // overwrite.
@@ -1106,9 +1162,12 @@ namespace Hoodrich.Locations
 
             _ped = null;
 
+            // ONLY WHAT IS PROVABLY OURS. Every handle here is checked against the model and
+            // the plate before anything is deleted, because this is the line that deleted a
+            // player's car: a row's handle had been recycled onto the one he had just bought.
             try
             {
-                if (_ride != null && _ride.Exists()) _ride.Delete();
+                if (_ride != null && _ride.Exists() && HisOwn(_ride)) _ride.Delete();
             }
             catch { /* gone */ }
 
@@ -1118,7 +1177,7 @@ namespace Hoodrich.Locations
             {
                 try
                 {
-                    if (car.Live != null && car.Live.Exists()) car.Live.Delete();
+                    if (car.Live != null && car.Live.Exists() && Ours(car.Live, car)) car.Live.Delete();
                 }
                 catch { /* gone */ }
 

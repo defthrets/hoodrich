@@ -813,8 +813,8 @@ namespace Hoodrich.Locations
                 // height: a probe that comes back with the street thirty metres up has found
                 // the wrong surface entirely, and following it would put him on the pavement.
                 float floorZ;
-                var floorFound = World.GetGroundHeight(new Vector3(to.X, to.Y, to.Z + FloorProbeUp),
-                                                       out floorZ, GetGroundHeightMode.Normal);
+                var floorFound = Core.Ground.Probe(new Vector3(to.X, to.Y, to.Z + FloorProbeUp),
+                                                       out floorZ);
 
                 if (floorFound && Math.Abs(floorZ - to.Z) <= FloorProbeBand)
                 {

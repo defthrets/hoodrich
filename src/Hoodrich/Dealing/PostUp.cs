@@ -2290,10 +2290,10 @@ namespace Hoodrich.Dealing
                     return;
                 }
 
-                if (Game.Player.Wanted.WantedLevel >= stars) return;
+                if (Game.Player.WantedLevel >= stars) return;
 
-                Game.Player.Wanted.SetWantedLevel(stars, false);
-                Game.Player.Wanted.ApplyWantedLevelChangeNow(false);
+                Game.Player.WantedLevel = stars;
+                GTA.Native.Function.Call(GTA.Native.Hash.SET_PLAYER_WANTED_LEVEL_NOW, Game.Player.Handle, false);
             }
             catch (Exception ex)
             {

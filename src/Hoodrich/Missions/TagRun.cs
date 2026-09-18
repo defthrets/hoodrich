@@ -728,7 +728,7 @@ namespace Hoodrich.Missions
                 var gang = _gangs.Get(spot.Gang);
                 var colour = gang == null ? System.Drawing.Color.FromArgb(160, 190, 60, 190) : gang.Colour;
 
-                World.DrawMarker(MarkerType.Cylinder,
+                World.DrawMarker(MarkerType.VerticalCylinder,
                                  spot.Where - new Vector3(0f, 0f, 0.95f),
                                  Vector3.Zero, Vector3.Zero,
                                  new Vector3(MarkerSize, MarkerSize, 0.7f),
@@ -941,8 +941,8 @@ namespace Hoodrich.Missions
         {
             try
             {
-                if (World.GetGroundHeight(new Vector3(where.X, where.Y, where.Z + 1.5f),
-                                          out var groundZ, GetGroundHeightMode.Normal) &&
+                if (Core.Ground.Probe(new Vector3(where.X, where.Y, where.Z + 1.5f),
+                                          out var groundZ) &&
                     groundZ > 0f && Math.Abs(groundZ - where.Z) <= 3f)
                 {
                     where.Z = groundZ;

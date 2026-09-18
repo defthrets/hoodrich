@@ -269,8 +269,7 @@ namespace Hoodrich.Gangs
                 {
                     try
                     {
-                        if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, 1000f), out var groundZ,
-                                                  GetGroundHeightMode.Normal))
+                        if (Core.Ground.Probe(new Vector3(spot.X, spot.Y, 1000f), out var groundZ))
                         {
                             spot.Z = groundZ;
                         }
@@ -320,8 +319,8 @@ namespace Hoodrich.Gangs
             {
                 try
                 {
-                    if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, spot.Z + 1.5f),
-                                              out var settled, GetGroundHeightMode.Normal) &&
+                    if (Core.Ground.Probe(new Vector3(spot.X, spot.Y, spot.Z + 1.5f),
+                                              out var settled) &&
                         settled > 0f && Math.Abs(settled - spot.Z) <= 3f)
                     {
                         spot.Z = settled;
@@ -337,8 +336,7 @@ namespace Hoodrich.Gangs
 
             try
             {
-                if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, spot.Z + 20f), out var groundZ,
-                                          GetGroundHeightMode.Normal) && groundZ > 0f)
+                if (Core.Ground.Probe(new Vector3(spot.X, spot.Y, spot.Z + 20f), out var groundZ) && groundZ > 0f)
                 {
                     spot.Z = groundZ;
                     _spots[def.GangId] = spot;

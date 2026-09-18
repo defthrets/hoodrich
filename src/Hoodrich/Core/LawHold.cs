@@ -120,8 +120,8 @@ namespace Hoodrich.Core
                 // one the game hands out in the frame before the ceiling takes, would otherwise
                 // sit there for the whole fight with the ceiling quietly stopping it going any
                 // higher -- suppressed, and still on screen.
-                Game.Player.Wanted.SetWantedLevel(0, false);
-                Game.Player.Wanted.ApplyWantedLevelChangeNow(false);
+                Game.Player.WantedLevel = 0;
+                GTA.Native.Function.Call(GTA.Native.Hash.SET_PLAYER_WANTED_LEVEL_NOW, Game.Player.Handle, false);
 
                 Function.Call(Hash.SET_MAX_WANTED_LEVEL, 0);
                 Function.Call(Hash.SET_POLICE_IGNORE_PLAYER, Game.Player.Handle, true);

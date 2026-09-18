@@ -20,8 +20,11 @@ namespace Hoodrich.Locations
     /// the game's script anything, and is invisible unless you are watching the driveway from
     /// far enough away to see it happen.
     ///
-    /// ONLY A BAGGER WITH NOBODY ELSE ON IT. The Lost ride Baggers now and then, and theirs is
-    /// theirs. The mod spawns no Baggers of its own, so there is nothing of ours to protect.
+    /// ONLY THE BAGGER OUTSIDE HIS OWN HOUSE. The Lost ride Baggers, the traffic parks them,
+    /// and every one of those with nobody on it inside a hundred and twenty metres was being
+    /// taken for his and turned into a Sanchez with his mark on it -- which is the "bike that
+    /// spawns in as you are driving with a green blip" in the reports. The game only ever puts
+    /// HIS Bagger on his own drive, so that is the only place one is his. See HouseDoors.
     ///
     /// NOT ONE MORE BIKE EVERY TIME THE GAME RE-SUPPLIES ONE. If the last bike this made is
     /// still stood near the new Bagger, the Bagger simply goes: the game has put back a bike
@@ -91,6 +94,9 @@ namespace Hoodrich.Locations
                 {
                     if (bike == null || !bike.Exists() || bike.IsDead) continue;
                     if (bike.Model.Hash != Bagger) continue;
+
+                    // Somebody else's, wherever it is not his drive. See HouseDoors.NearHome.
+                    if (!HouseDoors.NearHome(bike.Position)) continue;
 
                     var rider = bike.Driver;
                     var onIt = rider != null && rider.Exists() && rider.Handle == player.Handle;

@@ -1007,7 +1007,7 @@ namespace Hoodrich.Locations
             if (player.IsInVehicle() || player.IsRagdoll || player.IsInAir) return false;
             if (player.IsInCombat || player.IsShooting || Game.Player.IsAiming) return false;
 
-            return Game.Player.Wanted.WantedLevel <= 0;
+            return Game.Player.WantedLevel <= 0;
         }
 
         private bool WantsToTalk()

@@ -82,7 +82,7 @@ namespace Hoodrich.Locations
 
             try
             {
-                World.DrawMarker(MarkerType.Cylinder, Counter - new Vector3(0f, 0f, 0.95f),
+                World.DrawMarker(MarkerType.VerticalCylinder, Counter - new Vector3(0f, 0f, 0.95f),
                                  Vector3.Zero, Vector3.Zero,
                                  new Vector3(0.35f, 0.35f, 0.25f),
                                  Color.FromArgb(120, 126, 190, 79),

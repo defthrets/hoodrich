@@ -43,6 +43,16 @@ namespace Hoodrich.Core
         public Keys PhoneKey = Keys.F2;
 
         /// <summary>
+        /// Whether the game's own phone button opens this phone.
+        ///
+        /// On by default, because this IS the phone. Off, the up arrow is the game's again --
+        /// Franklin's own phone comes up on it like it always did -- and only Key opens ours.
+        /// For the player whose other mods live on the arrow keys and who asked for a button
+        /// of his own.
+        /// </summary>
+        public bool PhoneButton = true;
+
+        /// <summary>
         /// The way back in when the mod has been switched off.
         ///
         /// THE SETTINGS SCREEN COULD LOCK YOU OUT OF ITSELF. Turning "Posted Up on" off makes
@@ -223,6 +233,12 @@ namespace Hoodrich.Core
         public float TagDotSize = 0.50f;
         public float BagRoll = 0f;
         public float BagYaw = 0f;
+
+        /// <summary>
+        /// A prop of the player's own for the bag on the floor. Blank means the built-in
+        /// holdall. See Strap.Candidates.
+        /// </summary>
+        public string BagProp = "";
 
         /// <summary>
         /// Doors into the game's own interiors, read straight out of the ini.
@@ -607,6 +623,13 @@ namespace Hoodrich.Core
         public int WalkerDogs = 25;
 
         /// <summary>
+        /// Where the mod treats the world as full and stops adding to it: peds, and vehicles.
+        /// See Core.Crowded, which these are copied into.
+        /// </summary>
+        public int PedsBusy = 190;
+        public int CarsBusy = 230;
+
+        /// <summary>
         /// What Franklin's own bike is, in place of the Bagger the game gives him, and which
         /// of its liveries it wears. Blank, or "bagger", leaves the game's own.
         /// </summary>
@@ -623,6 +646,12 @@ namespace Hoodrich.Core
 
         public string FranklinsBike = "sanchez";
         public int FranklinsBikeLivery = 0;
+
+        /// <summary>
+        /// What Franklin's own Buffalo S becomes, the way FranklinsBike works for the Bagger.
+        /// Blank, "buffalo" or "buffalo2" leaves the game's own car as it is.
+        /// </summary>
+        public string FranklinsCar = "buffalo4";
 
         /// <summary>Whether riders pull the front wheel up on the straights.</summary>
         public bool RollerWheelies = true;
@@ -694,6 +723,7 @@ namespace Hoodrich.Core
                 (int)Clamp(ini.GetInt("Phone", "VanillaPhoneSeconds", s.VanillaPhoneSeconds), 1f, 30f);
 
             s.PhoneKey = ini.GetKey("Phone", "Key", s.PhoneKey);
+            s.PhoneButton = ini.GetBool("Phone", "PhoneButton", s.PhoneButton);
             s.RescueKey = ini.GetKey("General", "RescueKey", s.RescueKey);
             s.PhoneModifier = ini.GetKey("Phone", "Modifier", s.PhoneModifier);
 
@@ -731,6 +761,7 @@ namespace Hoodrich.Core
             s.PaintOpacityFar = Clamp(ini.GetFloat("Paint", "OpacityFar", s.PaintOpacityFar), 0f, 1f);
             s.BagRoll = ini.GetFloat("Dealing", "BagRoll", s.BagRoll);
             s.BagYaw = ini.GetFloat("Dealing", "BagYaw", s.BagYaw);
+            s.BagProp = (ini.GetString("Dealing", "BagProp", s.BagProp) ?? "").Trim();
 
             // One block per door, all read the same way. Adding a third room is a section in
             // the ini and a line here, not another class.
@@ -940,10 +971,13 @@ namespace Hoodrich.Core
             s.WalkersEnabled = ini.GetBool("Block", "WalkersEnabled", s.WalkersEnabled);
             s.WalkerCrews = (int)Clamp(ini.GetInt("Block", "WalkerCrews", s.WalkerCrews), 0f, 8f);
             s.WalkerDogs = (int)Clamp(ini.GetInt("Block", "WalkerDogs", s.WalkerDogs), 0f, 100f);
+            s.PedsBusy = (int)Clamp(ini.GetInt("Block", "PedsBusy", s.PedsBusy), 60f, 600f);
+            s.CarsBusy = (int)Clamp(ini.GetInt("Block", "CarsBusy", s.CarsBusy), 60f, 600f);
 
             s.TriggerBreed = (ini.GetString("Cars", "TriggerBreed", s.TriggerBreed) ?? "").Trim();
             s.FranklinsBike = (ini.GetString("Cars", "FranklinsBike", s.FranklinsBike) ?? "").Trim();
             s.FranklinsBikeLivery = (int)Clamp(ini.GetInt("Cars", "FranklinsBikeLivery", s.FranklinsBikeLivery), 0f, 30f);
+            s.FranklinsCar = (ini.GetString("Cars", "FranklinsCar", s.FranklinsCar) ?? "").Trim();
 
             // Never read until now. It was declared, documented and written into the ini, and
             // nothing ever loaded it -- so the number in the file did nothing at all.

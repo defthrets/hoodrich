@@ -401,8 +401,8 @@ namespace Hoodrich.Locations
                 var spot = player.Position - player.ForwardVector * 3f;
 
                 float ground;
-                if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, spot.Z + 2f),
-                                          out ground, GetGroundHeightMode.Normal))
+                if (Core.Ground.Probe(new Vector3(spot.X, spot.Y, spot.Z + 2f),
+                                          out ground))
                 {
                     spot = new Vector3(spot.X, spot.Y, ground);
                 }
@@ -1973,8 +1973,8 @@ namespace Hoodrich.Locations
                     var spot = at;
 
                     float ground;
-                    if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, spot.Z + 2f),
-                                              out ground, GetGroundHeightMode.Normal))
+                    if (Core.Ground.Probe(new Vector3(spot.X, spot.Y, spot.Z + 2f),
+                                              out ground))
                     {
                         spot = new Vector3(spot.X, spot.Y, ground);
                     }

@@ -8962,8 +8962,7 @@ namespace Hoodrich.Locations
             {
                 float z;
 
-                if (World.GetGroundHeight(new Vector3(at.X, at.Y, at.Z + 2f), out z,
-                                          GetGroundHeightMode.Normal))
+                if (Core.Ground.Probe(new Vector3(at.X, at.Y, at.Z + 2f), out z))
                 {
                     return new Vector3(at.X, at.Y, z);
                 }

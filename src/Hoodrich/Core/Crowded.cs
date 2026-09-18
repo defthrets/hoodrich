@@ -39,7 +39,11 @@ namespace Hoodrich.Core
         /// </summary>
         /// Checked against the same 454 samples: peds average 99 and reach 190 in one per cent
         /// of them, so this one was already in the right place and stays where it is.
-        public const int PedsBusy = 190;
+        /// A SETTING NOW, NOT A CONSTANT. [Block] PedsBusy in Hoodrich.ini, because the right
+        /// number is a fact about one machine's gameconfig and traffic, and kocabac's is not
+        /// this one: their block sits at two hundred peds before a war starts. Main copies the
+        /// ini's answer in at start-up.
+        public static int PedsBusy = 190;
 
         private static int _at;
         private static int _peds;
@@ -68,7 +72,7 @@ namespace Hoodrich.Core
         /// The distribution: p50 146, p75 172, p90 187, p95 199, p99 225, max 262. 230 sits
         /// above the ninety-ninth percentile of normal play and below the worst seen, so it
         /// answers yes only when the world genuinely is stuffed.
-        public const int CarsBusy = 230;
+        public static int CarsBusy = 230;
 
         /// <summary>True when the world is full enough that ours should stop adding to it.</summary>
         public static bool Busy => Peds >= PedsBusy || Vehicles >= CarsBusy;

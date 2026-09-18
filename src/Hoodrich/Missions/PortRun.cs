@@ -1360,7 +1360,7 @@ namespace Hoodrich.Missions
 
             try
             {
-                Function.Call(Hash.DRAW_MARKER, (int)MarkerType.Cylinder,
+                Function.Call(Hash.DRAW_MARKER, (int)MarkerType.VerticalCylinder,
                               where.X, where.Y, where.Z - 0.9f,
                               0f, 0f, 0f, 0f, 0f, 0f,
                               radius, radius, 1.4f,
@@ -1705,8 +1705,8 @@ namespace Hoodrich.Missions
         {
             try
             {
-                if (World.GetGroundHeight(new Vector3(where.X, where.Y, where.Z + 2f),
-                                          out var floor, GetGroundHeightMode.Normal)
+                if (Core.Ground.Probe(new Vector3(where.X, where.Y, where.Z + 2f),
+                                          out var floor)
                     && floor > 0f && Math.Abs(floor - where.Z) <= 2.5f)
                 {
                     return new Vector3(where.X, where.Y, floor);

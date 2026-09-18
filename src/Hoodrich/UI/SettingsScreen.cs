@@ -272,6 +272,9 @@ namespace Hoodrich.UI
         /// </summary>
         public Func<string> Meet;
 
+        /// <summary>Set by Main: brings the bag to his feet. A refusal, or null once it has.</summary>
+        public Func<string> RecallBag;
+
         /// <summary>
         /// Set by Main: whether Vernon's job counts as done, and a way to say that it does.
         ///
@@ -668,6 +671,26 @@ namespace Hoodrich.UI
                     SetMetVee(false);
 
                     Notify.Ticker("~g~Forgot him.~s~  walk up on Strawberry and he starts it again");
+                }
+            });
+
+            // THE BAG, BROUGHT BACK. For one that went somewhere it cannot be reached -- off a
+            // cliff, into a hillside, under the map on an old save. A repair, not a shortcut:
+            // the walk back to a bag you dropped is the game, and this is for when the walk
+            // cannot end.
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Action,
+                Label = "Bring my bag here",
+                Note = "Moves a dropped bag to your feet, with everything still in it",
+                Do = () =>
+                {
+                    if (RecallBag == null) return;
+
+                    var no = RecallBag();
+
+                    if (no != null) Notify.Problem(no);
+                    else Notify.Ticker("~g~Bag's here.~s~  at your feet, with what was in it");
                 }
             });
 

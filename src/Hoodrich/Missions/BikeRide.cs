@@ -456,7 +456,7 @@ namespace Hoodrich.Missions
                             return _gotCash ? 1f : _robAccepted ? 0.6f : 0.3f;
 
                         case BikePhase.Escape:
-                            return 1f - Game.Player.Wanted.WantedLevel / 5f;
+                            return 1f - Game.Player.WantedLevel / 5f;
 
                         case BikePhase.Home:
                             return Bar(player.Position.DistanceTo(RideHome), 700f);
@@ -1058,7 +1058,7 @@ namespace Hoodrich.Missions
 
             try
             {
-                World.DrawMarker(MarkerType.Cylinder,
+                World.DrawMarker(MarkerType.VerticalCylinder,
                                  RobSpot - new Vector3(0f, 0f, 0.95f),
                                  Vector3.Zero, Vector3.Zero,
                                  new Vector3(1.4f, 1.4f, 0.8f),
@@ -1536,8 +1536,7 @@ namespace Hoodrich.Missions
         {
             try
             {
-                return World.GetGroundHeight(new Vector3(at.X, at.Y, at.Z + 1f), out var z,
-                                             GetGroundHeightMode.Normal)
+                return Core.Ground.Probe(new Vector3(at.X, at.Y, at.Z + 1f), out var z)
                        && Math.Abs(z - at.Z) < 1.5f;
             }
             catch
@@ -1568,7 +1567,7 @@ namespace Hoodrich.Missions
             // away with it, so the job does not end until they have lost you.
             LamarStaysOut();
 
-            if (Game.Player.Wanted.WantedLevel > 0)
+            if (Game.Player.WantedLevel > 0)
             {
                 Help.ShowThisFrame("Lose the cops, then get back to the spot.");
                 return;
@@ -2619,8 +2618,8 @@ namespace Hoodrich.Missions
                 var behind = player.Position - player.ForwardVector * 6f + player.RightVector * 1.5f;
 
                 float groundZ;
-                if (World.GetGroundHeight(new Vector3(behind.X, behind.Y, behind.Z + 2f),
-                                          out groundZ, GetGroundHeightMode.Normal))
+                if (Core.Ground.Probe(new Vector3(behind.X, behind.Y, behind.Z + 2f),
+                                          out groundZ))
                 {
                     behind = new Vector3(behind.X, behind.Y, groundZ + 0.2f);
                 }
@@ -3109,8 +3108,8 @@ namespace Hoodrich.Missions
         {
             try
             {
-                if (World.GetGroundHeight(new Vector3(where.X, where.Y, where.Z + 1.5f),
-                                          out var groundZ, GetGroundHeightMode.Normal) &&
+                if (Core.Ground.Probe(new Vector3(where.X, where.Y, where.Z + 1.5f),
+                                          out var groundZ) &&
                     groundZ > 0f && Math.Abs(groundZ - where.Z) <= 3f)
                 {
                     where.Z = groundZ;
@@ -3214,8 +3213,8 @@ namespace Hoodrich.Missions
                     // A ped created above the ground falls to it, which is the drop from the sky.
                     try
                     {
-                        if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, spot.Z + 15f),
-                                                  out var groundZ, GetGroundHeightMode.Normal) && groundZ > 0f)
+                        if (Core.Ground.Probe(new Vector3(spot.X, spot.Y, spot.Z + 15f),
+                                                  out var groundZ) && groundZ > 0f)
                         {
                             spot.Z = groundZ;
                         }

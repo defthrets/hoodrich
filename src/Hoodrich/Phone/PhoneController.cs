@@ -126,7 +126,10 @@ namespace Hoodrich.Phone
                 return;
             }
 
-            SuppressVanillaPhone();
+            // THE GAME'S BUTTON IS THE GAME'S when the ini says so, and the game's phone
+            // with it -- except while OURS is up, when the arrows have to be ours or they
+            // drive a vanilla phone nobody can see. See Settings.PhoneButton.
+            if (_cfg.PhoneButton || _menu.IsOpen) SuppressVanillaPhone();
 
             var edge = ReadOpenEdge();
 
@@ -578,7 +581,8 @@ namespace Hoodrich.Phone
 
             if (owner == null) _yielded = null;
 
-            var down = owner == null && Pressed(Control.Phone);
+            // Not read at all with the button handed back; only the key below opens it.
+            var down = owner == null && _cfg.PhoneButton && Pressed(Control.Phone);
 
             if (down) Probe();
 

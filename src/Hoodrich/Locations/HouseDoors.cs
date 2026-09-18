@@ -40,6 +40,26 @@ namespace Hoodrich.Locations
             public Vector3 At;
         }
 
+        /// <summary>
+        /// Whether a spot is outside one of his own front doors.
+        ///
+        /// For whoever swaps the vehicles the game parks him. The game puts his bike on the
+        /// drive of whichever house is current, so "his" is a question about where a thing is
+        /// standing -- and these two coordinates are the only two answers.
+        /// </summary>
+        public static bool NearHome(Vector3 at)
+        {
+            foreach (var front in Fronts)
+            {
+                if (at.DistanceTo(front.At) <= HomeRange) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>The drive, the kerb outside, and not the street beyond it.</summary>
+        private const float HomeRange = 45f;
+
         private static readonly Front[] Fronts =
         {
             new Front

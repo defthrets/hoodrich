@@ -120,8 +120,7 @@ namespace Hoodrich.Territory
 
             try
             {
-                if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, 1000f), out var groundZ,
-                                          GetGroundHeightMode.Normal) && groundZ > 0f)
+                if (Core.Ground.Probe(new Vector3(spot.X, spot.Y, 1000f), out var groundZ) && groundZ > 0f)
                 {
                     spot.Z = groundZ;
                 }
@@ -159,7 +158,7 @@ namespace Hoodrich.Territory
 
             try
             {
-                if (World.GetGroundHeight(spot, out var groundZ, GetGroundHeightMode.Normal))
+                if (Core.Ground.Probe(spot, out var groundZ))
                 {
                     spot.Z = groundZ;
                 }

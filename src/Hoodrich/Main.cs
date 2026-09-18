@@ -754,6 +754,10 @@ namespace Hoodrich
                 Preflight.Step = "reading Hoodrich.ini";
                 _cfg = Core.Settings.Load();
 
+                // The crowd lines, out of the ini and into the one place every spawner asks.
+                Core.Crowded.PedsBusy = _cfg.PedsBusy;
+                Core.Crowded.CarsBusy = _cfg.CarsBusy;
+
                 // Before anything is drawn: the table is looked up at draw time, and the
                 // first thing drawn is the splash.
                 //
@@ -2247,7 +2251,13 @@ namespace Hoodrich
                 _copWatch = new CopWatch();
 
                 // The buttons belong to whatever screen is up, if one is. See AnyScreenUp.
-                _bag = new Strap(_state) { Busy = () => AnyScreenUp() || _talk.IsOpen };
+                _bag = new Strap(_state)
+                {
+                    Busy = () => AnyScreenUp() || _talk.IsOpen,
+
+                    // A bag of the player's own choosing, out of the ini. See Strap.Candidates.
+                    PropModel = () => _cfg.BagProp
+                };
 
                 _traffic = new TrafficWatch()
                 {
@@ -2471,7 +2481,7 @@ namespace Hoodrich
                 // busiest the junction ever gets, and a raid landing in the middle of sixty
                 // people running for their cars is the same pile-up with worse timing.
                 _war.Busy = () => onAJob()
-                                  || Game.Player.Wanted.WantedLevel > 0
+                                  || Game.Player.WantedLevel > 0
                                   || (_takeover != null
                                       && _takeover.State != Locations.TakeoverState.None);
 
@@ -2701,6 +2711,14 @@ namespace Hoodrich
 
                 if (_settingsScreen != null) _settingsScreen.Meet = () => _carMeet.Start();
 
+                // And the bag, back to his feet. See Strap.Recall.
+                if (_settingsScreen != null)
+                {
+                    _settingsScreen.RecallBag = () => _bag == null
+                        ? "not right now."
+                        : _bag.Recall(Game.Player.Character);
+                }
+
                 // The key to Leroy's, until Vee has a job to hand out. See SettingsScreen.
                 if (_settingsScreen != null)
                 {
@@ -2827,6 +2845,9 @@ namespace Hoodrich
                 _bodies.Pay = notes => { if (notes > 0) UI.Cash.Give(notes); };
 
                 _buffalo.Busy = () => _war != null && _war.IsRunning;
+
+                // And whether it happens at all. See Buffalo.Car.
+                _buffalo.Car = () => _cfg.FranklinsCar;
 
                 // So the circle never clears a car he paid for. See Takeover.Yours.
                 if (_takeover != null)
@@ -4966,19 +4987,19 @@ namespace Hoodrich
                     return;
                 }
 
-                if (Game.Player.Wanted.WantedLevel > 1) return;
+                if (Game.Player.WantedLevel > 1) return;
 
                 // ONLY LATCH IT IF IT WENT ON. Cap stands down while a hold is live, and
                 // this used to record the cap either way -- so a wall tagged during a gang war
                 // set the latch for a cap that was never applied, and never asked again.
                 if (!_capped && LawHold.Cap(1)) _capped = true;
 
-                if (Game.Player.Wanted.WantedLevel < 1)
+                if (Game.Player.WantedLevel < 1)
             {
                 // The pair PostUp uses: set, then apply now, or the star waits for the
                 // game's own next wanted update to appear.
-                Game.Player.Wanted.SetWantedLevel(1, false);
-                Game.Player.Wanted.ApplyWantedLevelChangeNow(false);
+                Game.Player.WantedLevel = 1;
+                GTA.Native.Function.Call(GTA.Native.Hash.SET_PLAYER_WANTED_LEVEL_NOW, Game.Player.Handle, false);
             }
             }
             catch (Exception ex)

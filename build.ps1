@@ -89,18 +89,25 @@ $outDll = Join-Path $outDir 'Hoodrich.dll'
 if (-not (Test-Path $csc)) { throw "Compiler missing: $csc  (see tools\README.md)" }
 if (-not (Test-Path $refDir)) { throw "net48 reference assemblies missing: $refDir" }
 
-$shvdn = Join-Path $GtaDir 'ScriptHookVDotNet3.dll'
-if (-not (Test-Path $shvdn)) { throw "ScriptHookVDotNet3.dll not found under: $GtaDir" }
-
-# WHICH ScriptHookVDotNet, said out loud, every build.
+# THE REFERENCE IS THE OLDEST ScriptHookVDotNet THE MOD SUPPORTS, VENDORED -- not whichever
+# one the install happens to hold. The same rule Fumes moved to, for the same reports.
 #
 # The compiler stamps the reference assembly's EXACT version into the output, so a mod built
-# here against 3.9 is a mod that asks for 3.9 -- and a player on 3.7 gets a load failure with
-# no log, because the thing that would have written the log is the thing that did not load.
+# against the installed 3.9 is a mod that asks for 3.9 -- and SHVDN's own script loader
+# declines a script that asks for a NEWER ScriptHookVDotNet than itself. A player on 3.6, or
+# on a 3.7 nightly, got either a bare load failure or "MissingMethodException: PostTicker"
+# with the mod disabled, and there were a dozen of those on the page under different names.
 #
-# That is not a hypothetical. It is four "it does not work for me" reports on the mod page
-# against a readme promising 3.6 or newer, written when 3.6 was what this machine had. The
-# number moved when ScriptHookVDotNet updated and nothing said so.
+# Built against 3.6.0.0, every host is newer than the reference, which is the one case every
+# loader handles. The compile itself is the real compatibility check: a member 3.6.0 lacks is
+# a build error here, not a runtime surprise on somebody else's machine.
+$shvdn = Join-Path $root 'tools\shvdn\3.6.0\ScriptHookVDotNet3.dll'
+if (-not (Test-Path $shvdn)) {
+    Write-Host "WARN  vendored SHVDN 3.6.0 reference missing at $shvdn -- falling back to the install, which stamps THAT version into the dll" -ForegroundColor Yellow
+    $shvdn = Join-Path $GtaDir 'ScriptHookVDotNet3.dll'
+    if (-not (Test-Path $shvdn)) { throw "ScriptHookVDotNet3.dll not found vendored or under: $GtaDir" }
+}
+
 $shvdnVer = [System.Reflection.AssemblyName]::GetAssemblyName($shvdn).Version
 Write-Host "ScriptHookVDotNet reference: $shvdnVer  (players need this or newer)" -ForegroundColor DarkCyan
 

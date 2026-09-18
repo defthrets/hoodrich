@@ -74,6 +74,17 @@ namespace Hoodrich.Locations
         /// <summary>Set by Main: off when the mod is standing down.</summary>
         public Func<bool> Busy;
 
+        /// <summary>
+        /// Set by Main: what his Buffalo becomes, out of Hoodrich.ini. Blank, "buffalo" or
+        /// "buffalo2" leaves the game's own car alone -- the bike has had that switch since it
+        /// existed and the car did not, and "I wish it didn't change Franklin's car" is a
+        /// fair thing to want. See Settings.FranklinsCar.
+        /// </summary>
+        public Func<string> Car;
+
+        /// <summary>What it is being swapped for this session. See Car.</summary>
+        private string _now = Now;
+
         private int _nextLook;
         private int _swapped;
 
@@ -81,6 +92,19 @@ namespace Hoodrich.Locations
         {
             if (player == null || !player.Exists() || !player.IsAlive) return;
             if (Busy != null && Busy()) return;
+
+            // OFF MEANS OFF: no swap, and no mark either, because the game's own mark is
+            // still on the car it never lost.
+            var want = Car == null ? Now : (Car() ?? "").Trim();
+
+            if (want.Length == 0 ||
+                want.Equals(Was, StringComparison.OrdinalIgnoreCase) ||
+                want.Equals("buffalo", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            _now = want;
 
             var now = Game.GameTime;
             if (now < _nextLook) return;
@@ -142,14 +166,14 @@ namespace Hoodrich.Locations
         /// Buffalos and swapping or marking somebody else's is this mod editing a stranger's
         /// property.
         /// </summary>
-        private static bool Franklins(Vehicle car)
+        private bool Franklins(Vehicle car)
         {
             try
             {
                 var plate = (Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, car.Handle) ?? "").Trim();
 
                 if (car.Model == new Model(Was)) return plate.Equals(His, StringComparison.OrdinalIgnoreCase);
-                if (car.Model == new Model(Now)) return plate.Equals(Says, StringComparison.OrdinalIgnoreCase);
+                if (car.Model == new Model(_now)) return plate.Equals(Says, StringComparison.OrdinalIgnoreCase);
 
                 return false;
             }
@@ -224,7 +248,7 @@ namespace Hoodrich.Locations
         /// <summary>The old one out, the new one in, and everything about it carried across.</summary>
         private void Swap(Vehicle old, Ped player)
         {
-            var model = new Model(Now);
+            var model = new Model(_now);
 
             if (!model.IsValid || !model.IsInCdImage)
             {
@@ -233,7 +257,7 @@ namespace Hoodrich.Locations
                 if (_swapped == 0)
                 {
                     _swapped = -1;
-                    Log.Info("Buffalo: this install has no " + Now + ", so his stays as it is.");
+                    Log.Info("Buffalo: this install has no " + _now + ", so his stays as it is.");
                 }
 
                 return;
@@ -347,7 +371,7 @@ namespace Hoodrich.Locations
 
             Notify.Ticker("~g~that's the STX.~s~  Dropped, tinted, same plate.");
 
-            Log.Info("Buffalo: swapped his " + Was + " for a " + Now + ".");
+            Log.Info("Buffalo: swapped his " + Was + " for a " + _now + ".");
         }
     }
 }

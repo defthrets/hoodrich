@@ -59,7 +59,11 @@ namespace Hoodrich.Core
         {
             get
             {
-                try { return Game.FileVersion.ToString(); }
+                // Game.Version rather than Game.FileVersion, which 3.6 has not got. It is the
+                // running loader's enum, so on a build that knows the game it names it
+                // (v1_0_3889_0_Steam, v2_0_...) and on one that does not it says Unknown --
+                // which is exactly the answer CheckLoader wants to hear about.
+                try { return Game.Version.ToString(); }
                 catch { return "unreadable"; }
             }
         }

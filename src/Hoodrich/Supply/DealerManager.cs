@@ -864,7 +864,7 @@ namespace Hoodrich.Supply
 
                 try
                 {
-                    if (World.GetGroundHeight(onFoot, out var groundZ, GetGroundHeightMode.Normal))
+                    if (Core.Ground.Probe(onFoot, out var groundZ))
                     {
                         onFoot.Z = groundZ;
                     }
@@ -1287,7 +1287,7 @@ namespace Hoodrich.Supply
 
                 try
                 {
-                    if (World.GetGroundHeight(onFoot, out var groundZ, GetGroundHeightMode.Normal))
+                    if (Core.Ground.Probe(onFoot, out var groundZ))
                     {
                         onFoot.Z = groundZ;
                     }

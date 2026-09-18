@@ -174,8 +174,8 @@ namespace Hoodrich.Gangs
             {
                 float groundZ;
 
-                if (!World.GetGroundHeight(new Vector3(where.X, where.Y, where.Z + 2f),
-                                           out groundZ, GetGroundHeightMode.Normal))
+                if (!Core.Ground.Probe(new Vector3(where.X, where.Y, where.Z + 2f),
+                                           out groundZ))
                 {
                     // No answer at all, usually because the area has not streamed in. Better to
                     // use it than to stall the wave -- the far end of a 150m approach is rarely
@@ -542,6 +542,20 @@ namespace Hoodrich.Gangs
             // How likely this is at all is set by whoever currently hates you most.
             if (_rng.NextDouble() > WarChance + WorstHeat() * WarChanceAtWorst) return;
 
+            // AND NOT INTO A WORLD THAT IS ALREADY FULL. The carloads and the defenders both
+            // hold off once the pools are high -- and that was the whole of the protection,
+            // so a war could still OPEN at two hundred and seventeen peds, put its first three
+            // cars and twelve men down before the first hold-off ever fired, and take the game
+            // with it. kocabac's log is exactly that: every line of the war says FULL, from
+            // the one that announces it. A war that cannot fit is not started; it is looked
+            // at again in a minute and a half, the same as one that lands on a job.
+            if (Crowded.Busy)
+            {
+                _nextRoll = now + BusyRetryMs;
+                Crowded.HeldOff("Gang war");
+                return;
+            }
+
             Begin();
         }
 
@@ -564,6 +578,10 @@ namespace Hoodrich.Gangs
         {
             _attacker = attacker;
             if (_attacker == null || _target == null) return;
+
+            // A fresh pair of cars for a fresh war. See PickCar.
+            _warModels.Clear();
+            _warModelTurn = 0;
 
             _heat = Heat(_attacker);
 
@@ -1108,6 +1126,12 @@ namespace Hoodrich.Gangs
         /// </summary>
         private Model? PickCar(GangDef gang)
         {
+            // Two in, and the rest of the war alternates between them. See _warModels.
+            if (_warModels.Count >= WarModelsMost)
+            {
+                return _warModels[_warModelTurn++ % _warModels.Count];
+            }
+
             var all = new List<string>(CarsFor(gang.Id));
 
             var fresh = new List<string>();
@@ -1137,6 +1161,7 @@ namespace Hoodrich.Gangs
                     if (!model.IsValid || !model.IsInCdImage || !Core.Models.Ready(model)) continue;
 
                     _usedCars.Add(name);
+                    _warModels.Add(model);
                     return model;
                 }
                 catch
@@ -1149,6 +1174,21 @@ namespace Hoodrich.Gangs
         }
 
         private readonly HashSet<string> _usedCars = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// The cars this war is being fought out of, and there are two of them.
+        ///
+        /// ERR_MEM_EMBEDDEDALLOC IS A STREAMING POOL, NOT A PED COUNT. It is the report that
+        /// comes with every war crash, and what fills that pool is variety: each carload used
+        /// to pick a model the set had not turned up in yet, so a long war streamed nine
+        /// different cars in on top of the gang's own peds, their guns, and everything the
+        /// block already had loaded. Two models a war is still two colours of the same set
+        /// arriving in different shapes; nine is a car show, and the pool it costs is the one
+        /// the game dies on.
+        /// </summary>
+        private readonly List<Model> _warModels = new List<Model>();
+        private int _warModelTurn;
+        private const int WarModelsMost = 2;
 
         /// <summary>The cars each set actually drives.</summary>
         private static IEnumerable<string> CarsFor(string gangId)
@@ -2914,8 +2954,8 @@ namespace Hoodrich.Gangs
             {
                 try
                 {
-                    Game.Player.Wanted.SetWantedLevel(StarsAfter, false);
-                    Game.Player.Wanted.ApplyWantedLevelChangeNow(false);
+                    Game.Player.WantedLevel = StarsAfter;
+                    GTA.Native.Function.Call(GTA.Native.Hash.SET_PLAYER_WANTED_LEVEL_NOW, Game.Player.Handle, false);
                 }
                 catch { /* the law will find him eventually */ }
             }

@@ -22,7 +22,33 @@ namespace Hoodrich.UI
             message = Core.Lang.T(message);
 
             if (string.IsNullOrEmpty(message) || Repeat(message)) return;
-            GTA.UI.Notification.PostTicker(message, false, true);
+            Feed(message);
+        }
+
+        /// <summary>
+        /// One line on the feed, through the natives the game's own scripts use.
+        ///
+        /// NOT THE WRAPPER, WHICHEVER NAME IT HAS THIS YEAR. Notification.Show became
+        /// PostTicker between ScriptHookVDotNet builds and the mod compiled against the new
+        /// name asked every older host for a method it did not have -- "MissingMethodException:
+        /// PostTicker", the commonest report on the page, from anybody on 3.6 or a 3.7
+        /// nightly. The three natives underneath have not changed since the game shipped, and
+        /// Text below has been posting through them all along.
+        /// </summary>
+        private static void Feed(string message)
+        {
+            try
+            {
+                Function.Call(Hash.BEGIN_TEXT_COMMAND_THEFEED_POST, "STRING");
+                Function.Call(Hash.ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME, message);
+
+                // Blink off, saved to the brief on: the same two answers PostTicker was given.
+                Function.Call(Hash.END_TEXT_COMMAND_THEFEED_POST_TICKER, false, true);
+            }
+            catch (System.Exception ex)
+            {
+                Core.Log.Debug("Feed post failed: " + ex.Message);
+            }
         }
 
         /// <summary>A message the player should not miss (blinks in the feed).</summary>
@@ -36,7 +62,7 @@ namespace Hoodrich.UI
             // for everything important -- ninety-odd call sites -- which is a notification
             // that flashes black and white for a second every time it arrives. Important is
             // said with the words and the colour now, not with a strobe.
-            GTA.UI.Notification.PostTicker(message, false, true);
+            Feed(message);
         }
 
         /// <summary>

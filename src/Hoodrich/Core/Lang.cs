@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -183,11 +183,15 @@ namespace Hoodrich.Core
                 // the English the font can draw.
                 Log.Warn(language + " needs the game itself set to that language; its glyphs are not in the " +
                          "font otherwise. Showing English.");
+                // THROUGH NOTIFY, NOT THE WRAPPER. A method reference the running loader
+                // does not have fails when THIS method is compiled, whichever branch it sits
+                // in -- so this one line, which only ever speaks to somebody playing in
+                // Chinese, took the whole of Lang.Use down for a player on English with an
+                // older ScriptHookVDotNet. Notify posts through natives now. See Notify.Feed.
                 try
                 {
-                    GTA.UI.Notification.PostTicker("~y~Chinese needs GTA V itself set to Chinese~s~ - " +
-                                                   "its characters are not in the font otherwise. Showing English.",
-                                                   false, true);
+                    UI.Notify.Ticker("~y~Chinese needs GTA V itself set to Chinese~s~ - " +
+                                     "its characters are not in the font otherwise. Showing English.");
                 }
                 catch { /* the log has it */ }
                 return;

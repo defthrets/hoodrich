@@ -1465,8 +1465,8 @@ namespace Hoodrich.Locations
         {
             try
             {
-                if (World.GetGroundHeight(new Vector3(where.X, where.Y, where.Z + 1.5f),
-                                          out var groundZ, GetGroundHeightMode.Normal) &&
+                if (Core.Ground.Probe(new Vector3(where.X, where.Y, where.Z + 1.5f),
+                                          out var groundZ) &&
                     groundZ > 0f && Math.Abs(groundZ - where.Z) <= 3f)
                 {
                     where.Z = groundZ;

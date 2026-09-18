@@ -506,8 +506,7 @@ namespace Hoodrich.Missions
             // on a roof.
             try
             {
-                if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, spot.Z + 3f), out var groundZ,
-                                          GetGroundHeightMode.Normal) &&
+                if (Core.Ground.Probe(new Vector3(spot.X, spot.Y, spot.Z + 3f), out var groundZ) &&
                     groundZ > 0f && Math.Abs(groundZ - spot.Z) <= 2.5f)
                 {
                     spot.Z = groundZ;

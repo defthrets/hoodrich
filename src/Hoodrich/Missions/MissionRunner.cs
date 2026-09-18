@@ -730,8 +730,8 @@ namespace Hoodrich.Missions
 
             try
             {
-                if (World.GetGroundHeight(new Vector3(where.X, where.Y, where.Z + 1.5f),
-                                          out var groundZ, GetGroundHeightMode.Normal) &&
+                if (Core.Ground.Probe(new Vector3(where.X, where.Y, where.Z + 1.5f),
+                                          out var groundZ) &&
                     groundZ > 0f && Math.Abs(groundZ - where.Z) <= 3f)
                 {
                     where.Z = groundZ;
@@ -761,8 +761,8 @@ namespace Hoodrich.Missions
                     // the ground falls to it -- which is what the drop from the sky was.
                     try
                     {
-                        if (World.GetGroundHeight(new Vector3(spot.X, spot.Y, spot.Z + 15f),
-                                                  out var groundZ, GetGroundHeightMode.Normal) && groundZ > 0f)
+                        if (Core.Ground.Probe(new Vector3(spot.X, spot.Y, spot.Z + 15f),
+                                                  out var groundZ) && groundZ > 0f)
                         {
                             spot.Z = groundZ;
                         }
@@ -2484,7 +2484,7 @@ namespace Hoodrich.Missions
             // Where the heat stood before the fire. Anything above this line is the arson, and
             // the arson is the job -- Lamar told you to burn it, so being wanted for burning it
             // is the mission arresting you for doing the mission.
-            _starsBeforeFire = Game.Player.Wanted.WantedLevel;
+            _starsBeforeFire = Game.Player.WantedLevel;
             _fireQuietUntil = 0;
 
             ClearDumpBlip();
@@ -2571,11 +2571,11 @@ namespace Hoodrich.Missions
         {
             try
             {
-                var now = Game.Player.Wanted.WantedLevel;
+                var now = Game.Player.WantedLevel;
                 if (now <= _starsBeforeFire) return;
 
-                Game.Player.Wanted.SetWantedLevel(_starsBeforeFire, false);
-                Game.Player.Wanted.ApplyWantedLevelChangeNow(false);
+                Game.Player.WantedLevel = _starsBeforeFire;
+                GTA.Native.Function.Call(GTA.Native.Hash.SET_PLAYER_WANTED_LEVEL_NOW, Game.Player.Handle, false);
             }
             catch
             {
@@ -2617,7 +2617,7 @@ namespace Hoodrich.Missions
             // A car going up in a field is not quiet. If anybody is still looking for you --
             // and setting fire to a vehicle is its own good reason for them to start -- that
             // gets lost on foot before Lamar wants to see you.
-            if (Game.Player.Wanted.WantedLevel > 0)
+            if (Game.Player.WantedLevel > 0)
             {
                 State = MissionState.Escape;
                 _burned = true;
@@ -2784,7 +2784,7 @@ namespace Hoodrich.Missions
         {
             TalkAboutIt();
 
-            if (Game.Player.Wanted.WantedLevel > 0) return;
+            if (Game.Player.WantedLevel > 0) return;
 
             // Escape happens twice on a torch job: once with the car, and again after it goes
             // up if the fire brought anybody back. _burned is which of the two this was.
@@ -2989,7 +2989,7 @@ namespace Hoodrich.Missions
                 // Sunk by nine tenths the way the port bay ring is, so only the top of the
                 // cylinder clears the ground and it reads as paint on the tarmac rather than
                 // as a green post you are meant to drive round.
-                World.DrawMarker(MarkerType.Cylinder,
+                World.DrawMarker(MarkerType.VerticalCylinder,
                                  HaoBay - new Vector3(0f, 0f, 0.9f),
                                  Vector3.Zero, Vector3.Zero,
                                  new Vector3(7.5f, 7.5f, 1.4f),
@@ -3095,10 +3095,10 @@ namespace Hoodrich.Missions
         {
             try
             {
-                if (Game.Player.Wanted.WantedLevel >= stars) return;
+                if (Game.Player.WantedLevel >= stars) return;
 
-                Game.Player.Wanted.SetWantedLevel(stars, false);
-                Game.Player.Wanted.ApplyWantedLevelChangeNow(false);
+                Game.Player.WantedLevel = stars;
+                GTA.Native.Function.Call(GTA.Native.Hash.SET_PLAYER_WANTED_LEVEL_NOW, Game.Player.Handle, false);
             }
             catch (Exception ex)
             {
@@ -3835,7 +3835,7 @@ namespace Hoodrich.Missions
                     case MissionState.Escape:
                         // Falling stars fill it, so it reads as getting away rather than as
                         // getting deeper in.
-                        return Clamp01(1f - Game.Player.Wanted.WantedLevel / 5f);
+                        return Clamp01(1f - Game.Player.WantedLevel / 5f);
 
                     case MissionState.Torch:
                         return _poured ? 0.66f : 0.33f;

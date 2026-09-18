@@ -963,7 +963,7 @@ namespace Hoodrich.Gangs
                        player.IsInCombat ||
                        player.IsShooting ||
                        player.IsRagdoll ||
-                       Game.Player.Wanted.WantedLevel > 0 ||
+                       Game.Player.WantedLevel > 0 ||
                        player.Velocity.Length() > StillSpeed;
 
             foreach (var man in _men)
