@@ -504,6 +504,39 @@ namespace Hoodrich.UI
         /// <summary>
         /// Every setting, in the order somebody would look for them.
         ///
+        /// LAID OUT AGAIN ON 2026-09-19, at Michael's request: cleaner, the useful ones first,
+        /// laid out better and more uniform. What that meant in practice:
+        ///
+        ///   THE PLAY SETTINGS COME FIRST, in the order they are talked about -- the mod, the
+        ///   phone, the voices, the feed, the block, the takeover, posting up, the market,
+        ///   supply, risk, getting high, the two people who charge you, the scenes. Sections
+        ///   of one row are gone: LUber's one switch is on the phone, Lamar's one slider sits
+        ///   with Tanya's two.
+        ///
+        ///   THE TOOLS COME LAST, under headings that say so. The mask picker, the door
+        ///   writer, the prop-in-hand jig, the scene tools and the finders are for building
+        ///   the mod, not playing it, and they sat between the heat per witness and the bust
+        ///   chance. Nothing is removed -- every one of them is still here -- they are simply
+        ///   after everything a player adjusts, and the resets the wheel appends come after
+        ///   those.
+        ///
+        ///   ONE ROW WHERE THREE TICKS DID ONE JOB. Where the feed goes was FeedOnScreen,
+        ///   TweetsOnTheRight and FeedOnPhone, three boxes whose combinations mostly meant
+        ///   nothing. It is one choice now, and the three keys are written from it.
+        ///
+        ///   FIVE SETTINGS THAT WERE INI-ONLY are on the menu: the phone button, the feed
+        ///   key, how many crews walk a dog, the two busy-block limits (which are the crash
+        ///   protection, and the thing to lower when a block crashes you), and how many
+        ///   nights apart the takeovers are.
+        ///
+        ///   UNIFORM UNITS. Minutes were "m" and so were metres. Seconds are " s", minutes
+        ///   " min", metres " m", grams " g", hours " h", money "$" in front, a share "%",
+        ///   a multiplier "x", every time.
+        ///
+        ///   READOUTS THAT WERE NOT SETTINGS ARE GONE from the list -- how the docks unlock
+        ///   and the timecycle name -- and "which set of places the two rows below are pointed
+        ///   at" is written on the rows it is about.
+        ///
         /// Grouped the way the ini is grouped rather than by type, because that is how they are
         /// talked about -- "the wheel settings" is a real category and "the float settings" is
         /// not.
@@ -512,6 +545,7 @@ namespace Hoodrich.UI
         {
             var c = _cfg;
 
+            // ---- the mod ---------------------------------------------------------
             Head("The mod");
             // FIRST, AND LIVE. The table is looked up at draw time, so choosing a language
             // here changes this screen as you look at it -- including this row. The value
@@ -522,48 +556,49 @@ namespace Hoodrich.UI
                  v => { c.Language = (Core.Language)v; Core.Lang.Use(c.Language); },
                  "Menus, prompts and notices. English fills in anything untranslated",
                  Core.Lang.Codes);
-
             Tick("Posted Up on", "General", "Enabled", () => c.Enabled, v => c.Enabled = v,
                  "Off leaves the game exactly as it was");
+            Bind("Turn the mod back on", "General", "RescueKey",
+                 () => c.RescueKey, v => c.RescueKey = v,
+                 "The way back in after switching Posted Up off up there");
             Tick("Pause during story missions", "General", "PauseDuringMission",
                  () => c.PauseDuringMission, v => c.PauseDuringMission = v,
                  "Holds everything while a Rockstar mission is running");
             Slide("Save every", "General", "SaveIntervalSeconds",
                   () => c.SaveIntervalSeconds, v => c.SaveIntervalSeconds = (int)v,
-                  15f, 600f, 15f, "0", "s");
+                  15f, 600f, 15f, "0", " s");
             Pick("Log detail", "General", "LogLevel",
                  new[] { "Error", "Warn", "Info", "Debug" },
                  () => (int)c.LogLevel, v => c.LogLevel = (LogLevel)v,
                  "Debug writes a lot. Useful when something is wrong");
 
+            // ---- the phone -------------------------------------------------------
             Head("The phone");
-            Readout("Opens with", () => "the phone button",
-                    Core.Build.Name + " takes the phone. The weapon wheel is the game's own again");
+            Tick("The phone button opens it", "Phone", "PhoneButton",
+                 () => c.PhoneButton, v => c.PhoneButton = v,
+                 "Off gives the up arrow back to the game's own phone. The key below still opens ours");
             Bind("Extra key", "Phone", "Key", () => c.PhoneKey, v => c.PhoneKey = v,
                  "Optional. Select, then press the key you want");
             Bind("Modifier", "Phone", "Modifier", () => c.PhoneModifier, v => c.PhoneModifier = v,
                  "None for no modifier");
-            Bind("Turn the mod back on", "General", "RescueKey",
-                 () => c.RescueKey, v => c.RescueKey = v,
-                 "The way back in after switching Posted Up off up there");
             Tick("Sounds", "Phone", "PlaySounds", () => c.PlaySounds, v => c.PlaySounds = v,
                  "Clicks and confirmations");
             Tick("Blur behind it", "Phone", "BlurBackground",
-                 () => c.BlurBackground, v => c.BlurBackground = v);
-            Tick("Blips in the bars", "PostUp", "BlipsInBars",
-                 () => c.BlipsInBars, v => c.BlipsInBars = v,
-                 "Map art at the ends of the reputation and heat bars");
-            Slide("Real phone hold", "Phone", "VanillaPhoneSeconds",
-                  () => c.VanillaPhoneSeconds, v => c.VanillaPhoneSeconds = (int)v,
-                  1f, 30f, 1f, "0", "s",
-                  note: "How long the button is yours after picking Phone");
+                 () => c.BlurBackground, v => c.BlurBackground = v,
+                 "The street softens while the phone is up");
             Slide("Time slows to", "Phone", "TimeScale",
-                  () => c.WheelTimeScale, v => c.WheelTimeScale = v, 0.05f, 1f, 0.05f, "0.00",
-                  note: "1.00 turns the slowdown off");
-            Readout("Blur effect", () => string.IsNullOrEmpty(c.TimecycleModifier)
-                        ? "none" : c.TimecycleModifier,
-                    "A timecycle name. Ini only -- there is no list to pick from");
+                  () => c.WheelTimeScale, v => c.WheelTimeScale = v, 0.05f, 1f, 0.05f, "0.00", "x",
+                  note: "1.00x turns the slowdown off");
+            Slide("His own phone gets the button for", "Phone", "VanillaPhoneSeconds",
+                  () => c.VanillaPhoneSeconds, v => c.VanillaPhoneSeconds = (int)v,
+                  1f, 30f, 1f, "0", " s",
+                  note: "How long the button is the game's after picking Phone on ours");
+            Tick("LUber shows the place", "LUber", "Preview",
+                 () => c.RidePreview,
+                 v => { c.RidePreview = v; RideScreen.Preview = v; },
+                 "Looks at where you're going while you're choosing it, live. Off keeps the street");
 
+            // ---- voices ----------------------------------------------------------
             Head("Voices");
             Tick("Recorded dialogue", "Voice", "Enabled",
                  () => c.VoiceEnabled, v => c.VoiceEnabled = v,
@@ -572,11 +607,45 @@ namespace Hoodrich.UI
                   () => c.VoiceVolume, v => c.VoiceVolume = v, 0f, 1f, 0.05f, "0.00",
                   note: "Against the game's own dialogue, not against the music");
 
-            Head("Lamar's list");
-            Slide("He rests between jobs", "Jobs", "LamarRestMinutes",
-                  () => c.LamarRestMinutes, v => c.LamarRestMinutes = v, 0f, 60f, 1f, "0", "m",
-                  note: "0 hands you the next one the moment he pays for the last");
+            // ---- socials ---------------------------------------------------------
+            Head("Socials");
 
+            // ONE CHOICE WHERE THERE WERE THREE TICKS. Off, the game's own notifications, the
+            // card down the right, or the phone's shade -- which is every combination of the
+            // three keys that meant anything. Written straight to the ini here, because the
+            // row's own Write can only put one key and this is three.
+            Pick("Where the feed goes", "", "",
+                 new[] { "Nowhere", "In the game's feed", "On the right", "In the phone" },
+                 () => !c.FeedOnScreen ? 0 : c.FeedOnPhone ? 3 : c.TweetsOnTheRight ? 2 : 1,
+                 v =>
+                 {
+                     c.FeedOnScreen = v != 0;
+                     c.FeedOnPhone = v == 3;
+                     c.TweetsOnTheRight = v == 2;
+
+                     Settings.Put("Socials", "FeedOnScreen", c.FeedOnScreen ? "true" : "false");
+                     Settings.Put("Socials", "FeedOnPhone", c.FeedOnPhone ? "true" : "false");
+                     Settings.Put("Socials", "TweetsOnTheRight", c.TweetsOnTheRight ? "true" : "false");
+                 },
+                 "Nowhere is quiet and silent; the timeline still fills. In the phone only while it is up");
+            Bind("Feed key", "Socials", "FeedKey", () => c.FeedKey, v => c.FeedKey = v,
+                 "Turns the feed on and off where you stand. Backspace for none");
+            Tick("The feed tips you off", "Socials", "BlockTipsEnabled",
+                 () => c.BlockTipsEnabled, v => c.BlockTipsEnabled = v,
+                 "Somebody posts that a block is busy, and it genuinely is");
+            Slide("They notice every", "Socials", "BlockTipEveryMinutes",
+                  () => c.BlockTipEveryMinutes, v => c.BlockTipEveryMinutes = v,
+                  1f, 120f, 1f, "0", " min");
+            Slide("Chance somebody posts", "Socials", "BlockTipChancePercent",
+                  () => c.BlockTipChancePercent, v => c.BlockTipChancePercent = v,
+                  0f, 100f, 5f, "0", "%");
+            Slide("A tip is worth", "Socials", "BlockTipBoost",
+                  () => c.BlockTipBoost, v => c.BlockTipBoost = v, 1f, 4f, 0.1f, "0.0", "x",
+                  note: "How much more often somebody buys on a block that got named");
+            Slide("A tip lasts", "Socials", "BlockTipMinutes",
+                  () => c.BlockTipMinutes, v => c.BlockTipMinutes = v, 1f, 60f, 1f, "0", " min");
+
+            // ---- the block -------------------------------------------------------
             Head("The block");
             Tick("The set rides the block", "Block", "RollersEnabled",
                  () => c.RollersEnabled, v => c.RollersEnabled = v,
@@ -585,20 +654,208 @@ namespace Hoodrich.UI
                   () => c.RollerCars, v => c.RollerCars = (int)v, 0f, 6f, 1f, "0");
             Slide("Riders at once", "Block", "RollerBikes",
                   () => c.RollerBikes, v => c.RollerBikes = (int)v, 0f, 6f, 1f, "0");
-            Tick("The lowriders come out", "Block", "CruiseEnabled",
-                 () => c.CruiseEnabled, v => c.CruiseEnabled = v,
-                 "Lowriders one night, donks the next: three in a line, slow, after ten");
             Tick("Riders pull wheelies", "Block", "RollerWheelies",
                  () => c.RollerWheelies, v => c.RollerWheelies = v,
                  "On the straights, when they have the room for it");
+            Tick("The lowriders come out", "Block", "CruiseEnabled",
+                 () => c.CruiseEnabled, v => c.CruiseEnabled = v,
+                 "Lowriders one night, donks the next: three in a line, slow, after ten");
             Tick("Crews on foot", "Block", "WalkersEnabled",
                  () => c.WalkersEnabled, v => c.WalkersEnabled = v,
                  "Groups of ours walking the back streets, drinking and smoking");
             Slide("Crews at once", "Block", "WalkerCrews",
                   () => c.WalkerCrews, v => c.WalkerCrews = (int)v, 0f, 5f, 1f, "0");
+            Slide("Crews with a dog", "Block", "WalkerDogs",
+                  () => c.WalkerDogs, v => c.WalkerDogs = (int)v, 0f, 100f, 5f, "0", "%",
+                  note: "How many of the crews on foot walk a dog");
             Tick("A kickabout on the block", "Block", "KickaboutEnabled",
                  () => c.KickaboutEnabled, v => c.KickaboutEnabled = v,
                  "Three of ours passing a ball about, on one of five spots, and it moves round");
+
+            // THE CRASH PROTECTION, ON THE MENU. These are the two lines the war, the takeover
+            // and the crews hold off at, and lowering them is the first thing to try on an
+            // install that goes down on a busy block. They were ini-only, under a comment
+            // nobody who needed it had read.
+            Slide("Peds before it is too busy", "Block", "PedsBusy",
+                  () => c.PedsBusy, v => c.PedsBusy = (int)v, 60f, 600f, 10f, "0",
+                  note: "Ours hold off past this many peds in the world. Lower it if a busy block crashes you");
+            Slide("Cars before it is too busy", "Block", "CarsBusy",
+                  () => c.CarsBusy, v => c.CarsBusy = (int)v, 60f, 600f, 10f, "0",
+                  note: "Ours hold off past this many cars in the world");
+
+            // ---- the takeover ----------------------------------------------------
+            Head("The takeover");
+            Tick("Takeovers happen", "Block", "TakeoverEnabled",
+                 () => c.TakeoverEnabled, v => c.TakeoverEnabled = v,
+                 "The junction on Carson, once a night between nine and four. Nothing is asked of you");
+            Slide("One night in", "Block", "TakeoverEveryNights",
+                  () => c.TakeoverEveryNights, v => c.TakeoverEveryNights = (int)v, 1f, 14f, 1f, "0",
+                  note: "3 is one night in three. 1 is every night");
+            Slide("The ring of people", "Block", "TakeoverRadius",
+                  () => c.TakeoverRadius, v => c.TakeoverRadius = v, 8f, 40f, 1f, "0", " m",
+                  note: "How far out the crowd stands from the middle");
+
+            // ---- posting up ------------------------------------------------------
+            Head("Posting up");
+            Tick("Show the corner readout", "PostUp", "ShowDealHud",
+                 () => c.ShowDealHud, v => c.ShowDealHud = v,
+                 "Off hides the wordmark and the bars. The corner still works");
+            Tick("Blips in the bars", "PostUp", "BlipsInBars",
+                 () => c.BlipsInBars, v => c.BlipsInBars = v,
+                 "Map art at the ends of the reputation and heat bars");
+            Slide("Chance each passer-by buys", "PostUp", "PostUpApproachChance",
+                  () => c.PostUpApproachChance, v => c.PostUpApproachChance = v,
+                  0f, 100f, 1f, "0", "%", note: "A busy pavement compounds this");
+            Slide("Grams a street sale moves", "PostUp", "PostUpDealGrams",
+                  () => c.PostUpDealGrams, v => c.PostUpDealGrams = v, 0.1f, 20f, 0.1f, "0.0", " g");
+            Slide("Heat per witness", "PostUp", "PostUpHeatPerWitness",
+                  () => c.PostUpHeatPerWitness, v => c.PostUpHeatPerWitness = v,
+                  0f, 2f, 0.05f, "0.00");
+            Slide("Heat before the law comes", "PostUp", "PostUpHeatBeforePolice",
+                  () => c.PostUpHeatBeforePolice, v => c.PostUpHeatBeforePolice = v,
+                  1f, 100f, 1f, "0");
+            Slide("Seconds before a search", "PostUp", "PostUpSearchSeconds",
+                  () => c.PostUpSearchSeconds, v => c.PostUpSearchSeconds = v, 1f, 60f, 1f, "0", " s",
+                  note: "Your window to walk away");
+            Slide("Fine when they find it", "PostUp", "PostUpFine",
+                  () => c.PostUpFine, v => c.PostUpFine = (int)v, 0f, 50000f, 250f, "N0", "", "$");
+            Tick("Buyers ring you", "Supply", "ColdCallsEnabled",
+                 () => c.ColdCallsEnabled, v => c.ColdCallsEnabled = v,
+                 "Somebody calls wanting something, somewhere, for a while");
+            Slide("They try every", "Supply", "ColdCallEveryMinutes",
+                  () => c.ColdCallEveryMinutes, v => c.ColdCallEveryMinutes = v,
+                  1f, 120f, 1f, "0", " min");
+            Slide("Chance they call", "Supply", "ColdCallChancePercent",
+                  () => c.ColdCallChancePercent, v => c.ColdCallChancePercent = v,
+                  0f, 100f, 5f, "0", "%");
+            Slide("Time to get there", "Supply", "ColdCallMinutes",
+                  () => c.ColdCallMinutes, v => c.ColdCallMinutes = v, 1f, 60f, 1f, "0", " min",
+                  note: "Before they go elsewhere");
+
+            // ---- the market ------------------------------------------------------
+            Head("The market");
+            Slide("Prices move every", "Economy", "MarketDriftIntervalMinutes",
+                  () => c.MarketDriftIntervalMinutes, v => c.MarketDriftIntervalMinutes = v,
+                  0f, 60f, 1f, "0", " min");
+            Slide("Most a price can swing", "Economy", "MarketMaxSwingPercent",
+                  () => c.MarketMaxSwingPercent, v => c.MarketMaxSwingPercent = v,
+                  0f, 80f, 5f, "0", "%");
+            Tick("Blocks get worked out", "Economy", "BlockSaturationEnabled",
+                 () => c.BlockSaturationEnabled, v => c.BlockSaturationEnabled = v,
+                 "Selling on one corner makes the next customer there slower to turn up");
+            Slide("Grams to dry a block", "Economy", "BlockSaturationGrams",
+                  () => c.BlockSaturationGrams, v => c.BlockSaturationGrams = v,
+                  10f, 2000f, 10f, "0", " g");
+            Slide("It recovers over", "Economy", "BlockRecoveryMinutes",
+                  () => c.BlockRecoveryMinutes, v => c.BlockRecoveryMinutes = v,
+                  1f, 240f, 1f, "0", " min", note: "While you are somewhere else");
+            Slide("A dead block still does", "Economy", "BlockDemandFloor",
+                  () => c.BlockDemandFloor, v => c.BlockDemandFloor = v, 0f, 1f, 0.05f, "0.00", "x",
+                  note: "It never goes to nothing. 0.25x is a quarter of normal");
+
+            // ---- supply ----------------------------------------------------------
+            Head("Supply");
+            Slide("A dealer holds", "Supply", "DealerMaxStockGrams",
+                  () => c.DealerMaxStockGrams, v => c.DealerMaxStockGrams = v,
+                  1f, 1000f, 10f, "0", " g");
+            Slide("Restocks every", "Supply", "DealerRestockMinutes",
+                  () => c.DealerRestockMinutes, v => c.DealerRestockMinutes = v,
+                  0f, 120f, 1f, "0", " min");
+            Slide("Chance he is dry", "Supply", "DealerDryChancePercent",
+                  () => c.DealerDryChancePercent, v => c.DealerDryChancePercent = v,
+                  0f, 100f, 5f, "0", "%");
+            Slide("Bulk discount", "Economy", "BulkPurchaseDiscountPercent",
+                  () => c.BulkPurchaseDiscountPercent, v => c.BulkPurchaseDiscountPercent = v,
+                  0f, 90f, 5f, "0", "%");
+            Slide("Grams a leader fronts you", "Map", "LeaderFrontGrams",
+                  () => c.LeaderFrontGrams, v => c.LeaderFrontGrams = v, 0f, 200f, 5f, "0", " g");
+            // THE RANGE FITS THE DEFAULT NOW. It shipped at 300,000 g under a slider that
+            // topped out at 20,000, so the first nudge either way dropped the house to a
+            // fifteenth of what it held. See the note on the field in Settings.cs.
+            Slide("The house holds", "Hideouts", "HideoutStashCapacity",
+                  () => c.HideoutStashCapacity, v => c.HideoutStashCapacity = v,
+                  1000f, 500000f, 5000f, "N0", " g");
+
+            // ---- risk ------------------------------------------------------------
+            Head("Risk");
+            Slide("Police bust chance", "Risk", "PoliceBustChancePercent",
+                  () => c.PoliceBustChancePercent, v => c.PoliceBustChancePercent = v,
+                  0f, 100f, 1f, "0", "%");
+            Slide("Undercover call", "Risk", "UndercoverCallSeconds",
+                  () => c.UndercoverCallSeconds, v => c.UndercoverCallSeconds = v,
+                  1f, 60f, 1f, "0", " s");
+            Slide("Escape distance", "Risk", "UndercoverEscapeDistance",
+                  () => c.UndercoverEscapeDistance, v => c.UndercoverEscapeDistance = v,
+                  5f, 300f, 5f, "0", " m");
+            Slide("Stars on a bust", "Risk", "BustWantedStars",
+                  () => c.BustWantedStars, v => c.BustWantedStars = (int)v, 1f, 5f, 1f, "0");
+            Slide("Lost when you die", "Risk", "LoseOnDeathPercent",
+                  () => c.LoseOnDeathPercent, v => c.LoseOnDeathPercent = v, 0f, 100f, 5f, "0", "%");
+            Slide("Lost when you are nicked", "Risk", "LoseOnArrestPercent",
+                  () => c.LoseOnArrestPercent, v => c.LoseOnArrestPercent = v, 0f, 100f, 5f, "0", "%");
+            Tick("The house gets turned over", "Hideouts", "StashRaidsEnabled",
+                 () => c.StashRaidsEnabled, v => c.StashRaidsEnabled = v,
+                 "Hold enough, get loud enough, and somebody comes while you are out");
+            Slide("Chance of a raid", "Hideouts", "StashRaidChancePercent",
+                  () => c.StashRaidChancePercent, v => c.StashRaidChancePercent = v,
+                  0f, 100f, 5f, "0", "%");
+            Slide("They take of the stash", "Hideouts", "StashRaidTakePercent",
+                  () => c.StashRaidTakePercent, v => c.StashRaidTakePercent = v,
+                  0f, 100f, 5f, "0", "%");
+            Slide("You are warned", "Hideouts", "StashRaidWarningMinutes",
+                  () => c.StashRaidWarningMinutes, v => c.StashRaidWarningMinutes = v,
+                  0f, 15f, 0.5f, "0.0", " min", note: "Be at the house when they come and it is off");
+
+            // ---- getting high ----------------------------------------------------
+            Head("Getting high");
+            Tick("Cinematic camera", "Highs", "DrugCamera",
+                 () => c.DrugCamera,
+                 v => { c.DrugCamera = v; Economy.Ritual.Cinematic = v; },
+                 "Swings round the front while you take something, then hands the camera back");
+            Slide("How long it takes", "Highs", "AnimLength",
+                  () => c.DrugAnimLength,
+                  v => { c.DrugAnimLength = v; Economy.Ritual.Length = v; },
+                  0.5f, 3f, 0.1f, "0.0", "x",
+                  note: "Scales every drug animation. The camera follows it");
+
+            // ---- lamar and tanya -------------------------------------------------
+            Head("Lamar and Tanya");
+            Slide("Lamar rests between jobs", "Jobs", "LamarRestMinutes",
+                  () => c.LamarRestMinutes, v => c.LamarRestMinutes = v, 0f, 60f, 1f, "0", " min",
+                  note: "0 hands you the next one the moment he pays for the last");
+            Slide("Tanya's tow", "Cars", "TowFee",
+                  () => c.TowFee, v => c.TowFee = (int)v, 0f, 5000f, 50f, "N0", "", "$",
+                  note: "What she charges to recover a wreck");
+            Slide("The yard keeps it", "Cars", "TowYardHours",
+                  () => c.TowYardHours, v => c.TowYardHours = v, 1f, 168f, 1f, "0", " h",
+                  note: "In-game hours before it turns up back at Hao's");
+
+            // ---- spooner scenes --------------------------------------------------
+            //
+            // WHAT SOMEBODY BUILT IN THE SPOONER. Menyoo saves a placement file; this builds
+            // it, from the mod's folder and from Menyoo's own, streamed in by distance. The
+            // three tools that go with it are under Tools: scenes, below.
+            Head("Spooner scenes");
+            Tick("Build saved scenes", "Scenery", "Enabled",
+                 () => c.Scenery,
+                 v => { c.Scenery = v; if (Scenes != null && !v) Scenes.Clear(); },
+                 "Object Spooner files are stood up as you come near them");
+            Tick("Read Menyoo's folder", "Scenery", "FromMenyoo",
+                 () => c.SceneryFromMenyoo,
+                 v => c.SceneryFromMenyoo = v,
+                 "menyooStuff\\Spooner as well as the mod's own scenery folder. Save in Menyoo and it is in");
+            Slide("How near to build", "Scenery", "Range",
+                  () => c.SceneryRange,
+                  v => c.SceneryRange = v,
+                  40f, 600f, 10f, "0", " m",
+                  note: "A scene is built once you are this close to it and taken out well past it");
+
+            // ---- shortcuts -------------------------------------------------------
+            //
+            // THINGS THAT HAPPEN WHEN PRESSED, in one place. They were scattered: the car meet
+            // and Vernon's job under The block, the takeover starts under The takeover, the
+            // bag under the block, the body swap under Finding things.
+            Head("Shortcuts");
 
             // ONE PRESS, BECAUSE A MEET IS A THING THAT HAPPENS RATHER THAN A SETTING. There
             // is nothing to configure here -- where the cars park is twelve coordinates in
@@ -619,6 +876,39 @@ namespace Hoodrich.UI
                     else Notify.Ticker("~g~word's out.~s~  they're on their way.");
                 }
             });
+
+            // HELD RATHER THAN PRESSED, and not because it is destructive. It is thirty-five
+            // cars, thirty-five drivers and sixty-odd people arriving at once -- not something
+            // to walk into while scrolling past it looking for something else.
+            // ONE ROW PER JUNCTION, because there is more than one now and a single button
+            // would have to guess which crossroads somebody meant. Built from the list rather
+            // than typed out, so a third junction is a third button and nothing here changes.
+            var places = TakeoverPlaces == null ? new string[0] : TakeoverPlaces();
+
+            for (var i = 0; i < places.Length; i++)
+            {
+                // Copied out of the loop. A lambda closes over the VARIABLE, not its value, so
+                // every button would otherwise start one at whichever junction the loop
+                // finished on -- which is the last one, every time, silently.
+                var which = i;
+                var name = places[i];
+
+                _rows.Add(new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "Start a takeover on " + name,
+                    Note = "Hold to start a takeover on " + name + " without waiting for the " +
+                           "clock. You have to be near that junction for it to have anywhere " +
+                           "to happen",
+                    Enabled = () => StartTakeover != null,
+                    Do = () =>
+                    {
+                        var said = StartTakeover == null ? null : StartTakeover(which);
+
+                        if (!string.IsNullOrEmpty(said)) Notify.Important(said);
+                    }
+                });
+            }
 
             // VERNON'S JOB, SKIPPED OR PUT BACK. The door on Strawberry follows the job --
             // he says out loud that nobody goes down there before they have done something
@@ -697,234 +987,140 @@ namespace Hoodrich.UI
                 }
             });
 
-            Head("The takeover");
-            Tick("It happens", "Block", "TakeoverEnabled",
-                 () => c.TakeoverEnabled, v => c.TakeoverEnabled = v,
-                 "The junction on Carson, once a night between nine and four. Nothing is asked of you");
-            Slide("The ring of people", "Block", "TakeoverRadius",
-                  () => c.TakeoverRadius, v => c.TakeoverRadius = v, 8f, 40f, 1f, "0", "m",
-                  note: "How far out the crowd stands from the middle");
-
-            // HOLD TO START, HOLD AGAIN TO STOP. Held for the same reason as the row below
-            // rather than because it is dangerous -- it is a thing you mean to do, and a
-            // recording started by accident is one you find out about when you go looking for
-            // the file you actually wanted.
-            //
-            // The label says which it will do, because a toggle whose text never changes is a
-            // button you press to find out what state you were in.
-
-            // HELD RATHER THAN PRESSED, and not because it is destructive. It is thirty-five
-            // cars, thirty-five drivers and sixty-odd people arriving at once -- not something
-            // to walk into while scrolling past it looking for something else.
-            // ONE ROW PER JUNCTION, because there is more than one now and a single button
-            // would have to guess which crossroads somebody meant. Built from the list rather
-            // than typed out, so a third junction is a third button and nothing here changes.
-            var places = TakeoverPlaces == null ? new string[0] : TakeoverPlaces();
-
-            for (var i = 0; i < places.Length; i++)
+            _rows.Add(new Opt
             {
-                // Copied out of the loop. A lambda closes over the VARIABLE, not its value, so
-                // every button would otherwise start one at whichever junction the loop
-                // finished on -- which is the last one, every time, silently.
-                var which = i;
-                var name = places[i];
-
-                _rows.Add(new Opt
+                Kind = OptKind.Action,
+                Label = "Put him back in Franklin's body",
+                Note = "For anybody left as somebody else. Does nothing when he is already himself",
+                Do = () =>
                 {
-                    Kind = OptKind.Danger,
-                    Label = "Start one on " + name,
-                    Note = "Hold to start a takeover on " + name + " without waiting for the " +
-                           "clock. You have to be near that junction for it to have anywhere " +
-                           "to happen",
-                    Enabled = () => StartTakeover != null,
-                    Do = () =>
+                    var me = Game.Player.Character;
+
+                    if (me != null && me.Exists() && (uint)me.Model.Hash == (uint)PedHash.Franklin)
                     {
-                        var said = StartTakeover == null ? null : StartTakeover(which);
-
-                        if (!string.IsNullOrEmpty(said)) Notify.Important(said);
+                        Notify.Important("He is already himself.");
+                        return;
                     }
-                });
-            }
 
-            Head("Socials");
-            Tick("Feed on screen", "Socials", "FeedOnScreen",
-                 () => c.FeedOnScreen, v => c.FeedOnScreen = v,
-                 "Off says nothing on screen and makes no sound. The timeline still fills");
-            Tick("Feed on the right", "Socials", "TweetsOnTheRight",
-                 () => c.TweetsOnTheRight, v => c.TweetsOnTheRight = v);
-            Tick("Feed in the phone", "Socials", "FeedOnPhone",
-                 () => c.FeedOnPhone, v => c.FeedOnPhone = v,
-                 "Posts land in the phone's own shade, only while it is up. Nothing on the right");
-            Tick("The feed tips you off", "Socials", "BlockTipsEnabled",
-                 () => c.BlockTipsEnabled, v => c.BlockTipsEnabled = v,
-                 "Somebody posts that a block is busy, and it genuinely is");
-            Slide("They notice every", "Socials", "BlockTipEveryMinutes",
-                  () => c.BlockTipEveryMinutes, v => c.BlockTipEveryMinutes = v,
-                  1f, 120f, 1f, "0", "m");
-            Slide("Chance somebody posts", "Socials", "BlockTipChancePercent",
-                  () => c.BlockTipChancePercent, v => c.BlockTipChancePercent = v,
-                  0f, 100f, 5f, "0", "%");
-            Slide("A tip is worth", "Socials", "BlockTipBoost",
-                  () => c.BlockTipBoost, v => c.BlockTipBoost = v, 1f, 4f, 0.1f, "0.0", "x",
-                  note: "How much more often somebody buys on a block that got named");
-            Slide("A tip lasts", "Socials", "BlockTipMinutes",
-                  () => c.BlockTipMinutes, v => c.BlockTipMinutes = v, 1f, 60f, 1f, "0", "m");
+                    var model = new GTA.Model(PedHash.Franklin);
+                    model.Request(3000);
 
-            // THE ONE SETTING IN THE MOD THAT CAN ONLY BE FOUND BY LOOKING. Component 1 on
-            // Franklin is beards and masks in one unnamed list, so the slider re-applies as
-            // it moves and you watch his head until the balaclava is on it. Only visible
-            // work when the mask is on -- with it off the number changes and nothing shows,
-            // which the note says.
+                    if (!model.IsLoaded)
+                    {
+                        Notify.Problem("Franklin would not load. Try again in a moment.");
+                        return;
+                    }
+
+                    Function.Call(Hash.SET_PLAYER_MODEL, Game.Player.Handle, model.Hash);
+                    model.MarkAsNoLongerNeeded();
+
+                    Log.Info("Put the player back in Franklin's body from the settings screen.");
+                    Notify.Important("Back in his own body.");
+                }
+            });
+
+            // ======================================================================
+            // Tools. For building the mod rather than playing it, and last for that reason.
+            // ======================================================================
+
+            // ---- tools: the mask -------------------------------------------------
+            //
             // THE ONLY SETTINGS IN THE MOD THAT CAN ONLY BE FOUND BY LOOKING, and there
             // are four of them because nothing in the game names a single one. Every row
             // re-applies as it moves, so you put the mask on from the phone and then scroll
             // here watching his head. The two that change WHERE it lives go through MoveTo,
             // which takes it off the old slot first -- otherwise the old slot keeps wearing
             // it for ever, since Off only knows about whatever is configured now.
-            Head("Getting high");
-            Tick("Cinematic camera", "Highs", "DrugCamera",
-                 () => c.DrugCamera,
-                 v => { c.DrugCamera = v; Economy.Ritual.Cinematic = v; },
-                 "Swings round the front while you take something, then hands the camera back");
-            Slide("How long it takes", "Highs", "AnimLength",
-                  () => c.DrugAnimLength,
-                  v => { c.DrugAnimLength = v; Economy.Ritual.Length = v; },
-                  0.5f, 3f, 0.1f, "0.0", "x",
-                  note: "Scales every drug animation. The camera follows it");
-
-            // WHAT SOMEBODY BUILT IN THE SPOONER. Menyoo saves a placement file; this builds
-            // it, from the mod's folder and from Menyoo's own, streamed in by distance.
-            Head("Spooner scenes");
-            Tick("Build saved scenes", "Scenery", "Enabled",
-                 () => c.Scenery,
-                 v => { c.Scenery = v; if (Scenes != null && !v) Scenes.Clear(); },
-                 "Object Spooner files are stood up as you come near them");
-            Tick("Read Menyoo's folder", "Scenery", "FromMenyoo",
-                 () => c.SceneryFromMenyoo,
-                 v => c.SceneryFromMenyoo = v,
-                 "menyooStuff\\Spooner as well as the mod's own scenery folder. Save in Menyoo and it is in");
-            Slide("How near to build", "Scenery", "Range",
-                  () => c.SceneryRange,
-                  v => c.SceneryRange = v,
-                  40f, 600f, 10f, "0", " m",
-                  note: "A scene is built once you are this close to it and taken out well past it");
-
+            //
+            // AND THE WAY YOU ACTUALLY DO IT, which is not to touch any of the four: put it
+            // on in his wardrobe, and let the mod look at him and write down what moved. So
+            // the two buttons come first.
+            Head("Tools: the mask");
             _rows.Add(new Opt
             {
                 Kind = OptKind.Danger,
-                Label = "Read the scene files again",
-                Note = "Takes down what is standing and builds it from the files as they are now",
+                Label = "Find the mask he's wearing",
+                Note = "Put it on in his wardrobe first. This works out which slot it went " +
+                       "into and fills in the four settings below",
                 Do = () =>
                 {
-                    if (Scenes == null) return;
+                    var said = Core.Mask.Learn(c);
 
-                    var n = Scenes.Reload();
-                    Notify.Important(n == 0
-                        ? "No placements found. Save one in Menyoo's Object Spooner first."
-                        : n + " placement(s) read. " + Scenes.Tally() + ".");
-                }
-            });
-
-            // THE ONE THAT CATCHES UNSAVED WORK. An hour in the spooner is one crash from
-            // never having happened; this writes what is stood round him to a scene file that
-            // opens in Menyoo like anything else it saved.
-            _rows.Add(new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Save everything around me",
-                Note = "Writes the placed peds, cars and props within 80 m to a scene file, and lists them in the log",
-                Do = () =>
-                {
-                    var me = Game.Player.Character;
-                    if (me == null || !me.Exists()) return;
-
-                    var found = Core.Spooner.Around(me.Position, 80f);
-
-                    if (found.Count == 0)
+                    if (!string.IsNullOrEmpty(said))
                     {
-                        Notify.Important("Nothing placed within 80 m.");
+                        Notify.Important("~r~" + said);
                         return;
                     }
 
-                    foreach (var one in found)
-                    {
-                        Log.Info("Placed: " + (string.IsNullOrEmpty(one.ModelName)
-                                     ? Core.Names.Say(one.ModelHash)
-                                     : one.ModelName) +
-                                 "  " + one.What +
-                                 "  " + one.At.DistanceTo(me.Position).ToString("0.0") + " m  at " + one.At);
-                    }
+                    // WRITTEN TO THE INI HERE, because Learn changes the settings OBJECT and
+                    // nothing else was going to. Every other row on this screen saves through
+                    // Write when you nudge it; this one sets four values at once without any
+                    // of them being touched, so without this the mask is found, works for the
+                    // session, and is gone the next time the mod loads -- which is the most
+                    // annoying way for a thing to be broken.
+                    Settings.Put("Mask", "Slot", c.MaskSlot.ToString(CultureInfo.InvariantCulture));
+                    Settings.Put("Mask", "AsProp", c.MaskAsProp ? "true" : "false");
+                    Settings.Put("Mask", "Drawable", c.MaskDrawable.ToString(CultureInfo.InvariantCulture));
+                    Settings.Put("Mask", "Texture", c.MaskTexture.ToString(CultureInfo.InvariantCulture));
 
-                    var name = "capture-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".xml";
-                    var path = System.IO.Path.Combine(Core.Paths.Scenery, name);
-
-                    Notify.Important(Core.Spooner.Write(path, found, "Captured by Hoodrich")
-                        ? found.Count + " placement(s) saved as " + name + "."
-                        : "Could not write the scene file. See the log.");
+                    Notify.Important("~g~Found it.~s~  " + Core.Mask.Where(c) +
+                                     ", number " + c.MaskDrawable + ". Saved.");
                 }
             });
-
-            // THE OTHER HALF OF A SPOONER SCENE, and the spooner cannot do it.
-            //
-            // Menyoo records what you PUT somewhere. There is no tag anywhere in its format for
-            // what you TOOK AWAY -- so a cupboard deleted to make room for a scale is back next
-            // session, standing through the middle of everything you arranged around it. This
-            // is that half: look at a map prop, press it, and it stays gone.
             _rows.Add(new Opt
             {
                 Kind = OptKind.Danger,
-                Label = "Hide the prop I am looking at",
-                Note = "Takes a map object out for good and writes it into scenery\\hidden.xml",
-                Do = () => Bury()
+                Label = "Remember how he looks",
+                Note = "Only needed if he was already wearing the mask when the mod loaded. " +
+                       "Do it bare-faced, before you go to the wardrobe",
+                Do = () =>
+                {
+                    var said = Core.Mask.Baseline();
+
+                    Notify.Important(string.IsNullOrEmpty(said)
+                        ? "Got it. Now put the mask on in his wardrobe."
+                        : "~r~" + said);
+                }
             });
+            Slide("Mask slot", "Mask", "Slot",
+                  () => c.MaskSlot,
+                  v => Core.Mask.MoveTo(c, () => c.MaskSlot = (int)Math.Round(v)),
+                  0f, Core.Mask.Components - 1, 1f, "0", "",
+                  note: "1 is beards on Franklin. His bandana is in another one");
+            Tick("It's a prop, not clothing", "Mask", "AsProp",
+                 () => c.MaskAsProp,
+                 v => Core.Mask.MoveTo(c, () => c.MaskAsProp = v),
+                 "Hats, glasses and the like are a separate set of eight slots. 0 is hats");
+            Slide("Mask number", "Mask", "Drawable",
+                  () => c.MaskDrawable,
+                  v => { c.MaskDrawable = (int)Math.Round(v); Core.Mask.Refresh(c); },
+                  0f, Math.Max(1f, Core.Mask.Count(c) - 1), 1f, "0", "",
+                  note: "Put it on from the phone first, then scroll and watch his head",
+                  maxOf: () => Math.Max(1f, Core.Mask.Count(c) - 1));
+            Slide("Mask colour", "Mask", "Texture",
+                  () => c.MaskTexture,
+                  v => { c.MaskTexture = (int)Math.Round(v); Core.Mask.Refresh(c); },
+                  0f, Math.Max(1f, Core.Mask.Textures(c) - 1), 1f, "0", "",
+                  note: "Some come in more than one",
+                  maxOf: () => Math.Max(1f, Core.Mask.Textures(c) - 1));
 
-            Head("LUber");
-            Tick("Show the place", "LUber", "Preview",
-                 () => c.RidePreview,
-                 v => { c.RidePreview = v; RideScreen.Preview = v; },
-                 "Looks at where you're going while you're choosing it, live. Off keeps the street");
-
-            // WHERE A THING SITS IN HIS HAND, BY EYE. Every prop has its own origin and no
-            // animation agrees with it; these put the thing in his hand with the pose it is
-            // used in and let you move it while you look. Written to the ini as you go.
-            Head("In his hand");
-            Pick("Which one", "", "", Economy.Fit.Labels,
-                 () => Economy.Fit.Picked,
-                 i => Economy.Fit.Pick(i),
-                 "Puts it in his hand with the pose it's used in, so you can see it while you move it");
-            Slide("Forward", "", "", () => Economy.Fit.Value(0), v => Economy.Fit.Value(0, v),
-                  -10f, 10f, 0.25f, "0.00", " cm", note: "Along his fingers");
-            Slide("Right", "", "", () => Economy.Fit.Value(1), v => Economy.Fit.Value(1, v),
-                  -10f, 10f, 0.25f, "0.00", " cm");
-            Slide("Up", "", "", () => Economy.Fit.Value(2), v => Economy.Fit.Value(2, v),
-                  -10f, 10f, 0.25f, "0.00", " cm");
-            Slide("Pitch", "", "", () => Economy.Fit.Value(3), v => Economy.Fit.Value(3, v),
-                  -180f, 180f, 5f, "0", " deg", note: "End over end. 180 points it the other way");
-            Slide("Roll", "", "", () => Economy.Fit.Value(4), v => Economy.Fit.Value(4, v),
-                  -180f, 180f, 5f, "0", " deg");
-            Slide("Yaw", "", "", () => Economy.Fit.Value(5), v => Economy.Fit.Value(5, v),
-                  -180f, 180f, 5f, "0", " deg",
-                  note: "Saved to the ini as you go. Change which one to put it in his hand; leaving takes it out");
-
-            // FOR BUILDING ROUND THINGS THE GAME ALREADY PUT THERE. A shrine on a pavement, a
-            // memorial on a wall: the game does not say what it called them, and the object
-            // list has twenty-one thousand names. Stand at the thing, press this, and the log
-            // has the hash and the distance of everything within four metres.
+            // ---- tools: doors ----------------------------------------------------
+            //
             // A DOOR IS TWO COORDINATES AND A NAME, and the coordinates can only honestly
             // come from somebody standing on them. Four rounds of guessing where a room was
-            // is what these two rows exist to stop happening again.
-            Head("Doors");
-
+            // is what these rows exist to stop happening again.
+            //
             // THE LIST IS NAMES, THE PRESSES ARE NUMBERS. Everywhere in the game with an
             // inside is in Places.cs, every name of it read out of the interior loader's own
             // string table rather than typed. What is missing from each one is the two
             // coordinates, and those come from a player standing on them. Pick the place,
             // stand at its door, press; stand inside, press again.
+            Head("Tools: doors");
             _rows.Add(new Opt
             {
                 Kind = OptKind.Choice,
                 Label = "Part of town",
-                Note = "Which set of places the two rows below are pointed at",
+                Note = "Which set of places the rows below are pointed at",
                 Choices = Locations.Places.Groups,
                 GetChoice = () => _group,
                 SetChoice = at =>
@@ -1000,37 +1196,128 @@ namespace Hoodrich.UI
             Readout("Places written down", () => Locations.Places.Tally(),
                     "Out of everywhere in the game that has an inside");
 
-            Head("Finding things");
+            // ---- tools: in his hand ----------------------------------------------
+            //
+            // WHERE A THING SITS IN HIS HAND, BY EYE. Every prop has its own origin and no
+            // animation agrees with it; these put the thing in his hand with the pose it is
+            // used in and let you move it while you look. Written to the ini as you go.
+            Head("Tools: in his hand");
+            Pick("In his hand", "", "", Economy.Fit.Labels,
+                 () => Economy.Fit.Picked,
+                 i => Economy.Fit.Pick(i),
+                 "Puts it in his hand with the pose it's used in, so you can see it while you move it");
+            Slide("Forward", "", "", () => Economy.Fit.Value(0), v => Economy.Fit.Value(0, v),
+                  -10f, 10f, 0.25f, "0.00", " cm", note: "Along his fingers");
+            Slide("Right", "", "", () => Economy.Fit.Value(1), v => Economy.Fit.Value(1, v),
+                  -10f, 10f, 0.25f, "0.00", " cm");
+            Slide("Up", "", "", () => Economy.Fit.Value(2), v => Economy.Fit.Value(2, v),
+                  -10f, 10f, 0.25f, "0.00", " cm");
+            Slide("Pitch", "", "", () => Economy.Fit.Value(3), v => Economy.Fit.Value(3, v),
+                  -180f, 180f, 5f, "0", " deg", note: "End over end. 180 points it the other way");
+            Slide("Roll", "", "", () => Economy.Fit.Value(4), v => Economy.Fit.Value(4, v),
+                  -180f, 180f, 5f, "0", " deg");
+            Slide("Yaw", "", "", () => Economy.Fit.Value(5), v => Economy.Fit.Value(5, v),
+                  -180f, 180f, 5f, "0", " deg",
+                  note: "Saved to the ini as you go. Change which one to put it in his hand; leaving takes it out");
 
+            // ---- tools: scenes ---------------------------------------------------
+            Head("Tools: scenes");
             _rows.Add(new Opt
             {
-                Kind = OptKind.Action,
-                Label = "Put him back in Franklin's body",
-                Note = "For anybody left as somebody else. Does nothing when he is already himself",
+                Kind = OptKind.Danger,
+                Label = "Read the scene files again",
+                Note = "Takes down what is standing and builds it from the files as they are now",
+                Do = () =>
+                {
+                    if (Scenes == null) return;
+
+                    var n = Scenes.Reload();
+                    Notify.Important(n == 0
+                        ? "No placements found. Save one in Menyoo's Object Spooner first."
+                        : n + " placement(s) read. " + Scenes.Tally() + ".");
+                }
+            });
+
+            // THE ONE THAT CATCHES UNSAVED WORK. An hour in the spooner is one crash from
+            // never having happened; this writes what is stood round him to a scene file that
+            // opens in Menyoo like anything else it saved.
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Save everything around me",
+                Note = "Writes the placed peds, cars and props within 80 m to a scene file, and lists them in the log",
                 Do = () =>
                 {
                     var me = Game.Player.Character;
+                    if (me == null || !me.Exists()) return;
 
-                    if (me != null && me.Exists() && (uint)me.Model.Hash == (uint)PedHash.Franklin)
+                    var found = Core.Spooner.Around(me.Position, 80f);
+
+                    if (found.Count == 0)
                     {
-                        Notify.Important("He is already himself.");
+                        Notify.Important("Nothing placed within 80 m.");
                         return;
                     }
 
-                    var model = new GTA.Model(PedHash.Franklin);
-                    model.Request(3000);
-
-                    if (!model.IsLoaded)
+                    foreach (var one in found)
                     {
-                        Notify.Problem("Franklin would not load. Try again in a moment.");
-                        return;
+                        Log.Info("Placed: " + (string.IsNullOrEmpty(one.ModelName)
+                                     ? Core.Names.Say(one.ModelHash)
+                                     : one.ModelName) +
+                                 "  " + one.What +
+                                 "  " + one.At.DistanceTo(me.Position).ToString("0.0") + " m  at " + one.At);
                     }
 
-                    Function.Call(Hash.SET_PLAYER_MODEL, Game.Player.Handle, model.Hash);
-                    model.MarkAsNoLongerNeeded();
+                    var name = "capture-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".xml";
+                    var path = System.IO.Path.Combine(Core.Paths.Scenery, name);
 
-                    Log.Info("Put the player back in Franklin's body from the settings screen.");
-                    Notify.Important("Back in his own body.");
+                    Notify.Important(Core.Spooner.Write(path, found, "Captured by Hoodrich")
+                        ? found.Count + " placement(s) saved as " + name + "."
+                        : "Could not write the scene file. See the log.");
+                }
+            });
+
+            // THE OTHER HALF OF A SPOONER SCENE, and the spooner cannot do it.
+            //
+            // Menyoo records what you PUT somewhere. There is no tag anywhere in its format for
+            // what you TOOK AWAY -- so a cupboard deleted to make room for a scale is back next
+            // session, standing through the middle of everything you arranged around it. This
+            // is that half: look at a map prop, press it, and it stays gone.
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Hide the prop I am looking at",
+                Note = "Takes a map object out for good and writes it into scenery\\hidden.xml",
+                Do = () => Bury()
+            });
+
+            // ---- tools: finding things -------------------------------------------
+            //
+            // FOR BUILDING ROUND THINGS THE GAME ALREADY PUT THERE. A shrine on a pavement, a
+            // memorial on a wall: the game does not say what it called them, and the object
+            // list has twenty-one thousand names. Stand at the thing, press this, and the log
+            // has the hash and the distance of everything within four metres.
+            Head("Tools: finding things");
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Action,
+                Label = "Name the props around me",
+                Note = "Writes the model of every prop within four metres to Hoodrich.log, with how far off it is",
+                Do = () =>
+                {
+                    var me = Game.Player.Character;
+                    if (me == null || !me.Exists()) return;
+
+                    var n = 0;
+                    foreach (var prop in World.GetNearbyProps(me.Position, 4f))
+                    {
+                        if (prop == null || !prop.Exists()) continue;
+                        n++;
+                        Log.Info("Prop near him: 0x" + ((uint)prop.Model.Hash).ToString("X8") +
+                                 "  " + prop.Position.DistanceTo(me.Position).ToString("0.0") + " m  at " + prop.Position);
+                    }
+
+                    Notify.Important(n + (n == 1 ? " prop" : " props") + " written to the log.");
                 }
             });
 
@@ -1120,229 +1407,10 @@ namespace Hoodrich.UI
                 }
             });
 
-            _rows.Add(new Opt
-            {
-                Kind = OptKind.Action,
-                Label = "Name the props around me",
-                Note = "Writes the model of every prop within four metres to Hoodrich.log, with how far off it is",
-                Do = () =>
-                {
-                    var me = Game.Player.Character;
-                    if (me == null || !me.Exists()) return;
-
-                    var n = 0;
-                    foreach (var prop in World.GetNearbyProps(me.Position, 4f))
-                    {
-                        if (prop == null || !prop.Exists()) continue;
-                        n++;
-                        Log.Info("Prop near him: 0x" + ((uint)prop.Model.Hash).ToString("X8") +
-                                 "  " + prop.Position.DistanceTo(me.Position).ToString("0.0") + " m  at " + prop.Position);
-                    }
-
-                    Notify.Important(n + (n == 1 ? " prop" : " props") + " written to the log.");
-                }
-            });
-
-            Head("Mask");
-            Slide("Slot", "Mask", "Slot",
-                  () => c.MaskSlot,
-                  v => Core.Mask.MoveTo(c, () => c.MaskSlot = (int)Math.Round(v)),
-                  0f, Core.Mask.Components - 1, 1f, "0", "",
-                  note: "1 is beards on Franklin. His bandana is in another one");
-            Tick("It's a prop, not clothing", "Mask", "AsProp",
-                 () => c.MaskAsProp,
-                 v => Core.Mask.MoveTo(c, () => c.MaskAsProp = v),
-                 "Hats, glasses and the like are a separate set of eight slots. 0 is hats");
-            Slide("Which one", "Mask", "Drawable",
-                  () => c.MaskDrawable,
-                  v => { c.MaskDrawable = (int)Math.Round(v); Core.Mask.Refresh(c); },
-                  0f, Math.Max(1f, Core.Mask.Count(c) - 1), 1f, "0", "",
-                  note: "Put it on from the phone first, then scroll and watch his head",
-                  maxOf: () => Math.Max(1f, Core.Mask.Count(c) - 1));
-            Slide("Colour", "Mask", "Texture",
-                  () => c.MaskTexture,
-                  v => { c.MaskTexture = (int)Math.Round(v); Core.Mask.Refresh(c); },
-                  0f, Math.Max(1f, Core.Mask.Textures(c) - 1), 1f, "0", "",
-                  note: "Some come in more than one",
-                  maxOf: () => Math.Max(1f, Core.Mask.Textures(c) - 1));
-
-            // AND THE WAY YOU ACTUALLY DO IT, which is not to touch any of the four above.
-            //
-            // The game knows where his mask is -- it is in his wardrobe, you can walk in and
-            // put it on. So put it on, and let the mod look at him and write down what moved.
-            // The first snapshot takes itself shortly after load, so most of the time only the
-            // second button is needed.
-            _rows.Add(new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Remember how he looks",
-                Note = "Only needed if he was already wearing the mask when the mod loaded. " +
-                       "Do it bare-faced, before you go to the wardrobe",
-                Do = () =>
-                {
-                    var said = Core.Mask.Baseline();
-
-                    Notify.Important(string.IsNullOrEmpty(said)
-                        ? "Got it. Now put the mask on in his wardrobe."
-                        : "~r~" + said);
-                }
-            });
-
-            _rows.Add(new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Find the mask he's wearing",
-                Note = "Put it on in his wardrobe first. This works out which slot it went " +
-                       "into and fills in all four settings above",
-                Do = () =>
-                {
-                    var said = Core.Mask.Learn(c);
-
-                    if (!string.IsNullOrEmpty(said))
-                    {
-                        Notify.Important("~r~" + said);
-                        return;
-                    }
-
-                    // WRITTEN TO THE INI HERE, because Learn changes the settings OBJECT and
-                    // nothing else was going to. Every other row on this screen saves through
-                    // Write when you nudge it; this one sets four values at once without any
-                    // of them being touched, so without this the mask is found, works for the
-                    // session, and is gone the next time the mod loads -- which is the most
-                    // annoying way for a thing to be broken.
-                    Settings.Put("Mask", "Slot", c.MaskSlot.ToString(CultureInfo.InvariantCulture));
-                    Settings.Put("Mask", "AsProp", c.MaskAsProp ? "true" : "false");
-                    Settings.Put("Mask", "Drawable", c.MaskDrawable.ToString(CultureInfo.InvariantCulture));
-                    Settings.Put("Mask", "Texture", c.MaskTexture.ToString(CultureInfo.InvariantCulture));
-
-                    Notify.Important("~g~Found it.~s~  " + Core.Mask.Where(c) +
-                                     ", number " + c.MaskDrawable + ". Saved.");
-                }
-            });
-
-            Head("Posting up");
-            Tick("Show the corner readout", "PostUp", "ShowDealHud",
-                 () => c.ShowDealHud, v => c.ShowDealHud = v,
-                 "Off hides the wordmark and the bars. The corner still works");
-            Slide("Chance each passer-by buys", "PostUp", "PostUpApproachChance",
-                  () => c.PostUpApproachChance, v => c.PostUpApproachChance = v,
-                  0f, 100f, 1f, "0", "%", note: "A busy pavement compounds this");
-            Slide("Grams a street sale moves", "PostUp", "PostUpDealGrams",
-                  () => c.PostUpDealGrams, v => c.PostUpDealGrams = v, 0.1f, 20f, 0.1f, "0.0", "g");
-            Slide("Heat per witness", "PostUp", "PostUpHeatPerWitness",
-                  () => c.PostUpHeatPerWitness, v => c.PostUpHeatPerWitness = v,
-                  0f, 2f, 0.05f, "0.00");
-            Slide("Heat before the law comes", "PostUp", "PostUpHeatBeforePolice",
-                  () => c.PostUpHeatBeforePolice, v => c.PostUpHeatBeforePolice = v,
-                  1f, 100f, 1f, "0");
-            Slide("Seconds before a search", "PostUp", "PostUpSearchSeconds",
-                  () => c.PostUpSearchSeconds, v => c.PostUpSearchSeconds = v, 1f, 60f, 1f, "0", "s",
-                  note: "Your window to walk away");
-            Slide("Fine when they find it", "PostUp", "PostUpFine",
-                  () => c.PostUpFine, v => c.PostUpFine = (int)v, 0f, 50000f, 250f, "N0", "", "$");
-
-            Tick("Blocks get worked out", "Economy", "BlockSaturationEnabled",
-                 () => c.BlockSaturationEnabled, v => c.BlockSaturationEnabled = v,
-                 "Selling on one corner makes the next customer there slower to turn up");
-            Slide("Grams to dry a block", "Economy", "BlockSaturationGrams",
-                  () => c.BlockSaturationGrams, v => c.BlockSaturationGrams = v,
-                  10f, 2000f, 10f, "0", "g");
-            Slide("It recovers over", "Economy", "BlockRecoveryMinutes",
-                  () => c.BlockRecoveryMinutes, v => c.BlockRecoveryMinutes = v,
-                  1f, 240f, 1f, "0", "m", note: "While you are somewhere else");
-            Slide("A dead block still does", "Economy", "BlockDemandFloor",
-                  () => c.BlockDemandFloor, v => c.BlockDemandFloor = v, 0f, 1f, 0.05f, "0.00", "x",
-                  note: "It never goes to nothing. 0.25 is a quarter of normal");
-
-            Tick("Buyers ring you", "Supply", "ColdCallsEnabled",
-                 () => c.ColdCallsEnabled, v => c.ColdCallsEnabled = v,
-                 "Somebody calls wanting something, somewhere, for a while");
-            Slide("They try every", "Supply", "ColdCallEveryMinutes",
-                  () => c.ColdCallEveryMinutes, v => c.ColdCallEveryMinutes = v,
-                  1f, 120f, 1f, "0", "m");
-            Slide("Chance they call", "Supply", "ColdCallChancePercent",
-                  () => c.ColdCallChancePercent, v => c.ColdCallChancePercent = v,
-                  0f, 100f, 5f, "0", "%");
-            Slide("You have", "Supply", "ColdCallMinutes",
-                  () => c.ColdCallMinutes, v => c.ColdCallMinutes = v, 1f, 60f, 1f, "0", "m",
-                  note: "Before they go elsewhere");
-
-            Head("Risk");
-            Slide("Police bust chance", "Risk", "PoliceBustChancePercent",
-                  () => c.PoliceBustChancePercent, v => c.PoliceBustChancePercent = v,
-                  0f, 100f, 1f, "0", "%");
-            Slide("Undercover call", "Risk", "UndercoverCallSeconds",
-                  () => c.UndercoverCallSeconds, v => c.UndercoverCallSeconds = v,
-                  1f, 60f, 1f, "0", "s");
-            Slide("Escape distance", "Risk", "UndercoverEscapeDistance",
-                  () => c.UndercoverEscapeDistance, v => c.UndercoverEscapeDistance = v,
-                  5f, 300f, 5f, "0", "m");
-            Slide("Stars on a bust", "Risk", "BustWantedStars",
-                  () => c.BustWantedStars, v => c.BustWantedStars = (int)v, 1f, 5f, 1f, "0");
-            Slide("Lost when you die", "Risk", "LoseOnDeathPercent",
-                  () => c.LoseOnDeathPercent, v => c.LoseOnDeathPercent = v, 0f, 100f, 5f, "0", "%");
-            Slide("Lost when you are nicked", "Risk", "LoseOnArrestPercent",
-                  () => c.LoseOnArrestPercent, v => c.LoseOnArrestPercent = v, 0f, 100f, 5f, "0", "%");
-
-            Tick("The house gets turned over", "Hideouts", "StashRaidsEnabled",
-                 () => c.StashRaidsEnabled, v => c.StashRaidsEnabled = v,
-                 "Hold enough, get loud enough, and somebody comes while you are out");
-            Slide("Chance of a raid", "Hideouts", "StashRaidChancePercent",
-                  () => c.StashRaidChancePercent, v => c.StashRaidChancePercent = v,
-                  0f, 100f, 5f, "0", "%");
-            Slide("They take", "Hideouts", "StashRaidTakePercent",
-                  () => c.StashRaidTakePercent, v => c.StashRaidTakePercent = v,
-                  0f, 100f, 5f, "0", "%");
-            Slide("You are warned", "Hideouts", "StashRaidWarningMinutes",
-                  () => c.StashRaidWarningMinutes, v => c.StashRaidWarningMinutes = v,
-                  0f, 15f, 0.5f, "0.0", "m", note: "Be at the house when they come and it is off");
-
-            Head("Money");
-            Slide("Bulk discount", "Economy", "BulkPurchaseDiscountPercent",
-                  () => c.BulkPurchaseDiscountPercent, v => c.BulkPurchaseDiscountPercent = v,
-                  0f, 90f, 5f, "0", "%");
-            Readout("Docks unlock", () => "after Gerald's two packages",
-                    "Not a number any more -- take a package off him and clear it, twice");
-            Slide("Prices move every", "Economy", "MarketDriftIntervalMinutes",
-                  () => c.MarketDriftIntervalMinutes, v => c.MarketDriftIntervalMinutes = v,
-                  0f, 60f, 1f, "0", "m");
-            Slide("Most a price can swing", "Economy", "MarketMaxSwingPercent",
-                  () => c.MarketMaxSwingPercent, v => c.MarketMaxSwingPercent = v,
-                  0f, 80f, 5f, "0", "%");
-            Slide("Grams a leader fronts you", "Map", "LeaderFrontGrams",
-                  () => c.LeaderFrontGrams, v => c.LeaderFrontGrams = v, 0f, 200f, 5f, "0", "g");
-            Slide("Tanya's tow", "Cars", "TowFee",
-                  () => c.TowFee, v => c.TowFee = (int)v, 0f, 5000f, 50f, "N0", "", "$",
-                  note: "What she charges to recover a wreck");
-            Slide("The yard keeps it", "Cars", "TowYardHours",
-                  () => c.TowYardHours, v => c.TowYardHours = v, 1f, 168f, 1f, "0", "h",
-                  note: "In-game hours before it turns up back at Hao's");
-
-            Head("Supply");
-            Slide("A dealer holds", "Supply", "DealerMaxStockGrams",
-                  () => c.DealerMaxStockGrams, v => c.DealerMaxStockGrams = v,
-                  1f, 1000f, 10f, "0", "g");
-            Slide("Restocks every", "Supply", "DealerRestockMinutes",
-                  () => c.DealerRestockMinutes, v => c.DealerRestockMinutes = v,
-                  0f, 120f, 1f, "0", "m");
-            Slide("Chance he is dry", "Supply", "DealerDryChancePercent",
-                  () => c.DealerDryChancePercent, v => c.DealerDryChancePercent = v,
-                  0f, 100f, 5f, "0", "%");
-            Slide("The house holds", "Hideouts", "HideoutStashCapacity",
-                  () => c.HideoutStashCapacity, v => c.HideoutStashCapacity = v,
-                  100f, 20000f, 100f, "N0", "g");
-
-            // "The bag on his back" lived here: six sliders for the X, Y and Z offset and the
-            // pitch, roll and yaw of the holdall prop on Franklin's shoulder.
-            //
-            // That is a calibration jig, not a setting. It exists so somebody can nudge a prop
-            // until it sits right ONCE, and then never again -- and it was sat in the player's
-            // options menu costing six rows of a list he has to scroll, next to genuine
-            // questions like how much heat a witness adds.
-            //
-            // The ini keys stay exactly as they were, so anybody who did calibrate it keeps
-            // their numbers and anybody porting the bag to a different prop can still get at
-            // them. They are simply no longer a thing the game asks the player about.
+            // "The bag on his back" lived here once: six sliders for the X, Y and Z offset
+            // and the pitch, roll and yaw of the holdall prop on Franklin's shoulder. That is
+            // a calibration jig, not a setting, and it is ini-only now: [Dealing] BagX and
+            // friends. Anybody who did calibrate it keeps their numbers.
         }
 
         // ---- input -------------------------------------------------------------
@@ -1711,19 +1779,30 @@ namespace Hoodrich.UI
         /// </summary>
         private static string IconFor(string heading)
         {
+            // EVERY HEADING HAS ONE, since the 2026-09-19 lay-out; a section without a mark
+            // next to sections with them read as the one somebody forgot.
             switch ((heading ?? "").ToLowerInvariant())
             {
                 case "the mod": return "logo.png";
-                case "the wheel": return "wheel_hub.png";
-                case "lamar's list": return "phone.png";
+                case "the phone": return "phone.png";
+                case "voices": return "megaphone.png";
+                case "socials": return "socials.png";
                 case "the block": return "pin.png";
-                case "the law": return "police.png";
-                case "socials": return "mobile.png";
+                case "the takeover": return "fire.png";
                 case "posting up": return "deal.png";
-                case "risk": return "warning.png";
-                case "money": return "cash.png";
+                case "the market": return "scales.png";
                 case "supply": return "crate.png";
-                case "the bag on his back": return "box.png";
+                case "risk": return "warning.png";
+                case "getting high": return "blunt.png";
+                case "lamar and tanya": return "tow.png";
+                case "spooner scenes": return "box.png";
+                case "shortcuts": return "key.png";
+                case "tools: the mask": return "mask.png";
+                case "tools: doors": return "locked.png";
+                case "tools: in his hand": return "baggie.png";
+                case "tools: scenes": return "box.png";
+                case "tools: finding things": return "eyes.png";
+                case "start over": return "skull.png";
                 default: return "";
             }
         }

@@ -8,7 +8,7 @@ BY = 'the mod author'
 
 T = {
 "Menus, prompts and notices. English fills in anything untranslated": "Menus, prompts and notices. British English fills in anything untranslated",
-"Colour": "Color",
+"Mask colour": "Mask color",
 "Hood Armoury": "Hood Armory",
 "HOOD ARMOURY": "HOOD ARMORY",
 "Lost when you are nicked": "Lost when you are busted",
