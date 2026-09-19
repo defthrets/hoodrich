@@ -667,6 +667,9 @@ namespace Hoodrich
         private readonly KeepClear _yard;
         private readonly Payback _payback;
         private readonly TweetToast _toasts;
+
+        /// <summary>The feed's last few posts, for the phone's shade. See Settings.FeedOnPhone.</summary>
+        private readonly Phone.ShadeFeed _shadeFeed = new Phone.ShadeFeed();
         private readonly Random _rng = new Random();
 
         /// <summary>The couch in Lamar's courtyard. Furniture, and nothing else.</summary>
@@ -2402,6 +2405,11 @@ namespace Hoodrich
                 _social.Toasts = _toasts;
                 _social.Speaks = _cfg.FeedOnScreen;
 
+                // THE FEED IN THE PHONE, when that is where it is wanted. Read live, so the
+                // settings screen changes it on the next post. See Settings.FeedOnPhone.
+                _social.InPhone = () => _cfg.FeedOnPhone;
+                _social.ToPhone = _shadeFeed.Show;
+
                 _war = new GangWar(_gangs, _crew, _state)
                     .Defend("Lamar", Fixer.Spot)
                     .Defend("Stretch", new Vector3(-129.187f, -1461.375f, 33.823f));
@@ -3283,6 +3291,10 @@ namespace Hoodrich
                 {
                     Log.Level = _cfg.LogLevel;
                     if (_toasts != null) _toasts.Enabled = _cfg.TweetsOnTheRight;
+
+                    // Switched away from the phone, or off altogether: what was waiting for
+                    // the phone is not shown somewhere else later.
+                    if (!_cfg.FeedOnPhone || !_cfg.FeedOnScreen) _shadeFeed.Clear();
 
                     Core.Voice.Enabled = _cfg.VoiceEnabled;
                     Core.Voice.Volume = _cfg.VoiceVolume;
@@ -4836,6 +4848,7 @@ namespace Hoodrich
 
             if (_social != null) _social.Speaks = _cfg.FeedOnScreen;
             if (!_cfg.FeedOnScreen && _toasts != null) _toasts.Clear();
+            if (!_cfg.FeedOnScreen) _shadeFeed.Clear();
 
             try { IniFile.SetValue(Paths.Ini, "Socials", "FeedOnScreen", _cfg.FeedOnScreen ? "true" : "false"); }
             catch (Exception ex) { Log.Debug("Could not write the ini: " + ex.Message); }
@@ -5175,6 +5188,10 @@ namespace Hoodrich
                 {
                     list.Add(new Phone.Alert { Icon = "car.png", Text = "Takeover on Carson" });
                 }
+
+                // THE FEED, when it lives here. After the notices, because a text waiting and
+                // a raid on are things to do and a post is a thing to read. See Phone.ShadeFeed.
+                if (_cfg.FeedOnPhone) _shadeFeed.Into(list);
             }
             catch (Exception ex)
             {

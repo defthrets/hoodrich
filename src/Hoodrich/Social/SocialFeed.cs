@@ -2597,6 +2597,13 @@ namespace Hoodrich.Social
         /// </summary>
         public bool Speaks = true;
 
+        /// <summary>
+        /// Set by Main: whether the feed lives in the phone's shade instead of on screen, and
+        /// where a post goes when it does. See Settings.FeedOnPhone and Phone.ShadeFeed.
+        /// </summary>
+        public Func<bool> InPhone;
+        public Action<Post> ToPhone;
+
         private void Notify(Post post)
         {
             if (post == null || post.By == null) return;
@@ -2613,6 +2620,17 @@ namespace Hoodrich.Social
             // the timeline by the time this runs, so switching this off loses nothing except
             // being told about it.
             if (!Speaks) return;
+
+            // THE PHONE'S OWN SHADE, when that is where the feed lives: not the right-hand
+            // stack, not the game's notifications, and nothing on screen at all until the
+            // phone is up. See Settings.FeedOnPhone.
+            if (InPhone != null && InPhone())
+            {
+                try { ToPhone?.Invoke(post); }
+                catch (Exception ex) { Hoodrich.Core.Log.Debug("Could not hand a post to the phone: " + ex.Message); }
+
+                return;
+            }
 
             if (Toasts != null && Toasts.Enabled)
             {

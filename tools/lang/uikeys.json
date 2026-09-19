@@ -65,6 +65,8 @@
  "Feed on screen": "settings.label",
  "Off says nothing on screen and makes no sound. The timeline still fills": "settings.note",
  "Feed on the right": "settings.label",
+ "Feed in the phone": "settings.label",
+ "Posts land in the phone's own shade, only while it is up. Nothing on the right": "settings.note",
  "The feed tips you off": "settings.label",
  "Somebody posts that a block is busy, and it genuinely is": "settings.note",
  "They notice every": "settings.label",

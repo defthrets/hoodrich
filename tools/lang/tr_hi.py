@@ -77,6 +77,8 @@ T = {
 "Feed on screen": "Feed screen par",
 "Off says nothing on screen and makes no sound. The timeline still fills": "Band hone par screen par kuch nahi aata na awaaz. Timeline phir bhi bharti hai",
 "Feed on the right": "Feed daayi taraf",
+"Feed in the phone": "Feed phone mein",
+"Posts land in the phone's own shade, only while it is up. Nothing on the right": "Posts phone ki notification patti mein aate hain, sirf jab phone khula ho. Daayi taraf kuch nahi",
 "The feed tips you off": "Feed tumhe tip deta hai",
 "Somebody posts that a block is busy, and it genuinely is": "Koi post karta hai ki ilaaka busy hai, aur sach mein hota hai",
 "They notice every": "Wo har itne mein notice karte hain",

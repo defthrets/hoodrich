@@ -75,6 +75,8 @@ T = {
 "Feed on screen": "动态显示在屏幕上",
 "Off says nothing on screen and makes no sound. The timeline still fills": "关闭后屏幕无显示无声音。时间线照样更新",
 "Feed on the right": "动态在右侧",
+"Feed in the phone": "动态在手机里",
+"Posts land in the phone's own shade, only while it is up. Nothing on the right": "帖子显示在手机的通知栏中，仅在手机打开时。右侧不再显示",
 "The feed tips you off": "动态给你报信",
 "Somebody posts that a block is busy, and it genuinely is": "有人发帖说某街区很忙，而且确实如此",
 "They notice every": "他们每隔多久注意到",

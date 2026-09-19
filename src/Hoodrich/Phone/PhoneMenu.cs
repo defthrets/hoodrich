@@ -42,6 +42,24 @@ namespace Hoodrich.Phone
     {
         public string Icon;
         public string Text;
+
+        /// <summary>
+        /// Who said it, when the line is a post off the feed rather than a notice. The shade
+        /// then draws their face in place of the icon, Text as the name line and Sub under
+        /// it as what they said. See PhoneMenu.Shade and ShadeFeed.
+        /// </summary>
+        public Social.Author By;
+
+        /// <summary>The second line, under Text, when there is one. A post's words.</summary>
+        public string Sub;
+
+        /// <summary>
+        /// The picture this line settled on, once it has one. Latched the way TweetToast
+        /// latches a card's, and for the same reason: a face that comes and goes with the
+        /// streamer is a face blinking in the shade. Kept on the Alert, so the holder that
+        /// hands the same Alert back on every ask keeps the answer.
+        /// </summary>
+        public string Art = "";
     }
 
     internal sealed class PhoneMenu
@@ -1436,9 +1454,18 @@ namespace Hoodrich.Phone
 
             var tx = x;
 
-            if (!string.IsNullOrEmpty(one.Icon) &&
-                Hud.File(one.Icon, x + Hud.ToX(ShadeIcon) * 0.5f, top + 0.023f - lift,
-                         ShadeIcon, 0f, Fade(LitEdge, ink)))
+            // A FACE FOR A POST, AN ICON FOR A NOTICE. A line off the feed carries who said it,
+            // and the shade draws them the way the card on the right and the feed screen do:
+            // their photograph where the game has one, the made face where it has made one,
+            // and their coloured square with an initial until then. See Face.
+            if (one.By != null)
+            {
+                Face(one, x, top + 0.0105f - lift, ink);
+                tx = x + Hud.ToX(ShadeFace) + 0.007f;
+            }
+            else if (!string.IsNullOrEmpty(one.Icon) &&
+                     Hud.File(one.Icon, x + Hud.ToX(ShadeIcon) * 0.5f, top + 0.023f - lift,
+                              ShadeIcon, 0f, Fade(LitEdge, ink)))
             {
                 tx = x + Hud.ToX(ShadeIcon) + 0.007f;
             }
@@ -1466,10 +1493,83 @@ namespace Hoodrich.Phone
 
             var room = x + w - pipsW - tx;
 
+            // TWO LINES IN THE BAND FOR A POST: who, small, and then what they said. The card
+            // on the right has room for three lines of the post; the shade has one, cut to
+            // what fits, because a shade is a glance and the timeline is the read.
+            if (one.By != null && !string.IsNullOrEmpty(one.Sub))
+            {
+                Hud.Text(Hud.Fit(one.Text, room, 0.25f, Hud.FontLabel), tx, top + 0.006f - lift,
+                         0.25f, Fade(Palette.Text, ink), Hud.FontLabel, centre: false);
+
+                Hud.Text(Hud.Fit(one.Sub, room, 0.24f, Hud.FontBody), tx, top + 0.028f - lift,
+                         0.24f, Fade(Palette.Text, ink), Hud.FontBody, centre: false);
+
+                return true;
+            }
+
             Hud.Text(Hud.Fit(one.Text, room, 0.34f, Hud.FontLabel), tx, top + 0.014f - lift,
                      0.34f, Fade(Palette.Text, ink), Hud.FontLabel, centre: false);
 
             return true;
+        }
+
+        /// <summary>The poster's square in the shade, and the face over it once there is one.</summary>
+        private const float ShadeFace = 0.034f;
+
+        /// <summary>
+        /// The author's picture on a shade line, by the same rules as TweetToast.DrawCard.
+        ///
+        /// WHICH PICTURE, DECIDED ONCE, on the Alert -- see Alert.Art. The square underneath
+        /// is always drawn and the letter only when there is nothing to draw over it, for the
+        /// reason the card gives: text lands in a later pass than sprites, so a letter drawn
+        /// first still comes out in front of a face drawn after it.
+        /// </summary>
+        private static void Face(Alert one, float x, float y, int ink)
+        {
+            var by = one.By;
+            var w = Hud.ToX(ShadeFace);
+
+            try
+            {
+                if (string.IsNullOrEmpty(one.Art) && !string.IsNullOrEmpty(by.Pic) && Hud.EnsureTextureDict(by.Pic))
+                {
+                    one.Art = by.Pic;
+                }
+
+                if (string.IsNullOrEmpty(one.Art) && !by.IsOrg)
+                {
+                    var made = Headshots.Txd(by.Handle);
+
+                    if (string.IsNullOrEmpty(made)) Headshots.Want(by.Handle, by.Gang, by.Gender);
+                    else one.Art = made;
+                }
+
+                // Asked for every frame it is drawn, which is also what keeps it.
+                if (!string.IsNullOrEmpty(one.Art))
+                {
+                    if (one.Art == by.Pic) Hud.EnsureTextureDict(one.Art);
+                    else if (string.IsNullOrEmpty(Headshots.Txd(by.Handle))) Headshots.Want(by.Handle, by.Gang, by.Gender);
+                }
+            }
+            catch
+            {
+                // Then it is the square and the letter, which is a face too.
+            }
+
+            var pictured = !string.IsNullOrEmpty(one.Art)
+                           && (one.Art == by.Pic || Headshots.Ready(by.Handle));
+
+            Hud.RectFrom(x, y, w, ShadeFace, Fade(by.Tint, ink));
+
+            if (!pictured)
+            {
+                Hud.Text(by.Initial, x + w * 0.5f, y + ShadeFace * 0.5f - 0.0125f, 0.40f,
+                         Fade(Color.FromArgb(255, 250, 250, 248), ink), Hud.FontChaletLondon);
+                return;
+            }
+
+            Hud.Sprite(one.Art, one.Art, x + w * 0.5f, y + ShadeFace * 0.5f, w, ShadeFace, 0f,
+                       Fade(Color.FromArgb(255, 255, 255, 255), ink));
         }
 
         /// <summary>The mark on a notification, and how far the incoming one rises.</summary>

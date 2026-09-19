@@ -752,6 +752,9 @@ namespace Hoodrich.UI
                  "Off says nothing on screen and makes no sound. The timeline still fills");
             Tick("Feed on the right", "Socials", "TweetsOnTheRight",
                  () => c.TweetsOnTheRight, v => c.TweetsOnTheRight = v);
+            Tick("Feed in the phone", "Socials", "FeedOnPhone",
+                 () => c.FeedOnPhone, v => c.FeedOnPhone = v,
+                 "Posts land in the phone's own shade, only while it is up. Nothing on the right");
             Tick("The feed tips you off", "Socials", "BlockTipsEnabled",
                  () => c.BlockTipsEnabled, v => c.BlockTipsEnabled = v,
                  "Somebody posts that a block is busy, and it genuinely is");

@@ -75,6 +75,8 @@ T = {
 "Feed on screen": "Feed auf dem Bildschirm",
 "Off says nothing on screen and makes no sound. The timeline still fills": "Aus zeigt nichts und macht keinen Ton. Die Timeline füllt sich trotzdem",
 "Feed on the right": "Feed rechts",
+"Feed in the phone": "Feed im Handy",
+"Posts land in the phone's own shade, only while it is up. Nothing on the right": "Posts landen in der Benachrichtigungsleiste des Handys, nur solange es oben ist. Nichts rechts",
 "The feed tips you off": "Der Feed gibt dir Tipps",
 "Somebody posts that a block is busy, and it genuinely is": "Jemand postet, dass ein Block was los hat, und das stimmt dann auch",
 "They notice every": "Sie bemerken alle",

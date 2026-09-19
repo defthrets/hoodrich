@@ -137,6 +137,19 @@ namespace Hoodrich.Core
         public bool FeedOnScreen = true;
 
         /// <summary>
+        /// The feed in the phone's own notification shade, and only while the phone is up.
+        ///
+        /// ASKED FOR BY SOMEBODY WHO WANTED THE FEED SMALLER AND OUT OF THE WAY. With this on
+        /// a post is not drawn down the right of the screen and not put into the game's
+        /// notifications; it turns up on the line at the top of the phone's home screen --
+        /// the same shade that says a text is waiting or the block is being raided -- with
+        /// the poster's face and the first line of what they said. Open the phone and the
+        /// block is talking; put it away and it is quiet. The timeline still fills either
+        /// way. See Phone.ShadeFeed.
+        /// </summary>
+        public bool FeedOnPhone = false;
+
+        /// <summary>
         /// A key that turns that on and off where you stand, and writes the answer to the ini.
         ///
         /// F4 by default. It used to be NumPad *, under a comment claiming that was "one of the
@@ -738,6 +751,7 @@ namespace Hoodrich.Core
             s.TimecycleModifier = ini.GetString("Phone", "TimecycleModifier", s.TimecycleModifier);
             s.TweetsOnTheRight = ini.GetBool("Socials", "TweetsOnTheRight", s.TweetsOnTheRight);
             s.FeedOnScreen = ini.GetBool("Socials", "FeedOnScreen", s.FeedOnScreen);
+            s.FeedOnPhone = ini.GetBool("Socials", "FeedOnPhone", s.FeedOnPhone);
             s.FeedKey = ini.GetKey("Socials", "FeedKey", s.FeedKey);
             s.BlipsInBars = ini.GetBool("PostUp", "BlipsInBars", s.BlipsInBars);
             s.ShowDealHud = ini.GetBool("PostUp", "ShowDealHud", s.ShowDealHud);
