@@ -369,7 +369,6 @@ namespace Hoodrich
         private const int ShopGreen = 53;
 
         private readonly Entourage _party;
-        private readonly Entourage _meet;
         private readonly Social.Newsroom _newsroom;
         private readonly DroppedBags _bags;
 
@@ -378,8 +377,6 @@ namespace Hoodrich
 
         /// <summary>And the two who come out when you text them.</summary>
         private readonly Gangs.Homies _homies;
-        private readonly ParkedCar _meetOne;
-        private readonly ParkedCar _meetTwo;
 
         /// <summary>The set at the meet at the wash on Innocence, the nights it is on.</summary>
         private readonly Entourage _washCrew;
@@ -1548,121 +1545,14 @@ namespace Hoodrich
                 // and the man among them -- is stood on the same ground and says it better,
                 // and a van parked through the middle of it said the mod put both there.
 
-                // ---- the meet on the court, after dark -----------------------------
-                //
-                // Two cars and the people stood round them, and that is the whole thing. No
-                // race, no timer, nothing to press: it is a place that is busy at midnight and
-                // empty at midday, which is the only feature it needs.
-                //
-                // Quiet hours run six till twenty, which is the daytime -- so "quiet" here
-                // means gone, and the hours it is NOT quiet are the hours there is a meet.
-                _meetOne = new ParkedCar(new Vector3(-227.440f, -1697.994f, 33.300f), 214.105f,
-                                         MetallicDarkGreen, "gauntlet4", "gauntlet", "dominator")
-                {
-                    Plate = "CGF4LYF",
-                    // Stock. Not a build -- no rims, no drop, no tint, nothing but the paint
-                    // and what is glowing under it, which is what was asked for and is also
-                    // the more convincing of the two: one car at a meet is somebody's project
-                    // and the rest are cars people drove there.
-                    Stock = true,
-                    Running = true,
-                    Lights = true,
-                    Radio = "RADIO_09_HIPHOP_OLD",
-
-                    // THE PARTY IS THE VOLUME, NOT THE CAR. They used to be deleted at six in
-                    // the morning and put back at eight at night, so the spot was bare tarmac
-                    // all day -- which is not what two cars somebody parked outside their own
-                    // place do. They stay, with the talk station on at ordinary volume and
-                    // the lights and neon off, and it is the music going up at night that
-                    // says the party has started.
-                    QuietTuned = () => Core.Radio.Talk,
-                    Neon = System.Drawing.Color.FromArgb(60, 200, 80),
-                    QuietFrom = 6,
-                    QuietTo = 20
-                };
-
-                _meetTwo = new ParkedCar(new Vector3(-223.179f, -1696.639f, 33.294f), 180.686f,
-                                         MetallicDarkGreen, "hermes", "tornado", "buccaneer2")
-                {
-                    Plate = "FAM4EVA",
-                    Built = true,
-                    Running = true,
-                    Lights = true,
-
-                    Radio = "RADIO_09_HIPHOP_OLD",
-
-                    // Same as the one beside it: parked all day with the talk on, loud at
-                    // night. See _meetOne.
-                    QuietTuned = () => Core.Radio.Talk,
-                    Neon = System.Drawing.Color.FromArgb(60, 200, 80),
-                    QuietFrom = 6,
-                    QuietTo = 20
-                };
-
-                _cars.Add(_meetOne);
-                _cars.Add(_meetTwo);
-
-                // And the people. NOT A RING ANY MORE.
-                //
-                // It was ten marks on a circle five metres out, evenly spaced, each facing
-                // dead at the middle -- which is a fence round two cars rather than a crowd
-                // at them. People arrive with somebody and stand with them: they clump in
-                // twos and threes, at different distances, and nobody stands on a spoke.
-                //
-                // So the radii run four to seven metres, the gaps between them are uneven,
-                // and each of them faces roughly back at the cars with a few degrees either
-                // way rather than exactly at the midpoint.
-                //
-                // AND THEY DRIFT. Five metres, as a break -- see Entourage.Drift. A wander
-                // replaces a scenario outright in this game, so a man cannot both walk about
-                // and hold a drink; running the walk as an occasional break means the drink
-                // is what he does and the walk is what he does instead of it, now and then,
-                // out of step with everybody else.
-                _meet = new Entourage(_gangs, "families",
-                                      new Vector3(-225.310f, -1697.316f, 33.297f), 270f, "the meet")
-
-                    .Stand(new Vector3(-226.173f, -1703.456f, 33.297f), 341.000f,
-                           "WORLD_HUMAN_SMOKING", Fam(0), armed: false, drift: 5f)
-
-                    .Stand(new Vector3(-227.882f, -1701.130f, 33.297f), 333.000f,
-                           "WORLD_HUMAN_STAND_MOBILE", Fam(1), armed: false, drift: 5f)
-
-                    .Stand(new Vector3(-230.016f, -1702.362f, 33.297f), 313.000f,
-                           "WORLD_HUMAN_DRINKING", Women, armed: false, drift: 5f)
-
-                    // FILMING IT, and the one man here who does not drift. Somebody with a
-                    // phone up is pointed at something; wandering off mid-shot is the one
-                    // thing that would not read. The same scenario the takeover crowd films
-                    // on, so there is one filming pose in the mod rather than two.
-                    .Stand(new Vector3(-230.405f, -1698.777f, 33.297f), 300.000f,
-                           "WORLD_HUMAN_MOBILE_FILM_SHOCKING", Fam(2), armed: false)
-
-                    .Stand(new Vector3(-231.893f, -1694.656f, 33.297f), 239.000f,
-                           "WORLD_HUMAN_DRINKING", Fam(0), armed: false, drift: 5f)
-
-                    .Stand(new Vector3(-229.419f, -1694.647f, 33.297f), 242.000f,
-                           "WORLD_HUMAN_SMOKING", Fam(1), armed: false, drift: 5f)
-
-                    .Stand(new Vector3(-226.882f, -1691.009f, 33.297f), 178.000f,
-                           "WORLD_HUMAN_STAND_MOBILE", Women, armed: false, drift: 5f)
-
-                    .Stand(new Vector3(-223.561f, -1693.388f, 33.297f), 167.000f,
-                           "WORLD_HUMAN_SMOKING_POT", Fam(2), armed: false, drift: 5f)
-
-                    .Stand(new Vector3(-220.027f, -1692.724f, 33.297f), 125.000f,
-                           "WORLD_HUMAN_DRINKING", Fam(1), armed: false, drift: 5f)
-
-                    .Stand(new Vector3(-220.523f, -1695.284f, 33.297f), 122.000f,
-                           "WORLD_HUMAN_STAND_MOBILE", Fam(2), armed: false, drift: 5f);
-
-                _meet.QuietFrom = 6;
-                _meet.QuietTo = 20;
+                // THE MEET ON THE COURT IS GONE. Two cars and ten people on the lot off Davis
+                // Avenue, on a little over half of nights, since the party at Lamar's came in;
+                // removed at Michael's request on 2026-09-19. The meet at the wash on Innocence
+                // stays, below.
 
                 // NOT EVERY NIGHT. A meet that is there every single night is furniture.
-                // The court rolls a little over half its nights and the wash a little under,
-                // each on its own name, so some nights it is one, some the other, some both
-                // and some neither. See Core.Nights.
-                System.Func<bool> courtOff = () => !Core.Nights.On("the meet on the court", 55);
+                // The wash rolls a little under half its nights on its own name. See
+                // Core.Nights.
                 System.Func<bool> washOff = () => !Core.Nights.On("the meet at the wash", 45);
 
                 // AND THE CORNERS. The people and the cars on the lots and outside the shops
@@ -1672,10 +1562,6 @@ namespace Hoodrich
                 System.Func<bool> shopsOff = () => !Core.Nights.On("the Checkout on Innocence", 60);
                 System.Func<bool> bholesOff = () => !Core.Nights.On("the B/Holes lot", 60);
                 System.Func<bool> strawOff = () => !Core.Nights.On("the shops in Strawberry", 60);
-
-                _meetOne.OffTonight = courtOff;
-                _meetTwo.OffTonight = courtOff;
-                _meet.OffTonight = courtOff;
 
                 // ---- the meet at the wash on Innocence, some nights ----------------------
                 //
@@ -2499,7 +2385,7 @@ namespace Hoodrich
                 _cruise.Social = _social;
 
                 // The corners announce themselves on the feed when their people come out.
-                foreach (var corner in new[] { _meet, _washCrew, _lotCrew, _shopsCrew, _bholesCrew, _strawCrew, _leroyCrew })
+                foreach (var corner in new[] { _washCrew, _lotCrew, _shopsCrew, _bholesCrew, _strawCrew, _leroyCrew })
                 {
                     if (corner == null) continue;
                     corner.Social = _social;
@@ -4632,8 +4518,6 @@ namespace Hoodrich
                     foreach (var car in _cars) car.Update();
                     Core.Pace.At("_party.Update");
                     _party.Update();
-                    Core.Pace.At("_meet.Update");
-                    _meet.Update();
                     Core.Pace.At("_washCrew.Update");
                     _washCrew.Update();
                     Core.Pace.At("_lotCrew.Update");
@@ -6049,7 +5933,6 @@ namespace Hoodrich
                 try { car.RestoreWorld(); } catch { /* teardown */ }
             }
             try { _party?.RestoreWorld(); } catch { /* teardown */ }
-            try { _meet?.RestoreWorld(); } catch { /* teardown */ }
             try { _washCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _lotCrew?.RestoreWorld(); } catch { /* teardown */ }
             try { _lotDecks?.RestoreWorld(); } catch { /* teardown */ }

@@ -6210,8 +6210,9 @@ namespace Hoodrich.Locations
         /// HOW MANY, AND HOW OFTEN, has gone up and down: two to four every few seconds was a
         /// flood, one or two every fourteen to thirty seconds ("Fewer flares", 2026-09-06)
         /// was a flare every twenty-five seconds and read as none, and Michael asked on
-        /// 2026-09-19 for some people throwing them into the middle. Two or three every eight
-        /// to sixteen seconds, nine in ten low across the cars, is that.
+        /// 2026-09-19 for some people throwing them into the middle -- and, an hour later,
+        /// for a few less. One or two every eleven to twenty seconds, nine in ten low across
+        /// the cars, is where it settled: about a flare every ten seconds, thrown for real.
         /// </summary>
         private void Flares(int now)
         {
@@ -7706,10 +7707,10 @@ namespace Hoodrich.Locations
         };
 
         /// <summary>How often a volley goes, how many are in it, how they stagger, and how long they hold the flare.</summary>
-        private const int FlareMinMs = 8000;
-        private const int FlareMaxMs = 16000;
-        private const int FlareThrowersMin = 2;
-        private const int FlareThrowersMax = 3;
+        private const int FlareMinMs = 11000;
+        private const int FlareMaxMs = 20000;
+        private const int FlareThrowersMin = 1;
+        private const int FlareThrowersMax = 2;
         private const int FlareStaggerMs = 900;
         private const int FlareHoldMs = 3200;
 

@@ -329,8 +329,12 @@ namespace Hoodrich.Locations
         /// A delegate is asked on the pass that uses it, by which time the game has an
         /// answer. Boombox.Tuned is the same fix for the same reason, which is why the yard
         /// decks were right and these two were not.
+        ///
+        /// NOBODY SETS IT TODAY. The two cars at the meet on the court were the only ones,
+        /// and that meet went on 2026-09-19. It stays as the option it is, initialised so
+        /// the compiler does not count an unset option as a fault.
         /// </summary>
-        public Func<string> QuietTuned;
+        public Func<string> QuietTuned = null;
 
         /// <summary>The station for the quiet hours, however it was given.</summary>
         private string Quietly
