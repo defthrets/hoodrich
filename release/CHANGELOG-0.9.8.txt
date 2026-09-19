@@ -1,0 +1,109 @@
+0.9.8 -- 19 September 2026
+
+
+ONE BAG, ONE SHELF. With Bare Minimum installed the bag had two shelves for
+its food: ours, in the satchel, and theirs, in their knapsack since their
+0.8.2. Food moved across on the phone went on ours; food looted or bought
+went on theirs; the bag said "twelve things" on one screen and "empty" on the
+other, and which was true depended on which screen you had opened last.
+Theirs is the shelf now wherever their build has one, ours is the shelf
+without them, and anything on the old shelf is handed across the first time
+the two meet, nothing deleted. The bag's product is on the bridge as well, so
+their bag screen (Bare Minimum 0.8.3 and up) shows what is in your pockets
+and what is in the bag on both sides, moves it between them and takes one
+from either. And a kind of product takes a place in the pockets the way a
+packet of crisps does -- their pocket is five places and always counted ours,
+so it read seven of five in amber. A new kind now asks for a place and goes
+to the bag, or is refused, when there is none. More of a kind already on you
+takes no place.
+
+
+LOOTING A BODY. Every take is in the log now -- what, how much, off whom and
+where it went -- because "the drugs I took off him aren't in my pocket"
+arrived with no way to tell a refused take from one that landed somewhere you
+were not looking. Product the pockets cannot hold goes into the bag on your
+back when there is room, instead of "no room on you" beside fifteen empty
+slots. And with Five0 Patrol 0.2.1 a body can be carried off the loot card:
+it is brought back to life to be carried, so this mod no longer hands a man a
+fresh set of pockets the moment he is set down.
+
+
+A KICKABOUT ON THE BLOCK. Three of ours stood in a ring on one of five spots
+round the blocks, a ball passed between them -- fast off the foot, slowing as
+it arrives, turning over as it rolls, the game's own kick on whoever has it.
+They watch the ball, look at whoever they kick it to, and hold it and look at
+you if you stand in the ring. One spot is live at a time, picked off the
+clock every three hours, and anything that hurts one of them or drags one
+into a fight breaks the game up. [Block] KickaboutEnabled in the ini, a
+settings row, and the block posts about it once per spot.
+
+
+VERNON. "OG Vee disappeared when the mission was finished": he was still in
+the passenger seat when the hand-in opened, a walk handed to a seated man
+does nothing, and he sat there behind smoked glass in a car that had just
+locked itself. A walk starts with getting out now, and what he says follows
+what has happened -- back after the yard went wrong he says he was there,
+downstairs he decides whether to go back, stood in his own basement he shows
+you the shelf. The package lands somewhere a man can stand and says where,
+and a man stood on the blip for six seconds with nothing in hand has it
+brought to his feet. And the Dorado he delivers in sits the way the one
+outside the shop does -- down at the back, nose up -- rather than arriving at
+factory height. The three numbers are on his entry in dealers.json, and both
+cars read them.
+
+
+HAO'S LOT. Sell a car back wearing the plate you put on it and the lot no
+longer recognised its own car: it left it standing when you walked off and
+put a fresh one down on top of it when you came back, which is a second
+Hellfire on its roof behind the first. A buy-back wears the lot's plate
+again, a car of the right make locked to everybody in its own space is taken
+back as the row's car whatever plate it wears, and nothing on the lot -- a
+row being stocked, a car sold back, one of yours stood back up -- is put down
+on a space with a car already in it. Buying refuses when the car is not
+standing there, instead of taking the money for nothing.
+
+
+THE CAR MEET. Nobody lies under a car: the scenario on the nose list was the
+mechanic on his back with his arms up under the sill, not a man leaning into
+an engine bay. The cars brake for people and for each other on the way in,
+drop to car-park pace further out, and only hand the last twelve metres to
+the game's blind parking manoeuvre rather than the last twenty-six with the
+crowd in them.
+
+
+THE TAKEOVER. Flares get thrown into the middle now, and more of them. The
+flare was put in the hand and the throw asked for on the same frame, which is
+a throw the game drops without a word, and the log counted it as thrown
+anyway; the hand gets the flare a beat before the throw, two or three throw
+every eight to sixteen seconds, nine in ten low across the cars, and the log
+says how many actually left the hand.
+
+
+THE FEED IN THE PHONE. A new option, off by default: [Socials] FeedOnPhone,
+or "Feed in the phone" on the settings screen. Posts are then not drawn down
+the right and not put into the game's notifications; they turn up on the line
+at the top of the phone's home screen, with the poster's face, only while the
+phone is up. Open the phone and the block is talking; put it away and it is
+quiet.
+
+
+THE BIKE SWAP IS GONE. Franklin keeps the game's Bagger. The swap had to run
+every time he came home because the game re-supplies its bike, which was one
+more thing happening on his own drive than the drive needed. FranklinsBike
+and FranklinsBikeLivery are no longer read. The car keeps its swap: the
+Buffalo S still becomes the STX, and FranklinsCar= left blank leaves the
+game's own.
+
+
+THE BOOT TAKES GUNS AGAIN. Nothing ever went in. weapons.json names a gun by
+its bare id and the game speaks in WEAPON_ names, and the boot hashed the
+bare one -- so the game said you were not holding the gun you were holding
+and the log said "refused" on every one. The real hash is used both ways now,
+in and out.
+
+
+SMALLER. A fixture waits its turn per model, so the party's speaker is no
+longer a ferris wheel on the card table at Lamar's. The phone's home screen
+wears the drawn icons again, and Inventory wears the backpack. The bag lies
+on the ground it is on rather than dead flat over a sloping pavement. And two
+of Vernon's lines that were never on the record list are on it.

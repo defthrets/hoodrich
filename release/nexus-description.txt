@@ -138,7 +138,6 @@ Three hundred and fifty-eight changes since 0.5.1, and more of them than usual a
 <li>🔧 A low-end mod shop on Hao's corner, at under half the price of the one over the river.</li>
 <li>🚕 Driverless cars off the phone, with the place picked first and the fare shown live.</li>
 <li>🔫 Stretch's counter redrawn: the guns laid out with the game's own photographs of them, and a shelf of what bolts to each.</li>
-<li>Franklin's bike is a Sanchez rather than the Bagger, and the model and livery are in the ini.</li>
 <li>🏗️ <b>Object Spooner scenes:</b> save a scene in Menyoo and the mod builds it, with collisions and animations intact.</li>
 <li>🚪 Doors you add yourself, and every door with a ring on the floor.</li>
 </ul>
