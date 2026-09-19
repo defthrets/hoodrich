@@ -6199,15 +6199,48 @@ namespace Hoodrich.Locations
         ///
         /// Each is given one flare and it is taken back afterwards, because a man stood in a
         /// crowd holding one for three hours will eventually be seen holding it.
+        ///
+        /// ARMED A BEAT BEFORE IT IS THROWN. The flare was put in the hand and the throw asked
+        /// for on the same frame, and a throw asked of a man who is still bringing a weapon
+        /// out is a throw the game drops without a word -- the log counted the volley and the
+        /// hand kept the flare. Now the hand gets it first, and the throw comes a third of a
+        /// second later, when there is something in it to throw. And the log says how many
+        /// actually left the hand, which is the number that was missing. See Unarm.
+        ///
+        /// HOW MANY, AND HOW OFTEN, has gone up and down: two to four every few seconds was a
+        /// flood, one or two every fourteen to thirty seconds ("Fewer flares", 2026-09-06)
+        /// was a flare every twenty-five seconds and read as none, and Michael asked on
+        /// 2026-09-19 for some people throwing them into the middle. Two or three every eight
+        /// to sixteen seconds, nine in ten low across the cars, is that.
         /// </summary>
         private void Flares(int now)
         {
-            // The volley in flight. Each throws on their own moment, so four arms do not go
-            // up on one frame.
+            // The volley in flight. Each arms on their own moment, so four arms do not go
+            // up on one frame, and throws a beat after that.
             for (var i = 0; i < _throws.Count; i++)
             {
                 var t = _throws[i];
-                if (t.Loosed || now < t.ThrowAt) continue;
+
+                if (!t.Armed)
+                {
+                    if (now < t.ThrowAt) continue;
+
+                    t.Armed = true;
+                    t.LetGo = now + FlareArmMs;
+
+                    try
+                    {
+                        Arm(t);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Debug("Takeover: no flare: " + ex.Message);
+                    }
+
+                    continue;
+                }
+
+                if (t.Loosed || now < t.LetGo) continue;
 
                 t.Loosed = true;
 
@@ -6262,7 +6295,7 @@ namespace Hoodrich.Locations
                     W = w,
                     At = at,
                     ThrowAt = now + _rng.Next(FlareStaggerMs),
-                    Back = now + FlareStaggerMs + FlareHoldMs
+                    Back = now + FlareStaggerMs + FlareArmMs + FlareHoldMs
                 });
 
                 many--;
@@ -6277,7 +6310,7 @@ namespace Hoodrich.Locations
             if (_volleyed > 0 && _volleyed != _volleyLogged)
             {
                 _volleyLogged = _volleyed;
-                Log.Info("Takeover: " + _volleyed + " flares thrown so far this takeover.");
+                Log.Info("Takeover: " + _volleyed + " flares handed out so far this takeover.");
             }
         }
 
@@ -6301,8 +6334,8 @@ namespace Hoodrich.Locations
             return false;
         }
 
-        /// <summary>One throw: armed, turned to face the middle, and let go.</summary>
-        private void Throw(Thrown t)
+        /// <summary>The flare in the hand, and the man turned to face the middle. The throw comes after. See Flares.</summary>
+        private void Arm(Thrown t)
         {
             var w = t.W;
             if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) return;
@@ -6326,13 +6359,29 @@ namespace Hoodrich.Locations
             var to = t.At - w.Man.Position;
 
             w.Man.Heading = (float)((Math.Atan2(-to.X, to.Y) * 180.0 / Math.PI + 360.0) % 360.0);
-
-            Function.Call(Hash.TASK_THROW_PROJECTILE, h, t.At.X, t.At.Y, t.At.Z);
         }
 
-        /// <summary>The flares taken back once thrown.</summary>
+        /// <summary>And let go, a beat after Arm, with the flare already in the hand.</summary>
+        private void Throw(Thrown t)
+        {
+            var w = t.W;
+            if (w.Man == null || !w.Man.Exists() || !w.Man.IsAlive) return;
+
+            Function.Call(Hash.TASK_THROW_PROJECTILE, w.Man.Handle, t.At.X, t.At.Y, t.At.Z);
+        }
+
+        /// <summary>
+        /// The flares taken back once thrown -- and counted, thrown or not.
+        ///
+        /// THE ONE FLARE HE WAS GIVEN IS EITHER IN THE AIR OR STILL IN HIS HAND, and the hand
+        /// can be asked. A flare still there when it is taken back is a throw the game
+        /// dropped, and until this was counted the log said "thrown" about every one of
+        /// them. Said per volley, once the last of it is back.
+        /// </summary>
         private void Unarm(int now)
         {
+            var flare = Function.Call<int>(Hash.GET_HASH_KEY, "weapon_flare");
+
             for (var i = _throws.Count - 1; i >= 0; i--)
             {
                 var t = _throws[i];
@@ -6345,6 +6394,11 @@ namespace Hoodrich.Locations
                     var w = t.W;
                     if (w == null || w.Man == null || !w.Man.Exists()) continue;
 
+                    var still = Function.Call<int>(Hash.GET_AMMO_IN_PED_WEAPON, w.Man.Handle, flare);
+
+                    if (still > 0) _flaresKept++;
+                    else _flaresGone++;
+
                     Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, w.Man.Handle, true);
                     Home(w);
                 }
@@ -6353,7 +6407,22 @@ namespace Hoodrich.Locations
                     // He keeps it, then. It is a flare.
                 }
             }
+
+            if (_throws.Count == 0 && (_flaresGone != _saidGone || _flaresKept != _saidKept))
+            {
+                _saidGone = _flaresGone;
+                _saidKept = _flaresKept;
+
+                Log.Info("Takeover: flares -- " + _flaresGone + " left the hand, " + _flaresKept +
+                         " were still in it when taken back.");
+            }
         }
+
+        /// <summary>Flares that were thrown, and flares that were handed out and never left the hand. For the log.</summary>
+        private int _flaresGone;
+        private int _flaresKept;
+        private int _saidGone;
+        private int _saidKept;
 
         /// <summary>
         /// Fireworks, from a box set down on the ring round the middle.
@@ -7637,15 +7706,18 @@ namespace Hoodrich.Locations
         };
 
         /// <summary>How often a volley goes, how many are in it, how they stagger, and how long they hold the flare.</summary>
-        private const int FlareMinMs = 14000;
-        private const int FlareMaxMs = 30000;
-        private const int FlareThrowersMin = 1;
-        private const int FlareThrowersMax = 2;
+        private const int FlareMinMs = 8000;
+        private const int FlareMaxMs = 16000;
+        private const int FlareThrowersMin = 2;
+        private const int FlareThrowersMax = 3;
         private const int FlareStaggerMs = 900;
         private const int FlareHoldMs = 3200;
 
-        /// <summary>One in five goes high; the rest go low across the middle.</summary>
-        private const int FlareUpShare = 20;
+        /// <summary>The beat between the flare going into the hand and the throw being asked for. See Flares.</summary>
+        private const int FlareArmMs = 350;
+
+        /// <summary>One in ten goes high; the rest go low across the middle, where the cars are.</summary>
+        private const int FlareUpShare = 10;
         private const float FlareUpHigh = 70f;
 
         /// <summary>How often a box goes out, how long it takes to set, how many at once, and how big a box is.</summary>
@@ -7664,6 +7736,11 @@ namespace Hoodrich.Locations
             public Vector3 At;
             public int ThrowAt;
             public int Back;
+
+            /// <summary>The flare is in the hand, and when the throw is asked for. See Flares.</summary>
+            public bool Armed;
+            public int LetGo;
+
             public bool Loosed;
         }
 
@@ -9265,6 +9342,7 @@ namespace Hoodrich.Locations
 
             _rockets.Clear();
             _throws.Clear();
+            _flaresGone = _flaresKept = _saidGone = _saidKept = 0;
             _nextHype = 0;
             _volleyed = 0;
             _volleyLogged = 0;
