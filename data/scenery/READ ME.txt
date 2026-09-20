@@ -18,7 +18,7 @@ wins over one of the same name in Menyoo's folder.
 
 WHAT SHIPS WITH THE MOD
 -----------------------
-Nine scenes are in this folder already, 217 placements between them:
+Ten scenes are in this folder already, 255 placements between them:
 
   the-block.xml     Ten of the set stood around Chamberlain and Grove, most of
                     them holding a rifle, plus the fences at Lamar's.
@@ -62,6 +62,15 @@ Nine scenes are in this folder already, 217 placements between them:
                     And the booth in the corner: decks, a laptop and a mic on
                     a stand. He tells you about that booth the first time you
                     meet him, so it had better be there.
+  parkview-apartments.xml
+                    Parkview, on the open ground in Chamberlain Hills: two
+                    apartment blocks and a house stood up where there was
+                    nothing, trailer-park pieces beside them, a run of
+                    residential fencing, six cypresses, and a camp in the
+                    corner -- two shelters, a mattress, a stove, a bottle and
+                    a gravestone. Placed by Michael on 20 and 21 September
+                    2026 over five saves; this is the last of them plus the
+                    second block from the one after it.
 
 They came out of the spooner and were copied in here, so they no longer need
 Menyoo installed. If you still have the originals in menyooStuff\Spooner under
@@ -75,7 +84,7 @@ A shipped file can also name the saves it was made from, in its Note:
 
 and those files are skipped in menyooStuff\Spooner from then on, so a thing
 taken out of the shipped copy -- a sign, a model swapped for one with collision
--- does not come back from the original. Seven of the files here name theirs.
+-- does not come back from the original. Eight of the files here name theirs.
 
 TAKING SOMETHING OUT
 --------------------
