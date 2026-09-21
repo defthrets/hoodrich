@@ -3028,11 +3028,11 @@
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0xd303008b</ModelHash>
+		<ModelHash>0xe83b93b7</ModelHash>
 		<Type>1</Type>
 		<Dynamic>true</Dynamic>
 		<FrozenPos>false</FrozenPos>
-		<HashName>Generic Thug</HashName>
+		<HashName>g_m_y_famca_01</HashName>
 		<InitialHandle>610116</InitialHandle>
 		<PedProperties>
 			<IsStill>true</IsStill>
@@ -3040,32 +3040,6 @@
 			<HasShortHeight>false</HasShortHeight>
 			<Armour>0</Armour>
 			<CurrentWeapon>0xa2719263</CurrentWeapon>
-			<PedProps>
-				<_0>-1,-1</_0>
-				<_1>-1,-1</_1>
-				<_2>-1,-1</_2>
-				<_3>-1,-1</_3>
-				<_4>-1,-1</_4>
-				<_5>-1,-1</_5>
-				<_6>-1,-1</_6>
-				<_7>-1,-1</_7>
-				<_8>-1,-1</_8>
-				<_9>-1,-1</_9>
-			</PedProps>
-			<PedComps>
-				<_0>5,2</_0>
-				<_1>5,0</_1>
-				<_2>5,1</_2>
-				<_3>5,0</_3>
-				<_4>5,0</_4>
-				<_5>0,1</_5>
-				<_6>2,2</_6>
-				<_7>6,0</_7>
-				<_8>5,3</_8>
-				<_9>0,0</_9>
-				<_10>5,1</_10>
-				<_11>7,0</_11>
-			</PedComps>
 			<RelationshipGroupAltered>false</RelationshipGroupAltered>
 			<RelationshipGroup>0xfade4843</RelationshipGroup>
 			<ScenarioActive>false</ScenarioActive>
@@ -3096,11 +3070,11 @@
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0xd303008b</ModelHash>
+		<ModelHash>0xdb729238</ModelHash>
 		<Type>1</Type>
 		<Dynamic>true</Dynamic>
 		<FrozenPos>false</FrozenPos>
-		<HashName>Generic Thug</HashName>
+		<HashName>g_m_y_famdnf_01</HashName>
 		<InitialHandle>610117</InitialHandle>
 		<PedProperties>
 			<IsStill>true</IsStill>
@@ -3108,32 +3082,6 @@
 			<HasShortHeight>false</HasShortHeight>
 			<Armour>0</Armour>
 			<CurrentWeapon>0xa2719263</CurrentWeapon>
-			<PedProps>
-				<_0>-1,-1</_0>
-				<_1>-1,-1</_1>
-				<_2>-1,-1</_2>
-				<_3>-1,-1</_3>
-				<_4>-1,-1</_4>
-				<_5>-1,-1</_5>
-				<_6>-1,-1</_6>
-				<_7>-1,-1</_7>
-				<_8>-1,-1</_8>
-				<_9>-1,-1</_9>
-			</PedProps>
-			<PedComps>
-				<_0>0,2</_0>
-				<_1>0,0</_1>
-				<_2>0,1</_2>
-				<_3>0,0</_3>
-				<_4>0,2</_4>
-				<_5>1,4</_5>
-				<_6>0,3</_6>
-				<_7>0,1</_7>
-				<_8>0,0</_8>
-				<_9>0,0</_9>
-				<_10>0,2</_10>
-				<_11>0,1</_11>
-			</PedComps>
 			<RelationshipGroupAltered>false</RelationshipGroupAltered>
 			<RelationshipGroup>0xfade4843</RelationshipGroup>
 			<ScenarioActive>false</ScenarioActive>
@@ -3164,11 +3112,11 @@
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0xfd1c49bb</ModelHash>
+		<ModelHash>0x84302b09</ModelHash>
 		<Type>1</Type>
 		<Dynamic>true</Dynamic>
 		<FrozenPos>false</FrozenPos>
-		<HashName>Street Punk</HashName>
+		<HashName>g_m_y_famfor_01</HashName>
 		<InitialHandle>610118</InitialHandle>
 		<PedProperties>
 			<IsStill>true</IsStill>
@@ -3176,32 +3124,6 @@
 			<HasShortHeight>false</HasShortHeight>
 			<Armour>0</Armour>
 			<CurrentWeapon>0xa2719263</CurrentWeapon>
-			<PedProps>
-				<_0>-1,-1</_0>
-				<_1>-1,-1</_1>
-				<_2>-1,-1</_2>
-				<_3>-1,-1</_3>
-				<_4>-1,-1</_4>
-				<_5>-1,-1</_5>
-				<_6>-1,-1</_6>
-				<_7>-1,-1</_7>
-				<_8>-1,-1</_8>
-				<_9>-1,-1</_9>
-			</PedProps>
-			<PedComps>
-				<_0>1,1</_0>
-				<_1>0,0</_1>
-				<_2>1,0</_2>
-				<_3>1,3</_3>
-				<_4>1,1</_4>
-				<_5>0,0</_5>
-				<_6>0,0</_6>
-				<_7>0,0</_7>
-				<_8>0,0</_8>
-				<_9>0,0</_9>
-				<_10>0,1</_10>
-				<_11>0,0</_11>
-			</PedComps>
 			<RelationshipGroupAltered>false</RelationshipGroupAltered>
 			<RelationshipGroup>0xfade4843</RelationshipGroup>
 			<ScenarioActive>false</ScenarioActive>
@@ -3232,11 +3154,11 @@
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0xfd1c49bb</ModelHash>
+		<ModelHash>0xe83b93b7</ModelHash>
 		<Type>1</Type>
 		<Dynamic>true</Dynamic>
 		<FrozenPos>false</FrozenPos>
-		<HashName>Street Punk</HashName>
+		<HashName>g_m_y_famca_01</HashName>
 		<InitialHandle>610119</InitialHandle>
 		<PedProperties>
 			<IsStill>true</IsStill>
@@ -3244,32 +3166,6 @@
 			<HasShortHeight>false</HasShortHeight>
 			<Armour>0</Armour>
 			<CurrentWeapon>0xa2719263</CurrentWeapon>
-			<PedProps>
-				<_0>-1,-1</_0>
-				<_1>-1,-1</_1>
-				<_2>-1,-1</_2>
-				<_3>-1,-1</_3>
-				<_4>-1,-1</_4>
-				<_5>-1,-1</_5>
-				<_6>-1,-1</_6>
-				<_7>-1,-1</_7>
-				<_8>-1,-1</_8>
-				<_9>-1,-1</_9>
-			</PedProps>
-			<PedComps>
-				<_0>1,0</_0>
-				<_1>0,0</_1>
-				<_2>0,2</_2>
-				<_3>1,1</_3>
-				<_4>0,1</_4>
-				<_5>0,0</_5>
-				<_6>0,0</_6>
-				<_7>0,0</_7>
-				<_8>0,0</_8>
-				<_9>0,0</_9>
-				<_10>0,2</_10>
-				<_11>0,0</_11>
-			</PedComps>
 			<RelationshipGroupAltered>false</RelationshipGroupAltered>
 			<RelationshipGroup>0xfade4843</RelationshipGroup>
 			<ScenarioActive>false</ScenarioActive>
@@ -3572,11 +3468,11 @@
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0x5761f4ad</ModelHash>
+		<ModelHash>0xdb729238</ModelHash>
 		<Type>1</Type>
 		<Dynamic>true</Dynamic>
 		<FrozenPos>false</FrozenPos>
-		<HashName>Mexican Boss</HashName>
+		<HashName>g_m_y_famdnf_01</HashName>
 		<InitialHandle>610124</InitialHandle>
 		<PedProperties>
 			<IsStill>true</IsStill>
@@ -3584,32 +3480,6 @@
 			<HasShortHeight>false</HasShortHeight>
 			<Armour>0</Armour>
 			<CurrentWeapon>0xa2719263</CurrentWeapon>
-			<PedProps>
-				<_0>-1,-1</_0>
-				<_1>-1,-1</_1>
-				<_2>-1,-1</_2>
-				<_3>-1,-1</_3>
-				<_4>-1,-1</_4>
-				<_5>-1,-1</_5>
-				<_6>-1,-1</_6>
-				<_7>-1,-1</_7>
-				<_8>-1,-1</_8>
-				<_9>-1,-1</_9>
-			</PedProps>
-			<PedComps>
-				<_0>0,1</_0>
-				<_1>0,0</_1>
-				<_2>0,2</_2>
-				<_3>1,1</_3>
-				<_4>0,2</_4>
-				<_5>0,0</_5>
-				<_6>0,0</_6>
-				<_7>0,0</_7>
-				<_8>0,2</_8>
-				<_9>0,0</_9>
-				<_10>0,0</_10>
-				<_11>0,0</_11>
-			</PedComps>
 			<RelationshipGroupAltered>false</RelationshipGroupAltered>
 			<RelationshipGroup>0xfade4843</RelationshipGroup>
 			<ScenarioActive>false</ScenarioActive>
@@ -3679,11 +3549,11 @@
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0x6c8c08e5</ModelHash>
+    <ModelHash>0x84302b09</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>g_m_m_cartelguards_02</HashName>
+    <HashName>g_m_y_famfor_01</HashName>
     <InitialHandle>610126</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
@@ -3705,36 +3575,14 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="2">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="4">
-          <Index>2</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="6">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="11">
-          <Index>0</Index>
-          <Texture>2</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0xd172497e</ModelHash>
+    <ModelHash>0xe83b93b7</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>a_m_m_afriamer_01</HashName>
+    <HashName>g_m_y_famca_01</HashName>
     <InitialHandle>610127</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
@@ -3756,28 +3604,14 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>1</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="3">
-          <Index>1</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="4">
-          <Index>1</Index>
-          <Texture>1</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0x7b0e452f</ModelHash>
+    <ModelHash>0xdb729238</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>a_m_m_hillbilly_02</HashName>
+    <HashName>g_m_y_famdnf_01</HashName>
     <InitialHandle>610128</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>false</IsVisible>
@@ -3799,32 +3633,14 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>1</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="2">
-          <Index>0</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="3">
-          <Index>1</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="4">
-          <Index>0</Index>
-          <Texture>2</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0x4914d813</ModelHash>
+    <ModelHash>0x84302b09</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>g_m_m_mexboss_02</HashName>
+    <HashName>g_m_y_famfor_01</HashName>
     <InitialHandle>610129</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>false</IsVisible>
@@ -3846,32 +3662,14 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>0</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="3">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="4">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="8">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0x2799efd8</ModelHash>
+    <ModelHash>0x4e0ce5d3</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>a_f_y_business_01</HashName>
+    <HashName>g_f_y_families_01</HashName>
     <InitialHandle>610130</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>false</IsVisible>
@@ -3893,32 +3691,14 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="2">
-          <Index>2</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="3">
-          <Index>1</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="4">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0x403db4fd</ModelHash>
+    <ModelHash>0xe83b93b7</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>a_m_m_beach_01</HashName>
+    <HashName>g_m_y_famca_01</HashName>
     <InitialHandle>610131</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
@@ -3940,24 +3720,14 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="3">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0xd303008b</ModelHash>
+    <ModelHash>0xdb729238</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>g_m_m_genthug_01</HashName>
+    <HashName>g_m_y_famdnf_01</HashName>
     <InitialHandle>610132</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
@@ -3979,60 +3749,14 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>2</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="1">
-          <Index>2</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="2">
-          <Index>2</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="3">
-          <Index>2</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="4">
-          <Index>2</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="5">
-          <Index>1</Index>
-          <Texture>5</Texture>
-        </Component>
-        <Component id="6">
-          <Index>3</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="7">
-          <Index>2</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="8">
-          <Index>2</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="10">
-          <Index>2</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="11">
-          <Index>3</Index>
-          <Texture>0</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0xbca2ccea</ModelHash>
+    <ModelHash>0x84302b09</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>g_m_importexport_01</HashName>
+    <HashName>g_m_y_famfor_01</HashName>
     <InitialHandle>610133</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
@@ -4054,24 +3778,6 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>4</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="2">
-          <Index>4</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="3">
-          <Index>2</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="4">
-          <Index>4</Index>
-          <Texture>0</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
@@ -4118,11 +3824,11 @@
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0xd303008b</ModelHash>
+    <ModelHash>0xe83b93b7</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>g_m_m_genthug_01</HashName>
+    <HashName>g_m_y_famca_01</HashName>
     <InitialHandle>610135</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
@@ -4144,52 +3850,6 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>2</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="1">
-          <Index>2</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="2">
-          <Index>2</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="3">
-          <Index>2</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="4">
-          <Index>2</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="5">
-          <Index>1</Index>
-          <Texture>3</Texture>
-        </Component>
-        <Component id="6">
-          <Index>0</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="7">
-          <Index>2</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="8">
-          <Index>2</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="10">
-          <Index>2</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="11">
-          <Index>3</Index>
-          <Texture>1</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
@@ -4232,11 +3892,11 @@
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0xd303008b</ModelHash>
+    <ModelHash>0xdb729238</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>g_m_m_genthug_01</HashName>
+    <HashName>g_m_y_famdnf_01</HashName>
     <InitialHandle>610137</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
@@ -4258,52 +3918,6 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="1">
-          <Index>1</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="2">
-          <Index>1</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="3">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="4">
-          <Index>1</Index>
-          <Texture>3</Texture>
-        </Component>
-        <Component id="5">
-          <Index>1</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="6">
-          <Index>3</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="7">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="8">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="10">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="11">
-          <Index>1</Index>
-          <Texture>3</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
@@ -4350,11 +3964,11 @@
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0xd303008b</ModelHash>
+    <ModelHash>0x84302b09</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>g_m_m_genthug_01</HashName>
+    <HashName>g_m_y_famfor_01</HashName>
     <InitialHandle>610139</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
@@ -4376,48 +3990,14 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>0</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="2">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="4">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="5">
-          <Index>0</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="6">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="7">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="10">
-          <Index>0</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="11">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0xd303008b</ModelHash>
+    <ModelHash>0xe83b93b7</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>g_m_m_genthug_01</HashName>
+    <HashName>g_m_y_famca_01</HashName>
     <InitialHandle>610140</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
@@ -4439,52 +4019,6 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>3</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="1">
-          <Index>3</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="2">
-          <Index>3</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="3">
-          <Index>3</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="4">
-          <Index>3</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="5">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="6">
-          <Index>2</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="7">
-          <Index>3</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="8">
-          <Index>3</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="10">
-          <Index>3</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="11">
-          <Index>4</Index>
-          <Texture>2</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
@@ -4543,11 +4077,11 @@
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0xfd1c49bb</ModelHash>
+    <ModelHash>0xdb729238</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>g_m_y_strpunk_01</HashName>
+    <HashName>g_m_y_famdnf_01</HashName>
     <InitialHandle>610142</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
@@ -4569,36 +4103,14 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="2">
-          <Index>0</Index>
-          <Texture>3</Texture>
-        </Component>
-        <Component id="3">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="4">
-          <Index>0</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="10">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0x61ecd362</ModelHash>
+    <ModelHash>0x84302b09</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>g_m_m_goons_01</HashName>
+    <HashName>g_m_y_famfor_01</HashName>
     <InitialHandle>610143</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
@@ -4620,52 +4132,14 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>3</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="2">
-          <Index>2</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="3">
-          <Index>0</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="4">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="5">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="6">
-          <Index>3</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="7">
-          <Index>2</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="9">
-          <Index>1</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="11">
-          <Index>1</Index>
-          <Texture>2</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0x964d12dc</ModelHash>
+    <ModelHash>0xe83b93b7</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>g_m_y_mexgoon_03</HashName>
+    <HashName>g_m_y_famca_01</HashName>
     <InitialHandle>610144</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>false</IsVisible>
@@ -4687,32 +4161,14 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>1</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="3">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="4">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="8">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0xfd1c49bb</ModelHash>
+    <ModelHash>0xdb729238</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>g_m_y_strpunk_01</HashName>
+    <HashName>g_m_y_famdnf_01</HashName>
     <InitialHandle>610145</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
@@ -4734,28 +4190,6 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>1</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="2">
-          <Index>0</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="3">
-          <Index>0</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="4">
-          <Index>1</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="10">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
@@ -4810,11 +4244,11 @@
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0xfda94268</ModelHash>
+    <ModelHash>0x84302b09</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>g_m_m_armgoon_01</HashName>
+    <HashName>g_m_y_famfor_01</HashName>
     <InitialHandle>610147</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>false</IsVisible>
@@ -4836,24 +4270,6 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="2">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="3">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="4">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="8">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
@@ -4939,11 +4355,11 @@
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0x158c439c</ModelHash>
+    <ModelHash>0x4e0ce5d3</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>g_f_y_ballas_01</HashName>
+    <HashName>g_f_y_families_01</HashName>
     <InitialHandle>610150</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>false</IsVisible>
@@ -4965,36 +4381,6 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="2">
-          <Index>2</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="3">
-          <Index>0</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="4">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="8">
-          <Index>2</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="10">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="11">
-          <Index>2</Index>
-          <Texture>0</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
@@ -5053,11 +4439,11 @@
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0x2dadf4aa</ModelHash>
+    <ModelHash>0xe83b93b7</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>a_m_y_downtown_01</HashName>
+    <HashName>g_m_y_famca_01</HashName>
     <InitialHandle>610152</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>false</IsVisible>
@@ -5079,28 +4465,14 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>1</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="3">
-          <Index>1</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="4">
-          <Index>1</Index>
-          <Texture>1</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0x5aa42c21</ModelHash>
+    <ModelHash>0x4e0ce5d3</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>g_f_y_vagos_01</HashName>
+    <HashName>g_f_y_families_01</HashName>
     <InitialHandle>610153</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>false</IsVisible>
@@ -5122,36 +4494,14 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-        <Component id="2">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="3">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="4">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="8">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0x4914d813</ModelHash>
+    <ModelHash>0xdb729238</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>g_m_m_mexboss_02</HashName>
+    <HashName>g_m_y_famdnf_01</HashName>
     <InitialHandle>610154</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>false</IsVisible>
@@ -5173,24 +4523,6 @@
       <RelationshipGroup></RelationshipGroup>
       <Health>200</Health>
       <Armour>0</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="3">
-          <Index>0</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="4">
-          <Index>0</Index>
-          <Texture>1</Texture>
-        </Component>
-        <Component id="8">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-      </ClothingVariations>
     </PedProperties>
   </Placement>
   <Placement>

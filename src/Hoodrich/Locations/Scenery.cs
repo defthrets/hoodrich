@@ -1446,6 +1446,20 @@ namespace Hoodrich.Locations
 
             Wear(ped, item);
 
+            // DRESSED BY THE GAME where the file says nothing about clothes. A placement whose
+            // model was swapped for one of the set's (Parkview, 2026-09-21) carries no
+            // variations of its own, and a model's defaults are the same man twenty times
+            // over. The game's own random dressing respects what goes with what.
+            if (item.Components.Count == 0 && item.Props.Count == 0)
+            {
+                try
+                {
+                    Function.Call(Hash.SET_PED_RANDOM_COMPONENT_VARIATION, ped.Handle, 0);
+                    Function.Call(Hash.SET_PED_RANDOM_PROPS, ped.Handle);
+                }
+                catch { /* the defaults, then */ }
+            }
+
             if (item.GroupHash != 0)
             {
                 try { Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, item.GroupHash); }
