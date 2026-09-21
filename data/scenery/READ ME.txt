@@ -18,7 +18,7 @@ wins over one of the same name in Menyoo's folder.
 
 WHAT SHIPS WITH THE MOD
 -----------------------
-Ten scenes are in this folder already, 272 placements between them:
+Ten scenes are in this folder already, 277 placements between them:
 
   the-block.xml     Ten of the set stood around Chamberlain and Grove, most of
                     them holding a rifle, plus the fences at Lamar's.
@@ -63,15 +63,17 @@ Ten scenes are in this folder already, 272 placements between them:
                     a stand. He tells you about that booth the first time you
                     meet him, so it had better be there.
   parkview-apartments.xml
-                    Parkview, on the open ground in Chamberlain Hills:
-                    apartment blocks, a row of houses and the ground under
-                    them stood up where there was nothing, trailer-park
-                    pieces, residential fencing, cypresses, and a camp in the
+                    Parkview, on the open ground in Chamberlain Hills: three
+                    apartment blocks, three houses and the ground under them
+                    stood up where there was nothing, trailer-park pieces,
+                    residential fencing, streetlights, cypresses, three car
+                    wrecks, a couch, a bike and bin bags, and a camp in the
                     corner -- two shelters, a mattress, a stove, a bottle and
-                    a gravestone. Michael placed it in the spooner over five
-                    saves on 20 and 21 September 2026, and the mod had been
-                    building all five together; this file is that union, so
-                    it stands exactly as it did.
+                    a gravestone. Michael placed it in the spooner over six
+                    saves on 20 and 21 September 2026 and finished it live in
+                    the world; this file is "Save everything around me"
+                    pressed in the middle of it, less his phone, his bag and
+                    the peds who happened to be in range.
 
 They came out of the spooner and were copied in here, so they no longer need
 Menyoo installed. If you still have the originals in menyooStuff\Spooner under
