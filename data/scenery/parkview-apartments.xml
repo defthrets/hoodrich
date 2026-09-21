@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <SpoonerPlacements>
-  <Note>absorbs: parkview apartments, parkview apartments1, parkview, parkway apartments, parkway gardens, parkview1 | floors: 204034, 204290</Note>
+  <Note>absorbs: parkview apartments, parkview apartments1, parkview, parkway apartments, parkway gardens, parkview1 | floors: 204034@30.85, 204290@30.85</Note>
   <AudioFile />
   <ClearWorld>0</ClearWorld>
   <ClearDatabase>false</ClearDatabase>

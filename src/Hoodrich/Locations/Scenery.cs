@@ -91,8 +91,12 @@ namespace Hoodrich.Locations
             /// <summary>The peds the file says never leave, by their saved handle. See Stays.</summary>
             public HashSet<int> Stays = new HashSet<int>();
 
-            /// <summary>The props the file says to lay a floor under, by their saved handle. See Paving.</summary>
-            public HashSet<int> Floors = new HashSet<int>();
+            /// <summary>
+            /// The props the file says to lay a floor under, by their saved handle, each with
+            /// the height of its top where the file gave one and nothing where it did not.
+            /// See Paving.
+            /// </summary>
+            public Dictionary<int, float?> Floors = new Dictionary<int, float?>();
 
             /// <summary>How many of its peds were not stood up because of the hour. See Living a little.</summary>
             public int AwayTonight;
@@ -284,11 +288,13 @@ namespace Hoodrich.Locations
         /// <summary>
         /// The placements a scene file says need a floor laid under them: "floors: 204034,
         /// 204290" in its Note is those two saved handles. For a slab whose model has no
-        /// collision of its own. See Paving.
+        /// collision of its own. "204034@30.85" says where the top of it is, as a height in
+        /// the world, for a model whose bounding box is taller than the ground you see --
+        /// which the first one was, by four metres. See Paving.
         /// </summary>
-        private static HashSet<int> Floors(string path)
+        private static Dictionary<int, float?> Floors(string path)
         {
-            var handles = new HashSet<int>();
+            var floors = new Dictionary<int, float?>();
 
             foreach (var line in Clauses(path))
             {
@@ -296,12 +302,29 @@ namespace Hoodrich.Locations
 
                 foreach (var raw in line.Substring(7).Split(',', ';'))
                 {
+                    var part = raw.Trim();
+                    float? top = null;
+
+                    var at = part.IndexOf('@');
+
+                    if (at >= 0)
+                    {
+                        float z;
+                        if (float.TryParse(part.Substring(at + 1).Trim(), System.Globalization.NumberStyles.Float,
+                                           System.Globalization.CultureInfo.InvariantCulture, out z))
+                        {
+                            top = z;
+                        }
+
+                        part = part.Substring(0, at).Trim();
+                    }
+
                     int handle;
-                    if (int.TryParse(raw.Trim(), out handle)) handles.Add(handle);
+                    if (int.TryParse(part, out handle)) floors[handle] = top;
                 }
             }
 
-            return handles;
+            return floors;
         }
 
         /// <summary>The lines of a scene file's Note, trimmed. Nothing, for a file without one.</summary>
@@ -849,7 +872,7 @@ namespace Hoodrich.Locations
                         // A FLOOR LAID UNDER IT, where the file asks. Not yet, if the tile
                         // models are still streaming: the slab comes off the looked-at list
                         // so the next pass tries again.
-                        if (!given && item != null && scene.Floors.Contains(item.Handle))
+                        if (!given && item != null && scene.Floors.ContainsKey(item.Handle))
                         {
                             var paved = Pave(scene, made, item);
 
@@ -864,7 +887,7 @@ namespace Hoodrich.Locations
 
                         Log.Info("Scenery: " + name + " in " + scene.Name + " had no body; " +
                                  (given ? "it has one now." : "the model has no collision to give it." +
-                                  (item != null && item.Handle != 0 && !scene.Floors.Contains(item.Handle)
+                                  (item != null && item.Handle != 0 && !scene.Floors.ContainsKey(item.Handle)
                                       ? " Name it in the file's Note -- floors: " + item.Handle + " -- and a floor is laid under it."
                                       : "")));
                     }
@@ -2443,8 +2466,11 @@ namespace Hoodrich.Locations
         private static readonly HashSet<int> _tiles = new HashSet<int>();
 
         /// <summary>The most tiles one slab gets, and the widest slab that gets any.</summary>
-        private const int TilesMost = 64;
+        private const int TilesMost = 160;
         private const float SlabMost = 90f;
+
+        /// <summary>Whether the block sizes have been written down this session.</summary>
+        private static bool _tilesSaid;
 
         private sealed class Tile
         {
@@ -2508,6 +2534,14 @@ namespace Hoodrich.Locations
             tiles.Sort((a, b) => (b.W * b.L).CompareTo(a.W * a.L));
             for (var i = 0; i < tiles.Count; i++) tiles[i].Index = i;
 
+            if (!_tilesSaid)
+            {
+                _tilesSaid = true;
+                var sizes = "";
+                foreach (var t in tiles) sizes += (sizes.Length > 0 ? ", " : "") + t.W.ToString("0.0") + " by " + t.L.ToString("0.0");
+                Log.Info("Scenery: the floor blocks measure " + sizes + " m.");
+            }
+
             Vector3 min, max;
 
             if (!Dimensions(slab.Model, out min, out max))
@@ -2532,7 +2566,16 @@ namespace Hoodrich.Locations
                          item.Roll.ToString("0") + " degrees; the floor under it is laid level.");
             }
 
-            var top = item.At.Z + max.Z;
+            // WHERE THE TOP IS. The bounding box says one thing and the ground you see can be
+            // another: the first slab's box stood four metres above its surface, so the floor
+            // was laid in the air. The file's own number wins; failing that, the height the
+            // scene's other props stand at inside the footprint, which is where somebody put
+            // a couch down on it; failing that, the box, and the log says so.
+            var said = scene.Floors[item.Handle];
+            var guessed = said == null ? Surface(scene, item, min, max) : null;
+            var how = said != null ? "from the file" : guessed != null ? "from what stands on it" : "from the bounding box";
+            var top = said ?? guessed ?? item.At.Z + max.Z;
+
             var laid = new List<Vector3>();   // model-space centres, with the tile index in Z
 
             Fill(tiles, min.X, min.Y, max.X, max.Y, laid);
@@ -2580,9 +2623,49 @@ namespace Hoodrich.Locations
             }
 
             Log.Info("Scenery: laid " + made + " tile(s) under " + Say(item) + " in " + scene.Name + " -- " +
-                     width.ToString("0.0") + " by " + length.ToString("0.0") + " m, top at " + top.ToString("0.00") + ".");
+                     width.ToString("0.0") + " by " + length.ToString("0.0") + " m, top at " + top.ToString("0.00") +
+                     " " + how + (laid.Count >= TilesMost ? ", and ran out of tiles" : "") + ".");
 
             return made > 0 ? Verdict.Up : Verdict.No;
+        }
+
+        /// <summary>
+        /// Where the surface of a slab is, from the props stood on it: the middle height of
+        /// every other prop in the scene whose spot falls inside the slab's footprint and
+        /// between its bottom and its top. A couch, a bin bag and a streetlight all have their
+        /// origin at their base, so the middle of them is the ground. Nothing, with fewer than
+        /// three to go on.
+        /// </summary>
+        private static float? Surface(Scene scene, Spooner.Placed slab, Vector3 min, Vector3 max)
+        {
+            var heights = new List<float>();
+            var rad = -slab.Yaw * Math.PI / 180.0;
+            var cos = (float)Math.Cos(rad);
+            var sin = (float)Math.Sin(rad);
+
+            foreach (var other in scene.Items)
+            {
+                if (other == slab || other.What != Spooner.Kind.Prop || other.Attached) continue;
+                if (scene.Floors.ContainsKey(other.Handle)) continue;
+
+                // Into the slab's own space: the offset from its origin, turned back by its yaw.
+                var dx = other.At.X - slab.At.X;
+                var dy = other.At.Y - slab.At.Y;
+                var lx = dx * cos - dy * sin;
+                var ly = dx * sin + dy * cos;
+
+                if (lx < min.X || lx > max.X || ly < min.Y || ly > max.Y) continue;
+
+                var lz = other.At.Z - slab.At.Z;
+                if (lz < min.Z - 0.5f || lz > max.Z + 0.5f) continue;
+
+                heights.Add(other.At.Z);
+            }
+
+            if (heights.Count < 3) return null;
+
+            heights.Sort();
+            return heights[heights.Count / 2];
         }
 
         /// <summary>
