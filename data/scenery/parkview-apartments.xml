@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <SpoonerPlacements>
-  <Note>absorbs: parkview apartments, parkview apartments1, parkview, parkway apartments, parkway gardens, parkview1, parkview2 | floors: 610076@30.85, 610077@30.85 | stays: 610124, 610126, 610128, 610129, 610130, 610133, 610134, 610136, 610141, 610144, 610146, 610147, 610148, 610149, 610150, 610151, 610152, 610153, 610154, 610155</Note>
+  <Note>absorbs: parkview apartments, parkview apartments1, parkview, parkway apartments, parkway gardens, parkview1, parkview2 | floors: 610076@30.85, 610077@30.85 | stays: 610124, 610126, 610128, 610129, 610130, 610133, 610134, 610136, 610141, 610144, 610146, 610147, 610148, 610149, 610150, 610151, 610152, 610153, 610154, 610155, 610200, 610201</Note>
   <AudioFile />
   <ClearWorld>0</ClearWorld>
   <ClearDatabase>false</ClearDatabase>
@@ -5242,5 +5242,204 @@
       <Health>200</Health>
       <Armour>0</Armour>
     </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0x4e0ce5d3</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_f_y_families_01</HashName>
+    <InitialHandle>610200</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>false</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-244.7172</X>
+      <Y>-1560.0680</Y>
+      <Z>63.3133</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="2">
+          <Index>1</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="3">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="4">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="10">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="11">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0xdb729238</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_y_famdnf_01</HashName>
+    <InitialHandle>610201</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>false</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-245.9172</X>
+      <Y>-1560.0680</Y>
+      <Z>63.3133</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="4">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0xfd0d0427</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_ld_dstpillar_05</HashName>
+    <InitialHandle>610202</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-269.7425</X>
+      <Y>-1554.744</Y>
+      <Z>33.1633</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>155.7203</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xfd0d0427</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_ld_dstpillar_05</HashName>
+    <InitialHandle>610203</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-260.29</X>
+      <Y>-1559.335</Y>
+      <Z>33.1633</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>156.7605</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xa4d194d1</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>xs_prop_arena_wall_02a</HashName>
+    <InitialHandle>610204</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-251.1654</X>
+      <Y>-1563.787</Y>
+      <Z>30.7286</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>155.7285</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xa4d194d1</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>xs_prop_arena_wall_02a</HashName>
+    <InitialHandle>610205</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-260.7079</X>
+      <Y>-1559.419</Y>
+      <Z>30.4543</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>155.1286</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xfd0d0427</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_ld_dstpillar_05</HashName>
+    <InitialHandle>610206</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-251.4381</X>
+      <Y>-1563.224</Y>
+      <Z>33.1633</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>156.7605</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
   </Placement>
 </SpoonerPlacements>
