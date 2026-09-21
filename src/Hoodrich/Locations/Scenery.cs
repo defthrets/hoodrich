@@ -101,6 +101,18 @@ namespace Hoodrich.Locations
             /// <summary>How many of its peds were not stood up because of the hour. See Living a little.</summary>
             public int AwayTonight;
 
+            /// <summary>Whether the builder has been let past the first ped. See Step, "the ground first".</summary>
+            public bool PedsGo;
+
+            /// <summary>When it stops waiting for the ground and lets them go up anyway.</summary>
+            public int PedsBy;
+
+            /// <summary>The floors laid or refused, by saved handle, so the wait for them can end.</summary>
+            public readonly HashSet<int> Paved = new HashSet<int>();
+
+            /// <summary>Peds stood up frozen until the ground under each has loaded. See Thawing.</summary>
+            public readonly List<Cold> Frozen = new List<Cold>();
+
             /// <summary>
             /// The placement each standing thing came from, by its handle in THIS session.
             ///
@@ -117,7 +129,19 @@ namespace Hoodrich.Locations
             public readonly HashSet<int> Solid = new HashSet<int>();
         }
 
+        /// <summary>A ped waiting for the ground under him.</summary>
+        private sealed class Cold
+        {
+            public Ped Who;
+            public Spooner.Placed Item;
+            public int By;
+        }
+
         private readonly List<Scene> _scenes = new List<Scene>();
+
+        /// <summary>How long a scene waits at its first ped for the ground, and how long a ped stays frozen at most.</summary>
+        private const int PedsWaitMs = 8000;
+        private const int ThawMostMs = 12000;
 
         /// <summary>
         /// Whether that handle is something a scene of ours put there.
@@ -476,10 +500,14 @@ namespace Hoodrich.Locations
                 // refusing a file with no placements in it would have thrown it away.
                 if (items.Count == 0 && gone.Count == 0) return;
 
-                // ANYTHING STUCK TO SOMETHING GOES UP LAST, so the thing it is stuck to is
-                // already standing when its turn comes. Sorting once here is the whole of the
-                // ordering problem; the builder itself can then just walk the list.
-                items.Sort((a, b) => (a.Attached ? 1 : 0) - (b.Attached ? 1 : 0));
+                // THE GROUND FIRST, THEN THE PEOPLE, THEN ANYTHING STUCK TO SOMETHING. A ped
+                // stood up before the block under him has a body, or before the floor under
+                // him is laid, falls through it -- which is what every ped at Parkview did on
+                // 2026-09-21 -- so props and vehicles come first and peds after them. Anything
+                // attached goes up last, so the thing it is stuck to is already standing.
+                // Sorting once here is the whole of the ordering problem; the builder itself
+                // can then just walk the list, and wait once, at the first ped. See Step.
+                items.Sort((a, b) => Rank(a) - Rank(b));
 
                 var scene = new Scene { Name = name, Path = path, Items = items, Gone = gone };
                 Measure(scene);
@@ -518,6 +546,33 @@ namespace Hoodrich.Locations
                          ", around " + scene.Centre.X.ToString("0") + ", " +
                          scene.Centre.Y.ToString("0") + " and " + scene.Radius.ToString("0") + " m out.");
             }
+        }
+
+        private static int Rank(Spooner.Placed item)
+        {
+            if (item.Attached) return 2;
+            return item.What == Spooner.Kind.Ped ? 1 : 0;
+        }
+
+        /// <summary>
+        /// Whether everything standing in the scene has a body and every floor is laid: every
+        /// prop up has been looked at by Solid, and every floor the file names is paved or
+        /// refused. Collision two hundred metres off may not load until you are nearer, which
+        /// is why the wait on this has a limit.
+        /// </summary>
+        private static bool GroundReady(Scene scene)
+        {
+            foreach (var handle in scene.Floors.Keys)
+            {
+                if (!scene.Paved.Contains(handle)) return false;
+            }
+
+            foreach (var e in scene.Up)
+            {
+                if (e is Prop && !scene.Solid.Contains(e.Handle)) return false;
+            }
+
+            return true;
         }
 
         /// <summary>Where the scene is and how far it reaches, from what is in it.</summary>
@@ -626,6 +681,10 @@ namespace Hoodrich.Locations
             scene.Missed = 0;
             scene.Waited = 0;
             scene.AwayTonight = 0;
+            scene.PedsGo = false;
+            scene.PedsBy = 0;
+            scene.Paved.Clear();
+            scene.Frozen.Clear();
 
             // WHO IS NOT HERE TODAY. Rolled when the scene goes up, once per file per day,
             // so it is the same answer every time you come back on the same day.
@@ -680,6 +739,27 @@ namespace Hoodrich.Locations
                     scene.Cursor++;
                     scene.Waited = 0;
                     continue;
+                }
+
+                // THE GROUND FIRST. The list has the peds at the end (see Rank); at the first
+                // of them the builder waits for every prop standing to have a body and every
+                // floor to be laid, up to PedsWaitMs, and then lets them go -- frozen, each
+                // until the ground under him is loaded. See Person and Thawing.
+                if (item.What == Spooner.Kind.Ped && !scene.PedsGo)
+                {
+                    var clock = Game.GameTime;
+                    if (scene.PedsBy == 0) scene.PedsBy = clock + PedsWaitMs;
+
+                    var ready = GroundReady(scene);
+                    if (!ready && clock < scene.PedsBy) return;
+
+                    scene.PedsGo = true;
+
+                    if (!ready)
+                    {
+                        Log.Info("Scenery: \"" + scene.Name + "\" -- its people go up before all of its ground " +
+                                 "is solid; each is held frozen until the ground under him has loaded.");
+                    }
                 }
 
                 // NOT AT THIS HOUR. A ped built in the small hours is not built: he is written
@@ -775,6 +855,9 @@ namespace Hoodrich.Locations
             // Walking in: ComeBack gives him the walk, and his life is already on the list.
             if (arriving) return;
 
+            // Stood up frozen (see Person); thawed once the ground under him has loaded.
+            scene.Frozen.Add(new Cold { Who = ped, Item = item, By = Game.GameTime + ThawMostMs });
+
             Doing(scene, ped, item);
 
             // Built while it is already going off: it comes up fighting rather than
@@ -826,6 +909,8 @@ namespace Hoodrich.Locations
             foreach (var scene in _scenes)
             {
                 if (!scene.Built && !scene.Working) continue;
+
+                Thawing(scene, now);
 
                 foreach (var made in scene.Up)
                 {
@@ -882,7 +967,14 @@ namespace Hoodrich.Locations
                                 continue;
                             }
 
+                            scene.Paved.Add(item.Handle);
+
                             if (paved == Verdict.Up) continue;
+                        }
+                        else if (given && item != null && scene.Floors.ContainsKey(item.Handle))
+                        {
+                            // It has a body of its own; nothing to lay, nothing to wait for.
+                            scene.Paved.Add(item.Handle);
                         }
 
                         Log.Info("Scenery: " + name + " in " + scene.Name + " had no body; " +
@@ -895,6 +987,52 @@ namespace Hoodrich.Locations
                     {
                         scene.Solid.Add(made.Handle);
                     }
+                }
+            }
+        }
+
+        /// <summary>
+        /// The peds stood up frozen, freed as the ground under each of them loads.
+        ///
+        /// Freed when the scene's ground is ready (every prop looked at, every floor laid)
+        /// and the game has collision loaded round him -- or, past ThawMostMs, regardless,
+        /// because a man frozen for ever on a corner two hundred metres off is worse than one
+        /// who drops a foot. Put back on his mark exactly as he is freed, and the file's own
+        /// frozen flag applied.
+        /// </summary>
+        private static void Thawing(Scene scene, int now)
+        {
+            if (scene.Frozen.Count == 0) return;
+
+            var ready = GroundReady(scene);
+
+            for (var i = scene.Frozen.Count - 1; i >= 0; i--)
+            {
+                var cold = scene.Frozen[i];
+
+                try
+                {
+                    if (cold.Who == null || !cold.Who.Exists())
+                    {
+                        scene.Frozen.RemoveAt(i);
+                        continue;
+                    }
+
+                    var loaded = false;
+                    try { loaded = Function.Call<bool>(Hash.HAS_COLLISION_LOADED_AROUND_ENTITY, cold.Who.Handle); }
+                    catch { }
+
+                    if (!((ready && loaded) || now >= cold.By)) continue;
+
+                    cold.Who.PositionNoOffset = cold.Item.At;
+                    cold.Who.Heading = cold.Item.Yaw;
+                    cold.Who.IsPositionFrozen = cold.Item.Frozen;
+
+                    scene.Frozen.RemoveAt(i);
+                }
+                catch
+                {
+                    scene.Frozen.RemoveAt(i);
                 }
             }
         }
@@ -1256,9 +1394,12 @@ namespace Hoodrich.Locations
 
             Arm(ped, item);
 
-            // Frozen LAST, and only where the file said so. The animation still plays on a
-            // frozen ped; what stops is it being shoved off its mark by traffic or by you.
-            if (item.Frozen) ped.IsPositionFrozen = true;
+            // FROZEN LAST, AND ALWAYS -- for now. The animation still plays on a frozen ped;
+            // what stops is him dropping through a floor that has no body yet. The file's own
+            // answer is applied at the thaw (see Thawing): a ped saved frozen stays so, one
+            // saved free is freed once the ground under him has loaded. One stood up somewhere
+            // else to walk in from is freed at once by Loose.
+            ped.IsPositionFrozen = true;
 
             Settle(ped, item);
 
@@ -2062,7 +2203,7 @@ namespace Hoodrich.Locations
             ped.Heading = l.Item.Yaw;
 
             Function.Call(Hash.SET_PED_CONFIG_FLAG, ped.Handle, 17, true);
-            if (l.Item.Frozen) ped.IsPositionFrozen = true;
+            ped.IsPositionFrozen = l.Item.Frozen;
 
             Doing(l.Scene, ped, l.Item, l.Turn);
         }
@@ -2933,6 +3074,10 @@ namespace Hoodrich.Locations
             scene.Was.Clear();
             scene.Solid.Clear();
             scene.Waits.Clear();
+            scene.Frozen.Clear();
+            scene.Paved.Clear();
+            scene.PedsGo = false;
+            scene.PedsBy = 0;
             scene.Cursor = 0;
             scene.Waited = 0;
             scene.Working = false;
