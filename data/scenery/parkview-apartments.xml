@@ -8592,27 +8592,6 @@
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0x70775a68</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>sf_prop_sf_weed_med_01a</HashName>
-    <InitialHandle>610550</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-211.089</X>
-      <Y>-1713.247</Y>
-      <Z>31.6642</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-122</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
     <ModelHash>0x74bfc5ce</ModelHash>
     <Type>3</Type>
     <DynamicC>false</DynamicC>
@@ -8760,27 +8739,6 @@
     <Attachment isAttached="false" />
   </Placement>
   <Placement>
-    <ModelHash>0xdebeafc0</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>m24_2_prop_m42_weedboxpile_01a</HashName>
-    <InitialHandle>610558</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-205.039</X>
-      <Y>-1708.503</Y>
-      <Z>31.6666</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-142.089</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
     <ModelHash>0x2bcc6fc8</ModelHash>
     <Type>3</Type>
     <DynamicC>false</DynamicC>
@@ -8823,27 +8781,6 @@
     <Attachment isAttached="false" />
   </Placement>
   <Placement>
-    <ModelHash>0xeb174aee</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_worklight_03a</HashName>
-    <InitialHandle>610561</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-208.392</X>
-      <Y>-1711.383</Y>
-      <Z>31.7335</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>152.962</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
     <ModelHash>0x74bfc5ce</ModelHash>
     <Type>3</Type>
     <DynamicC>false</DynamicC>
@@ -8861,48 +8798,6 @@
       <Pitch>0</Pitch>
       <Roll>0</Roll>
       <Yaw>-87.2271</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x70775a68</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>sf_prop_sf_weed_med_01a</HashName>
-    <InitialHandle>610563</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-212.39</X>
-      <Y>-1714.471</Y>
-      <Z>31.6642</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-122</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x70775a68</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>sf_prop_sf_weed_med_01a</HashName>
-    <InitialHandle>610564</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-209.88</X>
-      <Y>-1712.28</Y>
-      <Z>31.6642</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-122</Yaw>
     </PositionRotation>
     <Attachment isAttached="false" />
   </Placement>
