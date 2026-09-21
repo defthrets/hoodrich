@@ -138,6 +138,9 @@ namespace Hoodrich.Locations
             public Ped Who;
             public Spooner.Placed Item;
             public int By;
+
+            /// <summary>Whether his mark is well above the map: a roof, a floor of a block.</summary>
+            public bool Elevated;
         }
 
         private readonly List<Scene> _scenes = new List<Scene>();
@@ -145,6 +148,16 @@ namespace Hoodrich.Locations
         /// <summary>How long a scene waits at its first ped for the ground, and how long a ped stays frozen at most.</summary>
         private const int PedsWaitMs = 8000;
         private const int ThawMostMs = 12000;
+
+        /// <summary>
+        /// A ped up on a block is not let go on the clock like one on the ground. Released at
+        /// a hundred and fifty metres out, before the block under him had streamed its
+        /// collision, he fell thirty metres and died -- every ped on every roof at Parkview.
+        /// He waits for every prop in the scene to have its body, which happens as the
+        /// player comes near, and this is only a backstop against waiting for ever.
+        /// </summary>
+        private const int ElevatedMostMs = 300000;
+        private const float ElevatedAbove = 2.5f;
 
         /// <summary>
         /// Whether that handle is something a scene of ours put there.
@@ -915,8 +928,20 @@ namespace Hoodrich.Locations
             // Walking in: ComeBack gives him the walk, and his life is already on the list.
             if (arriving) return;
 
-            // Stood up frozen (see Person); thawed once the ground under him has loaded.
-            scene.Frozen.Add(new Cold { Who = ped, Item = item, By = Game.GameTime + ThawMostMs });
+            // Stood up frozen (see Person); thawed once the ground under him has loaded. One
+            // whose mark is well above the map waits for the scene's props to have bodies
+            // rather than for the clock. See ElevatedMostMs.
+            float ground;
+            var elevated = Core.Ground.Probe(new Vector3(item.At.X, item.At.Y, item.At.Z + 1f), out ground) &&
+                           item.At.Z - ground > ElevatedAbove;
+
+            scene.Frozen.Add(new Cold
+            {
+                Who = ped,
+                Item = item,
+                Elevated = elevated,
+                By = Game.GameTime + (elevated ? ElevatedMostMs : ThawMostMs)
+            });
 
             Doing(scene, ped, item);
 
@@ -937,6 +962,7 @@ namespace Hoodrich.Locations
             };
 
             life.NextAt = Game.GameTime + Beat(life);
+            life.NextLine = Game.GameTime + Between(IdleLineLeastMs, IdleLineMostMs);
             _lives.Add(life);
         }
 
@@ -972,7 +998,10 @@ namespace Hoodrich.Locations
 
                 Thawing(scene, now);
 
-                foreach (var made in scene.Up)
+                // OVER A COPY: Pave adds the floor tiles to Up part-way through, and a list
+                // being walked does not take additions -- "Collection was modified", twice a
+                // load, and the rest of the pass lost each time.
+                foreach (var made in scene.Up.ToArray())
                 {
                     if (made == null || !(made is Prop)) continue;
                     if (scene.Solid.Contains(made.Handle)) continue;
@@ -2100,6 +2129,10 @@ namespace Hoodrich.Locations
             /// <summary>The scenario waiting at Going, for a hobo on a chore, and the thing he faces for it.</summary>
             public string Chore;
             public Vector3 Face;
+
+            /// <summary>When he next says something, and whether he opened the chat he is in.</summary>
+            public int NextLine;
+            public bool Speaks;
         }
 
         private enum Stage
@@ -2181,6 +2214,50 @@ namespace Hoodrich.Locations
 
         /// <summary>A whole scene leaving or coming back is spread over this long.</summary>
         private const int StaggerMs = 150000;
+
+        // ---- talking ------------------------------------------------------------
+
+        /// <summary>
+        /// AUDIBLE. A ped stood on a corner in the base game says things; ours were mute, and
+        /// Michael asked on 2026-09-21 for all of them to be talking out loud. So: two in a
+        /// chat take turns every few seconds, a statement and a response, in their models'
+        /// own voices; and anybody on his mark says something to nobody in particular now
+        /// and then. Only within earshot of the player, and no more than one line across
+        /// every scene every couple of seconds, because fifty men each with something to say
+        /// is a crowd noise rather than a corner. The set is kept quiet round Franklin by
+        /// Affiliation.CalmHome so the game stops challenging him on his own block; the gag
+        /// comes off for our line and CalmHome puts it back, the same as BlockTalk does.
+        /// </summary>
+        private static readonly string[] ChatLines = { "CHAT_STATE", "GENERIC_HOWS_IT_GOING", "GENERIC_YES", "GENERIC_WHATEVER" };
+        private static readonly string[] ChatReplies = { "CHAT_RESP", "GENERIC_YES", "GENERIC_NO", "GENERIC_THANKS" };
+        private static readonly string[] IdleLines = { "CHAT_STATE", "GENERIC_HOWS_IT_GOING", "GENERIC_HI" };
+        private static readonly string[] HoboLines = { "PED_RANT", "GENERIC_HOWS_IT_GOING", "CHAT_STATE" };
+
+        private const float Earshot = 30f;
+        private const int LineGapMs = 2500;
+        private const int ChatTurnLeastMs = 3000;
+        private const int ChatTurnMostMs = 6000;
+        private const int IdleLineLeastMs = 25000;
+        private const int IdleLineMostMs = 70000;
+        private int _nextAnyLine;
+
+        private void Say(Life l, string[] lines, int now)
+        {
+            var ped = l.Who;
+            if (ped == null || !ped.Exists() || !ped.IsAlive) return;
+            if (now < _nextAnyLine) return;
+
+            try
+            {
+                Function.Call(Hash.BLOCK_ALL_SPEECH_FROM_PED, ped.Handle, false, false);
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, ped.Handle, lines[Dice.Next(lines.Length)], "SPEECH_PARAMS_FORCE");
+                _nextAnyLine = now + LineGapMs;
+            }
+            catch
+            {
+                // A missing line costs nothing.
+            }
+        }
 
         /// <summary>How far round his mark a hobo looks for something to do, how long he does it, and how close he stands.</summary>
         private const float ForageReach = 10f;
@@ -2531,6 +2608,12 @@ namespace Hoodrich.Locations
             switch (l.State)
             {
                 case Stage.Marked:
+                    if (now >= l.NextLine && ped.Position.DistanceTo(here) <= Earshot)
+                    {
+                        Say(l, IsHobo(l.Item) ? HoboLines : IdleLines, now);
+                        l.NextLine = now + Between(IdleLineLeastMs, IdleLineMostMs);
+                    }
+
                     if (_quiet && !l.Stays)
                     {
                         if (now >= l.NextAt) Leave(l, now, true);
@@ -2614,6 +2697,12 @@ namespace Hoodrich.Locations
 
                 case Stage.Chatting:
                 case Stage.Signing:
+                    if (l.State == Stage.Chatting && now >= l.NextLine && ped.Position.DistanceTo(here) <= Earshot)
+                    {
+                        Say(l, l.Speaks ? ChatLines : ChatReplies, now);
+                        l.NextLine = now + Between(ChatTurnLeastMs, ChatTurnMostMs);
+                    }
+
                     if (now < l.NextAt) return true;
 
                     // Back to the mark and the idle. Home rather than Doing, because a chat
@@ -2734,6 +2823,10 @@ namespace Hoodrich.Locations
                 me.State = Stage.Chatting;
                 me.With = you;
                 me.NextAt = until;
+
+                // The one who walked over speaks first; the other answers a beat later.
+                me.Speaks = ReferenceEquals(me, l);
+                me.NextLine = now + (me.Speaks ? 500 : 2500);
             }
 
             return true;
@@ -2812,7 +2905,8 @@ namespace Hoodrich.Locations
             if (n.Contains("bin") && !n.Contains("binbag")) return "PROP_HUMAN_BUM_BIN";
             if (n.Contains("trolley") || n.Contains("cart")) return "PROP_HUMAN_BUM_SHOPPING_CART";
             if (n.Contains("stove") || n.Contains("fire") || n.Contains("barrel")) return "WORLD_HUMAN_STAND_FIRE";
-            if (n.Contains("matress") || n.Contains("mattress") || n.Contains("couch") || n.Contains("bed")) return "WORLD_HUMAN_BUM_SLUMPED";
+            if (n.Contains("matress") || n.Contains("mattress") || n.Contains("couch") || n.Contains("bed") ||
+                n.Contains("tent") || n.Contains("shelter") || n.Contains("chair")) return "WORLD_HUMAN_BUM_SLUMPED";
             if (n.Contains("streetlight") || n.Contains("wall") || n.Contains("pillar") || n.Contains("billboard") || n.Contains("fnc")) return "WORLD_HUMAN_LEANING";
             if (n.Contains("wreck") || n.Contains("carpart") || n.Contains("pile") || n.Contains("cont") || n.Contains("flotsam") ||
                 n.Contains("litter") || n.Contains("binbag") || n.Contains("rub_") || n.Contains("crate") || n.Contains("box")) return "WORLD_HUMAN_GARDENER_PLANT";

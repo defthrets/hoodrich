@@ -24,7 +24,7 @@ wins over one of the same name in Menyoo's folder.
 
 WHAT SHIPS WITH THE MOD
 -----------------------
-Ten scenes are in this folder already, 447 placements between them:
+Ten scenes are in this folder already, 455 placements between them:
 
   the-block.xml     Ten of the set stood around Chamberlain and Grove, most of
                     them holding a rifle, plus the fences at Lamar's.
@@ -80,8 +80,9 @@ Ten scenes are in this folder already, 447 placements between them:
                     ground, on the floors of the blocks and up on the roofs,
                     Vernon among them -- and a camp in the corner: two
                     shelters, a mattress, a stove, a bottle and gravestones;
-                    and two hobos by the wreck, going through the wreck and
-                    the car parts.
+                    and a camp by the wreck: two tents, two shelters, three
+                    chairs and a stove, with two hobos who go through the
+                    wreck and the car parts.
                     Michael placed it in the spooner over seven saves on 20
                     and 21 September 2026 and two captures of the world; the
                     peds on the roofs are named as staying, since there is no
@@ -150,7 +151,9 @@ Every minute or four one of them changes what he is doing, has a word with
 whoever is stood near, throws a sign, stretches his legs -- walks a few
 metres off, stands about, walks back -- or walks off altogether and is back
 on his mark some minutes later, walking in from wherever he went. Nobody is
-ever cut in or out where you can see it. And in the small hours -- three to seven on the game's clock unless
+ever cut in or out where you can see it. They talk, out loud: two in a chat
+take turns, and anybody on his mark says something now and then, within
+earshot. And in the small hours -- three to seven on the game's clock unless
 you change it -- nobody is there at all: they walk off as the hour strikes and
 drift back after it. A man the spooner gave a scenario or an animation keeps
 it, comes back to it, and takes his walks half as often. All of it is one
