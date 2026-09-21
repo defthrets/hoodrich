@@ -1583,6 +1583,37 @@ namespace Hoodrich.Locations
             "WORLD_HUMAN_PARTYING"
         };
 
+        /// <summary>
+        /// A hobo idles like a hobo: begging, slumped, a drink, a smoke, a sign by the road.
+        /// Told from the model -- the tramps -- so any scene that has one gets it, and the
+        /// camp behind the church has six.
+        /// </summary>
+        private static readonly string[] HoboIdle =
+        {
+            "WORLD_HUMAN_BUM_STANDING",
+            "WORLD_HUMAN_BUM_SLUMPED",
+            "WORLD_HUMAN_DRINKING",
+            "WORLD_HUMAN_SMOKING",
+            "WORLD_HUMAN_BUM_FREEWAY"
+        };
+
+        private static readonly string[] HoboModels =
+        {
+            "a_m_m_tramp_01", "a_m_o_tramp_01", "a_f_m_tramp_01", "a_m_m_trampbeac_01", "a_f_m_trampbeac_01"
+        };
+
+        private static bool IsHobo(Spooner.Placed item)
+        {
+            if (item == null) return false;
+
+            foreach (var name in HoboModels)
+            {
+                if (unchecked((uint)item.ModelHash) == Names.Joaat(name)) return true;
+            }
+
+            return false;
+        }
+
         /// <summary>The gang signs, thrown up over whatever he is doing. See Sign.</summary>
         private static readonly string[][] Signs =
         {
@@ -1672,7 +1703,7 @@ namespace Hoodrich.Locations
                 return;
             }
 
-            var list = Male(ped) ? MenIdle : WomenIdle;
+            var list = IsHobo(item) ? HoboIdle : Male(ped) ? MenIdle : WomenIdle;
             Scenario(ped, list[(Steady(item.At) + turn) % list.Length]);
         }
 
@@ -2059,6 +2090,10 @@ namespace Hoodrich.Locations
 
             /// <summary>Who he is talking to, while he is.</summary>
             public Life With;
+
+            /// <summary>The scenario waiting at Going, for a hobo on a chore, and the thing he faces for it.</summary>
+            public string Chore;
+            public Vector3 Face;
         }
 
         private enum Stage
@@ -2140,6 +2175,12 @@ namespace Hoodrich.Locations
 
         /// <summary>A whole scene leaving or coming back is spread over this long.</summary>
         private const int StaggerMs = 150000;
+
+        /// <summary>How far round his mark a hobo looks for something to do, how long he does it, and how close he stands.</summary>
+        private const float ForageReach = 10f;
+        private const int ChoreLeastMs = 30000;
+        private const int ChoreMostMs = 90000;
+        private const float ChoreStandOff = 1.1f;
 
         /// <summary>How near somebody has to be stood to be worth a word, and how long the word is.</summary>
         private const float ChatReach = 4f;
@@ -2502,8 +2543,28 @@ namespace Hoodrich.Locations
                     if (Arrived(ped, l.Going) || now >= l.NextAt)
                     {
                         l.State = Stage.Loitering;
-                        l.NextAt = now + Between(LoiterLeastMs, LoiterMostMs);
-                        LoiterIdle(l);
+
+                        if (l.Chore != null)
+                        {
+                            // A chore: turned to the thing, and at it for a good while.
+                            try
+                            {
+                                var heading = Function.Call<float>(Hash.GET_HEADING_FROM_VECTOR_2D,
+                                                                   l.Face.X - ped.Position.X, l.Face.Y - ped.Position.Y);
+                                Function.Call(Hash.SET_ENTITY_HEADING, ped.Handle, heading);
+                            }
+                            catch { /* whichever way he is facing */ }
+
+                            Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+                            Scenario(ped, l.Chore);
+                            l.Chore = null;
+                            l.NextAt = now + Between(ChoreLeastMs, ChoreMostMs);
+                        }
+                        else
+                        {
+                            l.NextAt = now + Between(LoiterLeastMs, LoiterMostMs);
+                            LoiterIdle(l);
+                        }
                     }
 
                     return true;
@@ -2594,6 +2655,9 @@ namespace Hoodrich.Locations
         {
             var roll = Dice.Next(100);
 
+            // A hobo has things to do with what is lying about. See Forage.
+            if (IsHobo(l.Item) && !l.Stays && roll < 45 && Forage(l, now)) return;
+
             if (l.Scripted)
             {
                 // A man the spooner gave something to do keeps doing it, and walks now and then.
@@ -2667,6 +2731,87 @@ namespace Hoodrich.Locations
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// A chore among the props round a hobo's mark: he walks to one within ForageReach,
+        /// stands a step off it facing it, and does what the thing suggests -- goes through a
+        /// bin, pushes a trolley, warms his hands at a stove, picks through a wreck or a pile,
+        /// slumps against a mattress or a couch, leans on a light or a wall -- for a minute or
+        /// so, then walks back. Michael asked on 2026-09-21 for hobos that interact with the
+        /// props round them; this is the interacting. Decals, weeds, plants and the ground
+        /// pieces are not things, and are skipped.
+        /// </summary>
+        private bool Forage(Life l, int now)
+        {
+            var near = new List<Spooner.Placed>();
+
+            foreach (var other in l.Scene.Items)
+            {
+                if (other == l.Item || other.What != Spooner.Kind.Prop || other.Attached) continue;
+                if (l.Scene.Floors.ContainsKey(other.Handle)) continue;
+                if (!IsAThing(other)) continue;
+
+                var d = other.At - l.Item.At;
+                d.Z = 0f;
+                if (d.Length() > ForageReach || d.Length() < 0.5f) continue;
+
+                near.Add(other);
+            }
+
+            if (near.Count == 0) return false;
+
+            var thing = near[Dice.Next(near.Count)];
+
+            // A step off it, on the side his mark is on.
+            var away = l.Item.At - thing.At;
+            away.Z = 0f;
+            if (away.Length() < 0.1f) away = new Vector3(1f, 0f, 0f);
+            away.Normalize();
+
+            var spot = thing.At + away * ChoreStandOff;
+            spot.Z = l.Item.At.Z;
+
+            Loose(l);
+            WalkTo(l.Who, spot, 0f);
+
+            l.Going = spot;
+            l.Face = thing.At;
+            l.Chore = ChoreFor(thing);
+            l.State = Stage.Strolling;
+            l.NextAt = now + WalkMs;
+
+            return true;
+        }
+
+        /// <summary>Whether a placement is something a man can do anything with.</summary>
+        private static bool IsAThing(Spooner.Placed item)
+        {
+            var n = (item.ModelName ?? "").ToLowerInvariant();
+            if (n.Length == 0) return true;
+
+            foreach (var no in new[] { "decal", "weed", "poster", "graf", "mural", "des_", "plant", "tree", "sign_", "_sign", "gravestone" })
+            {
+                if (n.Contains(no)) return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>What a hobo does at a thing, from what the thing is called.</summary>
+        private static string ChoreFor(Spooner.Placed thing)
+        {
+            var n = (thing.ModelName ?? "").ToLowerInvariant();
+
+            if (n.Contains("bin") && !n.Contains("binbag")) return "PROP_HUMAN_BUM_BIN";
+            if (n.Contains("trolley") || n.Contains("cart")) return "PROP_HUMAN_BUM_SHOPPING_CART";
+            if (n.Contains("stove") || n.Contains("fire") || n.Contains("barrel")) return "WORLD_HUMAN_STAND_FIRE";
+            if (n.Contains("matress") || n.Contains("mattress") || n.Contains("couch") || n.Contains("bed")) return "WORLD_HUMAN_BUM_SLUMPED";
+            if (n.Contains("streetlight") || n.Contains("wall") || n.Contains("pillar") || n.Contains("billboard") || n.Contains("fnc")) return "WORLD_HUMAN_LEANING";
+            if (n.Contains("wreck") || n.Contains("carpart") || n.Contains("pile") || n.Contains("cont") || n.Contains("flotsam") ||
+                n.Contains("litter") || n.Contains("binbag") || n.Contains("rub_") || n.Contains("crate") || n.Contains("box")) return "WORLD_HUMAN_GARDENER_PLANT";
+
+            return "WORLD_HUMAN_BUM_STANDING";
         }
 
         /// <summary>A gang sign, thrown up over whatever he is doing, and the idle back after it.</summary>
