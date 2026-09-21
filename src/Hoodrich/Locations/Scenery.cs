@@ -1208,7 +1208,13 @@ namespace Hoodrich.Locations
 
                 model.MarkAsNoLongerNeeded();
 
-                if (made == null || !made.Exists()) return Verdict.No;
+                // SAID, because a thing the game would not make is a thing missing from a
+                // scene with no trace of why, and two of Parkview went that way for a day.
+                if (made == null || !made.Exists())
+                {
+                    Log.Info("Scenery: the game would not make " + Say(item) + " at " + item.At + "; it is left out this time.");
+                    return Verdict.No;
+                }
 
                 Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, made.Handle, true, true);
 
@@ -1242,7 +1248,7 @@ namespace Hoodrich.Locations
 
                 made = null;
 
-                Log.Debug("A placement would not stand up (" + Say(item) + "): " + ex.Message);
+                Log.Info("Scenery: " + Say(item) + " would not stand up: " + ex.Message);
                 return Verdict.No;
             }
         }
