@@ -1634,7 +1634,8 @@ namespace Hoodrich.Locations
 
         private static readonly string[] HoboModels =
         {
-            "a_m_m_tramp_01", "a_m_o_tramp_01", "a_f_m_tramp_01", "a_m_m_trampbeac_01", "a_f_m_trampbeac_01"
+            "a_m_m_tramp_01", "a_m_o_tramp_01", "a_f_m_tramp_01", "a_m_m_trampbeac_01", "a_f_m_trampbeac_01",
+            "a_m_m_skidrow_01", "a_m_y_hippy_01", "a_m_y_acult_01", "a_m_o_acult_01", "a_m_m_acult_01"
         };
 
         private static bool IsHobo(Spooner.Placed item)
