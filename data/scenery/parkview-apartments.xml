@@ -7542,51 +7542,6 @@
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0x739b1ef5</ModelHash>
-    <Type>1</Type>
-    <DynamicC>true</DynamicC>
-    <FrozenPos>false</FrozenPos>
-    <HashName>s_m_y_hwaycop_01</HashName>
-    <InitialHandle>610513</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-284.4181</X>
-      <Y>-1545.635</Y>
-      <Z>25.8463</Z>
-      <Pitch>-5.6465</Pitch>
-      <Roll>2.0179</Roll>
-      <Yaw>154.7411</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-    <PedProperties>
-      <CurrentWeapon>2725352035</CurrentWeapon>
-      <ScenarioActive>false</ScenarioActive>
-      <Scenario></Scenario>
-      <RelationshipGroup></RelationshipGroup>
-      <Health>200</Health>
-      <Armour>40</Armour>
-      <ClothingVariations>
-        <Component id="0">
-          <Index>0</Index>
-          <Texture>2</Texture>
-        </Component>
-        <Component id="9">
-          <Index>1</Index>
-          <Texture>0</Texture>
-        </Component>
-      </ClothingVariations>
-      <ClothingProps>
-        <Prop id="0">
-          <Index>0</Index>
-          <Texture>0</Texture>
-        </Prop>
-      </ClothingProps>
-    </PedProperties>
-  </Placement>
-  <Placement>
     <ModelHash>0x163b875b</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
