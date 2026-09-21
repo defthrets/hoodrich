@@ -1272,27 +1272,6 @@
     <Attachment isAttached="false" />
   </Placement>
   <Placement>
-    <ModelHash>0x37aff890</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_billboard_01</HashName>
-    <InitialHandle>610060</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-291.8428</X>
-      <Y>-1591.37</Y>
-      <Z>31.9405</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>148.3549</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
     <ModelHash>0xb4703d5e</ModelHash>
     <Type>3</Type>
     <DynamicC>false</DynamicC>
