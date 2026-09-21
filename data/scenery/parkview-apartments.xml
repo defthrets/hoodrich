@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <SpoonerPlacements>
-  <Note>absorbs: parkview apartments, parkview apartments1, parkview, parkway apartments, parkway gardens, parkview1, parkview2 | floors: 610076@30.85, 610077@30.85 | stays: 610124, 610126, 610128, 610129, 610130, 610133, 610134, 610136, 610141, 610144, 610146, 610147, 610148, 610149, 610150, 610151, 610152, 610153, 610154, 610155, 610200, 610201, 610400, 610401, 610402, 610403, 610404, 610466, 610467, 610468, 610473, 610474, 610475, 610478</Note>
+  <Note>absorbs: parkview apartments, parkview apartments1, parkview, parkway apartments, parkway gardens, parkview1, parkview2 | floors: 610076@30.85, 610077@30.85 | stays: 610124, 610126, 610128, 610129, 610130, 610133, 610134, 610136, 610141, 610144, 610146, 610147, 610148, 610149, 610150, 610151, 610152, 610153, 610154, 610155, 610200, 610201, 610400, 610401, 610402, 610403, 610404, 610466, 610467, 610468, 610473, 610474, 610475, 610478, 610500</Note>
   <AudioFile />
   <ClearWorld>0</ClearWorld>
   <ClearDatabase>false</ClearDatabase>
@@ -7051,5 +7051,34 @@
       <Yaw>-177.8972</Yaw>
     </PositionRotation>
     <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x84302b09</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_y_famfor_01</HashName>
+    <InitialHandle>610500</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>false</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-231.2461</X>
+      <Y>-1556.797</Y>
+      <Z>62.9583</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+    </PedProperties>
   </Placement>
 </SpoonerPlacements>
