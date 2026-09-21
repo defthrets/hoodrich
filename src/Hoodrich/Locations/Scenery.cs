@@ -805,7 +805,7 @@ namespace Hoodrich.Locations
 
                     if (scene.Waited < ModelTries) return;
 
-                    Log.Debug("Gave up waiting for " + Say(item) + " in \"" + scene.Name + "\".");
+                    Log.Info("Scenery: " + Say(item) + " in \"" + scene.Name + "\" never streamed in; it is left out this time.");
                     scene.Missed++;
                     scene.Cursor++;
                     scene.Waited = 0;
@@ -1109,7 +1109,7 @@ namespace Hoodrich.Locations
 
                 if (!model.IsValid || !model.IsInCdImage)
                 {
-                    Log.Debug("Nothing in the game called " + Say(item) + ".");
+                    Log.Info("Scenery: nothing in this game called " + Say(item) + " -- it is left out.");
                     return Verdict.No;
                 }
 
@@ -2025,6 +2025,15 @@ namespace Hoodrich.Locations
         private bool _quiet;
         private bool _quietKnown;
 
+        /// <summary>
+        /// Whether the quiet hours are allowed to start. Not until the clock has been seen
+        /// OUTSIDE them once: a save that loads at four in the morning -- Michael's does --
+        /// otherwise opens on empty corners for six real minutes, which to anybody who has
+        /// just installed the mod is a mod with nobody in it. The people are built on a fresh
+        /// load whatever the hour, and drift off the next time the clock strikes the hour.
+        /// </summary>
+        private bool _quietArmed;
+
         private bool LifeOn => _cfg == null || _cfg.SceneryLife;
 
         /// <summary>How long between beats for one ped: a minute to four on the real clock.</summary>
@@ -2331,28 +2340,32 @@ namespace Hoodrich.Locations
             var here = me.Position;
             var quiet = QuietNow();
 
-            if (!_quietKnown || quiet != _quiet)
+            if (!_quietKnown)
             {
-                var flipped = _quietKnown;
-                _quiet = quiet;
+                // SAID ONCE AT THE START, because "not about at this hour" with no hour on it
+                // read as a bug the first time it was true. And on a fresh load the people are
+                // built whatever the hour: see _quietArmed.
                 _quietKnown = true;
+                _quiet = false;
+                _quietArmed = !quiet;
 
-                if (flipped)
-                {
-                    Log.Info(quiet
-                        ? "Scenery: the small hours -- everybody drifts off."
-                        : "Scenery: the small hours are over -- everybody drifts back.");
+                Log.Info("Scenery: it is " + ClockHour() + ":00 on the game's clock; nobody is about from " +
+                         (_cfg == null ? 3 : _cfg.SceneryQuietFrom) + ":00 to " + (_cfg == null ? 7 : _cfg.SceneryQuietTo) +
+                         ":00" + (quiet ? ", which it is now -- but everybody is built on a fresh load, and goes the next time it strikes." : "."));
+            }
+            else if (!_quietArmed)
+            {
+                if (!quiet) _quietArmed = true;
+            }
+            else if (quiet != _quiet)
+            {
+                _quiet = quiet;
 
-                    foreach (var l in _lives) Nudge(l, now);
-                }
-                else
-                {
-                    // SAID ONCE AT THE START, because "not about at this hour" with no hour on
-                    // it read as a bug the first time it was true.
-                    Log.Info("Scenery: it is " + ClockHour() + ":00 on the game's clock; nobody is about from " +
-                             (_cfg == null ? 3 : _cfg.SceneryQuietFrom) + ":00 to " + (_cfg == null ? 7 : _cfg.SceneryQuietTo) +
-                             ":00" + (quiet ? ", so the people are away until then." : "."));
-                }
+                Log.Info(quiet
+                    ? "Scenery: the small hours -- everybody drifts off."
+                    : "Scenery: the small hours are over -- everybody drifts back.");
+
+                foreach (var l in _lives) Nudge(l, now);
             }
 
             for (var i = _lives.Count - 1; i >= 0; i--)

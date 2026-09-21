@@ -4,6 +4,12 @@
 Anything you arrange in Menyoo's Object Spooner can be built by the mod every
 session instead of only in the session you placed it.
 
+THE SCENES IN THIS FOLDER NEED NOTHING. They ship with the mod, they are read
+from here whatever the settings say about Menyoo, every model and scenario in
+them is the game's own, and a model an install does not have is left out and
+named in Hoodrich.log rather than stopping anything. Menyoo is only needed to
+MAKE a scene, never to see one.
+
 HOW
 ---
 1. Place your peds, cars and props in Menyoo's Object Spooner as usual.
