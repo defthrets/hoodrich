@@ -753,7 +753,7 @@ namespace Hoodrich.Locations
 
             Log.Info("Built \"" + scene.Name + "\": " + scene.Made + " up" +
                      (scene.Missed > 0 ? ", " + scene.Missed + " skipped or would not load" : "") +
-                     (scene.AwayTonight > 0 ? ", " + scene.AwayTonight + " not about at this hour" : "") + ".");
+                     (scene.AwayTonight > 0 ? ", " + scene.AwayTonight + " not about at this hour (it is " + ClockHour() + ":00)" : "") + ".");
         }
 
         /// <summary>
@@ -1907,6 +1907,13 @@ namespace Hoodrich.Locations
             return l.Scripted ? ms * 2 : ms;
         }
 
+        /// <summary>The hour on the game's clock, or -1 when it cannot be read.</summary>
+        private static int ClockHour()
+        {
+            try { return Function.Call<int>(Hash.GET_CLOCK_HOURS); }
+            catch { return -1; }
+        }
+
         /// <summary>Whether the game's clock is inside the quiet hours.</summary>
         private bool QuietNow()
         {
@@ -1916,9 +1923,8 @@ namespace Hoodrich.Locations
             var to = _cfg.SceneryQuietTo;
             if (from == to) return false;
 
-            int hour;
-            try { hour = Function.Call<int>(Hash.GET_CLOCK_HOURS); }
-            catch { return false; }
+            var hour = ClockHour();
+            if (hour < 0) return false;
 
             return from < to ? hour >= from && hour < to : hour >= from || hour < to;
         }
@@ -2157,6 +2163,14 @@ namespace Hoodrich.Locations
                         : "Scenery: the small hours are over -- everybody drifts back.");
 
                     foreach (var l in _lives) Nudge(l, now);
+                }
+                else
+                {
+                    // SAID ONCE AT THE START, because "not about at this hour" with no hour on
+                    // it read as a bug the first time it was true.
+                    Log.Info("Scenery: it is " + ClockHour() + ":00 on the game's clock; nobody is about from " +
+                             (_cfg == null ? 3 : _cfg.SceneryQuietFrom) + ":00 to " + (_cfg == null ? 7 : _cfg.SceneryQuietTo) +
+                             ":00" + (quiet ? ", so the people are away until then." : "."));
                 }
             }
 

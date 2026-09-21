@@ -2199,11 +2199,11 @@
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0xf8c244a8</ModelHash>
+		<ModelHash>0x70ee62c1</ModelHash>
 		<Type>3</Type>
 		<Dynamic>false</Dynamic>
 		<FrozenPos>true</FrozenPos>
-		<HashName>miss_rub_couch_01_l1</HashName>
+		<HashName>miss_rub_couch_01</HashName>
 		<InitialHandle>610093</InitialHandle>
 		<ObjectProperties>
 			<TextureVariation>0</TextureVariation>
@@ -4842,8 +4842,8 @@
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-290.6972</X>
-      <Y>-1668.712</Y>
+      <X>-289.6332</X>
+      <Y>-1668.5933</Y>
       <Z>62.85</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
@@ -4889,8 +4889,8 @@
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-290.816</X>
-      <Y>-1668.49</Y>
+      <X>-291.2832</X>
+      <Y>-1667.6407</Y>
       <Z>62.85</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
@@ -4928,8 +4928,8 @@
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-288.6071</X>
-      <Y>-1671.838</Y>
+      <X>-287.2963</X>
+      <Y>-1672.1095</Y>
       <Z>62.85</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
@@ -5030,8 +5030,8 @@
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-288.3261</X>
-      <Y>-1672.2</Y>
+      <X>-288.3963</X>
+      <Y>-1671.0095</Y>
       <Z>62.8489</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
@@ -5085,8 +5085,8 @@
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-288.3261</X>
-      <Y>-1672.2</Y>
+      <X>-289.4964</X>
+      <Y>-1672.1095</Y>
       <Z>62.85</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
@@ -5179,8 +5179,8 @@
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-290.6864</X>
-      <Y>-1668.578</Y>
+      <X>-291.2832</X>
+      <Y>-1669.5460</Y>
       <Z>62.85</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
@@ -5226,8 +5226,8 @@
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-288.3261</X>
-      <Y>-1672.2</Y>
+      <X>-288.3963</X>
+      <Y>-1673.2095</Y>
       <Z>62.849</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
