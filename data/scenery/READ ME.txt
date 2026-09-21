@@ -18,7 +18,7 @@ wins over one of the same name in Menyoo's folder.
 
 WHAT SHIPS WITH THE MOD
 -----------------------
-Ten scenes are in this folder already, 274 placements between them:
+Ten scenes are in this folder already, 292 placements between them:
 
   the-block.xml     Ten of the set stood around Chamberlain and Grove, most of
                     them holding a rifle, plus the fences at Lamar's.
@@ -64,16 +64,17 @@ Ten scenes are in this folder already, 274 placements between them:
                     meet him, so it had better be there.
   parkview-apartments.xml
                     Parkview, on the open ground in Chamberlain Hills: three
-                    apartment blocks, three houses and the ground under them
-                    stood up where there was nothing, residential fencing,
-                    streetlights, cypresses, three car
-                    wrecks, a couch, a bike and bin bags, and a camp in the
-                    corner -- two shelters, a mattress, a stove, a bottle and
-                    a gravestone. Michael placed it in the spooner over six
-                    saves on 20 and 21 September 2026 and finished it live in
-                    the world; this file is "Save everything around me"
-                    pressed in the middle of it, less his phone, his bag and
-                    the peds who happened to be in range.
+                    apartment blocks and three houses stood up where there
+                    was nothing, residential fencing, streetlights, cypresses,
+                    weeds and dry grass, a billboard, posters and murals on
+                    the walls, two vending machines, three car wrecks, a
+                    couch, a bike and bin bags, weed plants on a roof, and a
+                    camp in the corner -- two shelters, a mattress, a stove, a
+                    bottle and gravestones. Michael placed it in the spooner
+                    over six saves on 20 and 21 September 2026 and finished it
+                    live in the world; this file is "Save everything around
+                    me" pressed in the middle of it, less the ground pieces he
+                    took out, the game's peyote and the peds in range.
 
 They came out of the spooner and were copied in here, so they no longer need
 Menyoo installed. If you still have the originals in menyooStuff\Spooner under
@@ -166,8 +167,9 @@ Z you read off the screen stood on it. Leave it off and the mod uses the height
 the scene's other props stand at inside the slab, and failing that the model's
 bounding box, which can be metres above the ground you see (Parkview's was).
 Only named ones get a floor, because a destruction model can as easily be a
-wall as a floor. The log line names the handle to write. Parkview's ground
-piece is named already.
+wall as a floor. The log line names the handle to write. Parkview had two
+named until its ground pieces came out; the clause is what to write when the
+next slab goes in.
 
 SETTINGS  (Hoodrich.ini, [Scenery])
 -----------------------------------

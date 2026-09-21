@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <SpoonerPlacements>
-  <Note>absorbs: parkview apartments, parkview apartments1, parkview, parkway apartments, parkway gardens, parkview1 | floors: 204034@30.85</Note>
+  <Note>absorbs: parkview apartments, parkview apartments1, parkview, parkway apartments, parkway gardens, parkview1</Note>
   <AudioFile />
   <ClearWorld>0</ClearWorld>
   <ClearDatabase>false</ClearDatabase>
@@ -12,191 +12,65 @@
     <Z>0</Z>
   </ReferenceCoords>
   <Placement>
-    <ModelHash>0x357eadde</ModelHash>
+    <ModelHash>0xd2b75948</ModelHash>
     <Type>3</Type>
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
-    <HashName>prop_rub_binbag_03</HashName>
-    <InitialHandle>252979</InitialHandle>
+    <HashName>prop_fncres_03b</HashName>
+    <InitialHandle>468004</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-280.2961</X>
-      <Y>-1673.337</Y>
-      <Z>30.8899</Z>
+      <X>-252.909</X>
+      <Y>-1624.169</Y>
+      <Z>30.8502</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
-      <Yaw>42.5714</Yaw>
+      <Yaw>89.4538</Yaw>
     </PositionRotation>
     <Attachment isAttached="false" />
   </Placement>
   <Placement>
-    <ModelHash>0x70ee62c1</ModelHash>
+    <ModelHash>0x9ae16414</ModelHash>
     <Type>3</Type>
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
-    <HashName>miss_rub_couch_01</HashName>
-    <InitialHandle>344371</InitialHandle>
+    <HashName>sf_prop_sf_weed_lrg_01a</HashName>
+    <InitialHandle>238185</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-278.6567</X>
-      <Y>-1679.101</Y>
-      <Z>30.8516</Z>
+      <X>-297.2786</X>
+      <Y>-1630.144</Y>
+      <Z>39.0643</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
-      <Yaw>149.7152</Yaw>
+      <Yaw>144.1105</Yaw>
     </PositionRotation>
     <Attachment isAttached="false" />
   </Placement>
   <Placement>
-    <ModelHash>0x357eadde</ModelHash>
+    <ModelHash>0xe093d59c</ModelHash>
     <Type>3</Type>
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
-    <HashName>prop_rub_binbag_03</HashName>
-    <InitialHandle>331820</InitialHandle>
+    <HashName>gr_prop_gr_hobo_stove_01</HashName>
+    <InitialHandle>717344</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-253.25</X>
-      <Y>-1679.868</Y>
-      <Z>30.8399</Z>
+      <X>-323.2995</X>
+      <Y>-1642.228</Y>
+      <Z>31.0812</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
-      <Yaw>95.8385</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0xd7916baa</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>lf_house_05_</HashName>
-    <InitialHandle>199682</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-259.701</X>
-      <Y>-1650.068</Y>
-      <Z>30.8664</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>179.9233</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x009a3823</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_rub_carwreck_8</HashName>
-    <InitialHandle>200450</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-292.6422</X>
-      <Y>-1613.913</Y>
-      <Z>30.8953</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>159.815</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x7c964baf</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_rub_carwreck_16</HashName>
-    <InitialHandle>201218</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-312.3177</X>
-      <Y>-1646.23</Y>
-      <Z>30.9525</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>60.4541</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x73ade73e</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>db_apart_02_</HashName>
-    <InitialHandle>201474</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-266.5696</X>
-      <Y>-1571.731</Y>
-      <Z>30.853</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>155.023</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x97cb0224</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_rub_carwreck_14</HashName>
-    <InitialHandle>203522</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-291.9502</X>
-      <Y>-1661.577</Y>
-      <Z>30.9897</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>136.5272</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x75e63043</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>des_aptblock_root002</HashName>
-    <InitialHandle>204034</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-276.9225</X>
-      <Y>-1635.182</Y>
-      <Z>27.0488</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>135.6163</Yaw>
+      <Yaw>116.8373</Yaw>
     </PositionRotation>
     <Attachment isAttached="false" />
   </Placement>
@@ -206,7 +80,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>211202</InitialHandle>
+    <InitialHandle>480550</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -227,385 +101,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>211458</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-259.9665</X>
-      <Y>-1661.06</Y>
-      <Z>30.8503</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-0.0123</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x1b0e6b19</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>211714</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-265.149</X>
-      <Y>-1652.485</Y>
-      <Z>30.8503</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>7.5525</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x1b0e6b19</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>211970</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-268.7459</X>
-      <Y>-1649.369</Y>
-      <Z>30.8503</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>91.5407</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x1b0e6b19</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>212226</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-268.7743</X>
-      <Y>-1644.201</Y>
-      <Z>30.8503</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>89.8563</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x1b0e6b19</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>212482</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-254.6662</X>
-      <Y>-1661.06</Y>
-      <Z>30.8503</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-0.0123</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x1b0e6b19</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>213762</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-252.966</X>
-      <Y>-1657.531</Y>
-      <Z>30.8503</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>90.7898</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x73ade73e</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>db_apart_02_</HashName>
-    <InitialHandle>214018</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-270.46</X>
-      <Y>-1625.031</Y>
-      <Z>30.853</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>90.6269</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0xa4522a7d</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>ba_prop_sign_omega_02</HashName>
-    <InitialHandle>216834</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-254.9925</X>
-      <Y>-1672.31</Y>
-      <Z>31.6145</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-1.5779</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0xd7916baa</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>lf_house_05_</HashName>
-    <InitialHandle>219650</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-274.5019</X>
-      <Y>-1667.964</Y>
-      <Z>30.7864</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>0.0224</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0xd7916baa</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>lf_house_05_</HashName>
-    <InitialHandle>219906</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-259.9082</X>
-      <Y>-1667.149</Y>
-      <Z>30.8064</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-179.7164</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x9dbd7d9f</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_sign_road_03h</HashName>
-    <InitialHandle>222466</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-278.3082</X>
-      <Y>-1598.348</Y>
-      <Z>30.8487</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>142.9687</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x300c41ef</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_gravestones_10a</HashName>
-    <InitialHandle>225026</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-294.2342</X>
-      <Y>-1647.586</Y>
-      <Z>30.8566</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>93.0844</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x1b0e6b19</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>227074</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-275.7496</X>
-      <Y>-1657.985</Y>
-      <Z>30.8503</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-2.6461</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x1b0e6b19</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>227330</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-270.4493</X>
-      <Y>-1658.185</Y>
-      <Z>30.8503</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-1.7461</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x1b0e6b19</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>227586</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-268.6492</X>
-      <Y>-1659.99</Y>
-      <Z>30.8503</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>90.7545</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x73ade73e</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>db_apart_02_</HashName>
-    <InitialHandle>227842</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-293.7602</X>
-      <Y>-1644.928</Y>
-      <Z>30.853</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-178.0725</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x1b0e6b19</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>228354</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-256.5281</X>
-      <Y>-1642.255</Y>
-      <Z>30.8503</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-179.6823</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x1b0e6b19</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>228610</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-253.1753</X>
-      <Y>-1645.856</Y>
-      <Z>30.8503</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-90.415</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x1b0e6b19</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>228866</InitialHandle>
+    <InitialHandle>302117</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -621,12 +117,117 @@
     <Attachment isAttached="false" />
   </Placement>
   <Placement>
+    <ModelHash>0x0808cdb3</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_rub_bike_03</HashName>
+    <InitialHandle>197410</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-281.3014</X>
+      <Y>-1674.996</Y>
+      <Z>30.8744</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-26.247</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x70ee62c1</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>miss_rub_couch_01</HashName>
+    <InitialHandle>324647</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-278.6567</X>
+      <Y>-1679.101</Y>
+      <Z>30.8516</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>149.7152</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xcb2dc910</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>m24_1_prop_m41_weazel_pstr_graf_01a</HashName>
+    <InitialHandle>136003</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-261.3697</X>
+      <Y>-1635.932</Y>
+      <Z>34.5944</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0.3534</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
     <ModelHash>0x1b0e6b19</ModelHash>
     <Type>3</Type>
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>229122</InitialHandle>
+    <InitialHandle>718117</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-275.7496</X>
+      <Y>-1657.985</Y>
+      <Z>30.8503</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-2.6461</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xa32a79f9</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>m24_1_prop_m41_life_pstr_graf_01a</HashName>
+    <InitialHandle>452181</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-252.1325</X>
+      <Y>-1566.788</Y>
+      <Z>34.5201</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>64.882</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x1b0e6b19</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_fncres_02d</HashName>
+    <InitialHandle>420129</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -647,18 +248,18 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>229378</InitialHandle>
+    <InitialHandle>716070</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-266.9812</X>
-      <Y>-1642.39</Y>
+      <X>-253.1753</X>
+      <Y>-1645.856</Y>
       <Z>30.8503</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
-      <Yaw>-179.1649</Yaw>
+      <Yaw>-90.415</Yaw>
     </PositionRotation>
     <Attachment isAttached="false" />
   </Placement>
@@ -668,7 +269,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>229634</InitialHandle>
+    <InitialHandle>762657</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -684,12 +285,180 @@
     <Attachment isAttached="false" />
   </Placement>
   <Placement>
+    <ModelHash>0x28a34195</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_streetlight_14a</HashName>
+    <InitialHandle>361763</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-277.6829</X>
+      <Y>-1652.011</Y>
+      <Z>30.8598</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-178.7309</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x1b0e6b19</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_fncres_02d</HashName>
+    <InitialHandle>451368</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-268.7459</X>
+      <Y>-1649.369</Y>
+      <Z>30.8503</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>91.5407</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x4e55881d</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_tree_cypress_01</HashName>
+    <InitialHandle>570400</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-322.9164</X>
+      <Y>-1631.754</Y>
+      <Z>23.8952</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-125.0345</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xd7916baa</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>lf_house_05_</HashName>
+    <InitialHandle>586788</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-274.5019</X>
+      <Y>-1667.964</Y>
+      <Z>30.7864</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0.0224</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xd2cabfbf</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>des_showroom_end</HashName>
+    <InitialHandle>172554</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-291.3878</X>
+      <Y>-1636.388</Y>
+      <Z>30.6233</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>59.2305</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x9ae16414</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>sf_prop_sf_weed_lrg_01a</HashName>
+    <InitialHandle>29523</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-295.8429</X>
+      <Y>-1630.033</Y>
+      <Z>39.0643</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>177.8026</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xd7916baa</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>lf_house_05_</HashName>
+    <InitialHandle>627993</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-259.9082</X>
+      <Y>-1667.149</Y>
+      <Z>30.8064</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-179.7164</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xa4522a7d</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>ba_prop_sign_omega_02</HashName>
+    <InitialHandle>664862</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-254.9925</X>
+      <Y>-1672.31</Y>
+      <Z>31.6145</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-1.5779</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
     <ModelHash>0xbc22517f</ModelHash>
     <Type>3</Type>
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>ba_prop_battle_whiskey_bottle_2_s</HashName>
-    <InitialHandle>240642</InitialHandle>
+    <InitialHandle>309283</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -710,7 +479,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_homeles_shelter_01</HashName>
-    <InitialHandle>241922</InitialHandle>
+    <InitialHandle>684553</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -726,348 +495,12 @@
     <Attachment isAttached="false" />
   </Placement>
   <Placement>
-    <ModelHash>0xe093d59c</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>gr_prop_gr_hobo_stove_01</HashName>
-    <InitialHandle>246018</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-323.2995</X>
-      <Y>-1642.228</Y>
-      <Z>31.0812</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>116.8373</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x304afda1</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_homeless_matress_01</HashName>
-    <InitialHandle>246530</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-321.8044</X>
-      <Y>-1642.79</Y>
-      <Z>30.8696</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-106.222</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x34b7e5ca</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_homeles_shelter_02</HashName>
-    <InitialHandle>258818</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-325.0847</X>
-      <Y>-1643.296</Y>
-      <Z>30.853</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>144.3824</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
     <ModelHash>0xd2b75948</ModelHash>
     <Type>3</Type>
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_03b</HashName>
-    <InitialHandle>259330</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-258.6294</X>
-      <Y>-1638.264</Y>
-      <Z>30.8502</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>0.9393</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x4e55881d</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_tree_cypress_01</HashName>
-    <InitialHandle>261378</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-326.0995</X>
-      <Y>-1636.704</Y>
-      <Z>23.822</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-170.6798</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x4e55881d</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_tree_cypress_01</HashName>
-    <InitialHandle>261634</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-322.9164</X>
-      <Y>-1631.754</Y>
-      <Z>23.8952</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-125.0345</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x4e55881d</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_tree_cypress_01</HashName>
-    <InitialHandle>261890</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-319.6216</X>
-      <Y>-1627.124</Y>
-      <Z>24.5154</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-106.153</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x300c41ef</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_gravestones_10a</HashName>
-    <InitialHandle>262146</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-255.1508</X>
-      <Y>-1604.412</Y>
-      <Z>30.5965</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-138.5183</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x4e55881d</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_tree_cypress_01</HashName>
-    <InitialHandle>262402</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-307.5688</X>
-      <Y>-1604.922</Y>
-      <Z>23.8916</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-127.544</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x4e55881d</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_tree_cypress_01</HashName>
-    <InitialHandle>262658</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-311.9046</X>
-      <Y>-1612.121</Y>
-      <Z>23.6374</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-12.0868</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x4e55881d</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_tree_cypress_01</HashName>
-    <InitialHandle>262914</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-316.8977</X>
-      <Y>-1623.021</Y>
-      <Z>24.9103</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-71.4217</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0xd2b75948</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_fncres_03b</HashName>
-    <InitialHandle>263170</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-252.9439</X>
-      <Y>-1632.145</Y>
-      <Z>30.8502</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>91.1014</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0xd2b75948</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_fncres_03b</HashName>
-    <InitialHandle>263426</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-252.8696</X>
-      <Y>-1636.115</Y>
-      <Z>30.8502</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>91.3632</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0xd2b75948</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_fncres_03b</HashName>
-    <InitialHandle>264706</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-254.7517</X>
-      <Y>-1638.205</Y>
-      <Z>30.8502</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>1.8054</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x3cde7f56</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_sign_road_restriction_10</HashName>
-    <InitialHandle>265730</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-254.769</X>
-      <Y>-1649.766</Y>
-      <Z>30.9382</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>109.3702</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0xd2b75948</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_fncres_03b</HashName>
-    <InitialHandle>265986</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-252.909</X>
-      <Y>-1624.169</Y>
-      <Z>30.8502</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>89.4538</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0xd2b75948</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_fncres_03b</HashName>
-    <InitialHandle>266242</InitialHandle>
+    <InitialHandle>640807</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1083,23 +516,863 @@
     <Attachment isAttached="false" />
   </Placement>
   <Placement>
-    <ModelHash>0x0808cdb3</ModelHash>
+    <ModelHash>0x1b0e6b19</ModelHash>
     <Type>3</Type>
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
-    <HashName>prop_rub_bike_03</HashName>
-    <InitialHandle>157239</InitialHandle>
+    <HashName>prop_fncres_02d</HashName>
+    <InitialHandle>408868</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-281.3014</X>
-      <Y>-1674.996</Y>
-      <Z>30.8744</Z>
+      <X>-259.9665</X>
+      <Y>-1661.06</Y>
+      <Z>30.8503</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
-      <Yaw>-26.247</Yaw>
+      <Yaw>-0.0123</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x2011c19a</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>v_61_hlw_over_decal_muraldirty</HashName>
+    <InitialHandle>381759</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-256.8251</X>
+      <Y>-1613.881</Y>
+      <Z>32.5196</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>98.0045</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xd2b75948</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_fncres_03b</HashName>
+    <InitialHandle>333607</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-258.6294</X>
+      <Y>-1638.264</Y>
+      <Z>30.8502</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0.9393</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x73ade73e</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>db_apart_02_</HashName>
+    <InitialHandle>410919</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-270.46</X>
+      <Y>-1625.031</Y>
+      <Z>30.853</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>90.6269</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x1b0e6b19</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_fncres_02d</HashName>
+    <InitialHandle>701216</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-266.9812</X>
+      <Y>-1642.39</Y>
+      <Z>30.8503</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-179.1649</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x1b0e6b19</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_fncres_02d</HashName>
+    <InitialHandle>22822</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-265.149</X>
+      <Y>-1652.485</Y>
+      <Z>30.8503</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>7.5525</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x1b0e6b19</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_fncres_02d</HashName>
+    <InitialHandle>173348</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-270.4493</X>
+      <Y>-1658.185</Y>
+      <Z>30.8503</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-1.7461</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x73ade73e</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>db_apart_02_</HashName>
+    <InitialHandle>720421</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-293.7602</X>
+      <Y>-1644.928</Y>
+      <Z>30.853</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-178.0725</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x4e55881d</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_tree_cypress_01</HashName>
+    <InitialHandle>409125</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-307.5688</X>
+      <Y>-1604.922</Y>
+      <Z>23.8916</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-127.544</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x1b0e6b19</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_fncres_02d</HashName>
+    <InitialHandle>291358</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-252.966</X>
+      <Y>-1657.531</Y>
+      <Z>30.8503</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>90.7898</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x9dbd7d9f</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_sign_road_03h</HashName>
+    <InitialHandle>552984</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-278.3082</X>
+      <Y>-1598.348</Y>
+      <Z>30.8487</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>142.9687</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xd2b75948</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_fncres_03b</HashName>
+    <InitialHandle>339745</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-252.8696</X>
+      <Y>-1636.115</Y>
+      <Z>30.8502</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>91.3632</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x73ade73e</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>db_apart_02_</HashName>
+    <InitialHandle>536359</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-266.5696</X>
+      <Y>-1571.731</Y>
+      <Z>30.853</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>155.023</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xa158510a</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>xs_terrain_prop_weeddry_nxg03</HashName>
+    <InitialHandle>544355</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-284.1869</X>
+      <Y>-1612.992</Y>
+      <Z>30.5433</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-177.9516</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x1b0e6b19</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_fncres_02d</HashName>
+    <InitialHandle>750632</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-256.5281</X>
+      <Y>-1642.255</Y>
+      <Z>30.8503</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-179.6823</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x4e55881d</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_tree_cypress_01</HashName>
+    <InitialHandle>754983</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-326.0995</X>
+      <Y>-1636.704</Y>
+      <Z>23.822</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-170.6798</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x3cde7f56</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_sign_road_restriction_10</HashName>
+    <InitialHandle>33061</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-254.769</X>
+      <Y>-1649.766</Y>
+      <Z>30.9382</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>109.3702</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x357eadde</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_rub_binbag_03</HashName>
+    <InitialHandle>167205</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-253.25</X>
+      <Y>-1679.868</Y>
+      <Z>30.8399</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>95.8385</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x1b0e6b19</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_fncres_02d</HashName>
+    <InitialHandle>75048</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-254.6662</X>
+      <Y>-1661.06</Y>
+      <Z>30.8503</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-0.0123</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x3a1a018f</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>m23_1_prop_m31_gravestones_02a</HashName>
+    <InitialHandle>293209</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-254.581</X>
+      <Y>-1605.04</Y>
+      <Z>30.7487</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>40.7192</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x7c964baf</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_rub_carwreck_16</HashName>
+    <InitialHandle>46884</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-312.3177</X>
+      <Y>-1646.23</Y>
+      <Z>30.9525</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>60.4541</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x85767e13</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>m24_1_prop_m41_cnt_pstr_graf_01a</HashName>
+    <InitialHandle>590135</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-258.4893</X>
+      <Y>-1613.903</Y>
+      <Z>34.1362</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-178.8741</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xc79d07c6</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_weeds_nxg06b</HashName>
+    <InitialHandle>463429</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-319.8734</X>
+      <Y>-1638.761</Y>
+      <Z>30.6421</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>91.1037</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xb30ff479</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>xs_terrain_prop_weeddry_nxg04</HashName>
+    <InitialHandle>675439</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-257.3472</X>
+      <Y>-1636.414</Y>
+      <Z>30.5655</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-0.8834</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x2011c19a</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>v_61_hlw_over_decal_muraldirty</HashName>
+    <InitialHandle>653883</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-304.9802</X>
+      <Y>-1638.575</Y>
+      <Z>32.9389</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>178.9523</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x34b7e5ca</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_homeles_shelter_02</HashName>
+    <InitialHandle>642851</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-325.0847</X>
+      <Y>-1643.296</Y>
+      <Z>30.853</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>144.3824</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x7c964baf</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_rub_carwreck_16</HashName>
+    <InitialHandle>676386</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-300.8563</X>
+      <Y>-1638.232</Y>
+      <Z>30.9525</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>47.2352</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x4e55881d</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_tree_cypress_01</HashName>
+    <InitialHandle>532006</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-311.9046</X>
+      <Y>-1612.121</Y>
+      <Z>23.6374</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-12.0868</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x1b0e6b19</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_fncres_02d</HashName>
+    <InitialHandle>378661</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-268.7743</X>
+      <Y>-1644.201</Y>
+      <Z>30.8503</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>89.8563</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xc79d07c6</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_weeds_nxg06b</HashName>
+    <InitialHandle>188783</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-309.2083</X>
+      <Y>-1638.065</Y>
+      <Z>30.7621</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-179.4238</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xcd28109c</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_weeds_nxg08b</HashName>
+    <InitialHandle>637787</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-257.0609</X>
+      <Y>-1603.203</Y>
+      <Z>30.8683</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-51.293</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xd7916baa</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>lf_house_05_</HashName>
+    <InitialHandle>91680</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-259.701</X>
+      <Y>-1650.068</Y>
+      <Z>30.8664</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>179.9233</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x300c41ef</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_gravestones_10a</HashName>
+    <InitialHandle>285733</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-294.2342</X>
+      <Y>-1647.586</Y>
+      <Z>30.8566</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>93.0844</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x009a3823</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_rub_carwreck_8</HashName>
+    <InitialHandle>685341</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-292.6422</X>
+      <Y>-1613.913</Y>
+      <Z>30.8953</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>159.815</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xa158510a</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>xs_terrain_prop_weeddry_nxg03</HashName>
+    <InitialHandle>49266</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-260.9354</X>
+      <Y>-1612.988</Y>
+      <Z>30.4821</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-179.5111</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x357eadde</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_rub_binbag_03</HashName>
+    <InitialHandle>558885</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-280.2961</X>
+      <Y>-1673.337</Y>
+      <Z>30.8899</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>42.5714</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x37aff890</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_billboard_01</HashName>
+    <InitialHandle>220712</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-291.8428</X>
+      <Y>-1591.37</Y>
+      <Z>31.9405</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>148.3549</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xb4703d5e</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>m23_1_prop_arena_pipe_end_02a</HashName>
+    <InitialHandle>616216</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-293.8004</X>
+      <Y>-1662.279</Y>
+      <Z>30.8247</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-177.36</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x4e55881d</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_tree_cypress_01</HashName>
+    <InitialHandle>250402</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-316.8977</X>
+      <Y>-1623.021</Y>
+      <Z>24.9103</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-71.4217</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x4e55881d</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_tree_cypress_01</HashName>
+    <InitialHandle>252959</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-319.6216</X>
+      <Y>-1627.124</Y>
+      <Z>24.5154</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-106.153</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x1b0e6b19</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_fncres_02d</HashName>
+    <InitialHandle>357642</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-268.6492</X>
+      <Y>-1659.99</Y>
+      <Z>30.8503</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>90.7545</Yaw>
     </PositionRotation>
     <Attachment isAttached="false" />
   </Placement>
@@ -1109,7 +1382,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_streetlight_11a</HashName>
-    <InitialHandle>381442</InitialHandle>
+    <InitialHandle>364072</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1130,7 +1403,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_streetlight_14a</HashName>
-    <InitialHandle>163107</InitialHandle>
+    <InitialHandle>479783</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1146,23 +1419,65 @@
     <Attachment isAttached="false" />
   </Placement>
   <Placement>
-    <ModelHash>0x28a34195</ModelHash>
+    <ModelHash>0xd2b75948</ModelHash>
     <Type>3</Type>
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
-    <HashName>prop_streetlight_14a</HashName>
-    <InitialHandle>196378</InitialHandle>
+    <HashName>prop_fncres_03b</HashName>
+    <InitialHandle>401447</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-277.6829</X>
-      <Y>-1652.011</Y>
-      <Z>30.8598</Z>
+      <X>-254.7517</X>
+      <Y>-1638.205</Y>
+      <Z>30.8502</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
-      <Yaw>-178.7309</Yaw>
+      <Yaw>1.8054</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x0a527b08</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_streetlight_11a</HashName>
+    <InitialHandle>421414</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-255.4388</X>
+      <Y>-1604.082</Y>
+      <Z>30.8073</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>128.9996</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0x304afda1</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_homeless_matress_01</HashName>
+    <InitialHandle>736552</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-321.8044</X>
+      <Y>-1642.79</Y>
+      <Z>30.8696</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-106.222</Yaw>
     </PositionRotation>
     <Attachment isAttached="false" />
   </Placement>
@@ -1172,7 +1487,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>cs_x_rubsmlc</HashName>
-    <InitialHandle>474165</InitialHandle>
+    <InitialHandle>410663</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1188,23 +1503,86 @@
     <Attachment isAttached="false" />
   </Placement>
   <Placement>
-    <ModelHash>0x0a527b08</ModelHash>
+    <ModelHash>0x300c41ef</ModelHash>
     <Type>3</Type>
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
-    <HashName>prop_streetlight_11a</HashName>
-    <InitialHandle>350501</InitialHandle>
+    <HashName>prop_gravestones_10a</HashName>
+    <InitialHandle>299811</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-255.4388</X>
-      <Y>-1604.082</Y>
-      <Z>30.8073</Z>
+      <X>-255.1508</X>
+      <Y>-1604.412</Y>
+      <Z>30.5965</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
-      <Yaw>128.9996</Yaw>
+      <Yaw>-138.5183</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xd2e7d83e</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>m23_2_prop_m32_vend_drink_01a</HashName>
+    <InitialHandle>734078</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-282.4543</X>
+      <Y>-1636.883</Y>
+      <Z>30.8291</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>91.2704</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xd2b75948</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_fncres_03b</HashName>
+    <InitialHandle>682279</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-252.9439</X>
+      <Y>-1632.145</Y>
+      <Z>30.8502</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>91.1014</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+  </Placement>
+  <Placement>
+    <ModelHash>0xc25de433</ModelHash>
+    <Type>3</Type>
+    <DynamicC>false</DynamicC>
+    <FrozenPos>true</FrozenPos>
+    <HashName>prop_vend_snak_01_tu</HashName>
+    <InitialHandle>162567</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-282.4286</X>
+      <Y>-1638.17</Y>
+      <Z>31.755</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>90.4025</Yaw>
     </PositionRotation>
     <Attachment isAttached="false" />
   </Placement>
