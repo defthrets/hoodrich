@@ -433,10 +433,10 @@ namespace Hoodrich.Core
         /// <summary>
         /// Whether a body you made gets a headstone on the map, and for how long.
         ///
-        /// Bodies are lootable, and a body you have walked away from is a body you will not
-        /// find again -- a ped on the ground is invisible from six feet in this game. The mark
-        /// expires because the point of it is "that just happened, over there", which stops
-        /// being useful about as fast as the body stops being interesting.
+        /// A ped on the ground is invisible from six feet in this game, so the mark is the
+        /// only thing that says what happened over there. It expires because that is what the
+        /// news is worth: "that just happened", which stops being useful about as fast as the
+        /// body stops being interesting.
         /// </summary>
         /// <summary>
         /// The bench in front of Stretch that a gun is laid on while you look at it.
@@ -465,12 +465,6 @@ namespace Hoodrich.Core
 
         public bool KillMarks = true;
         public int KillMarkSeconds = 50;
-
-        /// <summary>
-        /// How long a body you made is held against the game's own clean-up, so it is still
-        /// there when you come back for what is on it. Nought turns it off. See UI.Graves.
-        /// </summary>
-        public int KeepBodiesMinutes = 10;
 
         public int MaskPrice = 350;
 
@@ -944,7 +938,6 @@ namespace Hoodrich.Core
 
             s.KillMarks = ini.GetBool("Map", "KillMarks", s.KillMarks);
             s.KillMarkSeconds = (int)Clamp(ini.GetInt("Map", "KillMarkSeconds", s.KillMarkSeconds), 0f, 600f);
-            s.KeepBodiesMinutes = (int)Clamp(ini.GetInt("Map", "KeepBodiesMinutes", s.KeepBodiesMinutes), 0f, 60f);
 
             s.MaskPrice = (int)Clamp(ini.GetInt("Mask", "Price", s.MaskPrice), 0f, 100000f);
             s.MaskSlot = (int)Clamp(ini.GetInt("Mask", "Slot", s.MaskSlot), 0f, 11f);

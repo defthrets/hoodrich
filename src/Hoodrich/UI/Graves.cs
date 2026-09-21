@@ -9,11 +9,15 @@ namespace Hoodrich.UI
     /// <summary>
     /// A headstone on the map where you left somebody, for a minute or so.
     ///
-    /// WHY IT IS WORTH HAVING. Bodies are lootable now, and a body you have walked away from is
-    /// a body you will not find again -- a ped on the ground is invisible from six feet away in
-    /// this game, let alone from a car. Every other thing in this mod that you can come back to
-    /// has a mark on the map while it is worth coming back to, and a corpse with a gun on it is
-    /// the same kind of thing.
+    /// WHY IT IS WORTH HAVING. A ped on the ground is invisible from six feet away in this
+    /// game, let alone from a car, so "that just happened, over there" is a thing the map can
+    /// say and your eyes cannot.
+    ///
+    /// IT USED TO BE AN ERRAND. Bodies were lootable here, the mark was how you got back to
+    /// one, and the body itself was claimed against the game's clean-up so it would still be
+    /// there when you did. Going through pockets belongs to Bare Minimum from 2026-09-22, so
+    /// the holding went with it and this is a note, not a job: nothing is kept alive for it
+    /// and nothing is waiting at the other end.
     ///
     /// AND IT EXPIRES, which is most of the design. A permanent mark per kill is a map that
     /// fills up and never empties; the point of this one is "that just happened, over there",
@@ -64,46 +68,18 @@ namespace Hoodrich.UI
         /// <summary>How many can be up at once.</summary>
         private const int Most = 12;
 
-        /// <summary>
-        /// How many bodies are HELD against the game's clean-up.
-        ///
-        /// THE GAME TAKES CORPSES AWAY ON ITS OWN SCHEDULE, and it does not care that one of
-        /// them has a rifle on it you were coming back for. Walk a street away, or let the area
-        /// stream, and the body is gone -- which makes both the headstone and the looting a
-        /// promise the mod cannot keep.
-        ///
-        /// So a body you made is claimed as ours, which is the one thing that stops the
-        /// population manager clearing it. That is not free -- a claimed ped is one the game
-        /// can never reuse -- so it is bounded three ways: a cap, a clock, and letting go the
-        /// moment there is nothing left on him.
-        /// </summary>
-        private const int Hold = 20;
-
-        /// <summary>Set by Main: how long a body is held before the street can have it.</summary>
-        public Func<int> HoldMinutes;
-
         /// <summary>Set by Main: off when the player has turned it off.</summary>
         public Func<bool> On;
 
         /// <summary>Set by Main: how long one stays up.</summary>
         public Func<int> Seconds;
 
-        /// <summary>
-        /// Set by Main: whether this body has been gone through.
-        ///
-        /// THE MARK IS A DIRECTION, NOT A TROPHY. It exists to get you back to a body you
-        /// cannot see from six feet away -- so the moment you have been through his pockets it
-        /// has done its job and the only thing it can do after that is take up room on a
-        /// minimap next to the one you have not searched yet. See Economy.Bodies.Done.
-        /// </summary>
-        public Func<Ped, bool> Looted;
-
         private sealed class Stone
         {
             public Blip Mark;
             public int Until;
 
-            /// <summary>Who is under it, so the mark can go when he has been searched.</summary>
+            /// <summary>Who is under it.</summary>
             public Ped Who;
         }
 
@@ -122,15 +98,6 @@ namespace Hoodrich.UI
 
         private readonly List<int> _stale = new List<int>();
 
-        /// <summary>The bodies being held, and until when. See Hold.</summary>
-        private sealed class Kept
-        {
-            public Ped Who;
-            public int Until;
-        }
-
-        private readonly List<Kept> _held = new List<Kept>();
-
         private int _nextLook;
 
         public void Update(Ped player)
@@ -138,7 +105,6 @@ namespace Hoodrich.UI
             var now = Game.GameTime;
 
             Expire(now);
-            Loosening(now);
 
             if (On != null && !On()) return;
             if (player == null || !player.Exists()) return;
@@ -179,10 +145,6 @@ namespace Hoodrich.UI
 
             _marked[who.Handle] = now + lasts * 1000;
 
-            // HELD WHETHER OR NOT THERE IS A MARK. The mark is a convenience and can be turned
-            // off; the body still has his pockets on him and the street will still take him.
-            Keep(who, now);
-
             if (lasts <= 0) return;
 
             // The oldest goes rather than the newest being refused: the one you have just made
@@ -216,74 +178,6 @@ namespace Hoodrich.UI
             }
         }
 
-        /// <summary>Claimed as ours, so the street cannot clear him. Released by Loosen.</summary>
-        private void Keep(Ped who, int now)
-        {
-            if (who == null || !who.Exists()) return;
-
-            var mins = HoldMinutes == null ? 10 : HoldMinutes();
-            if (mins <= 0) return;
-
-            // The oldest is let go rather than the newest refused: the one you have just made
-            // is the one you are walking towards.
-            while (_held.Count >= Hold) Loosen(0);
-
-            try
-            {
-                who.IsPersistent = true;
-            }
-            catch
-            {
-                // Then the game keeps him for as long as it feels like, as before.
-            }
-
-            _held.Add(new Kept { Who = who, Until = now + mins * 60 * 1000 });
-        }
-
-        /// <summary>Handed back to the game, which may then do as it likes with him.</summary>
-        private void Loosen(int i)
-        {
-            if (i < 0 || i >= _held.Count) return;
-
-            var kept = _held[i];
-            _held.RemoveAt(i);
-
-            try
-            {
-                if (kept.Who != null && kept.Who.Exists()) kept.Who.MarkAsNoLongerNeeded();
-            }
-            catch
-            {
-                // He goes when he goes.
-            }
-        }
-
-        /// <summary>Anybody there is no reason to hold: gone through, timed out, or gone.</summary>
-        private void Loosening(int now)
-        {
-            for (var i = _held.Count - 1; i >= 0; i--)
-            {
-                var kept = _held[i];
-
-                if (kept.Who == null || !kept.Who.Exists() || now >= kept.Until)
-                {
-                    Loosen(i);
-                    continue;
-                }
-
-                if (Looted == null) continue;
-
-                try
-                {
-                    if (Looted(kept.Who)) Loosen(i);
-                }
-                catch
-                {
-                    // He is let go on the clock instead.
-                }
-            }
-        }
-
         private void Expire(int now)
         {
             for (var i = _stones.Count - 1; i >= 0; i--)
@@ -294,22 +188,6 @@ namespace Hoodrich.UI
                 {
                     Take(i);
                     continue;
-                }
-
-                // GONE THROUGH, SO GONE. Asked of the body rather than of a flag set when the
-                // loot screen closed -- somebody who opens the pockets, takes the gun and
-                // leaves the sandwich has not finished with him, and the mark is what gets him
-                // back. Done answers true when there is nothing left on him.
-                if (Looted == null) continue;
-                if (stone.Who == null || !stone.Who.Exists()) continue;
-
-                try
-                {
-                    if (Looted(stone.Who)) Take(i);
-                }
-                catch
-                {
-                    // It goes on its own clock instead.
                 }
             }
 
@@ -350,13 +228,6 @@ namespace Hoodrich.UI
             _stones.Clear();
             _marked.Clear();
             _nextLook = 0;
-
-            // EVERY BODY HANDED BACK. A held ped the mod forgets about is a ped the game can
-            // never clear for the rest of the session, which is the one genuinely expensive
-            // way this could go wrong.
-            for (var i = _held.Count - 1; i >= 0; i--) Loosen(i);
-
-            _held.Clear();
         }
     }
 }

@@ -189,8 +189,7 @@ namespace Hoodrich
                                    || _modShop.IsOpen
                                    || _graffiti.IsOpen || _ridePick.IsOpen || _wardrobeScreen.IsOpen
                                    || (_maskScreen != null && _maskScreen.IsOpen)
-                                   || (_boot != null && _boot.IsOpen)
-                                   || (_search != null && _search.IsOpen);
+                                   || (_boot != null && _boot.IsOpen);
         }
         private bool _dressed;
 
@@ -710,9 +709,6 @@ namespace Hoodrich
         /// <summary>His own car, brought up to date. See Locations.Buffalo.</summary>
         private readonly Locations.Buffalo _buffalo = new Locations.Buffalo();
 
-        /// <summary>Who is on the floor and what was on them. See Economy.Bodies.</summary>
-        private readonly Economy.Bodies _bodies = new Economy.Bodies();
-        private Locations.Search _search;
         private HaoTalk _haoTalk;
         private VernonTalk _vernonTalk;
 
@@ -1118,10 +1114,6 @@ namespace Hoodrich
 
                 _graves.On = () => _cfg != null && _cfg.KillMarks;
                 _graves.Seconds = () => _cfg == null ? 50 : _cfg.KillMarkSeconds;
-
-                // The headstone goes the moment his pockets are empty. See UI.Graves.Looted.
-                _graves.Looted = who => _bodies != null && _bodies.Done(who);
-                _graves.HoldMinutes = () => _cfg == null ? 10 : _cfg.KeepBodiesMinutes;
 
 
                 // The pegs live in the save, so the rail needs it. Without this every peg row
@@ -2230,11 +2222,6 @@ namespace Hoodrich
                 // car in the first hour is that ending arriving in the middle. See Api.Block.
                 Api.Block.Wire(_takeover, () => _war != null && _war.IsRunning);
 
-                // AND SO THE POLICE MOD KNOWS WHEN WE HAVE FINISHED WITH A BODY. It drags them
-                // out of sight on the same key we search them with, so it waits for us. See
-                // Api.Corpse.
-                Api.Corpse.Wire(_bodies);
-
                 // THE AMBIENT PATROL LIVES IN PRECINCT 88 NOW.
                 //
                 // It was this mod's fourth source of police -- the one that was not caused by
@@ -2759,15 +2746,6 @@ namespace Hoodrich
                     Save = () => { try { _ownedCars.SaveNow?.Invoke(); } catch { /* the record still changed */ } }
                 };
 
-                // GOING THROUGH POCKETS. The weapons so it knows what a gun is called, the
-                // drugs so it knows what a bag is, the pockets both of those go into, and
-                // the sets so the card can say whose he was.
-                _bodies.Guns = _weapons;
-                _bodies.Catalogue = _drugs;
-                _bodies.State = _state;
-                _bodies.Sets = _gangs;
-                _bodies.Pay = notes => { if (notes > 0) UI.Cash.Give(notes); };
-
                 _buffalo.Busy = () => _war != null && _war.IsRunning;
 
                 // And whether it happens at all. See Buffalo.Car.
@@ -2798,20 +2776,6 @@ namespace Hoodrich
                 // dropped and the next tick puts his own gait back. See Highs.Walk.
                 _highs.Walk = () => _carrying = false;
 
-                _search = new Locations.Search(_bodies)
-                {
-                    Busy = () => _phone.IsOpen || (_boot != null && _boot.IsOpen),
-
-                    // NOW AND THEN, NOT EVERY POCKET. The same throttle the deliveries
-                    // use, and for the same reason.
-                    Took = item =>
-                    {
-                        if (item == null || _social == null) return;
-                        if (item.Kind != Economy.LootKind.Gun) return;
-
-                        _social.PostAsYouSometimes("YouWentThroughHim", item.Name, 900000, 30);
-                    }
-                };
                 _bigjTalk.Rack = () => _gunScreen.Open();
 
                 // Wired at last. GunScreen has declared this since the rack became a screen,
@@ -3509,7 +3473,13 @@ namespace Hoodrich
                 // buying a burger and pressing the wrong thing got a phone drawn over the top
                 // of a shop -- with neither mod having done anything wrong on its own. See
                 // Core.Larder.TheirMenuIsUp, which is false on an install without them.
-                _phone.Busy = () => _talk.IsOpen || Aiming() || Core.Larder.TheirMenuIsUp;
+                // AND WHILE ANOTHER MOD HAS THE SCREEN. Bare Minimum's pocket screen and
+                // NPC Mind's conversation panel both read the keyboard while they are up, and
+                // this phone opens on a raw key that neither of them can suppress -- so it is
+                // this side that has to ask. See Core.Larder and Core.Mind.
+                _phone.Busy = () => _talk.IsOpen || Aiming()
+                                    || Core.Larder.TheirMenuIsUp
+                                    || Core.Mind.IsBusy;
 
                 pages.ShowVanillaPhone = () => _phone.ShowVanillaPhone();
 
@@ -3935,23 +3905,6 @@ namespace Hoodrich
                     }
                 }
 
-                // A body's pockets own the frame the same way, and so does the moment he
-                // is knelt over it with nothing up yet.
-                if (_search != null && _search.IsOpen)
-                {
-                    if (!available) _search.RestoreWorld();
-                    else
-                    {
-                        Core.Pace.At("_search.Update");
-                        _search.Update(Game.Player.Character);
-                        Core.Pace.At("_search.Draw");
-                        _search.Draw();
-                        SlowTick();
-                        _failures = 0;
-                        return;
-                    }
-                }
-
                 if (_wardrobeScreen.IsOpen)
                 {
                     if (!available) _wardrobeScreen.Close();
@@ -4307,8 +4260,6 @@ namespace Hoodrich
                     _graves.Update(Game.Player.Character);
                     Core.Pace.At("_boot.Update");
                     _boot?.Update();
-                    Core.Pace.At("_search.Update");
-                    _search?.Update(Game.Player.Character);
                     Core.Pace.At("_buffalo.Update");
                     _buffalo.Update(Game.Player.Character);
                     Core.Pace.At("_scenes.Update");
@@ -5879,7 +5830,6 @@ namespace Hoodrich
             try { _vernon?.RestoreWorld(); } catch { /* teardown */ }
             try { _ownedCars?.RestoreWorld(); } catch { /* teardown */ }
             try { _boot?.RestoreWorld(); } catch { /* teardown */ }
-            try { _search?.RestoreWorld(); } catch { /* teardown */ }
             try { _socialScreen?.RestoreWorld(); } catch { /* teardown */ }
             try { _block?.RestoreWorld(); } catch { /* teardown */ }
             try { _yard?.RestoreWorld(); } catch { /* teardown */ }
