@@ -18,7 +18,7 @@ wins over one of the same name in Menyoo's folder.
 
 WHAT SHIPS WITH THE MOD
 -----------------------
-Ten scenes are in this folder already, 292 placements between them:
+Ten scenes are in this folder already, 373 placements between them:
 
   the-block.xml     Ten of the set stood around Chamberlain and Grove, most of
                     them holding a rifle, plus the fences at Lamar's.
@@ -68,13 +68,16 @@ Ten scenes are in this folder already, 292 placements between them:
                     was nothing, residential fencing, streetlights, cypresses,
                     weeds and dry grass, a billboard, posters and murals on
                     the walls, two vending machines, three car wrecks, a
-                    couch, a bike and bin bags, weed plants on a roof, and a
-                    camp in the corner -- two shelters, a mattress, a stove, a
-                    bottle and gravestones. Michael placed it in the spooner
-                    over six saves on 20 and 21 September 2026 and finished it
-                    live in the world; this file is "Save everything around
-                    me" pressed in the middle of it, less the ground pieces he
-                    took out, the game's peyote and the peds in range.
+                    couch, bikes and bike racks, bin bags and rubbish, weed
+                    plants and planters on the roofs, the ground under the
+                    east block, forty-odd of the set stood about -- on the
+                    ground, on the floors of the blocks and up on the roofs,
+                    Vernon among them -- and a camp in the corner: two
+                    shelters, a mattress, a stove, a bottle and gravestones.
+                    Michael placed it in the spooner over seven saves on 20
+                    and 21 September 2026 and two captures of the world; the
+                    peds on the roofs are named as staying, since there is no
+                    walking off a building.
 
 They came out of the spooner and were copied in here, so they no longer need
 Menyoo installed. If you still have the originals in menyooStuff\Spooner under

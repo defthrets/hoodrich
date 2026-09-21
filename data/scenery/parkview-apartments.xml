@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <SpoonerPlacements>
-  <Note>absorbs: parkview apartments, parkview apartments1, parkview, parkway apartments, parkway gardens, parkview1</Note>
+  <Note>absorbs: parkview apartments, parkview apartments1, parkview, parkway apartments, parkway gardens, parkview1, parkview2 | floors: 610076@30.85, 610077@30.85 | stays: 610124, 610126, 610128, 610129, 610130, 610133, 610134, 610136, 610141, 610144, 610146, 610147, 610148, 610149, 610150, 610151, 610152, 610153, 610154, 610155</Note>
   <AudioFile />
   <ClearWorld>0</ClearWorld>
   <ClearDatabase>false</ClearDatabase>
@@ -17,7 +17,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_03b</HashName>
-    <InitialHandle>468004</InitialHandle>
+    <InitialHandle>610000</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -38,7 +38,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>sf_prop_sf_weed_lrg_01a</HashName>
-    <InitialHandle>238185</InitialHandle>
+    <InitialHandle>610001</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -59,7 +59,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>gr_prop_gr_hobo_stove_01</HashName>
-    <InitialHandle>717344</InitialHandle>
+    <InitialHandle>610002</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -80,7 +80,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>480550</InitialHandle>
+    <InitialHandle>610003</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -101,7 +101,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>302117</InitialHandle>
+    <InitialHandle>610004</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -122,7 +122,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_rub_bike_03</HashName>
-    <InitialHandle>197410</InitialHandle>
+    <InitialHandle>610005</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -143,7 +143,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>miss_rub_couch_01</HashName>
-    <InitialHandle>324647</InitialHandle>
+    <InitialHandle>610006</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -164,7 +164,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>m24_1_prop_m41_weazel_pstr_graf_01a</HashName>
-    <InitialHandle>136003</InitialHandle>
+    <InitialHandle>610007</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -185,7 +185,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>718117</InitialHandle>
+    <InitialHandle>610008</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -206,7 +206,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>m24_1_prop_m41_life_pstr_graf_01a</HashName>
-    <InitialHandle>452181</InitialHandle>
+    <InitialHandle>610009</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -227,7 +227,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>420129</InitialHandle>
+    <InitialHandle>610010</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -248,7 +248,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>716070</InitialHandle>
+    <InitialHandle>610011</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -269,7 +269,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>762657</InitialHandle>
+    <InitialHandle>610012</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -290,7 +290,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_streetlight_14a</HashName>
-    <InitialHandle>361763</InitialHandle>
+    <InitialHandle>610013</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -311,7 +311,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>451368</InitialHandle>
+    <InitialHandle>610014</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -332,7 +332,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_tree_cypress_01</HashName>
-    <InitialHandle>570400</InitialHandle>
+    <InitialHandle>610015</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -353,7 +353,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>lf_house_05_</HashName>
-    <InitialHandle>586788</InitialHandle>
+    <InitialHandle>610016</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -374,7 +374,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>des_showroom_end</HashName>
-    <InitialHandle>172554</InitialHandle>
+    <InitialHandle>610017</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -395,7 +395,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>sf_prop_sf_weed_lrg_01a</HashName>
-    <InitialHandle>29523</InitialHandle>
+    <InitialHandle>610018</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -416,7 +416,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>lf_house_05_</HashName>
-    <InitialHandle>627993</InitialHandle>
+    <InitialHandle>610019</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -437,7 +437,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>ba_prop_sign_omega_02</HashName>
-    <InitialHandle>664862</InitialHandle>
+    <InitialHandle>610020</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -458,7 +458,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>ba_prop_battle_whiskey_bottle_2_s</HashName>
-    <InitialHandle>309283</InitialHandle>
+    <InitialHandle>610021</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -479,7 +479,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_homeles_shelter_01</HashName>
-    <InitialHandle>684553</InitialHandle>
+    <InitialHandle>610022</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -500,7 +500,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_03b</HashName>
-    <InitialHandle>640807</InitialHandle>
+    <InitialHandle>610023</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -521,7 +521,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>408868</InitialHandle>
+    <InitialHandle>610024</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -542,7 +542,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>v_61_hlw_over_decal_muraldirty</HashName>
-    <InitialHandle>381759</InitialHandle>
+    <InitialHandle>610025</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -563,7 +563,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_03b</HashName>
-    <InitialHandle>333607</InitialHandle>
+    <InitialHandle>610026</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -584,7 +584,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>db_apart_02_</HashName>
-    <InitialHandle>410919</InitialHandle>
+    <InitialHandle>610027</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -605,7 +605,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>701216</InitialHandle>
+    <InitialHandle>610028</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -626,7 +626,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>22822</InitialHandle>
+    <InitialHandle>610029</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -647,7 +647,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>173348</InitialHandle>
+    <InitialHandle>610030</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -668,7 +668,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>db_apart_02_</HashName>
-    <InitialHandle>720421</InitialHandle>
+    <InitialHandle>610031</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -689,7 +689,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_tree_cypress_01</HashName>
-    <InitialHandle>409125</InitialHandle>
+    <InitialHandle>610032</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -710,7 +710,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>291358</InitialHandle>
+    <InitialHandle>610033</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -731,7 +731,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_sign_road_03h</HashName>
-    <InitialHandle>552984</InitialHandle>
+    <InitialHandle>610034</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -752,7 +752,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_03b</HashName>
-    <InitialHandle>339745</InitialHandle>
+    <InitialHandle>610035</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -773,7 +773,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>db_apart_02_</HashName>
-    <InitialHandle>536359</InitialHandle>
+    <InitialHandle>610036</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -794,7 +794,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>xs_terrain_prop_weeddry_nxg03</HashName>
-    <InitialHandle>544355</InitialHandle>
+    <InitialHandle>610037</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -815,7 +815,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>750632</InitialHandle>
+    <InitialHandle>610038</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -836,7 +836,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_tree_cypress_01</HashName>
-    <InitialHandle>754983</InitialHandle>
+    <InitialHandle>610039</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -857,7 +857,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_sign_road_restriction_10</HashName>
-    <InitialHandle>33061</InitialHandle>
+    <InitialHandle>610040</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -878,7 +878,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_rub_binbag_03</HashName>
-    <InitialHandle>167205</InitialHandle>
+    <InitialHandle>610041</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -899,7 +899,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>75048</InitialHandle>
+    <InitialHandle>610042</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -920,7 +920,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>m23_1_prop_m31_gravestones_02a</HashName>
-    <InitialHandle>293209</InitialHandle>
+    <InitialHandle>610043</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -941,7 +941,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_rub_carwreck_16</HashName>
-    <InitialHandle>46884</InitialHandle>
+    <InitialHandle>610044</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -962,7 +962,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>m24_1_prop_m41_cnt_pstr_graf_01a</HashName>
-    <InitialHandle>590135</InitialHandle>
+    <InitialHandle>610045</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -983,7 +983,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_weeds_nxg06b</HashName>
-    <InitialHandle>463429</InitialHandle>
+    <InitialHandle>610046</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1004,7 +1004,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>xs_terrain_prop_weeddry_nxg04</HashName>
-    <InitialHandle>675439</InitialHandle>
+    <InitialHandle>610047</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1025,7 +1025,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>v_61_hlw_over_decal_muraldirty</HashName>
-    <InitialHandle>653883</InitialHandle>
+    <InitialHandle>610048</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1046,7 +1046,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_homeles_shelter_02</HashName>
-    <InitialHandle>642851</InitialHandle>
+    <InitialHandle>610049</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1067,7 +1067,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_rub_carwreck_16</HashName>
-    <InitialHandle>676386</InitialHandle>
+    <InitialHandle>610050</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1088,7 +1088,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_tree_cypress_01</HashName>
-    <InitialHandle>532006</InitialHandle>
+    <InitialHandle>610051</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1109,7 +1109,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>378661</InitialHandle>
+    <InitialHandle>610052</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1130,7 +1130,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_weeds_nxg06b</HashName>
-    <InitialHandle>188783</InitialHandle>
+    <InitialHandle>610053</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1151,7 +1151,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_weeds_nxg08b</HashName>
-    <InitialHandle>637787</InitialHandle>
+    <InitialHandle>610054</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1172,7 +1172,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>lf_house_05_</HashName>
-    <InitialHandle>91680</InitialHandle>
+    <InitialHandle>610055</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1193,7 +1193,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_gravestones_10a</HashName>
-    <InitialHandle>285733</InitialHandle>
+    <InitialHandle>610056</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1214,7 +1214,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_rub_carwreck_8</HashName>
-    <InitialHandle>685341</InitialHandle>
+    <InitialHandle>610057</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1235,7 +1235,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>xs_terrain_prop_weeddry_nxg03</HashName>
-    <InitialHandle>49266</InitialHandle>
+    <InitialHandle>610058</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1256,7 +1256,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_rub_binbag_03</HashName>
-    <InitialHandle>558885</InitialHandle>
+    <InitialHandle>610059</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1277,7 +1277,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_billboard_01</HashName>
-    <InitialHandle>220712</InitialHandle>
+    <InitialHandle>610060</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1298,7 +1298,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>m23_1_prop_arena_pipe_end_02a</HashName>
-    <InitialHandle>616216</InitialHandle>
+    <InitialHandle>610061</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1319,7 +1319,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_tree_cypress_01</HashName>
-    <InitialHandle>250402</InitialHandle>
+    <InitialHandle>610062</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1340,7 +1340,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_tree_cypress_01</HashName>
-    <InitialHandle>252959</InitialHandle>
+    <InitialHandle>610063</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1361,7 +1361,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_02d</HashName>
-    <InitialHandle>357642</InitialHandle>
+    <InitialHandle>610064</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1382,7 +1382,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_streetlight_11a</HashName>
-    <InitialHandle>364072</InitialHandle>
+    <InitialHandle>610065</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1403,7 +1403,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_streetlight_14a</HashName>
-    <InitialHandle>479783</InitialHandle>
+    <InitialHandle>610066</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1424,7 +1424,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_03b</HashName>
-    <InitialHandle>401447</InitialHandle>
+    <InitialHandle>610067</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1445,7 +1445,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_streetlight_11a</HashName>
-    <InitialHandle>421414</InitialHandle>
+    <InitialHandle>610068</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1466,7 +1466,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_homeless_matress_01</HashName>
-    <InitialHandle>736552</InitialHandle>
+    <InitialHandle>610069</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1487,7 +1487,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>cs_x_rubsmlc</HashName>
-    <InitialHandle>410663</InitialHandle>
+    <InitialHandle>610070</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1508,7 +1508,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_gravestones_10a</HashName>
-    <InitialHandle>299811</InitialHandle>
+    <InitialHandle>610071</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1529,7 +1529,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>m23_2_prop_m32_vend_drink_01a</HashName>
-    <InitialHandle>734078</InitialHandle>
+    <InitialHandle>610072</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1550,7 +1550,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_fncres_03b</HashName>
-    <InitialHandle>682279</InitialHandle>
+    <InitialHandle>610073</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1571,7 +1571,7 @@
     <DynamicC>false</DynamicC>
     <FrozenPos>true</FrozenPos>
     <HashName>prop_vend_snak_01_tu</HashName>
-    <InitialHandle>162567</InitialHandle>
+    <InitialHandle>610074</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
     <HasGravity>true</HasGravity>
@@ -1585,5 +1585,3662 @@
       <Yaw>90.4025</Yaw>
     </PositionRotation>
     <Attachment isAttached="false" />
+  </Placement>
+	<Placement>
+		<ModelHash>0x37aff890</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_billboard_01</HashName>
+		<InitialHandle>610075</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-292.203278</X>
+			<Y>-1591.48535</Y>
+			<Z>30.4504318</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>149.699646</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x75e63043</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>des_aptblock_root002</HashName>
+		<InitialHandle>610076</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-276.949677</X>
+			<Y>-1635.2052</Y>
+			<Z>26.9687214</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>135.710144</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x75e63043</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>des_aptblock_root002</HashName>
+		<InitialHandle>610077</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-279.649841</X>
+			<Y>-1637.29517</Y>
+			<Z>26.8687172</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>-44.3891983</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x28a34195</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_streetlight_14a</HashName>
+		<InitialHandle>610078</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-267.501038</X>
+			<Y>-1610.62085</Y>
+			<Z>30.9598007</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>90.8212128</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x28a34195</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_streetlight_14a</HashName>
+		<InitialHandle>610079</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-272.201324</X>
+			<Y>-1610.72083</Y>
+			<Z>30.9598007</Z>
+			<Pitch>2.13763807e-09</Pitch>
+			<Roll>-7.10039876e-06</Roll>
+			<Yaw>90.9201431</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x28a34195</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_streetlight_14a</HashName>
+		<InitialHandle>610080</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-277.001312</X>
+			<Y>-1610.72083</Y>
+			<Z>30.9598007</Z>
+			<Pitch>2.13762519e-09</Pitch>
+			<Roll>-7.10039876e-06</Roll>
+			<Yaw>90.9201431</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x71105ad7</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>bkr_prop_biker_chairstrip_02</HashName>
+		<InitialHandle>610081</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-279.107452</X>
+			<Y>-1616.17554</Y>
+			<Z>30.8632679</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>163.537094</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xb1a9c764</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_bikerack_2</HashName>
+		<InitialHandle>610082</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-256.618347</X>
+			<Y>-1616.12402</Y>
+			<Z>30.8770237</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>89.912117</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xb1a9c764</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_bikerack_2</HashName>
+		<InitialHandle>610083</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-256.567932</X>
+			<Y>-1619.7218</Y>
+			<Z>30.8770237</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>90.3448639</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xb1a9c764</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_bikerack_2</HashName>
+		<InitialHandle>610084</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-256.404816</X>
+			<Y>-1626.80688</Y>
+			<Z>30.8770237</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>91.8148575</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xb1a9c764</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_bikerack_2</HashName>
+		<InitialHandle>610085</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-256.401459</X>
+			<Y>-1630.22766</Y>
+			<Z>30.8770237</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>89.475296</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x35c9a934</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_rub_bike_02</HashName>
+		<InitialHandle>610086</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-257.488068</X>
+			<Y>-1618.60144</Y>
+			<Z>30.8717918</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>-83.3440475</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x2b9c94da</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_rub_bike_01</HashName>
+		<InitialHandle>610087</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-257.009308</X>
+			<Y>-1629.08057</Y>
+			<Z>30.931736</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>96.2874832</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x0808cdb3</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_rub_bike_03</HashName>
+		<InitialHandle>610088</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-256.142151</X>
+			<Y>-1636.37915</Y>
+			<Z>30.8743458</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>107.114426</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x61ce6146</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>ba_prop_battle_crate_beer_04</HashName>
+		<InitialHandle>610089</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-275.100739</X>
+			<Y>-1616.49829</Y>
+			<Z>39.0680847</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>-178.833801</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x99fc8c57</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>ba_prop_battle_sniffing_pipe</HashName>
+		<InitialHandle>610090</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-279.562164</X>
+			<Y>-1615.70605</Y>
+			<Z>31.6296654</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>-168.236313</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xa5c65352</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>ba_prop_club_dressing_posters_01</HashName>
+		<InitialHandle>610091</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-263.305115</X>
+			<Y>-1613.95203</Y>
+			<Z>32.7756042</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>-179.669861</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xb9f623d9</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>ba_prop_club_dressing_sign_02</HashName>
+		<InitialHandle>610092</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-297.77829</X>
+			<Y>-1627.27942</Y>
+			<Z>35.2630119</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>-177.678421</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xf8c244a8</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>miss_rub_couch_01_l1</HashName>
+		<InitialHandle>610093</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-274.822174</X>
+			<Y>-1647.62329</Y>
+			<Z>30.8877926</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>129.627441</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x9bc8f365</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_rub_binbag_01b</HashName>
+		<InitialHandle>610094</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-281.065521</X>
+			<Y>-1657.07141</Y>
+			<Z>31.3063984</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>111.350029</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x357eadde</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_rub_binbag_03</HashName>
+		<InitialHandle>610095</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-257.254974</X>
+			<Y>-1636.68567</Y>
+			<Z>30.8899403</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>-8.8152771</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x357eadde</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_rub_binbag_03</HashName>
+		<InitialHandle>610096</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-283.239746</X>
+			<Y>-1639.93811</Y>
+			<Z>30.9043884</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>57.0106659</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x60f14898</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_rub_cardpile_05</HashName>
+		<InitialHandle>610097</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-276.199646</X>
+			<Y>-1615.86145</Y>
+			<Z>30.882164</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>172.901337</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x60f14898</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_rub_cardpile_05</HashName>
+		<InitialHandle>610098</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-259.402588</X>
+			<Y>-1584.47314</Y>
+			<Z>30.8780308</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>73.5225601</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xf5c39f51</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_rub_carpart_04</HashName>
+		<InitialHandle>610099</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-306.225281</X>
+			<Y>-1631.19507</Y>
+			<Z>30.8517532</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>-119.313087</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x2250786a</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_rub_carpart_05</HashName>
+		<InitialHandle>610100</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-305.468323</X>
+			<Y>-1636.75269</Y>
+			<Z>30.8545609</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>94.8463135</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xf5af9d4a</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_rub_cont_01b</HashName>
+		<InitialHandle>610101</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-305.98114</X>
+			<Y>-1655.43567</Y>
+			<Z>30.7517014</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>-176.994202</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xb8814e33</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_rub_couch04</HashName>
+		<InitialHandle>610102</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-307.87738</X>
+			<Y>-1651.12024</Y>
+			<Z>30.8749886</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>-85.3523712</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x20cffdb5</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_rub_flotsam_02</HashName>
+		<InitialHandle>610103</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-308.134521</X>
+			<Y>-1648.94214</Y>
+			<Z>31.1198845</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>-128.225204</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x9c610e9f</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_rub_litter_03b</HashName>
+		<InitialHandle>610104</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-315.111511</X>
+			<Y>-1645.46045</Y>
+			<Z>30.8553391</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>143.687454</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xde91e699</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_rub_pile_02</HashName>
+		<InitialHandle>610105</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-305.574097</X>
+			<Y>-1659.91577</Y>
+			<Z>31.2487984</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>-169.709366</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xde91e699</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_rub_pile_02</HashName>
+		<InitialHandle>610106</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-308.10849</X>
+			<Y>-1658.27344</Y>
+			<Z>30.7918892</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>-152.559723</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xde91e699</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_rub_pile_02</HashName>
+		<InitialHandle>610107</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-305.896118</X>
+			<Y>-1657.29785</Y>
+			<Z>31.0487976</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>-167.195938</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xde91e699</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>prop_rub_pile_02</HashName>
+		<InitialHandle>610108</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-304.302704</X>
+			<Y>-1661.50635</Y>
+			<Z>30.7918892</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>3.26109338</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x07ae635b</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>ex_mp_h_acc_plant_tall_01</HashName>
+		<InitialHandle>610109</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-277.051025</X>
+			<Y>-1570.31091</Y>
+			<Z>35.0636368</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>-18.3886185</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x07ae635b</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>ex_mp_h_acc_plant_tall_01</HashName>
+		<InitialHandle>610110</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-273.759918</X>
+			<Y>-1616.44458</Y>
+			<Z>39.0632935</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>-175.677902</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xf33a3b6b</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>m24_1_prop_m41_palmplant_01a</HashName>
+		<InitialHandle>610111</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-278.80011</X>
+			<Y>-1616.16748</Y>
+			<Z>35.0787735</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>178.174011</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x75479f9a</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>m25_2_prop_m52_art_plant_03a</HashName>
+		<InitialHandle>610112</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-279.585114</X>
+			<Y>-1615.93188</Y>
+			<Z>35.0682487</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>156.434143</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x75479f9a</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>m25_2_prop_m52_art_plant_03a</HashName>
+		<InitialHandle>610113</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-257.67569</X>
+			<Y>-1570.06824</Y>
+			<Z>39.0679054</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>54.4577026</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xe83b93b7</ModelHash>
+		<Type>1</Type>
+		<Dynamic>true</Dynamic>
+		<FrozenPos>false</FrozenPos>
+		<HashName>Families CA Male</HashName>
+		<InitialHandle>610114</InitialHandle>
+		<PedProperties>
+			<IsStill>true</IsStill>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
+			<Armour>0</Armour>
+			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>0,0</_0>
+				<_1>0,0</_1>
+				<_2>0,0</_2>
+				<_3>0,0</_3>
+				<_4>0,2</_4>
+				<_5>0,0</_5>
+				<_6>0,0</_6>
+				<_7>0,0</_7>
+				<_8>0,1</_8>
+				<_9>0,0</_9>
+				<_10>0,0</_10>
+				<_11>0,0</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
+			<ScenarioActive>false</ScenarioActive>
+			<Animations />
+		</PedProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>200</MaxHealth>
+		<Health>200</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-276.295319</X>
+			<Y>-1645.77686</Y>
+			<Z>31.8540573</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>-112.089355</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xdb729238</ModelHash>
+		<Type>1</Type>
+		<Dynamic>true</Dynamic>
+		<FrozenPos>false</FrozenPos>
+		<HashName>Families DNF Male</HashName>
+		<InitialHandle>610115</InitialHandle>
+		<PedProperties>
+			<IsStill>true</IsStill>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
+			<Armour>0</Armour>
+			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>0,1</_0>
+				<_1>0,0</_1>
+				<_2>0,0</_2>
+				<_3>0,1</_3>
+				<_4>1,2</_4>
+				<_5>0,0</_5>
+				<_6>0,0</_6>
+				<_7>0,0</_7>
+				<_8>0,0</_8>
+				<_9>0,0</_9>
+				<_10>0,0</_10>
+				<_11>0,0</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
+			<ScenarioActive>false</ScenarioActive>
+			<Animations />
+		</PedProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>200</MaxHealth>
+		<Health>200</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-274.012238</X>
+			<Y>-1647.448</Y>
+			<Z>31.8495617</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>-46.1069565</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xd303008b</ModelHash>
+		<Type>1</Type>
+		<Dynamic>true</Dynamic>
+		<FrozenPos>false</FrozenPos>
+		<HashName>Generic Thug</HashName>
+		<InitialHandle>610116</InitialHandle>
+		<PedProperties>
+			<IsStill>true</IsStill>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
+			<Armour>0</Armour>
+			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>5,2</_0>
+				<_1>5,0</_1>
+				<_2>5,1</_2>
+				<_3>5,0</_3>
+				<_4>5,0</_4>
+				<_5>0,1</_5>
+				<_6>2,2</_6>
+				<_7>6,0</_7>
+				<_8>5,3</_8>
+				<_9>0,0</_9>
+				<_10>5,1</_10>
+				<_11>7,0</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
+			<ScenarioActive>false</ScenarioActive>
+			<Animations />
+		</PedProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>200</MaxHealth>
+		<Health>200</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-272.680664</X>
+			<Y>-1645.34131</Y>
+			<Z>31.8539848</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>118.213249</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xd303008b</ModelHash>
+		<Type>1</Type>
+		<Dynamic>true</Dynamic>
+		<FrozenPos>false</FrozenPos>
+		<HashName>Generic Thug</HashName>
+		<InitialHandle>610117</InitialHandle>
+		<PedProperties>
+			<IsStill>true</IsStill>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
+			<Armour>0</Armour>
+			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>0,2</_0>
+				<_1>0,0</_1>
+				<_2>0,1</_2>
+				<_3>0,0</_3>
+				<_4>0,2</_4>
+				<_5>1,4</_5>
+				<_6>0,3</_6>
+				<_7>0,1</_7>
+				<_8>0,0</_8>
+				<_9>0,0</_9>
+				<_10>0,2</_10>
+				<_11>0,1</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
+			<ScenarioActive>false</ScenarioActive>
+			<Animations />
+		</PedProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>200</MaxHealth>
+		<Health>200</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-274.113708</X>
+			<Y>-1644.91663</Y>
+			<Z>31.8492527</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>-171.714874</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xfd1c49bb</ModelHash>
+		<Type>1</Type>
+		<Dynamic>true</Dynamic>
+		<FrozenPos>false</FrozenPos>
+		<HashName>Street Punk</HashName>
+		<InitialHandle>610118</InitialHandle>
+		<PedProperties>
+			<IsStill>true</IsStill>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
+			<Armour>0</Armour>
+			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>1,1</_0>
+				<_1>0,0</_1>
+				<_2>1,0</_2>
+				<_3>1,3</_3>
+				<_4>1,1</_4>
+				<_5>0,0</_5>
+				<_6>0,0</_6>
+				<_7>0,0</_7>
+				<_8>0,0</_8>
+				<_9>0,0</_9>
+				<_10>0,1</_10>
+				<_11>0,0</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
+			<ScenarioActive>false</ScenarioActive>
+			<Animations />
+		</PedProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>200</MaxHealth>
+		<Health>200</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-273.003662</X>
+			<Y>-1644.5686</Y>
+			<Z>31.8495083</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>150.897827</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xfd1c49bb</ModelHash>
+		<Type>1</Type>
+		<Dynamic>true</Dynamic>
+		<FrozenPos>false</FrozenPos>
+		<HashName>Street Punk</HashName>
+		<InitialHandle>610119</InitialHandle>
+		<PedProperties>
+			<IsStill>true</IsStill>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
+			<Armour>0</Armour>
+			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>1,0</_0>
+				<_1>0,0</_1>
+				<_2>0,2</_2>
+				<_3>1,1</_3>
+				<_4>0,1</_4>
+				<_5>0,0</_5>
+				<_6>0,0</_6>
+				<_7>0,0</_7>
+				<_8>0,0</_8>
+				<_9>0,0</_9>
+				<_10>0,2</_10>
+				<_11>0,0</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
+			<ScenarioActive>false</ScenarioActive>
+			<Animations />
+		</PedProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>200</MaxHealth>
+		<Health>200</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-257.129608</X>
+			<Y>-1663.43665</Y>
+			<Z>32.0007401</Z>
+			<Pitch>3.97569313e-16</Pitch>
+			<Roll>-2.66804179e-08</Roll>
+			<Yaw>-81.8918076</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0xe83b93b7</ModelHash>
+		<Type>1</Type>
+		<Dynamic>true</Dynamic>
+		<FrozenPos>false</FrozenPos>
+		<HashName>Families CA Male</HashName>
+		<InitialHandle>610120</InitialHandle>
+		<PedProperties>
+			<IsStill>true</IsStill>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
+			<Armour>0</Armour>
+			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>1,1</_0>
+				<_1>0,0</_1>
+				<_2>0,0</_2>
+				<_3>1,2</_3>
+				<_4>0,0</_4>
+				<_5>0,0</_5>
+				<_6>0,0</_6>
+				<_7>0,0</_7>
+				<_8>1,1</_8>
+				<_9>0,0</_9>
+				<_10>0,0</_10>
+				<_11>0,0</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
+			<ScenarioActive>false</ScenarioActive>
+			<Animations />
+		</PedProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>200</MaxHealth>
+		<Health>200</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-255.250961</X>
+			<Y>-1673.22961</Y>
+			<Z>31.8533192</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>-147.790314</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x4e0ce5d3</ModelHash>
+		<Type>1</Type>
+		<Dynamic>true</Dynamic>
+		<FrozenPos>false</FrozenPos>
+		<HashName>Families Female</HashName>
+		<InitialHandle>610121</InitialHandle>
+		<PedProperties>
+			<IsStill>true</IsStill>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
+			<Armour>0</Armour>
+			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>0,2</_0>
+				<_1>0,0</_1>
+				<_2>1,2</_2>
+				<_3>1,0</_3>
+				<_4>0,0</_4>
+				<_5>0,0</_5>
+				<_6>0,0</_6>
+				<_7>0,0</_7>
+				<_8>0,0</_8>
+				<_9>0,0</_9>
+				<_10>0,0</_10>
+				<_11>0,2</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
+			<ScenarioActive>false</ScenarioActive>
+			<Animations />
+		</PedProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>200</MaxHealth>
+		<Health>200</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-255.681763</X>
+			<Y>-1673.9126</Y>
+			<Z>31.8488312</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>-80.9955521</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x4e0ce5d3</ModelHash>
+		<Type>1</Type>
+		<Dynamic>true</Dynamic>
+		<FrozenPos>false</FrozenPos>
+		<HashName>Families Female</HashName>
+		<InitialHandle>610122</InitialHandle>
+		<PedProperties>
+			<IsStill>true</IsStill>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
+			<Armour>0</Armour>
+			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>1,1</_0>
+				<_1>0,0</_1>
+				<_2>0,1</_2>
+				<_3>0,0</_3>
+				<_4>0,1</_4>
+				<_5>0,0</_5>
+				<_6>0,0</_6>
+				<_7>0,0</_7>
+				<_8>0,0</_8>
+				<_9>0,0</_9>
+				<_10>1,0</_10>
+				<_11>2,0</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
+			<ScenarioActive>false</ScenarioActive>
+			<Animations />
+		</PedProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>200</MaxHealth>
+		<Health>200</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-276.419586</X>
+			<Y>-1646.7478</Y>
+			<Z>31.8488312</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>-50.0753975</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x4e0ce5d3</ModelHash>
+		<Type>1</Type>
+		<Dynamic>true</Dynamic>
+		<FrozenPos>false</FrozenPos>
+		<HashName>Families Female</HashName>
+		<InitialHandle>610123</InitialHandle>
+		<PedProperties>
+			<IsStill>true</IsStill>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
+			<Armour>0</Armour>
+			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>1,2</_0>
+				<_1>0,0</_1>
+				<_2>1,0</_2>
+				<_3>0,1</_3>
+				<_4>0,2</_4>
+				<_5>0,0</_5>
+				<_6>0,0</_6>
+				<_7>0,0</_7>
+				<_8>0,0</_8>
+				<_9>0,0</_9>
+				<_10>1,0</_10>
+				<_11>2,0</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
+			<ScenarioActive>false</ScenarioActive>
+			<Animations />
+		</PedProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>200</MaxHealth>
+		<Health>200</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-279.357666</X>
+			<Y>-1636.02344</Y>
+			<Z>31.8582573</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>-148.469635</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x5761f4ad</ModelHash>
+		<Type>1</Type>
+		<Dynamic>true</Dynamic>
+		<FrozenPos>false</FrozenPos>
+		<HashName>Mexican Boss</HashName>
+		<InitialHandle>610124</InitialHandle>
+		<PedProperties>
+			<IsStill>true</IsStill>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
+			<Armour>0</Armour>
+			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>0,1</_0>
+				<_1>0,0</_1>
+				<_2>0,2</_2>
+				<_3>1,1</_3>
+				<_4>0,2</_4>
+				<_5>0,0</_5>
+				<_6>0,0</_6>
+				<_7>0,0</_7>
+				<_8>0,2</_8>
+				<_9>0,0</_9>
+				<_10>0,0</_10>
+				<_11>0,0</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
+			<ScenarioActive>false</ScenarioActive>
+			<Animations />
+		</PedProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>200</MaxHealth>
+		<Health>200</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-255.743759</X>
+			<Y>-1572.96399</Y>
+			<Z>36.0576324</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>-110.045967</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+  <Placement>
+    <ModelHash>0xdb729238</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_y_famdnf_01</HashName>
+    <InitialHandle>610125</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-274.8606</X>
+      <Y>-1661.361</Y>
+      <Z>31.8495</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>5.3721</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>1</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="4">
+          <Index>1</Index>
+          <Texture>2</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0x6c8c08e5</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_m_cartelguards_02</HashName>
+    <InitialHandle>610126</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-276.5708</X>
+      <Y>-1615.139</Y>
+      <Z>40.0532</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-5.9613</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="2">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="4">
+          <Index>2</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="6">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="11">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0xd172497e</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>a_m_m_afriamer_01</HashName>
+    <InitialHandle>610127</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-258.3767</X>
+      <Y>-1656.534</Y>
+      <Z>31.8495</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-169.7167</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>1</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="3">
+          <Index>1</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="4">
+          <Index>1</Index>
+          <Texture>1</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0x7b0e452f</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>a_m_m_hillbilly_02</HashName>
+    <InitialHandle>610128</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>false</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-258.3023</X>
+      <Y>-1636.719</Y>
+      <Z>62.8488</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>1</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="2">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="3">
+          <Index>1</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="4">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0x4914d813</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_m_mexboss_02</HashName>
+    <InitialHandle>610129</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>false</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-253.14</X>
+      <Y>-1609.649</Y>
+      <Z>62.8475</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="3">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="4">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="8">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0x2799efd8</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>a_f_y_business_01</HashName>
+    <InitialHandle>610130</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>false</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-252.2842</X>
+      <Y>-1609.455</Y>
+      <Z>62.3482</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="2">
+          <Index>2</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="3">
+          <Index>1</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="4">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0x403db4fd</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>a_m_m_beach_01</HashName>
+    <InitialHandle>610131</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-259.6198</X>
+      <Y>-1658.227</Y>
+      <Z>31.8492</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-30.1612</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="3">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0xd303008b</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_m_genthug_01</HashName>
+    <InitialHandle>610132</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-284.1341</X>
+      <Y>-1652.351</Y>
+      <Z>31.8537</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>79.4923</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>2</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="1">
+          <Index>2</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="2">
+          <Index>2</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="3">
+          <Index>2</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="4">
+          <Index>2</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="5">
+          <Index>1</Index>
+          <Texture>5</Texture>
+        </Component>
+        <Component id="6">
+          <Index>3</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="7">
+          <Index>2</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="8">
+          <Index>2</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="10">
+          <Index>2</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="11">
+          <Index>3</Index>
+          <Texture>0</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0xbca2ccea</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_importexport_01</HashName>
+    <InitialHandle>610133</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-297.1633</X>
+      <Y>-1628.107</Y>
+      <Z>36.0583</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>3.7273</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>4</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="2">
+          <Index>4</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="3">
+          <Index>2</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="4">
+          <Index>4</Index>
+          <Texture>0</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0xdb729238</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_y_famdnf_01</HashName>
+    <InitialHandle>610134</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-283.4485</X>
+      <Y>-1644.395</Y>
+      <Z>40.0574</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-91.0684</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>1</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="3">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="4">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0xd303008b</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_m_genthug_01</HashName>
+    <InitialHandle>610135</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-254.9111</X>
+      <Y>-1665.497</Y>
+      <Z>31.8492</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-99.2616</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>2</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="1">
+          <Index>2</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="2">
+          <Index>2</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="3">
+          <Index>2</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="4">
+          <Index>2</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="5">
+          <Index>1</Index>
+          <Texture>3</Texture>
+        </Component>
+        <Component id="6">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="7">
+          <Index>2</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="8">
+          <Index>2</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="10">
+          <Index>2</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="11">
+          <Index>3</Index>
+          <Texture>1</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0x84302b09</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_y_famfor_01</HashName>
+    <InitialHandle>610136</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-270.4638</X>
+      <Y>-1635.457</Y>
+      <Z>40.0574</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-179.2126</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="4">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0xd303008b</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_m_genthug_01</HashName>
+    <InitialHandle>610137</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-253.9944</X>
+      <Y>-1605.237</Y>
+      <Z>31.8481</Z>
+      <Pitch>0.2444</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-111.9502</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="1">
+          <Index>1</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="2">
+          <Index>1</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="3">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="4">
+          <Index>1</Index>
+          <Texture>3</Texture>
+        </Component>
+        <Component id="5">
+          <Index>1</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="6">
+          <Index>3</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="7">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="8">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="10">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="11">
+          <Index>1</Index>
+          <Texture>3</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0xdb729238</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_y_famdnf_01</HashName>
+    <InitialHandle>610138</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-281.7897</X>
+      <Y>-1576.094</Y>
+      <Z>31.8496</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>67.7763</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="3">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="4">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0xd303008b</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_m_genthug_01</HashName>
+    <InitialHandle>610139</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-285.8612</X>
+      <Y>-1651.622</Y>
+      <Z>31.8577</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-125.4902</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="2">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="4">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="5">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="6">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="7">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="10">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="11">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0xd303008b</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_m_genthug_01</HashName>
+    <InitialHandle>610140</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-285.8291</X>
+      <Y>-1652.891</Y>
+      <Z>31.8577</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-75.752</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>3</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="1">
+          <Index>3</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="2">
+          <Index>3</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="3">
+          <Index>3</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="4">
+          <Index>3</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="5">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="6">
+          <Index>2</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="7">
+          <Index>3</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="8">
+          <Index>3</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="10">
+          <Index>3</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="11">
+          <Index>4</Index>
+          <Texture>2</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0x4e0ce5d3</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_f_y_families_01</HashName>
+    <InitialHandle>610141</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-253.5778</X>
+      <Y>-1623.023</Y>
+      <Z>36.0535</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-86.1957</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="2">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="3">
+          <Index>1</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="4">
+          <Index>1</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="10">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="11">
+          <Index>1</Index>
+          <Texture>2</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0xfd1c49bb</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_y_strpunk_01</HashName>
+    <InitialHandle>610142</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-298.3671</X>
+      <Y>-1613.404</Y>
+      <Z>31.8493</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-110.9926</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="2">
+          <Index>0</Index>
+          <Texture>3</Texture>
+        </Component>
+        <Component id="3">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="4">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="10">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0x61ecd362</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_m_goons_01</HashName>
+    <InitialHandle>610143</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-266.8659</X>
+      <Y>-1654.84</Y>
+      <Z>31.8492</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>91.4989</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>3</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="2">
+          <Index>2</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="3">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="4">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="5">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="6">
+          <Index>3</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="7">
+          <Index>2</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="9">
+          <Index>1</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="11">
+          <Index>1</Index>
+          <Texture>2</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0x964d12dc</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_y_mexgoon_03</HashName>
+    <InitialHandle>610144</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>false</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-250.6905</X>
+      <Y>-1638.636</Y>
+      <Z>62.3619</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>1</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="3">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="4">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="8">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0xfd1c49bb</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_y_strpunk_01</HashName>
+    <InitialHandle>610145</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-250.6432</X>
+      <Y>-1562.544</Y>
+      <Z>31.968</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-51.0365</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>1</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="2">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="3">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="4">
+          <Index>1</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="10">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0x4e0ce5d3</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_f_y_families_01</HashName>
+    <InitialHandle>610146</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-253.749</X>
+      <Y>-1621.62</Y>
+      <Z>36.0583</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>-30.0079</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>1</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="2">
+          <Index>1</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="4">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="10">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="11">
+          <Index>2</Index>
+          <Texture>0</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0xfda94268</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_m_armgoon_01</HashName>
+    <InitialHandle>610147</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>false</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-290.6972</X>
+      <Y>-1668.712</Y>
+      <Z>62.85</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="2">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="3">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="4">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="8">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0xdb729238</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_y_famdnf_01</HashName>
+    <InitialHandle>610148</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>false</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-290.816</X>
+      <Y>-1668.49</Y>
+      <Z>62.85</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="3">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="4">
+          <Index>1</Index>
+          <Texture>2</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0xe83b93b7</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_y_famca_01</HashName>
+    <InitialHandle>610149</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>false</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-288.6071</X>
+      <Y>-1671.838</Y>
+      <Z>62.85</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="3">
+          <Index>1</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="4">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0x158c439c</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_f_y_ballas_01</HashName>
+    <InitialHandle>610150</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>false</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-252.8564</X>
+      <Y>-1607.353</Y>
+      <Z>62.3275</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="2">
+          <Index>2</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="3">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="4">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="8">
+          <Index>2</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="10">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="11">
+          <Index>2</Index>
+          <Texture>0</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0x4e0ce5d3</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_f_y_families_01</HashName>
+    <InitialHandle>610151</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>false</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-288.3261</X>
+      <Y>-1672.2</Y>
+      <Z>62.8489</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="2">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="3">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="4">
+          <Index>1</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="10">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="11">
+          <Index>2</Index>
+          <Texture>0</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0x2dadf4aa</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>a_m_y_downtown_01</HashName>
+    <InitialHandle>610152</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>false</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-288.3261</X>
+      <Y>-1672.2</Y>
+      <Z>62.85</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>1</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="3">
+          <Index>1</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="4">
+          <Index>1</Index>
+          <Texture>1</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0x5aa42c21</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_f_y_vagos_01</HashName>
+    <InitialHandle>610153</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>false</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-305.9135</X>
+      <Y>-1623.994</Y>
+      <Z>62.2804</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+        <Component id="2">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="3">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="4">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="8">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0x4914d813</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_m_mexboss_02</HashName>
+    <InitialHandle>610154</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>false</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-290.6864</X>
+      <Y>-1668.578</Y>
+      <Z>62.85</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+      <ClothingVariations>
+        <Component id="0">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="3">
+          <Index>0</Index>
+          <Texture>2</Texture>
+        </Component>
+        <Component id="4">
+          <Index>0</Index>
+          <Texture>1</Texture>
+        </Component>
+        <Component id="8">
+          <Index>1</Index>
+          <Texture>0</Texture>
+        </Component>
+      </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0xcdb291a2</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>ig_vernon</HashName>
+    <InitialHandle>610155</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>false</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-288.3261</X>
+      <Y>-1672.2</Y>
+      <Z>62.849</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
+    </PedProperties>
   </Placement>
 </SpoonerPlacements>
