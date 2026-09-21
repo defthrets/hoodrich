@@ -24,7 +24,7 @@ wins over one of the same name in Menyoo's folder.
 
 WHAT SHIPS WITH THE MOD
 -----------------------
-Ten scenes are in this folder already, 455 placements between them:
+Ten scenes are in this folder already, 449 placements between them:
 
   the-block.xml     Ten of the set stood around Chamberlain and Grove, most of
                     them holding a rifle, plus the fences at Lamar's.
@@ -39,7 +39,7 @@ Ten scenes are in this folder already, 455 placements between them:
                     with stoves, a gun locker and the gunsmith's supplies.
   geralds.xml       The stash at the foot of Gerald's stairs -- the boxes, a
                     case, a package, the bags -- with a stove, a seat and a
-                    card pile round the corner, four wrecks along the street
+                    card pile round the corner, a wreck along the street
                     and three cameras on the walls.
   hao.xml           Hao's: work lights and wall lights round the shop, a pit
                     sign, parking signs on the forecourt, a lamp, and three of

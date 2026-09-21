@@ -1062,27 +1062,6 @@
     <Attachment isAttached="false" />
   </Placement>
   <Placement>
-    <ModelHash>0x7c964baf</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_rub_carwreck_16</HashName>
-    <InitialHandle>610050</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-300.8563</X>
-      <Y>-1638.232</Y>
-      <Z>30.9525</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>47.2352</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
     <ModelHash>0x4e55881d</ModelHash>
     <Type>3</Type>
     <DynamicC>false</DynamicC>
@@ -1205,27 +1184,6 @@
       <Pitch>0</Pitch>
       <Roll>0</Roll>
       <Yaw>93.0844</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x009a3823</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_rub_carwreck_8</HashName>
-    <InitialHandle>610057</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-292.6422</X>
-      <Y>-1613.913</Y>
-      <Z>30.8953</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>159.815</Yaw>
     </PositionRotation>
     <Attachment isAttached="false" />
   </Placement>
@@ -5502,27 +5460,6 @@
       <Pitch>0</Pitch>
       <Roll>0</Roll>
       <Yaw>98.3515</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x97cb0224</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>prop_rub_carwreck_14</HashName>
-    <InitialHandle>610430</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-291.9502</X>
-      <Y>-1661.577</Y>
-      <Z>30.9897</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>136.5272</Yaw>
     </PositionRotation>
     <Attachment isAttached="false" />
   </Placement>
