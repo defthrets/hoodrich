@@ -150,6 +150,21 @@ A file can name the ones who never leave, in its Note, by their saved handle:
 
 for the man behind the counter and the two on the pipe at the camp.
 
+A FLOOR UNDER A SLAB THAT HAS NONE
+----------------------------------
+Some models are pictures: the destruction pieces (des_...) that the game shows
+while a building comes down carry no collision of their own, so a slab of them
+stood up on open ground is one you fall straight through. The log says so:
+"had no body; the model has no collision to give it". Name the placement in
+the file's Note, by its saved handle, and a floor is laid under it -- invisible
+building blocks, measured against the slab, their tops exactly at its top:
+
+  <Note>floors: 204034, 204290</Note>
+
+Only named ones get a floor, because a destruction model can as easily be a
+wall as a floor. The log line names the handle to write. Parkview's two ground
+pieces are named already.
+
 SETTINGS  (Hoodrich.ini, [Scenery])
 -----------------------------------
 Enabled     = true    Build saved scenes at all.

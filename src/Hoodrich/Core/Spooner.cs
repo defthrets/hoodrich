@@ -849,6 +849,14 @@ namespace Hoodrich.Core
         /// pretending to be: what comes out is written down and logged line by line, so
         /// anything that should not be in there can be deleted before it is loaded.
         /// </summary>
+        /// <summary>
+        /// Handles a capture must leave out: the invisible floor tiles the scenery lays
+        /// under a slab with no collision. Set by Locations.Scenery. A capture is what you
+        /// can see, and shipping a capture with forty building blocks in it would lay them
+        /// twice.
+        /// </summary>
+        public static Func<int, bool> Ignore;
+
         public static List<Placed> Around(Vector3 centre, float radius)
         {
             var found = new List<Placed>();
@@ -904,6 +912,7 @@ namespace Hoodrich.Core
                 {
                     if (prop == null || !prop.Exists()) continue;
                     if (!Function.Call<bool>(Hash.IS_ENTITY_A_MISSION_ENTITY, prop.Handle)) continue;
+                    if (Ignore != null && Ignore(prop.Handle)) continue;
 
                     found.Add(Basics(prop, Kind.Prop));
                 }

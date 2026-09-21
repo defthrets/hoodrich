@@ -42,6 +42,9 @@ namespace Hoodrich.Locations
         public Scenery(Settings cfg)
         {
             _cfg = cfg;
+
+            // A capture leaves the floor tiles out. See Paving.
+            Spooner.Ignore = handle => _tiles.Contains(handle);
         }
 
         // ---- the shape of it -------------------------------------------------------
@@ -87,6 +90,9 @@ namespace Hoodrich.Locations
 
             /// <summary>The peds the file says never leave, by their saved handle. See Stays.</summary>
             public HashSet<int> Stays = new HashSet<int>();
+
+            /// <summary>The props the file says to lay a floor under, by their saved handle. See Paving.</summary>
+            public HashSet<int> Floors = new HashSet<int>();
 
             /// <summary>How many of its peds were not stood up because of the hour. See Living a little.</summary>
             public int AwayTonight;
@@ -275,6 +281,29 @@ namespace Hoodrich.Locations
             return handles;
         }
 
+        /// <summary>
+        /// The placements a scene file says need a floor laid under them: "floors: 204034,
+        /// 204290" in its Note is those two saved handles. For a slab whose model has no
+        /// collision of its own. See Paving.
+        /// </summary>
+        private static HashSet<int> Floors(string path)
+        {
+            var handles = new HashSet<int>();
+
+            foreach (var line in Clauses(path))
+            {
+                if (!line.StartsWith("floors:", StringComparison.OrdinalIgnoreCase)) continue;
+
+                foreach (var raw in line.Substring(7).Split(',', ';'))
+                {
+                    int handle;
+                    if (int.TryParse(raw.Trim(), out handle)) handles.Add(handle);
+                }
+            }
+
+            return handles;
+        }
+
         /// <summary>The lines of a scene file's Note, trimmed. Nothing, for a file without one.</summary>
         private static List<string> Clauses(string path)
         {
@@ -434,6 +463,9 @@ namespace Hoodrich.Locations
 
                 try { scene.Stays = Stays(path); }
                 catch { /* everybody takes their walks */ }
+
+                try { scene.Floors = Floors(path); }
+                catch { /* nothing gets a floor */ }
 
                 int peds = 0, props = 0, cars = 0;
 
@@ -598,6 +630,15 @@ namespace Hoodrich.Locations
 
                 try { Function.Call(Hash.REQUEST_ANIM_DICT, item.AnimDict); }
                 catch { /* asked for again when the ped is up */ }
+            }
+
+            if (scene.Floors.Count > 0)
+            {
+                foreach (var name in TileNames)
+                {
+                    try { Models.Ready(new Model(name)); }
+                    catch { /* asked for again when the slab is looked at */ }
+                }
             }
         }
 
@@ -805,8 +846,27 @@ namespace Hoodrich.Locations
                         var given = Function.Call<bool>(Hash.DOES_ENTITY_HAVE_PHYSICS, made.Handle);
                         var name = item == null ? Names.Say(made.Model.Hash) : Say(item);
 
+                        // A FLOOR LAID UNDER IT, where the file asks. Not yet, if the tile
+                        // models are still streaming: the slab comes off the looked-at list
+                        // so the next pass tries again.
+                        if (!given && item != null && scene.Floors.Contains(item.Handle))
+                        {
+                            var paved = Pave(scene, made, item);
+
+                            if (paved == Verdict.NotYet)
+                            {
+                                scene.Solid.Remove(made.Handle);
+                                continue;
+                            }
+
+                            if (paved == Verdict.Up) continue;
+                        }
+
                         Log.Info("Scenery: " + name + " in " + scene.Name + " had no body; " +
-                                 (given ? "it has one now." : "the model has no collision to give it."));
+                                 (given ? "it has one now." : "the model has no collision to give it." +
+                                  (item != null && item.Handle != 0 && !scene.Floors.Contains(item.Handle)
+                                      ? " Name it in the file's Note -- floors: " + item.Handle + " -- and a floor is laid under it."
+                                      : "")));
                     }
                     catch
                     {
@@ -2339,6 +2399,266 @@ namespace Hoodrich.Locations
             return true;
         }
 
+        // ==================================================================
+        // Paving
+        // ==================================================================
+
+        /// <summary>
+        /// A floor laid under a slab whose model has none.
+        ///
+        /// THE GROUND UNDER PARKVIEW IS A PICTURE. The apartment blocks there stand on two
+        /// pieces of des_aptblock_root002, which is a destruction model -- the ground the
+        /// game shows while a building comes down -- and destruction models carry no
+        /// collision of their own; the map's static bounds do that job where the game uses
+        /// them. Stood up by a script on open ground there is nothing underneath, and
+        /// Michael asked on 2026-09-21 for the floors to be solid and not clip through.
+        ///
+        /// SO A FLOOR IS LAID: invisible building blocks -- the Bikers stunt blocks, which
+        /// are plain boxes with a flat top and a full collision body -- placed so their tops
+        /// sit exactly at the slab's top, inside its footprint, rotated with it. Nothing is
+        /// assumed about sizes: the slab and the four block sizes are measured with
+        /// GET_MODEL_DIMENSIONS when the slab is looked at, and the footprint is tiled
+        /// largest block first, the leftover strips with smaller ones, so the edges are
+        /// covered to within half the smallest block. A tile never stands proud of the slab
+        /// by more than that.
+        ///
+        /// NAMED, NOT GUESSED. Only a placement the file names in its Note ("floors: 204034")
+        /// gets one, because a destruction model can as easily be a wall as a floor, and a
+        /// box laid at the top of a wall is a ledge in the air. The log says what to write
+        /// when it finds a slab with no body that is not named.
+        ///
+        /// THE TILES ARE THE SCENE'S. They go into Up so they come down with it, into Solid so
+        /// they are never "given a body" themselves, and into _tiles so a capture leaves
+        /// them out and the gun counter's tidy-up knows they are ours.
+        /// </summary>
+        private static readonly string[] TileNames =
+        {
+            "bkr_prop_biker_bblock_xl1",
+            "bkr_prop_biker_bblock_lrg1",
+            "bkr_prop_biker_bblock_mdm1",
+            "bkr_prop_biker_bblock_sml1"
+        };
+
+        /// <summary>The tiles standing, by handle, across every scene.</summary>
+        private static readonly HashSet<int> _tiles = new HashSet<int>();
+
+        /// <summary>The most tiles one slab gets, and the widest slab that gets any.</summary>
+        private const int TilesMost = 64;
+        private const float SlabMost = 90f;
+
+        private sealed class Tile
+        {
+            public Model Model;
+            public float W, L;
+
+            /// <summary>How far its top is above its origin.</summary>
+            public float Top;
+
+            /// <summary>Its place in the measured list, which is what a laid tile is written down as.</summary>
+            public int Index;
+        }
+
+        private static bool Dimensions(Model model, out Vector3 min, out Vector3 max)
+        {
+            min = Vector3.Zero;
+            max = Vector3.Zero;
+
+            try
+            {
+                var lo = new OutputArgument();
+                var hi = new OutputArgument();
+
+                Function.Call(Hash.GET_MODEL_DIMENSIONS, model.Hash, lo, hi);
+
+                min = lo.GetResult<Vector3>();
+                max = hi.GetResult<Vector3>();
+
+                return max.X - min.X > 0.1f && max.Y - min.Y > 0.1f;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static Verdict Pave(Scene scene, Entity slab, Spooner.Placed item)
+        {
+            // The blocks, measured. Not one of them may still be streaming.
+            var tiles = new List<Tile>();
+
+            foreach (var name in TileNames)
+            {
+                var model = new Model(name);
+                if (!model.IsValid) continue;
+                if (!Models.Ready(model)) return Verdict.NotYet;
+
+                Vector3 lo, hi;
+                if (!Dimensions(model, out lo, out hi)) continue;
+
+                tiles.Add(new Tile { Model = model, W = hi.X - lo.X, L = hi.Y - lo.Y, Top = hi.Z });
+            }
+
+            if (tiles.Count == 0)
+            {
+                Log.Info("Scenery: no floor for " + Say(item) + " in " + scene.Name + " -- none of the block models are on this install.");
+                return Verdict.No;
+            }
+
+            // Largest first: the sort is on area, and the footprint goes to the biggest block that fits.
+            tiles.Sort((a, b) => (b.W * b.L).CompareTo(a.W * a.L));
+            for (var i = 0; i < tiles.Count; i++) tiles[i].Index = i;
+
+            Vector3 min, max;
+
+            if (!Dimensions(slab.Model, out min, out max))
+            {
+                Log.Info("Scenery: no floor for " + Say(item) + " in " + scene.Name + " -- the model would not say how big it is.");
+                return Verdict.No;
+            }
+
+            var width = max.X - min.X;
+            var length = max.Y - min.Y;
+
+            if (width > SlabMost || length > SlabMost)
+            {
+                Log.Info("Scenery: no floor for " + Say(item) + " in " + scene.Name + " -- " +
+                         width.ToString("0.0") + " by " + length.ToString("0.0") + " m is a district, not a slab.");
+                return Verdict.No;
+            }
+
+            if (Math.Abs(item.Pitch) > 3f || Math.Abs(item.Roll) > 3f)
+            {
+                Log.Info("Scenery: " + Say(item) + " in " + scene.Name + " is tilted " + item.Pitch.ToString("0") + "/" +
+                         item.Roll.ToString("0") + " degrees; the floor under it is laid level.");
+            }
+
+            var top = item.At.Z + max.Z;
+            var laid = new List<Vector3>();   // model-space centres, with the tile index in Z
+
+            Fill(tiles, min.X, min.Y, max.X, max.Y, laid);
+
+            if (laid.Count == 0)
+            {
+                Log.Info("Scenery: no floor for " + Say(item) + " in " + scene.Name + " -- too small for the smallest block.");
+                return Verdict.No;
+            }
+
+            var rad = item.Yaw * Math.PI / 180.0;
+            var cos = (float)Math.Cos(rad);
+            var sin = (float)Math.Sin(rad);
+            var made = 0;
+
+            foreach (var at in laid)
+            {
+                var tile = tiles[(int)at.Z];
+                var world = new Vector3(item.At.X + at.X * cos - at.Y * sin,
+                                        item.At.Y + at.X * sin + at.Y * cos,
+                                        top - tile.Top);
+
+                try
+                {
+                    var block = World.CreateProp(tile.Model, world, false, false);
+                    if (block == null || !block.Exists()) continue;
+
+                    block.PositionNoOffset = world;
+                    Function.Call(Hash.SET_ENTITY_ROTATION, block.Handle, 0f, 0f, item.Yaw, 2, true);
+                    Function.Call(Hash.SET_ENTITY_COLLISION, block.Handle, true, true);
+                    Function.Call(Hash.FREEZE_ENTITY_POSITION, block.Handle, true);
+                    Function.Call(Hash.SET_ENTITY_DYNAMIC, block.Handle, false);
+                    Function.Call(Hash.SET_ENTITY_VISIBLE, block.Handle, false, false);
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, block.Handle, true, true);
+
+                    scene.Up.Add(block);
+                    scene.Solid.Add(block.Handle);
+                    _tiles.Add(block.Handle);
+                    made++;
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("A floor tile would not stand: " + ex.Message);
+                }
+            }
+
+            Log.Info("Scenery: laid " + made + " tile(s) under " + Say(item) + " in " + scene.Name + " -- " +
+                     width.ToString("0.0") + " by " + length.ToString("0.0") + " m, top at " + top.ToString("0.00") + ".");
+
+            return made > 0 ? Verdict.Up : Verdict.No;
+        }
+
+        /// <summary>
+        /// A rectangle of the footprint, in the slab's own space, filled with blocks.
+        ///
+        /// The biggest block that fits goes down in a grid from the corner; what is left is
+        /// two strips -- down the side, and along the top -- each filled the same way with
+        /// whatever fits them. A strip narrower than the smallest block but wider than half
+        /// of it gets one anyway, centred, standing proud by at most half a block; narrower
+        /// than that it is left, which is a gap you would have to aim for.
+        /// </summary>
+        private static void Fill(List<Tile> tiles, float x0, float y0, float x1, float y1, List<Vector3> laid)
+        {
+            if (laid.Count >= TilesMost) return;
+
+            var w = x1 - x0;
+            var l = y1 - y0;
+            if (w <= 0.05f || l <= 0.05f) return;
+
+            Tile pick = null;
+            foreach (var t in tiles)
+            {
+                if (t.W <= w + 0.01f && t.L <= l + 0.01f) { pick = t; break; }
+            }
+
+            if (pick == null)
+            {
+                // Nothing fits both ways. A strip: the smallest block, laid along whichever
+                // way it does fit and centred across the other, the remainder getting one
+                // more if it is at least half a block.
+                var small = tiles[tiles.Count - 1];
+                var cx = (x0 + x1) * 0.5f;
+                var cy = (y0 + y1) * 0.5f;
+
+                if (l >= small.L * 0.5f && w >= small.W)
+                {
+                    var n = (int)Math.Floor(w / small.W + 0.001f);
+                    for (var i = 0; i < n && laid.Count < TilesMost; i++) laid.Add(new Vector3(x0 + (i + 0.5f) * small.W, cy, small.Index));
+                    var rem = w - n * small.W;
+                    if (rem >= small.W * 0.5f && laid.Count < TilesMost) laid.Add(new Vector3(x0 + n * small.W + rem * 0.5f, cy, small.Index));
+                }
+                else if (w >= small.W * 0.5f && l >= small.L)
+                {
+                    var n = (int)Math.Floor(l / small.L + 0.001f);
+                    for (var j = 0; j < n && laid.Count < TilesMost; j++) laid.Add(new Vector3(cx, y0 + (j + 0.5f) * small.L, small.Index));
+                    var rem = l - n * small.L;
+                    if (rem >= small.L * 0.5f && laid.Count < TilesMost) laid.Add(new Vector3(cx, y0 + n * small.L + rem * 0.5f, small.Index));
+                }
+                else if (w >= small.W * 0.5f && l >= small.L * 0.5f)
+                {
+                    laid.Add(new Vector3(cx, cy, small.Index));
+                }
+
+                return;
+            }
+
+            var nx = (int)Math.Floor(w / pick.W + 0.001f);
+            var ny = (int)Math.Floor(l / pick.L + 0.001f);
+            var which = pick.Index;
+
+            for (var i = 0; i < nx && laid.Count < TilesMost; i++)
+            {
+                for (var j = 0; j < ny && laid.Count < TilesMost; j++)
+                {
+                    laid.Add(new Vector3(x0 + (i + 0.5f) * pick.W, y0 + (j + 0.5f) * pick.L, which));
+                }
+            }
+
+            // Down the side, then along the top, with the smaller blocks.
+            var rest = tiles.GetRange(tiles.IndexOf(pick) + 1, tiles.Count - tiles.IndexOf(pick) - 1);
+            if (rest.Count == 0) rest = new List<Tile> { pick };
+
+            Fill(rest, x0 + nx * pick.W, y0, x1, y0 + ny * pick.L, laid);
+            Fill(rest, x0, y0 + ny * pick.L, x1, y1, laid);
+        }
+
         // ---- taking it out again ---------------------------------------------------
 
         /// <summary>
@@ -2382,6 +2702,7 @@ namespace Hoodrich.Locations
             {
                 try
                 {
+                    if (e != null) _tiles.Remove(e.Handle);
                     if (e != null && e.Exists()) e.Delete();
                 }
                 catch
