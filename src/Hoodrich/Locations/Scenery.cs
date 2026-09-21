@@ -141,9 +141,38 @@ namespace Hoodrich.Locations
 
             /// <summary>Whether his mark is well above the map: a roof, a floor of a block.</summary>
             public bool Elevated;
+
+            /// <summary>Whether the log has said his mark has nothing under it.</summary>
+            public bool Said;
+        }
+
+        /// <summary>How far below a mark something solid has to be for the mark to count as floored.</summary>
+        private const float FloorReach = 3.5f;
+
+        /// <summary>
+        /// Whether there is something solid under a point: the map, or a prop with its
+        /// collision in. A ray straight down, which is the only honest answer -- "has
+        /// physics" and "collision loaded around" both said yes about a block whose bounds
+        /// had not streamed, and men went through its roof on the strength of it.
+        /// </summary>
+        private static bool Floored(Vector3 at, Entity ignore)
+        {
+            try
+            {
+                var hit = World.Raycast(new Vector3(at.X, at.Y, at.Z + 0.3f),
+                                        new Vector3(at.X, at.Y, at.Z - FloorReach),
+                                        IntersectFlags.Map | IntersectFlags.Objects, ignore);
+
+                return hit.DidHit;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private readonly List<Scene> _scenes = new List<Scene>();
+        private bool _worldWaited;
 
         /// <summary>How long a scene waits at its first ped for the ground, and how long a ped stays frozen at most.</summary>
         private const int PedsWaitMs = 8000;
@@ -642,6 +671,21 @@ namespace Hoodrich.Locations
             var me = Game.Player.Character;
             if (me == null || !me.Exists()) return;
 
+            // NOT WHILE THE WORLD IS STILL ARRIVING. A save that loads with the player stood
+            // in the middle of a scene builds it in the first seconds, before the map has
+            // collision round him -- and everything stood up then, ours and the game's, is
+            // stood on nothing. Peds went straight through the ground and died, unseen,
+            // inside the blocks. Nothing is built, freed or walked until the ground is in.
+            try
+            {
+                if (!Function.Call<bool>(Hash.HAS_COLLISION_LOADED_AROUND_ENTITY, me.Handle))
+                {
+                    if (!_worldWaited) { _worldWaited = true; Log.Info("Scenery: waiting for the world to load round him before anything is built."); }
+                    return;
+                }
+            }
+            catch { /* build on */ }
+
             var here = me.Position;
 
             // A scene part-way up is finished as fast as ticks allow; the ranges themselves are
@@ -1111,7 +1155,26 @@ namespace Hoodrich.Locations
                     try { loaded = Function.Call<bool>(Hash.HAS_COLLISION_LOADED_AROUND_ENTITY, cold.Who.Handle); }
                     catch { }
 
-                    if (!((ready && loaded) || now >= cold.By)) continue;
+                    var floored = loaded && Floored(cold.Item.At, cold.Who);
+
+                    if (!floored)
+                    {
+                        // On the ground, the clock lets him go: a foot at most. Up on a block
+                        // it does not -- he is held, and once the wait has run out the log
+                        // names the mark, because a man frozen in the air is a mark to move
+                        // and a man dead at the foot of the block is the same mark and a body.
+                        if (cold.Elevated || now < cold.By)
+                        {
+                            if (cold.Elevated && now >= cold.By && !cold.Said)
+                            {
+                                cold.Said = true;
+                                Log.Info("Scenery: nothing under " + Say(cold.Item) + " at " + cold.Item.At + " in \"" +
+                                         scene.Name + "\"; he is held where he is. Move the mark.");
+                            }
+
+                            continue;
+                        }
+                    }
 
                     cold.Who.PositionNoOffset = cold.Item.At;
                     cold.Who.Heading = cold.Item.Yaw;
@@ -2134,7 +2197,13 @@ namespace Hoodrich.Locations
             /// <summary>When he next says something, and whether he opened the chat he is in.</summary>
             public int NextLine;
             public bool Speaks;
+
+            /// <summary>Stood up on his far spot and frozen, waiting for the ground there before the walk.</summary>
+            public bool Held;
         }
+
+        /// <summary>How long a man walking in waits on his far spot for the ground before he walks anyway.</summary>
+        private const int HoldMostMs = 15000;
 
         private enum Stage
         {
@@ -2671,6 +2740,19 @@ namespace Hoodrich.Locations
 
                 case Stage.Returning:
                 case Stage.ComingBack:
+                    if (l.Held)
+                    {
+                        if (Floored(ped.Position, ped) || now >= l.NextAt)
+                        {
+                            l.Held = false;
+                            Loose(l);
+                            WalkTo(ped, l.Item.At, l.Item.Yaw);
+                            l.NextAt = now + WalkMs;
+                        }
+
+                        return true;
+                    }
+
                     if (Arrived(ped, l.Item.At))
                     {
                         Home(l);
@@ -3017,14 +3099,15 @@ namespace Hoodrich.Locations
             l.Scene.Made++;
             Register(l.Scene, l.Item, made, true);
 
+            // Stood up frozen (Person does that) and held until there is ground under the
+            // far spot; then loosed and walked. At load the far spot can be forty metres of
+            // nothing for a second or two.
             l.Who = ped;
-            Loose(l);
-            WalkTo(ped, l.Item.At, l.Item.Yaw);
-
             l.State = Stage.ComingBack;
+            l.Held = true;
             l.ForTheNight = false;
             l.Tries = 0;
-            l.NextAt = now + WalkMs;
+            l.NextAt = now + HoldMostMs;
 
             Log.Debug(Say(l.Item) + " in " + l.Scene.Name + " comes back.");
             return true;

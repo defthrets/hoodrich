@@ -2908,8 +2908,8 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-276.295319</X>
-			<Y>-1645.77686</Y>
+			<X>-275.2575</X>
+			<Y>-1646.2623</Y>
 			<Z>31.8540573</Z>
 			<Pitch>0</Pitch>
 			<Roll>-0</Roll>
@@ -3018,8 +3018,8 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-272.680664</X>
-			<Y>-1645.34131</Y>
+			<X>-271.7422</X>
+			<Y>-1644.9550</Y>
 			<Z>31.8539848</Z>
 			<Pitch>0</Pitch>
 			<Roll>-0</Roll>
@@ -3102,8 +3102,8 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-273.003662</X>
-			<Y>-1644.5686</Y>
+			<X>-273.9422</X>
+			<Y>-1644.9550</Y>
 			<Z>31.8495083</Z>
 			<Pitch>0</Pitch>
 			<Roll>-0</Roll>
@@ -3212,8 +3212,8 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-255.250961</X>
-			<Y>-1673.22961</Y>
+			<X>-254.3664</X>
+			<Y>-1673.5711</Y>
 			<Z>31.8533192</Z>
 			<Pitch>0</Pitch>
 			<Roll>-0</Roll>
@@ -3280,8 +3280,8 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-255.681763</X>
-			<Y>-1673.9126</Y>
+			<X>-256.5664</X>
+			<Y>-1673.5711</Y>
 			<Z>31.8488312</Z>
 			<Pitch>0</Pitch>
 			<Roll>0</Roll>
@@ -3348,8 +3348,8 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-276.419586</X>
-			<Y>-1646.7478</Y>
+			<X>-277.4575</X>
+			<Y>-1646.2623</Y>
 			<Z>31.8488312</Z>
 			<Pitch>0</Pitch>
 			<Roll>0</Roll>
@@ -3605,8 +3605,8 @@
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-253.14</X>
-      <Y>-1609.649</Y>
+      <X>-251.6121</X>
+      <Y>-1609.5520</Y>
       <Z>62.8475</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
@@ -3634,8 +3634,8 @@
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-252.2842</X>
-      <Y>-1609.455</Y>
+      <X>-253.8121</X>
+      <Y>-1609.5520</Y>
       <Z>62.3482</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
@@ -7173,8 +7173,8 @@
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-267.7984</X>
-      <Y>-1547.203</Y>
+      <X>-266.8183</X>
+      <Y>-1546.7260</Y>
       <Z>62.8487</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
@@ -7216,8 +7216,8 @@
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-278.1639</X>
-      <Y>-1573.031</Y>
+      <X>-276.7831</X>
+      <Y>-1572.6645</Y>
       <Z>36.053</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
@@ -7423,8 +7423,8 @@
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-277.6023</X>
-      <Y>-1572.298</Y>
+      <X>-278.9831</X>
+      <Y>-1572.6645</Y>
       <Z>36.054</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
@@ -7903,8 +7903,8 @@
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-268.0382</X>
-      <Y>-1546.249</Y>
+      <X>-269.0183</X>
+      <Y>-1546.7260</Y>
       <Z>62.3257</Z>
       <Pitch>0</Pitch>
       <Roll>0</Roll>
