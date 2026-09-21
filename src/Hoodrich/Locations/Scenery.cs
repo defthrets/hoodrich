@@ -91,6 +91,9 @@ namespace Hoodrich.Locations
             /// <summary>The peds the file says never leave, by their saved handle. See Stays.</summary>
             public HashSet<int> Stays = new HashSet<int>();
 
+            /// <summary>What particular peds do on their marks, by saved handle: scenarios or dict/clip pairs. See Idles.</summary>
+            public Dictionary<int, string[]> Idles = new Dictionary<int, string[]>();
+
             /// <summary>
             /// The props the file says to lay a floor under, by their saved handle, each with
             /// the height of its top where the file gave one and nothing where it did not.
@@ -396,6 +399,43 @@ namespace Hoodrich.Locations
             return floors;
         }
 
+        /// <summary>
+        /// What particular peds do, from the Note: "idles: 610640=WORLD_HUMAN_SMOKING,
+        /// missclothing/idle_storeclerk; 610642=..." is a list per saved handle, each entry a
+        /// scenario name or an animation as dict/clip, and the beats rotate through the list.
+        /// For the shopkeeper who stocks shelves and the old man who smokes behind the counter.
+        /// </summary>
+        private static Dictionary<int, string[]> Idles(string path)
+        {
+            var idles = new Dictionary<int, string[]>();
+
+            foreach (var line in Clauses(path))
+            {
+                if (!line.StartsWith("idles:", StringComparison.OrdinalIgnoreCase)) continue;
+
+                foreach (var one in line.Substring(6).Split(';'))
+                {
+                    var eq = one.IndexOf('=');
+                    if (eq < 0) continue;
+
+                    int handle;
+                    if (!int.TryParse(one.Substring(0, eq).Trim(), out handle)) continue;
+
+                    var list = new List<string>();
+
+                    foreach (var raw in one.Substring(eq + 1).Split(','))
+                    {
+                        var entry = raw.Trim();
+                        if (entry.Length > 0) list.Add(entry);
+                    }
+
+                    if (list.Count > 0) idles[handle] = list.ToArray();
+                }
+            }
+
+            return idles;
+        }
+
         /// <summary>The lines of a scene file's Note, trimmed. Nothing, for a file without one.</summary>
         private static List<string> Clauses(string path)
         {
@@ -562,6 +602,9 @@ namespace Hoodrich.Locations
 
                 try { scene.Floors = Floors(path); }
                 catch { /* nothing gets a floor */ }
+
+                try { scene.Idles = Idles(path); }
+                catch { /* everybody idles off the lists */ }
 
                 int peds = 0, props = 0, cars = 0;
 
@@ -1768,6 +1811,20 @@ namespace Hoodrich.Locations
             {
                 Function.Call(Hash.CLEAR_PED_TASKS_IMMEDIATELY, ped.Handle);
 
+                // A list of his own, first of all: the Note picked it for this man.
+                string[] own;
+
+                if (scene != null && scene.Idles.TryGetValue(item.Handle, out own) && own.Length > 0)
+                {
+                    var entry = own[(Steady(item.At) + turn) % own.Length];
+                    var slash = entry.IndexOf('/');
+
+                    if (slash > 0) Give(ped, entry.Substring(0, slash), entry.Substring(slash + 1));
+                    else Scenario(ped, entry);
+
+                    return;
+                }
+
                 // What the file said, first: it is somebody's decision and it wins.
                 if (!string.IsNullOrEmpty(item.AnimDict) && !string.IsNullOrEmpty(item.AnimClip))
                 {
@@ -2362,7 +2419,7 @@ namespace Hoodrich.Locations
         private const float ChoreStandOff = 1.1f;
 
         /// <summary>How near somebody has to be stood to be worth a word, and how long the word is.</summary>
-        private const float ChatReach = 4f;
+        private const float ChatReach = 6f;
         private const int ChatLeastMs = 20000;
         private const int ChatMostMs = 45000;
 
@@ -2861,6 +2918,25 @@ namespace Hoodrich.Locations
 
             // A hobo has things to do with what is lying about. See Forage.
             if (IsHobo(l.Item) && !l.Stays && roll < 45 && Forage(l, now)) return;
+
+            // A man with a list of his own works through it: a word with whoever is near,
+            // the next thing on the list, and no signs or chores -- the shopkeeper is not
+            // throwing up the set with a customer in.
+            if (l.Scene.Idles.ContainsKey(l.Item.Handle))
+            {
+                if (roll < 25 && Chat(l, now)) return;
+
+                if (roll < 75 || l.Stays)
+                {
+                    l.Turn++;
+                    Doing(l.Scene, l.Who, l.Item, l.Turn);
+                    l.NextAt = now + Beat(l);
+                    return;
+                }
+
+                if (roll < 90) Stroll(l, now); else Leave(l, now, false);
+                return;
+            }
 
             if (l.Scripted)
             {

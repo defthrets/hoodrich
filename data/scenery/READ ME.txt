@@ -166,6 +166,14 @@ A file can name the ones who never leave, in its Note, by their saved handle:
 
 for the man behind the counter and the two on the pipe at the camp.
 
+And it can say what a particular man does, a list per saved handle, each
+entry a scenario name or an animation as dict/clip, which his beats rotate
+through:
+
+  <Note>idles: 610640=WORLD_HUMAN_SMOKING,missclothing/idle_storeclerk</Note>
+
+Several men: separate them with a semicolon.
+
 A FLOOR UNDER A SLAB THAT HAS NONE
 ----------------------------------
 Some models are pictures: the destruction pieces (des_...) that the game shows

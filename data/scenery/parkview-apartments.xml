@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <SpoonerPlacements>
-  <Note>absorbs: parkview apartments, parkview apartments1, parkview, parkway apartments, parkway gardens, parkview1, parkview2 | floors: 610076@30.85, 610077@30.85 | stays: 610124, 610126, 610128, 610129, 610130, 610133, 610134, 610136, 610141, 610144, 610146, 610147, 610148, 610149, 610150, 610151, 610152, 610153, 610154, 610155, 610200, 610201, 610400, 610401, 610402, 610403, 610404, 610466, 610467, 610468, 610473, 610474, 610475, 610478, 610500, 610501, 610502, 610503, 610504, 610505, 610507, 610508, 610509, 610510, 610511, 610514, 610515, 610517, 610518, 610520, 610521, 610522, 610523, 610524, 610538, 610539, 610540, 610541, 610542, 610543, 610544, 610545, 610546, 610547, 610548, 610549, 610567, 610568, 610569, 610570, 610571, 610572, 610573, 610641, 610643, 610644, 610645</Note>
+  <Note>absorbs: parkview apartments, parkview apartments1, parkview, parkway apartments, parkway gardens, parkview1, parkview2 | floors: 610076@30.85, 610077@30.85 | stays: 610124, 610126, 610128, 610129, 610130, 610133, 610134, 610136, 610141, 610144, 610146, 610147, 610148, 610149, 610150, 610151, 610152, 610153, 610154, 610155, 610200, 610201, 610400, 610401, 610402, 610403, 610404, 610466, 610467, 610468, 610473, 610474, 610475, 610478, 610500, 610501, 610502, 610503, 610504, 610505, 610507, 610508, 610509, 610510, 610511, 610514, 610515, 610517, 610518, 610520, 610521, 610522, 610523, 610524, 610538, 610539, 610540, 610541, 610542, 610543, 610544, 610545, 610546, 610547, 610548, 610549, 610567, 610568, 610569, 610570, 610571, 610572, 610573, 610641, 610643, 610644, 610645, 610640, 610642 | idles: 610640=anim@amb@business@bgen@bgen_inspecting@/inspecting_high_idle_01_inspector,anim@amb@business@bgen@bgen_inspecting@/inspecting_low_idle_01_inspector,anim@amb@business@bgen@bgen_inspecting@/inspecting_med_counting_01_inspector,anim@amb@business@bgen@bgen_inspecting@/inspecting_high_idle_02_inspector,anim@amb@business@bgen@bgen_inspecting@/inspecting_low_counting_01_inspector,WORLD_HUMAN_CLIPBOARD; 610642=WORLD_HUMAN_SMOKING,missclothing/idle_storeclerk,missclothing/wait_choice_a_storeclerk,WORLD_HUMAN_STAND_IMPATIENT_UPRIGHT,WORLD_HUMAN_AA_SMOKE</Note>
   <AudioFile />
   <ClearWorld>0</ClearWorld>
   <ClearDatabase>false</ClearDatabase>
@@ -10192,11 +10192,11 @@
     <Attachment isAttached="false" />
   </Placement>
   <Placement>
-    <ModelHash>0xe83b93b7</ModelHash>
+    <ModelHash>0x297ff13f</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>g_m_y_famca_01</HashName>
+    <HashName>a_m_y_ktown_02</HashName>
     <InitialHandle>610640</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
@@ -10268,11 +10268,11 @@
     </PedProperties>
   </Placement>
   <Placement>
-    <ModelHash>0xdb729238</ModelHash>
+    <ModelHash>0x1536d95a</ModelHash>
     <Type>1</Type>
     <DynamicC>true</DynamicC>
     <FrozenPos>false</FrozenPos>
-    <HashName>g_m_y_famdnf_01</HashName>
+    <HashName>a_m_o_ktown_01</HashName>
     <InitialHandle>610642</InitialHandle>
     <OpacityLevel>255</OpacityLevel>
     <IsVisible>true</IsVisible>
