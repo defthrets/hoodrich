@@ -24,7 +24,7 @@ wins over one of the same name in Menyoo's folder.
 
 WHAT SHIPS WITH THE MOD
 -----------------------
-Ten scenes are in this folder already, 449 placements between them:
+Ten scenes are in this folder already, 439 placements between them:
 
   the-block.xml     Ten of the set stood around Chamberlain and Grove, most of
                     them holding a rifle, plus the fences at Lamar's.
@@ -79,10 +79,7 @@ Ten scenes are in this folder already, 449 placements between them:
                     east block, forty-odd of the set stood about -- on the
                     ground, on the floors of the blocks and up on the roofs,
                     Vernon among them -- and a camp in the corner: two
-                    shelters, a mattress, a stove, a bottle and gravestones;
-                    and a camp by the wreck: two tents, two shelters, three
-                    chairs and a stove, with two hobos who go through the
-                    wreck and the car parts.
+                    shelters, a mattress, a stove, a bottle and gravestones.
                     Michael placed it in the spooner over seven saves on 20
                     and 21 September 2026 and two captures of the world; the
                     peds on the roofs are named as staying, since there is no
