@@ -85,6 +85,12 @@ namespace Hoodrich.Locations
             /// <summary>The placements not built today, by their saved handle.</summary>
             public readonly HashSet<int> Skip = new HashSet<int>();
 
+            /// <summary>The peds the file says never leave, by their saved handle. See Stays.</summary>
+            public HashSet<int> Stays = new HashSet<int>();
+
+            /// <summary>How many of its peds were not stood up because of the hour. See Living a little.</summary>
+            public int AwayTonight;
+
             /// <summary>
             /// The placement each standing thing came from, by its handle in THIS session.
             ///
@@ -120,9 +126,10 @@ namespace Hoodrich.Locations
         /// exists to spare. Was is the map with today's handles in it; its own comment says so.
         ///
         /// Up is scanned after it as a second net. Was is written for every single thing that
-        /// goes up and nothing takes entries out of it, so it should never come to that -- but
-        /// the cost of being wrong here is somebody's hand-placed prop deleted out from under
-        /// them, and that is worth a loop over a few dozen entities.
+        /// goes up and only Forget takes an entry out -- a ped who has walked off for a while,
+        /// whose handle the game may hand to somebody else -- so it should never come to that.
+        /// But the cost of being wrong here is somebody's hand-placed prop deleted out from
+        /// under them, and that is worth a loop over a few dozen entities.
         /// </summary>
         public bool Mine(int handle)
         {
@@ -236,6 +243,29 @@ namespace Hoodrich.Locations
                 if (int.TryParse(line.Substring(9, colon - 9).Trim(), out pct)) chance = Math.Max(0, Math.Min(100, pct));
 
                 foreach (var raw in line.Substring(colon + 1).Split(',', ';'))
+                {
+                    int handle;
+                    if (int.TryParse(raw.Trim(), out handle)) handles.Add(handle);
+                }
+            }
+
+            return handles;
+        }
+
+        /// <summary>
+        /// The placements a scene file says never leave: "stays: 463969, 504650" in its Note
+        /// is those two saved handles stood on their marks whatever the hour, taking no walks.
+        /// For the man behind a counter and the two on the pipe at the camp.
+        /// </summary>
+        private static HashSet<int> Stays(string path)
+        {
+            var handles = new HashSet<int>();
+
+            foreach (var line in Clauses(path))
+            {
+                if (!line.StartsWith("stays:", StringComparison.OrdinalIgnoreCase)) continue;
+
+                foreach (var raw in line.Substring(6).Split(',', ';'))
                 {
                     int handle;
                     if (int.TryParse(raw.Trim(), out handle)) handles.Add(handle);
@@ -402,6 +432,9 @@ namespace Hoodrich.Locations
                 var scene = new Scene { Name = name, Path = path, Items = items, Gone = gone };
                 Measure(scene);
 
+                try { scene.Stays = Stays(path); }
+                catch { /* everybody takes their walks */ }
+
                 int peds = 0, props = 0, cars = 0;
 
                 foreach (var one in items)
@@ -494,6 +527,7 @@ namespace Hoodrich.Locations
             Rally(now);
             Given(now);
             Solid(now);
+            Live(now);
 
             var range = _cfg == null ? 220f : _cfg.SceneryRange;
 
@@ -536,6 +570,7 @@ namespace Hoodrich.Locations
             scene.Made = 0;
             scene.Missed = 0;
             scene.Waited = 0;
+            scene.AwayTonight = 0;
 
             // WHO IS NOT HERE TODAY. Rolled when the scene goes up, once per file per day,
             // so it is the same answer every time you come back on the same day.
@@ -583,6 +618,26 @@ namespace Hoodrich.Locations
                     continue;
                 }
 
+                // NOT AT THIS HOUR. A ped built in the small hours is not built: he is written
+                // down as away and walks in when the hour passes, the same as one who was
+                // stood here when it struck. Unless the file says he stays. See Living a little.
+                if (item.What == Spooner.Kind.Ped && _quiet && LifeOn && !scene.Stays.Contains(item.Handle))
+                {
+                    _lives.Add(new Life
+                    {
+                        Scene = scene,
+                        Item = item,
+                        State = Stage.Away,
+                        ForTheNight = true,
+                        Scripted = Scripted(item)
+                    });
+
+                    scene.AwayTonight++;
+                    scene.Cursor++;
+                    scene.Waited = 0;
+                    continue;
+                }
+
                 // ALREADY THERE, FROM ANOTHER FILE. Saving a scene, adding to it and saving
                 // again under a new name is the obvious way to work, and it leaves the same
                 // thing described twice in two files -- both of which get built. Two identical
@@ -624,23 +679,7 @@ namespace Hoodrich.Locations
                 }
 
                 scene.Made++;
-                scene.Up.Add(made);
-                scene.Was[made.Handle] = item;
-
-                if (item.Handle != 0 && !scene.ByHandle.ContainsKey(item.Handle)) scene.ByHandle[item.Handle] = made;
-
-                if (item.Attached) Stick(scene, item, made);
-
-                var ped = made as Ped;
-
-                if (ped != null)
-                {
-                    Doing(scene, ped, item);
-
-                    // Built while it is already going off: it comes up fighting rather than
-                    // standing there smoking through a gun battle until the next war starts.
-                    if (_fighting && Ours(_ours, item)) Rouse(ped, _ours);
-                }
+                Register(scene, item, made, false);
             }
 
             if (scene.Cursor < scene.Items.Count) return;
@@ -649,7 +688,49 @@ namespace Hoodrich.Locations
             scene.Built = true;
 
             Log.Info("Built \"" + scene.Name + "\": " + scene.Made + " up" +
-                     (scene.Missed > 0 ? ", " + scene.Missed + " skipped or would not load" : "") + ".");
+                     (scene.Missed > 0 ? ", " + scene.Missed + " skipped or would not load" : "") +
+                     (scene.AwayTonight > 0 ? ", " + scene.AwayTonight + " not about at this hour" : "") + ".");
+        }
+
+        /// <summary>
+        /// One thing stood up, written into the scene's books -- and a ped given something to
+        /// do and, unless he is walking in from somewhere, a life. See Living a little.
+        /// </summary>
+        private void Register(Scene scene, Spooner.Placed item, Entity made, bool arriving)
+        {
+            scene.Up.Add(made);
+            scene.Was[made.Handle] = item;
+
+            if (item.Handle != 0 && !scene.ByHandle.ContainsKey(item.Handle)) scene.ByHandle[item.Handle] = made;
+
+            if (item.Attached) Stick(scene, item, made);
+
+            var ped = made as Ped;
+            if (ped == null) return;
+
+            // Walking in: ComeBack gives him the walk, and his life is already on the list.
+            if (arriving) return;
+
+            Doing(scene, ped, item);
+
+            // Built while it is already going off: it comes up fighting rather than
+            // standing there smoking through a gun battle until the next war starts.
+            if (_fighting && Ours(_ours, item)) Rouse(ped, _ours);
+
+            if (!LifeOn) return;
+
+            var life = new Life
+            {
+                Scene = scene,
+                Item = item,
+                Who = ped,
+                State = Stage.Marked,
+                Scripted = Scripted(item),
+                Stays = scene.Stays.Contains(item.Handle)
+            };
+
+            life.NextAt = Game.GameTime + Beat(life);
+            _lives.Add(life);
         }
 
         /// <summary>How close two of the same model have to be to count as the same thing.</summary>
@@ -792,7 +873,12 @@ namespace Hoodrich.Locations
             No
         }
 
-        private static Verdict Put(Spooner.Placed item, out Entity made)
+        /// <param name="where">
+        /// Somewhere other than the mark to stand a PED up at: the far point he walks in
+        /// from. Nothing for everything else, and no twin check there -- the mark is empty,
+        /// that is the point.
+        /// </param>
+        private static Verdict Put(Spooner.Placed item, out Entity made, Vector3? where = null)
         {
             made = null;
 
@@ -825,9 +911,9 @@ namespace Hoodrich.Locations
                         //
                         // On the model as well as the spot, so a passer-by walking over a mark
                         // as the scene goes up does not quietly delete somebody from it.
-                        if (Twin(item, model)) return Verdict.No;
+                        if (where == null && Twin(item, model)) return Verdict.No;
 
-                        made = Person(item, model);
+                        made = Person(item, model, where ?? item.At);
                         break;
 
                     case Spooner.Kind.Vehicle:
@@ -1048,12 +1134,12 @@ namespace Hoodrich.Locations
             return false;
         }
 
-        private static Ped Person(Spooner.Placed item, Model model)
+        private static Ped Person(Spooner.Placed item, Model model, Vector3 at)
         {
-            var ped = World.CreatePed(model, item.At, item.Yaw);
+            var ped = World.CreatePed(model, at, item.Yaw);
             if (ped == null || !ped.Exists()) return null;
 
-            ped.PositionNoOffset = item.At;
+            ped.PositionNoOffset = at;
             ped.Heading = item.Yaw;
             ped.IsPersistent = true;
 
@@ -1212,7 +1298,11 @@ namespace Hoodrich.Locations
             "amb@world_human_drug_dealer_hard@male@idle_a", "idle_b"
         };
 
-        private static void Doing(Scene scene, Ped ped, Spooner.Placed item)
+        /// <param name="turn">
+        /// Which of his idles, for a ped the file gave nothing: the first every session as
+        /// before, and the next along each time a beat changes what he is doing.
+        /// </param>
+        private static void Doing(Scene scene, Ped ped, Spooner.Placed item, int turn = 0)
         {
             try
             {
@@ -1226,7 +1316,7 @@ namespace Hoodrich.Locations
                     // Not in yet. Stand it on the scenario it would otherwise have had, so it
                     // is never stood there with its arms down, and swap to the animation the
                     // moment the dictionary arrives.
-                    Stand(ped, item);
+                    Stand(ped, item, turn);
 
                     Function.Call(Hash.REQUEST_ANIM_DICT, item.AnimDict);
 
@@ -1240,7 +1330,7 @@ namespace Hoodrich.Locations
                     return;
                 }
 
-                Stand(ped, item);
+                Stand(ped, item, turn);
             }
             catch (Exception ex)
             {
@@ -1258,7 +1348,7 @@ namespace Hoodrich.Locations
             return true;
         }
 
-        private static void Stand(Ped ped, Spooner.Placed item)
+        private static void Stand(Ped ped, Spooner.Placed item, int turn = 0)
         {
             // A scenario the FILE asked for is still a scenario. Somebody picked it in the
             // spooner and it is not this code's place to substitute something of its own.
@@ -1285,7 +1375,7 @@ namespace Hoodrich.Locations
                 catch { /* the men's list, which is the longer of the two */ }
 
                 var list = man ? MenIdle : WomenIdle;
-                pick = list[Steady(item.At) % list.Length];
+                pick = list[(Steady(item.At) + turn) % list.Length];
             }
 
             Give(ped, pick[0], pick[1]);
@@ -1456,7 +1546,7 @@ namespace Hoodrich.Locations
                     if (!Ours(ours, was)) continue;
 
                     if (_fighting) Rouse(ped, ours);
-                    else Settle(ped, was);
+                    else { Settle(ped, was); Rested(ped); }
                 }
             }
 
@@ -1576,6 +1666,679 @@ namespace Hoodrich.Locations
             }
         }
 
+        // ==================================================================
+        // Living a little
+        // ==================================================================
+
+        /// <summary>
+        /// A scene ped with somewhere to be other than his mark.
+        ///
+        /// SET DRESSING THAT BREATHES. Everything above this line stands a ped on a mark and
+        /// keeps him there, which is right for a scene and wrong for a person: ten men who
+        /// have not shifted their weight in four hours read as mannequins the second time you
+        /// walk past. Michael asked on 2026-09-21 for the people in the scenes to be people --
+        /// idle like people, walk off sometimes, not be stood on a corner at four in the
+        /// morning.
+        ///
+        /// SO EVERY PED HAS A NEXT BEAT, a minute to four away on the real clock, and at the
+        /// beat one of three things happens: he changes what he is doing; he stretches his
+        /// legs -- walks somewhere a few metres off, stands there a while, walks back; or he
+        /// walks off altogether, out of sight, and is back on his mark some minutes later,
+        /// walking in from wherever he went. The file's own choices still win: a man the
+        /// spooner gave a scenario or an animation comes back to it, never swaps it for one of
+        /// ours, and takes his walks half as often.
+        ///
+        /// AND IN THE SMALL HOURS NOBODY IS THERE. Between QuietFrom and QuietTo on the game's
+        /// clock everybody walks off, staggered over a couple of minutes so it is a corner
+        /// emptying rather than a cut, and drifts back the same way once it is over. A scene
+        /// built during those hours goes up without its people, who arrive when the hour does.
+        /// A file can name the ones who stay -- "stays: 463969" in its Note -- for the man
+        /// behind the counter and the two on the pipe.
+        ///
+        /// ALWAYS ON FOOT, NEVER A CUT. Nobody is put anywhere he can be seen: a ped walking
+        /// off is only deleted once he is off screen or well away, and one coming back is
+        /// stood up at a far point that is off screen and walks in from it. Follow him all the
+        /// way and he waits there until he is not being watched.
+        ///
+        /// WHAT IT DOES NOT TOUCH. A fight takes the set's own out of this (Defend) and Settle
+        /// hands them back with a fresh beat; while it is going off nobody starts a walk. A
+        /// ped saved frozen is unfrozen for the walk and frozen again on the mark. The blocking
+        /// of events stays on throughout -- they still do not startle, flee or pick fights of
+        /// their own -- because the moment they do, a scene empties itself and stays empty,
+        /// which is the thing this whole file exists to prevent.
+        /// </summary>
+        private sealed class Life
+        {
+            public Scene Scene;
+            public Spooner.Placed Item;
+            public Ped Who;
+            public Stage State = Stage.Marked;
+
+            /// <summary>When the next thing happens: the beat, the end of a stand-about, the walk's deadline, the return.</summary>
+            public int NextAt;
+
+            /// <summary>Where he is walking to, or was stood up at to walk in from.</summary>
+            public Vector3 Going;
+
+            /// <summary>Whether the file gave him something of its own to do, which is kept.</summary>
+            public bool Scripted;
+
+            /// <summary>Whether the file said he never leaves.</summary>
+            public bool Stays;
+
+            /// <summary>Whether he is away because of the hour rather than a whim.</summary>
+            public bool ForTheNight;
+
+            /// <summary>Which of his idles he is on. See Doing's turn.</summary>
+            public int Turn;
+
+            /// <summary>Walks that ran out of time and were asked for again.</summary>
+            public int Tries;
+
+            /// <summary>Stood at the far point, waiting to be unwatched before he goes.</summary>
+            public bool Waiting;
+        }
+
+        private enum Stage
+        {
+            /// <summary>On the mark, doing his idle. NextAt is the next beat.</summary>
+            Marked,
+
+            /// <summary>Walking to Going, a few metres off.</summary>
+            Strolling,
+
+            /// <summary>Stood at Going. NextAt is when he heads back.</summary>
+            Loitering,
+
+            /// <summary>Walking back to the mark.</summary>
+            Returning,
+
+            /// <summary>Walking to Going, well off, to be deleted once nobody is looking.</summary>
+            Leaving,
+
+            /// <summary>Deleted. NextAt is when he is due back, unless it is the hour.</summary>
+            Away,
+
+            /// <summary>Stood up at Going, walking in to the mark.</summary>
+            ComingBack
+        }
+
+        private readonly List<Life> _lives = new List<Life>();
+        private int _nextBeat;
+        private const int BeatEveryMs = 900;
+
+        /// <summary>Whether it is the small hours, and whether that has been looked at yet this session.</summary>
+        private bool _quiet;
+        private bool _quietKnown;
+
+        private bool LifeOn => _cfg == null || _cfg.SceneryLife;
+
+        /// <summary>How long between beats for one ped: a minute to four on the real clock.</summary>
+        private const int BeatLeastMs = 60000;
+        private const int BeatMostMs = 240000;
+
+        /// <summary>How far a stroll goes, and how far a walk-off goes.</summary>
+        private const float StrollLeast = 4f;
+        private const float StrollMost = 12f;
+        private const float LeaveLeast = 45f;
+        private const float LeaveMost = 70f;
+
+        /// <summary>How long a stroll's stand-about lasts.</summary>
+        private const int LoiterLeastMs = 20000;
+        private const int LoiterMostMs = 60000;
+
+        /// <summary>How long a walk-off lasts before he is due back.</summary>
+        private const int AwayLeastMs = 180000;
+        private const int AwayMostMs = 480000;
+
+        /// <summary>How long a walk is given before it is asked for again, and how near counts as there.</summary>
+        private const int WalkMs = 45000;
+        private const float There = 1.6f;
+
+        /// <summary>Beyond this from the player, and unseen, a man walking off simply goes.</summary>
+        private const float GoneAt = 35f;
+
+        /// <summary>A man coming back is stood up no nearer the player than this.</summary>
+        private const float ArriveNoNearer = 25f;
+
+        /// <summary>A whole scene leaving or coming back is spread over this long.</summary>
+        private const int StaggerMs = 150000;
+
+        private static readonly Random Dice = new Random();
+
+        private static int Between(int least, int most)
+        {
+            return least + Dice.Next(Math.Max(1, most - least + 1));
+        }
+
+        private static bool Scripted(Spooner.Placed item)
+        {
+            return !string.IsNullOrEmpty(item.Scenario) ||
+                   (!string.IsNullOrEmpty(item.AnimDict) && !string.IsNullOrEmpty(item.AnimClip));
+        }
+
+        /// <summary>A man the spooner gave something to do sticks with it twice as long.</summary>
+        private static int Beat(Life l)
+        {
+            var ms = Between(BeatLeastMs, BeatMostMs);
+            return l.Scripted ? ms * 2 : ms;
+        }
+
+        /// <summary>Whether the game's clock is inside the quiet hours.</summary>
+        private bool QuietNow()
+        {
+            if (_cfg == null) return false;
+
+            var from = _cfg.SceneryQuietFrom;
+            var to = _cfg.SceneryQuietTo;
+            if (from == to) return false;
+
+            int hour;
+            try { hour = Function.Call<int>(Hash.GET_CLOCK_HOURS); }
+            catch { return false; }
+
+            return from < to ? hour >= from && hour < to : hour >= from || hour < to;
+        }
+
+        /// <summary>Whether that spot is on screen right now.</summary>
+        private static bool Seen(Vector3 at)
+        {
+            try
+            {
+                return Function.Call<bool>(Hash.IS_SPHERE_VISIBLE, at.X, at.Y, at.Z + 0.5f, 2f);
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Somewhere to walk to, between least and most metres from a point.
+        ///
+        /// Pavement first, so a man walking off walks off down the street rather than across
+        /// the middle of the road; anything on the navmesh after that, because half the scenes
+        /// are on open ground with no pavement for forty metres. The nearest safe spot to a
+        /// guess can be a long way from the guess, so the answer is measured, and one that is
+        /// not in range is tried again from another bearing.
+        /// </summary>
+        private static bool Spot(Vector3 from, float least, float most, out Vector3 at)
+        {
+            at = Vector3.Zero;
+
+            for (var tries = 0; tries < 6; tries++)
+            {
+                var bearing = Dice.NextDouble() * Math.PI * 2;
+                var dist = least + (float)Dice.NextDouble() * (most - least);
+                var guess = new Vector3(from.X + (float)Math.Cos(bearing) * dist,
+                                        from.Y + (float)Math.Sin(bearing) * dist,
+                                        from.Z);
+
+                foreach (var flags in new[] { 1, 0 })
+                {
+                    var safe = new OutputArgument();
+
+                    if (!Function.Call<bool>(Hash.GET_SAFE_COORD_FOR_PED, guess.X, guess.Y, guess.Z, true, safe, flags)) continue;
+
+                    var found = safe.GetResult<Vector3>();
+                    var d = found.DistanceTo(from);
+
+                    if (d < least * 0.5f || d > most * 1.5f) continue;
+
+                    at = found;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool Arrived(Ped ped, Vector3 at)
+        {
+            var d = ped.Position - at;
+            d.Z = 0f;
+            return d.Length() <= There;
+        }
+
+        private static void WalkTo(Ped ped, Vector3 to, float heading)
+        {
+            Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+            Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, ped.Handle,
+                          to.X, to.Y, to.Z, 1.0f, WalkMs, There, 0, heading);
+            Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
+        }
+
+        /// <summary>Off the mark: unfrozen and allowed to move. The blocking of events stays on.</summary>
+        private static void Loose(Life l)
+        {
+            var ped = l.Who;
+            if (ped == null || !ped.Exists()) return;
+
+            ped.IsPositionFrozen = false;
+            Function.Call(Hash.SET_PED_CONFIG_FLAG, ped.Handle, 17, false);
+        }
+
+        /// <summary>Back on the mark exactly, frozen if the file said, doing his thing.</summary>
+        private static void Home(Life l)
+        {
+            var ped = l.Who;
+            if (ped == null || !ped.Exists()) return;
+
+            Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+
+            ped.PositionNoOffset = l.Item.At;
+            ped.Heading = l.Item.Yaw;
+
+            Function.Call(Hash.SET_PED_CONFIG_FLAG, ped.Handle, 17, true);
+            if (l.Item.Frozen) ped.IsPositionFrozen = true;
+
+            Doing(l.Scene, ped, l.Item, l.Turn);
+        }
+
+        /// <summary>Something to do while stood about somewhere that is not his mark.</summary>
+        private static void LoiterIdle(Life l)
+        {
+            var ped = l.Who;
+            if (ped == null || !ped.Exists()) return;
+
+            string[] pick;
+
+            if (l.Item.Armed)
+            {
+                pick = Armed;
+            }
+            else
+            {
+                var man = true;
+                try { man = Function.Call<bool>(Hash.IS_PED_MALE, ped.Handle); }
+                catch { /* the men's list */ }
+
+                var list = man ? MenIdle : WomenIdle;
+                pick = list[Dice.Next(list.Length)];
+            }
+
+            Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+            Give(ped, pick[0], pick[1]);
+        }
+
+        /// <summary>Gone, from the world and from the books. The life stays, as Away.</summary>
+        private static void Forget(Life l)
+        {
+            var ped = l.Who;
+            l.Who = null;
+            if (ped == null) return;
+
+            try
+            {
+                var scene = l.Scene;
+                scene.Up.Remove(ped);
+                scene.Was.Remove(ped.Handle);
+
+                if (l.Item.Handle != 0)
+                {
+                    Entity by;
+                    if (scene.ByHandle.TryGetValue(l.Item.Handle, out by) && by != null && by.Handle == ped.Handle)
+                    {
+                        scene.ByHandle.Remove(l.Item.Handle);
+                    }
+                }
+
+                if (ped.Exists())
+                {
+                    ped.MarkAsNoLongerNeeded();
+                    ped.Delete();
+                }
+            }
+            catch
+            {
+                // Already gone.
+            }
+        }
+
+        /// <summary>A fight is over and this one is back on his mark: his next beat is from now.</summary>
+        private void Rested(Ped ped)
+        {
+            foreach (var l in _lives)
+            {
+                if (l.Who == null || l.Who.Handle != ped.Handle) continue;
+
+                l.State = Stage.Marked;
+                l.Waiting = false;
+                l.NextAt = Game.GameTime + Beat(l);
+                return;
+            }
+        }
+
+        /// <summary>
+        /// The hour has turned: everybody's next move is inside the stagger rather than
+        /// wherever his beat happened to fall, so the corner empties over a couple of
+        /// minutes and fills the same way.
+        /// </summary>
+        private void Nudge(Life l, int now)
+        {
+            if (l.Stays) return;
+
+            if (_quiet)
+            {
+                if (l.State == Stage.Marked || l.State == Stage.Loitering) l.NextAt = now + Dice.Next(StaggerMs);
+                return;
+            }
+
+            if (l.State == Stage.Away)
+            {
+                l.ForTheNight = false;
+                l.NextAt = now + Dice.Next(StaggerMs);
+            }
+        }
+
+        /// <summary>Every life, once every BeatEveryMs. See the note on Life.</summary>
+        private void Live(int now)
+        {
+            if (!LifeOn)
+            {
+                // Switched off mid-session: everybody who is about goes back to standing on
+                // his mark. Anybody away is back the next time his scene is built.
+                if (_lives.Count > 0)
+                {
+                    foreach (var l in _lives)
+                    {
+                        try { if (l.Who != null && l.Who.Exists()) Home(l); }
+                        catch { /* he stands where he is */ }
+                    }
+
+                    _lives.Clear();
+                }
+
+                return;
+            }
+
+            if (now < _nextBeat) return;
+            _nextBeat = now + BeatEveryMs;
+
+            var me = Game.Player.Character;
+            if (me == null || !me.Exists()) return;
+
+            var here = me.Position;
+            var quiet = QuietNow();
+
+            if (!_quietKnown || quiet != _quiet)
+            {
+                var flipped = _quietKnown;
+                _quiet = quiet;
+                _quietKnown = true;
+
+                if (flipped)
+                {
+                    Log.Info(quiet
+                        ? "Scenery: the small hours -- everybody drifts off."
+                        : "Scenery: the small hours are over -- everybody drifts back.");
+
+                    foreach (var l in _lives) Nudge(l, now);
+                }
+            }
+
+            for (var i = _lives.Count - 1; i >= 0; i--)
+            {
+                var l = _lives[i];
+
+                try
+                {
+                    if (!Pulse(l, now, here)) _lives.RemoveAt(i);
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("One of the scenery's would not live: " + ex.Message);
+                    _lives.RemoveAt(i);
+                }
+            }
+        }
+
+        /// <summary>One look at one life. False when it is over and should be forgotten.</summary>
+        private bool Pulse(Life l, int now, Vector3 here)
+        {
+            var scene = l.Scene;
+
+            // The scene came down: its people went with it, and so does this.
+            if (!scene.Built && !scene.Working) return false;
+
+            if (l.State == Stage.Away)
+            {
+                // Caught by the hour while away on a whim: he stays away until it passes.
+                if (_quiet && !l.Stays) { l.ForTheNight = true; return true; }
+                if (now < l.NextAt) return true;
+
+                return ComeBack(l, now, here);
+            }
+
+            var ped = l.Who;
+            if (ped == null || !ped.Exists() || !ped.IsAlive) return false;
+
+            // A fight has him. Settle hands him back, and Rested gives him a fresh beat.
+            if (_fighting && Ours(_ours, l.Item)) return true;
+
+            switch (l.State)
+            {
+                case Stage.Marked:
+                    if (_quiet && !l.Stays)
+                    {
+                        if (now >= l.NextAt) Leave(l, now, true);
+                        return true;
+                    }
+
+                    if (now < l.NextAt) return true;
+
+                    // Nobody starts a walk while it is going off round here.
+                    if (_fighting) { l.NextAt = now + 20000; return true; }
+
+                    Choose(l, now);
+                    return true;
+
+                case Stage.Strolling:
+                    if (Arrived(ped, l.Going) || now >= l.NextAt)
+                    {
+                        l.State = Stage.Loitering;
+                        l.NextAt = now + Between(LoiterLeastMs, LoiterMostMs);
+                        LoiterIdle(l);
+                    }
+
+                    return true;
+
+                case Stage.Loitering:
+                    if (_quiet && !l.Stays) { Leave(l, now, true); return true; }
+                    if (now < l.NextAt) return true;
+
+                    WalkTo(ped, l.Item.At, l.Item.Yaw);
+                    l.State = Stage.Returning;
+                    l.NextAt = now + WalkMs;
+                    l.Tries = 0;
+                    return true;
+
+                case Stage.Returning:
+                case Stage.ComingBack:
+                    if (Arrived(ped, l.Item.At))
+                    {
+                        Home(l);
+                        l.State = Stage.Marked;
+                        l.NextAt = now + Beat(l);
+                        return true;
+                    }
+
+                    if (now < l.NextAt) return true;
+
+                    // Out of time. Unwatched, or three walks in, he is simply put on the mark;
+                    // watched, he is asked to walk again.
+                    if (!ped.IsOnScreen || l.Tries >= 2)
+                    {
+                        Home(l);
+                        l.State = Stage.Marked;
+                        l.NextAt = now + Beat(l);
+                        return true;
+                    }
+
+                    l.Tries++;
+                    WalkTo(ped, l.Item.At, l.Item.Yaw);
+                    l.NextAt = now + WalkMs;
+                    return true;
+
+                case Stage.Leaving:
+                    {
+                        var far = ped.Position.DistanceTo(here);
+                        var there = Arrived(ped, l.Going) || now >= l.NextAt;
+
+                        if ((there || far > GoneAt) && !ped.IsOnScreen)
+                        {
+                            var forTheNight = l.ForTheNight;
+                            Forget(l);
+                            l.State = Stage.Away;
+                            l.Waiting = false;
+                            l.NextAt = forTheNight ? 0 : now + Between(AwayLeastMs, AwayMostMs);
+                            return true;
+                        }
+
+                        // Got there, still being watched: he stands about until he is not.
+                        if (there && !l.Waiting)
+                        {
+                            l.Waiting = true;
+                            LoiterIdle(l);
+                        }
+
+                        return true;
+                    }
+            }
+
+            return true;
+        }
+
+        /// <summary>The beat: change what he is doing, stretch his legs, or walk off for a bit.</summary>
+        private void Choose(Life l, int now)
+        {
+            var canVary = !l.Scripted && !l.Item.Armed;
+            var vary = canVary ? 40 : 0;
+            var stroll = canVary ? 35 : 60;
+            var roll = Dice.Next(100);
+
+            if (roll < vary)
+            {
+                l.Turn++;
+                Doing(l.Scene, l.Who, l.Item, l.Turn);
+                l.NextAt = now + Beat(l);
+                return;
+            }
+
+            if (roll < vary + stroll || l.Stays)
+            {
+                Stroll(l, now);
+                return;
+            }
+
+            Leave(l, now, false);
+        }
+
+        private void Stroll(Life l, int now)
+        {
+            Vector3 to;
+
+            if (!Spot(l.Item.At, StrollLeast, StrollMost, out to))
+            {
+                l.NextAt = now + Beat(l);
+                return;
+            }
+
+            Loose(l);
+            WalkTo(l.Who, to, (float)(Dice.NextDouble() * 360.0));
+
+            l.Going = to;
+            l.State = Stage.Strolling;
+            l.NextAt = now + WalkMs;
+        }
+
+        private void Leave(Life l, int now, bool forTheNight)
+        {
+            var ped = l.Who;
+            Vector3 to;
+
+            if (!Spot(l.Item.At, LeaveLeast, LeaveMost, out to))
+            {
+                // Nowhere to walk to. He is simply not there once nobody is looking.
+                if (ped != null && ped.Exists() && !ped.IsOnScreen)
+                {
+                    Forget(l);
+                    l.State = Stage.Away;
+                    l.ForTheNight = forTheNight;
+                    l.NextAt = forTheNight ? 0 : now + Between(AwayLeastMs, AwayMostMs);
+                }
+                else
+                {
+                    l.NextAt = now + 15000;
+                }
+
+                return;
+            }
+
+            Loose(l);
+            WalkTo(ped, to, 0f);
+
+            l.Going = to;
+            l.State = Stage.Leaving;
+            l.ForTheNight = forTheNight;
+            l.Waiting = false;
+            l.NextAt = now + WalkMs;
+
+            Log.Debug(Say(l.Item) + " in " + l.Scene.Name + (forTheNight ? " walks off for the night." : " walks off for a bit."));
+        }
+
+        /// <summary>
+        /// Stood up somewhere off screen, a way off, and walked in to the mark. False when he
+        /// is given up on for this build of the scene.
+        /// </summary>
+        private bool ComeBack(Life l, int now, Vector3 here)
+        {
+            if (_fighting && Ours(_ours, l.Item)) { l.NextAt = now + 20000; return true; }
+
+            Vector3 from;
+
+            if (!Spot(l.Item.At, LeaveLeast, LeaveMost, out from) || Seen(from) || from.DistanceTo(here) < ArriveNoNearer)
+            {
+                // Every way in is in view. Try again shortly, from another side.
+                l.NextAt = now + 15000;
+                return true;
+            }
+
+            Entity made;
+            var verdict = Put(l.Item, out made, from);
+
+            if (verdict == Verdict.NotYet) { l.NextAt = now + 2000; return true; }
+
+            if (verdict == Verdict.No || made == null)
+            {
+                Log.Debug(Say(l.Item) + " in " + l.Scene.Name + " would not come back.");
+                return false;
+            }
+
+            var ped = made as Ped;
+
+            if (ped == null)
+            {
+                Log.Debug(Say(l.Item) + " in " + l.Scene.Name + " came back as something else.");
+                return false;
+            }
+
+            l.Scene.Made++;
+            Register(l.Scene, l.Item, made, true);
+
+            l.Who = ped;
+            Loose(l);
+            WalkTo(ped, l.Item.At, l.Item.Yaw);
+
+            l.State = Stage.ComingBack;
+            l.ForTheNight = false;
+            l.Tries = 0;
+            l.NextAt = now + WalkMs;
+
+            Log.Debug(Say(l.Item) + " in " + l.Scene.Name + " comes back.");
+            return true;
+        }
+
         // ---- taking it out again ---------------------------------------------------
 
         /// <summary>
@@ -1641,6 +2404,7 @@ namespace Hoodrich.Locations
         public void Clear()
         {
             foreach (var scene in _scenes) Drop(scene);
+            _lives.Clear();
         }
 
         public void RestoreWorld()

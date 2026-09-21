@@ -404,6 +404,22 @@ namespace Hoodrich.Core
         /// <summary>How near a scene has to be before it is stood up, in metres.</summary>
         public float SceneryRange = 220f;
 
+        /// <summary>
+        /// Whether the people in a scene live a little: change what they are doing, stretch
+        /// their legs, walk off for a while and come back, and are not there in the small
+        /// hours. See Locations.Scenery, "Living a little". Off leaves everybody stood on
+        /// their mark all night, which is how it was before 2026-09-21.
+        /// </summary>
+        public bool SceneryLife = true;
+
+        /// <summary>
+        /// The hours, on the game's clock, that nobody is stood about a scene: they walk off
+        /// as the first strikes and drift back after the second. The same number in both
+        /// means never.
+        /// </summary>
+        public int SceneryQuietFrom = 3;
+        public int SceneryQuietTo = 7;
+
         /// <summary>How much longer or shorter every drug-taking animation runs.</summary>
         public float DrugAnimLength = 1f;
 
@@ -915,6 +931,9 @@ namespace Hoodrich.Core
             s.Scenery = ini.GetBool("Scenery", "Enabled", s.Scenery);
             s.SceneryFromMenyoo = ini.GetBool("Scenery", "FromMenyoo", s.SceneryFromMenyoo);
             s.SceneryRange = Clamp(ini.GetFloat("Scenery", "Range", s.SceneryRange), 40f, 600f);
+            s.SceneryLife = ini.GetBool("Scenery", "PedsLive", s.SceneryLife);
+            s.SceneryQuietFrom = (int)Clamp(ini.GetInt("Scenery", "QuietFrom", s.SceneryQuietFrom), 0f, 23f);
+            s.SceneryQuietTo = (int)Clamp(ini.GetInt("Scenery", "QuietTo", s.SceneryQuietTo), 0f, 23f);
 
             // Where each held thing sits in his hand, as set on the settings screen. See Economy.Fit.
             foreach (var prop in Economy.Fit.Names)

@@ -130,15 +130,34 @@ a man without one hangs out, smokes, drinks or is on his phone -- and the same
 man gets the same idle every session, because it is picked from where he
 stands rather than at random.
 
-Scenery peds hold their spot. They do not startle, wander off or join fights,
-because a scene that has emptied itself five minutes after you first see it is
-not scenery.
+Scenery peds live a little. Every minute or four one of them changes what he
+is doing, stretches his legs -- walks a few metres off, stands about, walks
+back -- or walks off altogether and is back on his mark some minutes later,
+walking in from wherever he went. Nobody is ever cut in or out where you can
+see it. And in the small hours -- three to seven on the game's clock unless
+you change it -- nobody is there at all: they walk off as the hour strikes and
+drift back after it. A man the spooner gave a scenario or an animation keeps
+it, comes back to it, and takes his walks half as often. All of it is one
+setting away: PedsLive=false leaves everybody stood on his mark.
+
+They still do not startle, flee or pick fights of their own, because a scene
+that has emptied itself five minutes after you first see it is not scenery.
+The set's own join a war on the block and come back to their marks after it.
+
+A file can name the ones who never leave, in its Note, by their saved handle:
+
+  <Note>stays: 463969, 504650</Note>
+
+for the man behind the counter and the two on the pipe at the camp.
 
 SETTINGS  (Hoodrich.ini, [Scenery])
 -----------------------------------
 Enabled     = true    Build saved scenes at all.
-FromMenyoo  = true    Read menyooStuff\Spooner as well as this folder.
+FromMenyoo  = false   Read menyooStuff\Spooner as well as this folder.
 Range       = 220     How near you have to be, in metres.
+PedsLive    = true    The people come and go. See above.
+QuietFrom   = 3       The hours, on the game's clock, that nobody is about.
+QuietTo     = 7       The same number in both means never.
 
 IF YOU HAVE NOT SAVED YET
 -------------------------

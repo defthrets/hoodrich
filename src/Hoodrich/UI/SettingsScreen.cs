@@ -849,6 +849,15 @@ namespace Hoodrich.UI
                   v => c.SceneryRange = v,
                   40f, 600f, 10f, "0", " m",
                   note: "A scene is built once you are this close to it and taken out well past it");
+            Tick("The people come and go", "Scenery", "PedsLive",
+                 () => c.SceneryLife, v => c.SceneryLife = v,
+                 "They change what they are doing, stretch their legs, walk off and come back");
+            Slide("Nobody about from", "Scenery", "QuietFrom",
+                  () => c.SceneryQuietFrom, v => c.SceneryQuietFrom = (int)v, 0f, 23f, 1f, "0", ":00",
+                  note: "On the game's clock. They walk off as it strikes");
+            Slide("...and back after", "Scenery", "QuietTo",
+                  () => c.SceneryQuietTo, v => c.SceneryQuietTo = (int)v, 0f, 23f, 1f, "0", ":00",
+                  note: "The same hour in both means they are always about");
 
             // ---- shortcuts -------------------------------------------------------
             //
