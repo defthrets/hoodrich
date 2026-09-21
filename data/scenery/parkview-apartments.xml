@@ -2704,7 +2704,7 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-276.3575</X>
+			<X>-275.2575</X>
 			<Y>-1646.2623</Y>
 			<Z>31.8540573</Z>
 			<Pitch>0</Pitch>
@@ -2814,7 +2814,7 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-272.8422</X>
+			<X>-271.7422</X>
 			<Y>-1644.9550</Y>
 			<Z>31.8539848</Z>
 			<Pitch>0</Pitch>
@@ -2856,12 +2856,54 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-274.113708</X>
-			<Y>-1644.91663</Y>
+			<X>-274.6280</X>
+			<Y>-1644.9358</Y>
 			<Z>31.8492527</Z>
 			<Pitch>0</Pitch>
 			<Roll>-0</Roll>
 			<Yaw>-171.714874</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x84302b09</ModelHash>
+		<Type>1</Type>
+		<Dynamic>true</Dynamic>
+		<FrozenPos>false</FrozenPos>
+		<HashName>g_m_y_famfor_01</HashName>
+		<InitialHandle>610118</InitialHandle>
+		<PedProperties>
+			<IsStill>true</IsStill>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
+			<Armour>0</Armour>
+			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
+			<ScenarioActive>false</ScenarioActive>
+			<Animations />
+		</PedProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>200</MaxHealth>
+		<Health>200</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-273.4280</X>
+			<Y>-1644.9358</Y>
+			<Z>31.8495083</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>150.897827</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>
@@ -2966,12 +3008,148 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-255.4664</X>
+			<X>-254.3664</X>
 			<Y>-1673.5711</Y>
 			<Z>31.8533192</Z>
 			<Pitch>0</Pitch>
 			<Roll>-0</Roll>
 			<Yaw>-147.790314</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x4e0ce5d3</ModelHash>
+		<Type>1</Type>
+		<Dynamic>true</Dynamic>
+		<FrozenPos>false</FrozenPos>
+		<HashName>Families Female</HashName>
+		<InitialHandle>610121</InitialHandle>
+		<PedProperties>
+			<IsStill>true</IsStill>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
+			<Armour>0</Armour>
+			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>0,2</_0>
+				<_1>0,0</_1>
+				<_2>1,2</_2>
+				<_3>1,0</_3>
+				<_4>0,0</_4>
+				<_5>0,0</_5>
+				<_6>0,0</_6>
+				<_7>0,0</_7>
+				<_8>0,0</_8>
+				<_9>0,0</_9>
+				<_10>0,0</_10>
+				<_11>0,2</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
+			<ScenarioActive>false</ScenarioActive>
+			<Animations />
+		</PedProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>200</MaxHealth>
+		<Health>200</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-256.5664</X>
+			<Y>-1673.5711</Y>
+			<Z>31.8488312</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>-80.9955521</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x4e0ce5d3</ModelHash>
+		<Type>1</Type>
+		<Dynamic>true</Dynamic>
+		<FrozenPos>false</FrozenPos>
+		<HashName>Families Female</HashName>
+		<InitialHandle>610122</InitialHandle>
+		<PedProperties>
+			<IsStill>true</IsStill>
+			<CanRagdoll>true</CanRagdoll>
+			<HasShortHeight>false</HasShortHeight>
+			<Armour>0</Armour>
+			<CurrentWeapon>0xa2719263</CurrentWeapon>
+			<PedProps>
+				<_0>-1,-1</_0>
+				<_1>-1,-1</_1>
+				<_2>-1,-1</_2>
+				<_3>-1,-1</_3>
+				<_4>-1,-1</_4>
+				<_5>-1,-1</_5>
+				<_6>-1,-1</_6>
+				<_7>-1,-1</_7>
+				<_8>-1,-1</_8>
+				<_9>-1,-1</_9>
+			</PedProps>
+			<PedComps>
+				<_0>1,1</_0>
+				<_1>0,0</_1>
+				<_2>0,1</_2>
+				<_3>0,0</_3>
+				<_4>0,1</_4>
+				<_5>0,0</_5>
+				<_6>0,0</_6>
+				<_7>0,0</_7>
+				<_8>0,0</_8>
+				<_9>0,0</_9>
+				<_10>1,0</_10>
+				<_11>2,0</_11>
+			</PedComps>
+			<RelationshipGroupAltered>false</RelationshipGroupAltered>
+			<RelationshipGroup>0xfade4843</RelationshipGroup>
+			<ScenarioActive>false</ScenarioActive>
+			<Animations />
+		</PedProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>200</MaxHealth>
+		<Health>200</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>-277.4575</X>
+			<Y>-1646.2623</Y>
+			<Z>31.8488312</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>-50.0753975</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>
@@ -3899,7 +4077,7 @@
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-288.3963</X>
+      <X>-287.2963</X>
       <Y>-1672.1095</Y>
       <Z>62.85</Z>
       <Pitch>0</Pitch>
@@ -4012,6 +4190,35 @@
           <Texture>0</Texture>
         </Component>
       </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0xe83b93b7</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_y_famca_01</HashName>
+    <InitialHandle>610152</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>false</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-289.4964</X>
+      <Y>-1672.1095</Y>
+      <Z>62.85</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>0</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
     </PedProperties>
   </Placement>
   <Placement>
@@ -6805,7 +7012,7 @@
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>-277.8831</X>
+      <X>-276.7831</X>
       <Y>-1572.6645</Y>
       <Z>36.053</Z>
       <Pitch>0</Pitch>
@@ -6998,6 +7205,35 @@
           <Texture>0</Texture>
         </Component>
       </ClothingVariations>
+    </PedProperties>
+  </Placement>
+  <Placement>
+    <ModelHash>0xe83b93b7</ModelHash>
+    <Type>1</Type>
+    <DynamicC>true</DynamicC>
+    <FrozenPos>false</FrozenPos>
+    <HashName>g_m_y_famca_01</HashName>
+    <InitialHandle>610509</InitialHandle>
+    <OpacityLevel>255</OpacityLevel>
+    <IsVisible>true</IsVisible>
+    <HasGravity>true</HasGravity>
+    <IsInvincible>false</IsInvincible>
+    <PositionRotation>
+      <X>-278.9831</X>
+      <Y>-1572.6645</Y>
+      <Z>36.054</Z>
+      <Pitch>0</Pitch>
+      <Roll>0</Roll>
+      <Yaw>118.57</Yaw>
+    </PositionRotation>
+    <Attachment isAttached="false" />
+    <PedProperties>
+      <CurrentWeapon>2725352035</CurrentWeapon>
+      <ScenarioActive>false</ScenarioActive>
+      <Scenario></Scenario>
+      <RelationshipGroup></RelationshipGroup>
+      <Health>200</Health>
+      <Armour>0</Armour>
     </PedProperties>
   </Placement>
   <Placement>
