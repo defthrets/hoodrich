@@ -404,8 +404,6 @@ namespace Hoodrich
         /// <summary>Nine walked corners with three of ours stood on each. See Gangs.Posted.</summary>
         private readonly List<Gangs.Posted> _corners = new List<Gangs.Posted>();
 
-        /// <summary>Three of ours kicking a ball about, on one of five spots. See Gangs.Kickabout.</summary>
-        private readonly Gangs.Kickabout _kickabout;
         private readonly Fixture _partyCouch;
         /// <summary>The dog in the yard, and yours once you have petted him.</summary>
         private readonly Trigger _partyDog;
@@ -1159,26 +1157,6 @@ namespace Hoodrich
                 // in the way of the fight, and the block reading as occupied during a war and
                 // quiet the rest of the time is closer to true anyway.
                 _block = new BlockLife(_gangs, "families");
-
-                // A BALL GAME, on whichever of five spots the clock says. Five readings taken
-                // stood on the pavement round Chamberlain Hills and Strawberry; the heading of
-                // each is the way the reading was facing and only sets which way the ring of
-                // three is turned. One spot is live at a time and it moves on every few game
-                // hours, once you are not stood watching it. See Gangs.Kickabout.
-                _kickabout = new Gangs.Kickabout(_cfg, _gangs, "families",
-                    new[]
-                    {
-                        new Vector3(-52.729f, -1475.977f, 32.055f),
-                        new Vector3(-127.069f, -1432.738f, 33.466f),
-                        new Vector3(-205.724f, -1512.071f, 31.632f),
-                        new Vector3(-240.977f, -1530.309f, 31.512f),
-                        new Vector3(-301.785f, -1628.145f, 31.849f)
-                    },
-                    new[] { 70.679f, 206.314f, 154.630f, 115.824f, 318.057f });
-
-                // The block posts about it once per spot. A field copy after _social exists,
-                // for the reason the crew's Feed is set where it is.
-                _kickabout.Feed = _social;
 
                 // Dragged out into the courtyard and left there, the way they are.
                 _couch = new Fixture(new Vector3(-86.429f, -1609.917f, 31.485f), 40.880f,
@@ -4538,8 +4516,6 @@ namespace Hoodrich
                     _partyLight?.Update();
 
                     foreach (var corner in _corners) corner.Update();
-                    Core.Pace.At("_kickabout.Update");
-                    _kickabout?.Update();
                     Core.Pace.At("_partyCouch.Update");
                     _partyCouch.Update();
                     Core.Pace.At("_partyDog.Update");
@@ -5947,7 +5923,6 @@ namespace Hoodrich
             {
                 try { corner.RestoreWorld(); } catch { /* teardown */ }
             }
-            try { _kickabout?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyCouch?.RestoreWorld(); } catch { /* teardown */ }
             try { _partyDog?.RestoreWorld(); } catch { /* teardown */ }
 

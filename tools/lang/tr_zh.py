@@ -93,8 +93,6 @@ T = {
 "On the straights, when they have the room for it": "在直道上，有空间的时候",
 "Crews on foot": "步行团伙",
 "Groups of ours walking the back streets, drinking and smoking": "自己人成群走后街，喝酒抽烟",
-"A kickabout on the block": "街区踢球",
-"Three of ours passing a ball about, on one of five spots, and it moves round": "三个自己人在五个地点之一互相传球，地点会轮换",
 "Crews at once": "同时团伙数",
 "The takeover": "占领",
 "The junction on Carson, once a night between nine and four. Nothing is asked of you": "Carson 的路口，每晚九点到四点之间一次。不需要你做什么",

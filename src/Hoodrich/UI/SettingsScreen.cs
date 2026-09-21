@@ -668,9 +668,6 @@ namespace Hoodrich.UI
             Slide("Crews with a dog", "Block", "WalkerDogs",
                   () => c.WalkerDogs, v => c.WalkerDogs = (int)v, 0f, 100f, 5f, "0", "%",
                   note: "How many of the crews on foot walk a dog");
-            Tick("A kickabout on the block", "Block", "KickaboutEnabled",
-                 () => c.KickaboutEnabled, v => c.KickaboutEnabled = v,
-                 "Three of ours passing a ball about, on one of five spots, and it moves round");
 
             // THE CRASH PROTECTION, ON THE MENU. These are the two lines the war, the takeover
             // and the crews hold off at, and lowering them is the first thing to try on an

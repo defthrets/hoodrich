@@ -137,10 +137,7 @@ namespace Hoodrich.Social
         Dressed,
 
         /// <summary>You came out of the muffler shop with something new on the car.</summary>
-        Tuned,
-
-        /// <summary>Three of ours kicking a ball about on a corner. Nothing to do with you, and the block says so.</summary>
-        Kickabout
+        Tuned
     }
 
     /// <summary>
@@ -1417,10 +1414,7 @@ namespace Hoodrich.Social
             // Those four are reachable from React and from nowhere else.
             if (post != null)
             {
-                // THE BLOCK TALKING ABOUT ITSELF IS NOT A LINE ON YOU. A kickabout on the
-                // corner is the one event here that happens with no help from Franklin, and
-                // it does not belong on the "about you" tab or behind its rail.
-                post.AboutYou = kind != SocialEvent.Kickabout;
+                post.AboutYou = true;
                 Add(post);
                 Notify(post);
             }
@@ -1771,10 +1765,6 @@ namespace Hoodrich.Social
 
                 // Somebody serving somebody on a corner is not news.
                 case SocialEvent.Sale: return 0.05f;
-
-                // A ball game on the corner gets clocked more often than not. It is exactly
-                // the kind of nothing the block talks about all day.
-                case SocialEvent.Kickabout: return 0.6f;
 
                 default: return 0.5f;
             }

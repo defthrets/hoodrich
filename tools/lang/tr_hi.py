@@ -95,8 +95,6 @@ T = {
 "On the straights, when they have the room for it": "Seedhi sadak par, jab jagah ho",
 "Crews on foot": "Paidal crew",
 "Groups of ours walking the back streets, drinking and smoking": "Apne logon ke group peechi galiyon mein, peete aur smoke karte hue",
-"A kickabout on the block": "Block par football",
-"Three of ours passing a ball about, on one of five spots, and it moves round": "Apne teen log paanch jagahon mein se ek par ball pass karte hain, aur jagah badalti rehti hai",
 "Crews at once": "Ek saath crew",
 "The takeover": "Takeover",
 "The junction on Carson, once a night between nine and four. Nothing is asked of you": "Carson ka chauraha, raat mein ek baar nau se chaar ke beech. Tumse kuch nahi maanga jaata",

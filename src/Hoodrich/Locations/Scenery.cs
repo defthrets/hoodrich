@@ -1330,43 +1330,49 @@ namespace Hoodrich.Locations
         // ---- what it is doing ------------------------------------------------------
 
         /// <summary>
-        /// What a ped is given when the file did not say: an ANIMATION, not a scenario.
+        /// What a ped is given when the file did not say: a SCENARIO, with the prop in his hand.
         ///
-        /// A scenario was the old answer and it is the wrong shape here. A scenario is the
-        /// game's own behaviour -- it fetches a prop, it wants a spot it approves of, and it
-        /// can decide it has finished and hand the ped back to standing. Half the peds in
-        /// these scenes already carry an animation somebody picked in the spooner, so the ones
-        /// that do not should be the same KIND of thing rather than a different system that
-        /// happens to look similar from a distance.
+        /// It was an animation, on the argument that a scenario is the game's own behaviour --
+        /// it fetches a prop, it wants a spot it approves of, and it can decide it has finished
+        /// and hand the ped back to standing. All true, and all beside the point once Michael
+        /// looked at the result on 2026-09-21: a smoking animation with no cigarette and a
+        /// phone animation with no phone are a man shifting his weight, and forty of them read
+        /// as forty men doing nothing. The scenario is the thing with the cigarette in it.
+        /// Started in place, so the spot is the mark and nothing is fetched from anywhere; and
+        /// one that ends is given again at the next beat, because every ped has one now. See
+        /// Living a little.
         ///
-        /// STANDING ONES ONLY, and every pair here is checked against the game's own animation
-        /// list rather than remembered. A dictionary or a clip the game does not have plays
-        /// nothing at all, which looks exactly like a ped that was never given anything.
+        /// Every name here is checked against the game's own scenario list rather than
+        /// remembered; the three the shipped scenes already use are among them.
         /// </summary>
-        private static readonly string[][] MenIdle =
+        private static readonly string[] MenIdle =
         {
-            new[] { "amb@world_human_hang_out_street@male_a@idle_a", "idle_a" },
-            new[] { "amb@world_human_hang_out_street@male_a@idle_a", "idle_b" },
-            new[] { "amb@world_human_hang_out_street@male_a@idle_a", "idle_c" },
-            new[] { "amb@world_human_smoking@male@male_a@idle_a", "idle_a" },
-            new[] { "amb@world_human_smoking@male@male_a@idle_a", "idle_c" },
-            new[] { "amb@world_human_drug_dealer_hard@male@idle_a", "idle_a" },
-            new[] { "amb@world_human_drug_dealer_hard@male@idle_a", "idle_c" },
-            new[] { "amb@world_human_stand_impatient@male@no_sign@idle_a", "idle_a" },
-            new[] { "amb@world_human_stand_mobile@male@text@idle_a", "idle_a" },
-            new[] { "amb@world_human_stand_mobile@male@standing@call@idle_a", "idle_a" }
+            "WORLD_HUMAN_SMOKING",
+            "WORLD_HUMAN_STAND_MOBILE",
+            "WORLD_HUMAN_DRINKING",
+            "WORLD_HUMAN_HANG_OUT_STREET",
+            "WORLD_HUMAN_DRUG_DEALER_HARD",
+            "WORLD_HUMAN_SMOKING_POT",
+            "WORLD_HUMAN_LEANING",
+            "WORLD_HUMAN_STAND_IMPATIENT",
+            "WORLD_HUMAN_PARTYING"
         };
 
-        private static readonly string[][] WomenIdle =
+        private static readonly string[] WomenIdle =
         {
-            new[] { "amb@world_human_hang_out_street@female_hold_arm@idle_a", "idle_a" },
-            new[] { "amb@world_human_hang_out_street@female_hold_arm@idle_a", "idle_b" },
-            new[] { "amb@world_human_hang_out_street@female_arms_crossed@idle_a", "idle_a" },
-            new[] { "amb@world_human_hang_out_street@female_arm_side@idle_a", "idle_a" },
-            new[] { "amb@world_human_smoking@female@idle_a", "idle_a" },
-            new[] { "amb@world_human_smoking@female@idle_a", "idle_c" },
-            new[] { "amb@world_human_stand_mobile@female@text@idle_a", "idle_a" },
-            new[] { "amb@world_human_stand_mobile@female@standing@call@idle_a", "idle_a" }
+            "WORLD_HUMAN_SMOKING",
+            "WORLD_HUMAN_STAND_MOBILE",
+            "WORLD_HUMAN_HANG_OUT_STREET",
+            "WORLD_HUMAN_DRINKING",
+            "WORLD_HUMAN_LEANING",
+            "WORLD_HUMAN_PARTYING"
+        };
+
+        /// <summary>The gang signs, thrown up over whatever he is doing. See Sign.</summary>
+        private static readonly string[][] Signs =
+        {
+            new[] { "mp_player_int_uppergang_sign_a", "mp_player_int_gang_sign_a" },
+            new[] { "mp_player_int_uppergang_sign_b", "mp_player_int_gang_sign_b" }
         };
 
         /// <summary>
@@ -1443,25 +1449,36 @@ namespace Hoodrich.Locations
             }
 
             // SAME PED, SAME IDLE, EVERY TIME. Taken from where it stands rather than from a
-            // dice roll, so a corner you walk past twice is the same corner.
-            string[] pick;
-
+            // dice roll, so a corner you walk past twice is the same corner -- and the next
+            // one along each time a beat changes it.
             if (item.Armed)
             {
-                pick = Armed;
+                Give(ped, Armed[0], Armed[1]);
+                return;
             }
-            else
+
+            var list = Male(ped) ? MenIdle : WomenIdle;
+            Scenario(ped, list[(Steady(item.At) + turn) % list.Length]);
+        }
+
+        private static bool Male(Ped ped)
+        {
+            try { return Function.Call<bool>(Hash.IS_PED_MALE, ped.Handle); }
+            catch { return true; }
+        }
+
+        /// <summary>One scenario, in place, kept.</summary>
+        private static void Scenario(Ped ped, string name)
+        {
+            try
             {
-                var man = true;
-
-                try { man = Function.Call<bool>(Hash.IS_PED_MALE, ped.Handle); }
-                catch { /* the men's list, which is the longer of the two */ }
-
-                var list = man ? MenIdle : WomenIdle;
-                pick = list[(Steady(item.At) + turn) % list.Length];
+                Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, ped.Handle, name, 0, true);
+                Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
             }
-
-            Give(ped, pick[0], pick[1]);
+            catch (Exception ex)
+            {
+                Log.Debug("Could not start " + name + ": " + ex.Message);
+            }
         }
 
         /// <summary>
@@ -1471,7 +1488,7 @@ namespace Hoodrich.Locations
         /// something else. A wrong animation is harder to notice than none at all, and none is
         /// what says the name was wrong.
         /// </summary>
-        private static void Give(Ped ped, string dict, string clip)
+        private static void Give(Ped ped, string dict, string clip, int flag = 1)
         {
             try
             {
@@ -1480,7 +1497,7 @@ namespace Hoodrich.Locations
                 if (Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, dict))
                 {
                     Function.Call(Hash.TASK_PLAY_ANIM, ped.Handle, dict, clip,
-                                  8f, -8f, -1, 1, 0f, false, false, false);
+                                  8f, -8f, -1, flag, 0f, false, false, false);
                     return;
                 }
 
@@ -1489,6 +1506,7 @@ namespace Hoodrich.Locations
                     Who = ped,
                     Dict = dict,
                     Clip = clip,
+                    Flag = flag,
                     GiveUpAt = Game.GameTime + AnimWaitMs
                 });
             }
@@ -1504,6 +1522,7 @@ namespace Hoodrich.Locations
             public Ped Who;
             public string Dict;
             public string Clip;
+            public int Flag = 1;
             public int GiveUpAt;
         }
 
@@ -1523,7 +1542,7 @@ namespace Hoodrich.Locations
                     if (Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, wait.Dict))
                     {
                         Function.Call(Hash.TASK_PLAY_ANIM, wait.Who.Handle, wait.Dict, wait.Clip,
-                                      8f, -8f, -1, 1, 0f, false, false, false);
+                                      8f, -8f, -1, wait.Flag, 0f, false, false, false);
 
                         Soon.RemoveAt(i);
                         continue;
@@ -1764,10 +1783,12 @@ namespace Hoodrich.Locations
         /// morning.
         ///
         /// SO EVERY PED HAS A NEXT BEAT, a minute to four away on the real clock, and at the
-        /// beat one of three things happens: he changes what he is doing; he stretches his
-        /// legs -- walks somewhere a few metres off, stands there a while, walks back; or he
-        /// walks off altogether, out of sight, and is back on his mark some minutes later,
-        /// walking in from wherever he went. The file's own choices still win: a man the
+        /// beat one of a few things happens: he changes what he is doing; he has a word with
+        /// whoever is stood nearest, the two of them turned to each other and talking with
+        /// their hands; he throws a gang sign; he stretches his legs -- walks somewhere a few
+        /// metres off, stands there a while, walks back; or he walks off altogether, out of
+        /// sight, and is back on his mark some minutes later, walking in from wherever he
+        /// went. The file's own choices still win: a man the
         /// spooner gave a scenario or an animation comes back to it, never swaps it for one of
         /// ours, and takes his walks half as often.
         ///
@@ -1820,6 +1841,9 @@ namespace Hoodrich.Locations
 
             /// <summary>Stood at the far point, waiting to be unwatched before he goes.</summary>
             public bool Waiting;
+
+            /// <summary>Who he is talking to, while he is.</summary>
+            public Life With;
         }
 
         private enum Stage
@@ -1832,6 +1856,12 @@ namespace Hoodrich.Locations
 
             /// <summary>Stood at Going. NextAt is when he heads back.</summary>
             Loitering,
+
+            /// <summary>Talking to With. NextAt is when they are done.</summary>
+            Chatting,
+
+            /// <summary>A sign thrown up. NextAt is when the idle comes back.</summary>
+            Signing,
 
             /// <summary>Walking back to the mark.</summary>
             Returning,
@@ -1886,6 +1916,19 @@ namespace Hoodrich.Locations
 
         /// <summary>A whole scene leaving or coming back is spread over this long.</summary>
         private const int StaggerMs = 150000;
+
+        /// <summary>How near somebody has to be stood to be worth a word, and how long the word is.</summary>
+        private const float ChatReach = 4f;
+        private const int ChatLeastMs = 20000;
+        private const int ChatMostMs = 45000;
+
+        /// <summary>
+        /// A sign is upper body, on top of the running task: 16 is the upper-body flag and 32
+        /// the secondary one on this build. If that ever reads differently the idle is given
+        /// back five seconds later regardless, which is SignMs.
+        /// </summary>
+        private const int SignFlag = 48;
+        private const int SignMs = 5000;
 
         private static readonly Random Dice = new Random();
 
@@ -2030,24 +2073,16 @@ namespace Hoodrich.Locations
             var ped = l.Who;
             if (ped == null || !ped.Exists()) return;
 
-            string[] pick;
+            Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
 
             if (l.Item.Armed)
             {
-                pick = Armed;
-            }
-            else
-            {
-                var man = true;
-                try { man = Function.Call<bool>(Hash.IS_PED_MALE, ped.Handle); }
-                catch { /* the men's list */ }
-
-                var list = man ? MenIdle : WomenIdle;
-                pick = list[Dice.Next(list.Length)];
+                Give(ped, Armed[0], Armed[1]);
+                return;
             }
 
-            Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
-            Give(ped, pick[0], pick[1]);
+            var list = Male(ped) ? MenIdle : WomenIdle;
+            Scenario(ped, list[Dice.Next(list.Length)]);
         }
 
         /// <summary>Gone, from the world and from the books. The life stays, as Away.</summary>
@@ -2109,7 +2144,12 @@ namespace Hoodrich.Locations
 
             if (_quiet)
             {
-                if (l.State == Stage.Marked || l.State == Stage.Loitering) l.NextAt = now + Dice.Next(StaggerMs);
+                if (l.State == Stage.Marked || l.State == Stage.Loitering ||
+                    l.State == Stage.Chatting || l.State == Stage.Signing)
+                {
+                    l.NextAt = now + Dice.Next(StaggerMs);
+                }
+
                 return;
             }
 
@@ -2277,6 +2317,18 @@ namespace Hoodrich.Locations
                     l.NextAt = now + WalkMs;
                     return true;
 
+                case Stage.Chatting:
+                case Stage.Signing:
+                    if (now < l.NextAt) return true;
+
+                    // Back to the mark and the idle. Home rather than Doing, because a chat
+                    // turns him and unfreezes him, and the mark is where he belongs.
+                    Home(l);
+                    l.With = null;
+                    l.State = Stage.Marked;
+                    l.NextAt = now + (_quiet && !l.Stays ? Dice.Next(StaggerMs) : Beat(l));
+                    return true;
+
                 case Stage.Leaving:
                     {
                         var far = ped.Position.DistanceTo(here);
@@ -2306,15 +2358,31 @@ namespace Hoodrich.Locations
             return true;
         }
 
-        /// <summary>The beat: change what he is doing, stretch his legs, or walk off for a bit.</summary>
+        /// <summary>
+        /// The beat: a word with somebody, a sign, a change of what he is doing, a stretch of
+        /// the legs, or a walk off for a bit.
+        /// </summary>
         private void Choose(Life l, int now)
         {
-            var canVary = !l.Scripted && !l.Item.Armed;
-            var vary = canVary ? 40 : 0;
-            var stroll = canVary ? 35 : 60;
             var roll = Dice.Next(100);
 
-            if (roll < vary)
+            if (l.Scripted)
+            {
+                // A man the spooner gave something to do keeps doing it, and walks now and then.
+                if (l.Stays) { l.NextAt = now + Beat(l); return; }
+                if (roll < 60) Stroll(l, now); else Leave(l, now, false);
+                return;
+            }
+
+            if (roll < 20 && Chat(l, now)) return;
+
+            if (roll < 35 && !l.Item.Armed)
+            {
+                Sign(l, now);
+                return;
+            }
+
+            if (roll < 60 || l.Stays)
             {
                 l.Turn++;
                 Doing(l.Scene, l.Who, l.Item, l.Turn);
@@ -2322,13 +2390,65 @@ namespace Hoodrich.Locations
                 return;
             }
 
-            if (roll < vary + stroll || l.Stays)
+            if (roll < 80)
             {
                 Stroll(l, now);
                 return;
             }
 
             Leave(l, now, false);
+        }
+
+        /// <summary>
+        /// A word with whoever is stood nearest: the two of them turned to each other and
+        /// talking with their hands for a while, then back to what they were doing. The
+        /// game's own chat task, which is what two peds on a corner in the base game are
+        /// running. Nobody the spooner gave a job to is interrupted for it.
+        /// </summary>
+        private bool Chat(Life l, int now)
+        {
+            Life other = null;
+            var best = ChatReach;
+
+            foreach (var o in _lives)
+            {
+                if (o == l || o.Scene != l.Scene || o.State != Stage.Marked || o.Scripted) continue;
+                if (o.Who == null || !o.Who.Exists() || !o.Who.IsAlive) continue;
+
+                var d = o.Who.Position.DistanceTo(l.Who.Position);
+                if (d < best) { best = d; other = o; }
+            }
+
+            if (other == null) return false;
+
+            var until = now + Between(ChatLeastMs, ChatMostMs);
+
+            foreach (var pair in new[] { new[] { l, other }, new[] { other, l } })
+            {
+                var me = pair[0];
+                var you = pair[1];
+
+                Loose(me);
+                Function.Call(Hash.CLEAR_PED_TASKS, me.Who.Handle);
+                Function.Call(Hash.TASK_CHAT_TO_PED, me.Who.Handle, you.Who.Handle, 16, 0f, 0f, 0f, 0f, 0f);
+                Function.Call(Hash.SET_PED_KEEP_TASK, me.Who.Handle, true);
+
+                me.State = Stage.Chatting;
+                me.With = you;
+                me.NextAt = until;
+            }
+
+            return true;
+        }
+
+        /// <summary>A gang sign, thrown up over whatever he is doing, and the idle back after it.</summary>
+        private void Sign(Life l, int now)
+        {
+            var pick = Signs[Dice.Next(Signs.Length)];
+            Give(l.Who, pick[0], pick[1], SignFlag);
+
+            l.State = Stage.Signing;
+            l.NextAt = now + SignMs;
         }
 
         private void Stroll(Life l, int now)
