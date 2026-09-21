@@ -101,6 +101,9 @@ namespace Hoodrich.Locations
             /// <summary>How many of its peds were not stood up because of the hour. See Living a little.</summary>
             public int AwayTonight;
 
+            /// <summary>How many of its peds are walking in rather than stood on the spot. See Step.</summary>
+            public int WalkingIn;
+
             /// <summary>Whether the builder has been let past the first ped. See Step, "the ground first".</summary>
             public bool PedsGo;
 
@@ -681,6 +684,7 @@ namespace Hoodrich.Locations
             scene.Missed = 0;
             scene.Waited = 0;
             scene.AwayTonight = 0;
+            scene.WalkingIn = 0;
             scene.PedsGo = false;
             scene.PedsBy = 0;
             scene.Paved.Clear();
@@ -736,6 +740,33 @@ namespace Hoodrich.Locations
                 // Not today.
                 if (scene.Skip.Count > 0 && scene.Skip.Contains(item.Handle))
                 {
+                    scene.Cursor++;
+                    scene.Waited = 0;
+                    continue;
+                }
+
+                // WALKED IN, NOT SPAWNED ON THE SPOT. A man who appears on his mark in front
+                // of you is a script; one who walks up to it is a person. So a ped whose mark
+                // can be seen, or is near, is not stood up here at all: he is written down as
+                // away and comes back the way anybody does -- stood up off screen a way off
+                // and walked in (see ComeBack), the whole scene arriving over half a minute
+                // or so. Marks nobody can see are filled directly, because nobody is watching
+                // and the walk would be forty men crossing the map for no one; and the ones
+                // the file says stay -- up on the roofs and floors, where there is no path in
+                // -- are filled directly too. Michael asked for it on 2026-09-21.
+                if (item.What == Spooner.Kind.Ped && LifeOn && !_quiet &&
+                    !scene.Stays.Contains(item.Handle) && WalksIn(item))
+                {
+                    _lives.Add(new Life
+                    {
+                        Scene = scene,
+                        Item = item,
+                        State = Stage.Away,
+                        NextAt = Game.GameTime + Dice.Next(WalkInStaggerMs),
+                        Scripted = Scripted(item)
+                    });
+
+                    scene.WalkingIn++;
                     scene.Cursor++;
                     scene.Waited = 0;
                     continue;
@@ -833,8 +864,37 @@ namespace Hoodrich.Locations
 
             Log.Info("Built \"" + scene.Name + "\": " + scene.Made + " up" +
                      (scene.Missed > 0 ? ", " + scene.Missed + " skipped or would not load" : "") +
+                     (scene.WalkingIn > 0 ? ", " + scene.WalkingIn + " walking in" : "") +
                      (scene.AwayTonight > 0 ? ", " + scene.AwayTonight + " not about at this hour (it is " + ClockHour() + ":00)" : "") + ".");
         }
+
+        /// <summary>
+        /// Whether a ped's mark is somewhere the player would see him appear: on screen, or
+        /// within NearMark of the player, where a man popping into being behind you is
+        /// heard as much as seen.
+        /// </summary>
+        private static bool WalksIn(Spooner.Placed item)
+        {
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return false;
+
+                if (item.At.DistanceTo(me.Position) <= NearMark) return true;
+
+                return Seen(item.At);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>Marks nearer than this walk in whether or not they are on screen.</summary>
+        private const float NearMark = 60f;
+
+        /// <summary>A scene's people arrive spread over this long.</summary>
+        private const int WalkInStaggerMs = 40000;
 
         /// <summary>
         /// One thing stood up, written into the scene's books -- and a ped given something to
