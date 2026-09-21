@@ -24,7 +24,7 @@ wins over one of the same name in Menyoo's folder.
 
 WHAT SHIPS WITH THE MOD
 -----------------------
-Ten scenes are in this folder already, 645 placements between them:
+Nine scenes are in this folder already, 214 placements between them:
 
   the-block.xml     Ten of the set stood around Chamberlain and Grove, most of
                     them holding a rifle, plus the fences at Lamar's.
@@ -68,23 +68,6 @@ Ten scenes are in this folder already, 645 placements between them:
                     And the booth in the corner: decks, a laptop and a mic on
                     a stand. He tells you about that booth the first time you
                     meet him, so it had better be there.
-  parkview-apartments.xml
-                    Parkview, on the open ground in Chamberlain Hills: three
-                    apartment blocks and three houses stood up where there
-                    was nothing, residential fencing, streetlights, cypresses,
-                    weeds and dry grass, a billboard, posters and murals on
-                    the walls, two vending machines, three car wrecks, a
-                    couch, bikes and bike racks, bin bags and rubbish, weed
-                    plants and planters on the roofs, the ground under the
-                    east block, forty-odd of the set stood about -- on the
-                    ground, on the floors of the blocks and up on the roofs,
-                    Vernon among them -- and a camp in the corner: two
-                    shelters, a mattress, a stove, a bottle and gravestones.
-                    Michael placed it in the spooner over seven saves on 20
-                    and 21 September 2026 and two captures of the world; the
-                    peds on the roofs are named as staying, since there is no
-                    walking off a building.
-
 They came out of the spooner and were copied in here, so they no longer need
 Menyoo installed. If you still have the originals in menyooStuff\Spooner under
 their old names, nothing breaks: a placement whose model is already standing
@@ -97,7 +80,7 @@ A shipped file can also name the saves it was made from, in its Note:
 
 and those files are skipped in menyooStuff\Spooner from then on, so a thing
 taken out of the shipped copy -- a sign, a model swapped for one with collision
--- does not come back from the original. Eight of the files here name theirs.
+-- does not come back from the original. Seven of the files here name theirs.
 
 TAKING SOMETHING OUT
 --------------------
@@ -190,9 +173,8 @@ Z you read off the screen stood on it. Leave it off and the mod uses the height
 the scene's other props stand at inside the slab, and failing that the model's
 bounding box, which can be metres above the ground you see (Parkview's was).
 Only named ones get a floor, because a destruction model can as easily be a
-wall as a floor. The log line names the handle to write. Parkview had two
-named until its ground pieces came out; the clause is what to write when the
-next slab goes in.
+wall as a floor. The log line names the handle to write. The clause is
+what to write when a slab with no collision goes in.
 
 SETTINGS  (Hoodrich.ini, [Scenery])
 -----------------------------------
@@ -209,3 +191,9 @@ Whatever you placed this session is still only in memory. Open the mod's
 settings, find "Spooner scenes", and press "Save everything around me" -- it
 writes the placed peds, cars and props within 80 m into this folder as a scene
 file and lists every one of them in Hoodrich.log. The file opens in Menyoo too.
+
+PARKVIEW
+--------
+The scene on the open ground in Chamberlain Hills lives in its own mod now,
+Parkview (github.com/defthrets/parkview), built by the same loader. It is not
+in this folder so the two never double up.
