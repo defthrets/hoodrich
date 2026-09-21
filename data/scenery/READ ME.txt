@@ -18,7 +18,7 @@ wins over one of the same name in Menyoo's folder.
 
 WHAT SHIPS WITH THE MOD
 -----------------------
-Ten scenes are in this folder already, 275 placements between them:
+Ten scenes are in this folder already, 274 placements between them:
 
   the-block.xml     Ten of the set stood around Chamberlain and Grove, most of
                     them holding a rifle, plus the fences at Lamar's.
@@ -159,15 +159,15 @@ stood up on open ground is one you fall straight through. The log says so:
 the file's Note, by its saved handle, and a floor is laid under it -- invisible
 building blocks, measured against the slab, their tops exactly at its top:
 
-  <Note>floors: 204034@30.85, 204290@30.85</Note>
+  <Note>floors: 204034@30.85</Note>
 
 The number after @ is where the top of it is, as a height in the world -- the
 Z you read off the screen stood on it. Leave it off and the mod uses the height
 the scene's other props stand at inside the slab, and failing that the model's
 bounding box, which can be metres above the ground you see (Parkview's was).
 Only named ones get a floor, because a destruction model can as easily be a
-wall as a floor. The log line names the handle to write. Parkview's two ground
-pieces are named already.
+wall as a floor. The log line names the handle to write. Parkview's ground
+piece is named already.
 
 SETTINGS  (Hoodrich.ini, [Scenery])
 -----------------------------------

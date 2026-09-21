@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <SpoonerPlacements>
-  <Note>absorbs: parkview apartments, parkview apartments1, parkview, parkway apartments, parkway gardens, parkview1 | floors: 204034@30.85, 204290@30.85</Note>
+  <Note>absorbs: parkview apartments, parkview apartments1, parkview, parkway apartments, parkway gardens, parkview1 | floors: 204034@30.85</Note>
   <AudioFile />
   <ClearWorld>0</ClearWorld>
   <ClearDatabase>false</ClearDatabase>
@@ -197,27 +197,6 @@
       <Pitch>0</Pitch>
       <Roll>0</Roll>
       <Yaw>135.6163</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x75e63043</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>des_aptblock_root002</HashName>
-    <InitialHandle>204290</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-293.9243</X>
-      <Y>-1652.282</Y>
-      <Z>27.0488</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>-44.0838</Yaw>
     </PositionRotation>
     <Attachment isAttached="false" />
   </Placement>
