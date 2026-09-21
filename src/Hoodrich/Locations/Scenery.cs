@@ -1534,6 +1534,15 @@ namespace Hoodrich.Locations
             Function.Call(Hash.SET_PED_CONFIG_FLAG, ped.Handle, 17, true);   // Stays put.
             Function.Call(Hash.SET_PED_CONFIG_FLAG, ped.Handle, 208, true);  // Does not go looking for a scenario.
 
+            // ON FOOT AND ON THE FLAT. A walk (see Living a little) goes round a fence, not
+            // over it, and never off a ledge or up a ladder: a man vaulting a fence to get to
+            // his mark is a stunt, and one dropping off a roof is a body.
+            Function.Call(Hash.SET_PED_PATH_CAN_USE_CLIMBOVERS, ped.Handle, false);
+            Function.Call(Hash.SET_PED_PATH_CAN_USE_LADDERS, ped.Handle, false);
+            Function.Call(Hash.SET_PED_PATH_CAN_DROP_FROM_HEIGHT, ped.Handle, false);
+            Function.Call(Hash.SET_PED_PATH_AVOID_FIRE, ped.Handle, true);
+            Function.Call(Hash.SET_PED_PATH_PREFER_TO_AVOID_WATER, ped.Handle, true);
+
             if (item.Health > 0)
             {
                 ped.MaxHealth = Math.Max(item.Health, ped.MaxHealth);
@@ -1668,7 +1677,15 @@ namespace Hoodrich.Locations
             "WORLD_HUMAN_SMOKING_POT",
             "WORLD_HUMAN_LEANING",
             "WORLD_HUMAN_STAND_IMPATIENT",
-            "WORLD_HUMAN_PARTYING"
+            "WORLD_HUMAN_PARTYING",
+            "WORLD_HUMAN_HANG_OUT_STREET_CLUBHOUSE",
+            "WORLD_HUMAN_AA_SMOKE",
+            "WORLD_HUMAN_STAND_MOBILE_UPRIGHT",
+            "WORLD_HUMAN_MUSCLE_FLEX",
+            "WORLD_HUMAN_DRUG_DEALER",
+            "WORLD_HUMAN_STAND_IMPATIENT_UPRIGHT",
+            "WORLD_HUMAN_TOURIST_MOBILE",
+            "WORLD_HUMAN_STUPOR"
         };
 
         private static readonly string[] WomenIdle =
@@ -1678,7 +1695,13 @@ namespace Hoodrich.Locations
             "WORLD_HUMAN_HANG_OUT_STREET",
             "WORLD_HUMAN_DRINKING",
             "WORLD_HUMAN_LEANING",
-            "WORLD_HUMAN_PARTYING"
+            "WORLD_HUMAN_PARTYING",
+            "WORLD_HUMAN_HANG_OUT_STREET_CLUBHOUSE",
+            "WORLD_HUMAN_AA_SMOKE",
+            "WORLD_HUMAN_STAND_MOBILE_UPRIGHT",
+            "WORLD_HUMAN_TOURIST_MOBILE",
+            "WORLD_HUMAN_STAND_IMPATIENT_UPRIGHT",
+            "WORLD_HUMAN_CHEERING"
         };
 
         /// <summary>
@@ -1692,7 +1715,10 @@ namespace Hoodrich.Locations
             "WORLD_HUMAN_BUM_SLUMPED",
             "WORLD_HUMAN_DRINKING",
             "WORLD_HUMAN_SMOKING",
-            "WORLD_HUMAN_BUM_FREEWAY"
+            "WORLD_HUMAN_BUM_FREEWAY",
+            "WORLD_HUMAN_STUPOR",
+            "WORLD_HUMAN_AA_SMOKE",
+            "WORLD_HUMAN_MUSICIAN"
         };
 
         private static readonly string[] HoboModels =
@@ -2254,9 +2280,9 @@ namespace Hoodrich.Locations
 
         private bool LifeOn => _cfg == null || _cfg.SceneryLife;
 
-        /// <summary>How long between beats for one ped: a minute to four on the real clock.</summary>
-        private const int BeatLeastMs = 60000;
-        private const int BeatMostMs = 240000;
+        /// <summary>How long between beats for one ped: three quarters of a minute to two and a half on the real clock.</summary>
+        private const int BeatLeastMs = 45000;
+        private const int BeatMostMs = 150000;
 
         /// <summary>How far a stroll goes, and how far a walk-off goes.</summary>
         private const float StrollLeast = 4f;
