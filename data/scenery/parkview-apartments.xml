@@ -747,48 +747,6 @@
     <Attachment isAttached="false" />
   </Placement>
   <Placement>
-    <ModelHash>0x877fc576</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>des_trailerparkb_01</HashName>
-    <InitialHandle>245506</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-302.0246</X>
-      <Y>-1612.392</Y>
-      <Z>29.4324</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>114.6402</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
-    <ModelHash>0x02ad97e6</ModelHash>
-    <Type>3</Type>
-    <DynamicC>false</DynamicC>
-    <FrozenPos>true</FrozenPos>
-    <HashName>des_trailerparka_01</HashName>
-    <InitialHandle>245762</InitialHandle>
-    <OpacityLevel>255</OpacityLevel>
-    <IsVisible>true</IsVisible>
-    <HasGravity>true</HasGravity>
-    <IsInvincible>false</IsInvincible>
-    <PositionRotation>
-      <X>-288.9423</X>
-      <Y>-1670.764</Y>
-      <Z>28.5183</Z>
-      <Pitch>0</Pitch>
-      <Roll>0</Roll>
-      <Yaw>135.2525</Yaw>
-    </PositionRotation>
-    <Attachment isAttached="false" />
-  </Placement>
-  <Placement>
     <ModelHash>0xe093d59c</ModelHash>
     <Type>3</Type>
     <DynamicC>false</DynamicC>

@@ -18,7 +18,7 @@ wins over one of the same name in Menyoo's folder.
 
 WHAT SHIPS WITH THE MOD
 -----------------------
-Ten scenes are in this folder already, 277 placements between them:
+Ten scenes are in this folder already, 275 placements between them:
 
   the-block.xml     Ten of the set stood around Chamberlain and Grove, most of
                     them holding a rifle, plus the fences at Lamar's.
@@ -65,8 +65,8 @@ Ten scenes are in this folder already, 277 placements between them:
   parkview-apartments.xml
                     Parkview, on the open ground in Chamberlain Hills: three
                     apartment blocks, three houses and the ground under them
-                    stood up where there was nothing, trailer-park pieces,
-                    residential fencing, streetlights, cypresses, three car
+                    stood up where there was nothing, residential fencing,
+                    streetlights, cypresses, three car
                     wrecks, a couch, a bike and bin bags, and a camp in the
                     corner -- two shelters, a mattress, a stove, a bottle and
                     a gravestone. Michael placed it in the spooner over six
