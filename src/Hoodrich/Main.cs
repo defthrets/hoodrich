@@ -202,6 +202,109 @@ namespace Hoodrich
         private bool _carrying;
         private int _dressedBody;
 
+        /// <summary>Which ped we last dressed, so a new body for the player is noticed.</summary>
+        private int _dressedPed;
+
+        /// <summary>Whether he was on the floor or in a cell last time we looked.</summary>
+        private bool _wasTakenAway;
+
+        /// <summary>Whether a save was loading last time we looked. See KeepHimDressed.</summary>
+        private bool _wasLoaded;
+
+        /// <summary>Keep putting the outfit back on until this passes. See KeepHimDressed.</summary>
+        private int _redressUntil;
+
+        /// <summary>
+        /// Long enough to win. The game restores his default clothes over several frames after
+        /// a respawn, not on one, so a single re-dress on the frame he stands up gets quietly
+        /// overwritten a moment later and looks exactly like this never having been fixed.
+        /// </summary>
+        private const int RedressForMs = 4000;
+
+        /// <summary>
+        /// The outfit from the closet goes back on him every time the game takes it off.
+        ///
+        /// IT USED TO BE A ONE-SHOT. The old code applied the saved outfit once and latched,
+        /// and only unlatched when the player's MODEL changed -- so it survived a body swap and
+        /// nothing else. Dying does not change his model. Neither does Pillbox, or a cell, or
+        /// loading a save. In every one of those the game dresses him in whatever the story
+        /// last put him in, the latch was still set, and the hour somebody spent at the closet
+        /// was gone until they went back and did it again.
+        ///
+        /// FOUR TRIGGERS, ENUMERATED RATHER THAN SNIFFED. The tempting version of this watches
+        /// the clothes themselves and puts them back whenever they differ from the record --
+        /// one detector, covers every cause, no list to keep up to date. It is the wrong shape
+        /// here for two reasons. Body armour owns component slot 9 and a mask owns whichever
+        /// slot the ini names, so a drift watcher spends its life fighting Strap and Mask over
+        /// slots they are entitled to. And a clothes shop is a legitimate way to change, so it
+        /// would follow the player into Binco and undo what they just paid for.
+        ///
+        /// So the list is the list: a new body, getting up off the floor, coming out of a cell,
+        /// and the player's ped being replaced underneath us, which is what a loaded save looks
+        /// like from in here.
+        /// </summary>
+        private void KeepHimDressed()
+        {
+            try
+            {
+                // ASKED FIRST, BEFORE THE PED. While a save is loading there is no player ped
+                // to ask anything about, so a version of this that checked the ped first would
+                // return early every frame of the load and never notice one happened.
+                if (Game.IsLoading)
+                {
+                    _wasLoaded = true;
+                    return;
+                }
+
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return;
+
+                // Never while the closet is open. He is being dressed by hand in there and the
+                // record is deliberately out of date until the screen closes and writes it.
+                if (_wardrobeScreen != null && _wardrobeScreen.IsOpen) return;
+
+                var body = me.Model.Hash;
+                var down = me.IsDead || Game.Player.IsDead
+                           || Function.Call<bool>(Hash.IS_PLAYER_BEING_ARRESTED, Game.Player, true);
+
+                // On the floor or in the back of a car: nothing to do but notice.
+                if (down)
+                {
+                    _wasTakenAway = true;
+                    return;
+                }
+
+                var reason = body != _dressedBody ? "he is a different body"
+                           : _wasLoaded ? "a save just loaded"
+                           : me.Handle != _dressedPed ? "the game swapped his ped"
+                           : _wasTakenAway ? "he is back on his feet"
+                           : null;
+
+                if (reason != null)
+                {
+                    _dressedBody = body;
+                    _dressedPed = me.Handle;
+                    _wasTakenAway = false;
+                    _wasLoaded = false;
+                    _dressed = false;
+                    _redressUntil = Game.GameTime + RedressForMs;
+                    _carrying = false;      // the walk and the gun hold go with the clothes
+
+                    Log.Info("Dressing him again: " + reason + ".");
+                }
+
+                // Cheap and idempotent -- a dozen natives that set slots to what they are
+                // already set to -- so running it every frame of the window costs nothing and
+                // removes the race with the game's own restore entirely.
+                if (Game.GameTime < _redressUntil) Wardrobe.Apply(_state);
+                else if (!_dressed) _dressed = Wardrobe.Apply(_state);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not put his own clothes back on: " + ex.Message);
+            }
+        }
+
         /// <summary>The inbox. Its store is static; only the screen is an object.</summary>
         private readonly MessagesScreen _messages = new MessagesScreen();
 
@@ -3743,6 +3846,14 @@ namespace Hoodrich
                 WatchForPillbox();
                 WatchForGunfire();
 
+                // EVERY FRAME, PLAYABLE OR NOT, and for the same reason the bag check below
+                // says so: dying and being cuffed both stand the playable tick down, so this
+                // sat inside the gate it was first written in and never once saw a death --
+                // which is the entire case it exists for. Applying behind the fade is also
+                // when you want it: he is dressed before the screen comes back.
+                Core.Pace.At("KeepHimDressed");
+                KeepHimDressed();
+
                 // And the bag. Dying and being cuffed both stand the playable tick down, so
                 // the drop-on-death check inside it never once saw a death. See DeadDrop.Watch.
                 Core.Pace.At("_deadDrop.Watch");
@@ -4205,18 +4316,6 @@ namespace Hoodrich
                     Core.Pace.At("Core.Mask.Update");
                     Core.Mask.Update(_cfg);
 
-                    // What he settled on at the closet goes back on him once he is stood in
-                    // the world -- and AGAIN whenever the body changes, because what is saved
-                    // is filed per body and a body swap makes the last lot the wrong lot.
-                    var body = Game.Player.Character == null ? 0 : Game.Player.Character.Model.Hash;
-
-                    if (body != _dressedBody)
-                    {
-                        _dressedBody = body;
-                        _dressed = false;
-                    }
-
-                    if (!_dressed) _dressed = Wardrobe.Apply(_state);
 
                     // AND HOW HE CARRIES HIMSELF, on the same terms: a movement clipset asked
                     // for before it has streamed in is silently ignored, so this keeps asking
