@@ -92,6 +92,7 @@
       "gender": "female",
       "pic": "",
       "bars": false,
+      "types": "proper",
       "voice": ""
     },
     {
@@ -174,6 +175,7 @@
       "gender": "female",
       "pic": "",
       "bars": false,
+      "types": "proper",
       "voice": ""
     },
     {
@@ -237,6 +239,7 @@
       "verified": false,
       "gender": "male",
       "pic": "",
+      "types": "proper",
       "voice": ""
     },
     {
@@ -507,6 +510,7 @@
       "verified": false,
       "gender": "female",
       "pic": "",
+      "types": "plain",
       "voice": ""
     },
     {
@@ -516,6 +520,7 @@
       "verified": false,
       "gender": "male",
       "pic": "",
+      "types": "plain",
       "voice": ""
     },
     {
@@ -534,6 +539,7 @@
       "verified": false,
       "gender": "male",
       "pic": "",
+      "types": "plain",
       "voice": ""
     },
     {
@@ -615,6 +621,7 @@
       "verified": false,
       "gender": "female",
       "pic": "",
+      "types": "proper",
       "voice": ""
     },
     {

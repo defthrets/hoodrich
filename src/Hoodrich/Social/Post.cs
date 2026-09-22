@@ -60,6 +60,15 @@ namespace Hoodrich.Social
         public bool HasVoice => !string.IsNullOrEmpty(Voice);
 
         /// <summary>
+        /// How they type. See Typing.
+        ///
+        /// Not what they say -- how it comes out of their thumbs. Whether the apostrophes
+        /// survive, whether a sentence gets a capital, whether -ing keeps its g. It is decided
+        /// once from the handle inside a band, so it is the same person every time.
+        /// </summary>
+        public Typing Types = Typing.AsWritten;
+
+        /// <summary>
         /// A company, a station, an agency -- anything that is not a person.
         ///
         /// Carried as the gender rather than as its own flag because that is the field that

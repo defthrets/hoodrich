@@ -446,6 +446,30 @@ namespace Hoodrich.Social
                     var handle = node["handle"].AsString("");
                     if (string.IsNullOrEmpty(handle)) continue;
 
+                    var gender = node["gender"].AsString("male");
+                    var voice = node["voice"].AsString("");
+
+                    // HOW THEY TYPE, which the file may say and mostly does not.
+                    //
+                    // The default is the safe one in both directions. Anybody with written
+                    // lines of their own is left exactly as written -- a cop, a news desk and
+                    // Lamar all had that decision made for them by whoever wrote the line, and
+                    // a second opinion here would only overwrite it. So is every organisation,
+                    // for the same reason plus the obvious one.
+                    //
+                    // Everybody else is somebody with no words of their own, drawing from a
+                    // pool shared with seventy-two other people, and they are the ones this
+                    // was built for.
+                    var band = node["types"].AsString("");
+
+                    if (string.IsNullOrEmpty(band))
+                    {
+                        band = !string.IsNullOrEmpty(voice)
+                            || string.Equals(gender, "none", StringComparison.OrdinalIgnoreCase)
+                            ? "none"
+                            : Typing.Hash(handle, 9) % 100 < 74 ? "street" : "plain";
+                    }
+
                     feed._authors.Add(new Author
                     {
                         Handle = handle.StartsWith("@") ? handle : "@" + handle,
@@ -453,9 +477,10 @@ namespace Hoodrich.Social
                         Gang = node["gang"].AsString(""),
                         Verified = node["verified"].AsBool(false),
                         Bars = node["bars"].AsBool(true),
-                        Gender = node["gender"].AsString("male"),
+                        Gender = gender,
                         Pic = node["pic"].AsString(""),
-                        Voice = node["voice"].AsString(""),
+                        Voice = voice,
+                        Types = Typing.Band(band, handle),
                         Tint = TintFor(handle, node["gang"].AsString(""))
                     });
                 }
@@ -546,10 +571,24 @@ namespace Hoodrich.Social
                     if (words.Count > 0) feed._selfWords[gang] = words;
                 }
 
+                // WHICH WORDS ARE SOMEBODY'S NAME, learned off the finished file so that
+                // lowercasing an opener never takes the capital off Franklin or off Grove.
+                // Done last on purpose: it needs every line the file has, including the ones
+                // written for a single voice, because a name only has to appear mid-sentence
+                // ONCE anywhere to be safe everywhere. See Typing.Learn.
+                foreach (var set in feed._templates.Values) Typing.Learn(set);
+                foreach (var sets in feed._voices.Values)
+                {
+                    foreach (var set in sets.Values) Typing.Learn(set);
+                }
+                foreach (var kind in feed._comments.Values) Typing.Learn(kind);
+                foreach (var list in feed._slots.Values) Typing.Learn(list);
+
                 Log.Info("Socials loaded: " + feed._authors.Count + " people (" +
                          feed._voices.Count + " with their own voice), " +
                          feed._templates.Count + " post sets, " + feed._slots.Count +
-                         " word lists, " + feed._comments.Count + " kinds of reply.");
+                         " word lists, " + feed._comments.Count + " kinds of reply, " +
+                         Typing.NamesKnown + " names that keep their capital.");
             }
             catch (Exception ex)
             {
@@ -799,6 +838,11 @@ namespace Hoodrich.Social
                     Gender = "male",
                     Pic = "CHAR_FRANKLIN",
                     Tint = System.Drawing.Color.FromArgb(255, 60, 180, 75),
+
+                    // He types like everybody else he grew up with. Banded rather than left
+                    // as-written because the You sets are the shared pool too -- they are
+                    // written once and posted under his name, not hand-written for him.
+                    Types = Typing.Band("street", "@franklin_c"),
                 };
 
                 return _me;
@@ -2418,6 +2462,13 @@ namespace Hoodrich.Social
             var text = template;
             var guard = 0;
 
+            // WHETHER THERE IS AN OPENING WORD TO LOWERCASE AT ALL.
+            //
+            // Asked before anything is filled, because afterwards there is no way to tell.
+            // A template that starts with {here} or {subject} opens on a place or a set --
+            // Chamberlain Hills, the Ballas -- and those keep their capitals whoever is typing.
+            var opens = !template.TrimStart().StartsWith("{", StringComparison.Ordinal);
+
             while (guard++ < 12)
             {
                 var open = text.IndexOf('{');
@@ -2429,10 +2480,47 @@ namespace Hoodrich.Social
                 var key = text.Substring(open + 1, close - open - 1);
                 var value = ValueFor(key, subject, amount, by);
 
+                // A WORD LIST IS SOMEBODY TALKING TOO. {hearsay} and {reaction} hold whole
+                // clauses -- "they say", "I'm not even surprised" -- and leaving them unstyled
+                // put a tidy little fragment with all its apostrophes in the middle of a
+                // sentence that had just lost every one of its own. The built-in slots are
+                // names and numbers and are left alone.
+                if (by != null && !by.Types.Idle && IsWordList(key))
+                {
+                    value = by.Types.Apply(value, false);
+                }
+
                 text = text.Substring(0, open) + value + text.Substring(close + 1);
             }
 
-            return text;
+            return by == null ? text : by.Types.Apply(text, opens);
+        }
+
+        /// <summary>
+        /// Whether a slot holds words somebody said, rather than a name or a number.
+        ///
+        /// The built-in ten are filled by ValueFor out of the world -- the zone you are in,
+        /// the set you run with, an amount of money -- and none of them wants styling. Every
+        /// other key is a list out of the file, written in somebody's voice, and does.
+        /// </summary>
+        private bool IsWordList(string key)
+        {
+            switch ((key ?? "").ToLowerInvariant())
+            {
+                case "count":
+                case "here":
+                case "money":
+                case "rival":
+                case "street":
+                case "subject":
+                case "theircolour":
+                case "theirs":
+                case "you":
+                case "yours":
+                    return false;
+                default:
+                    return _slots.ContainsKey(key);
+            }
         }
 
         private string ValueFor(string key, string subject, int amount, Author by = null)
