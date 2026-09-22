@@ -5190,9 +5190,17 @@ namespace Hoodrich
                 var player = Game.Player.Character;
                 if (player == null || !player.Exists()) return;
 
-                // Dead means the hospital took everything, which is the game doing what the
-                // locker is explicitly not meant to undo.
-                if (player.IsDead && _locker != null) _locker.TakenOffHim("wasted");
+                // DYING NO LONGER EMPTIES THE LOCKER, and the old comment here was wrong about
+                // why it did. It said the hospital takes everything and the locker is not meant
+                // to undo the game -- but the game does not take them. Get wasted in story mode
+                // and you wake at Pillbox lighter by a hospital bill and carrying every weapon
+                // you had. The locker was inventing a punishment and then enforcing it, and
+                // enforcing it permanently: the list was CLEARED, so a gun paid for at the
+                // courtyard was gone for the rest of the save the first time anybody died.
+                //
+                // Being searched still empties it -- see PostUp, where it is a deliberate
+                // mechanic of this mod and losing everything is the entire point of the event.
+                // That is a thing we do on purpose, which is exactly what this was not.
 
                 if (player.IsDead)
                 {
