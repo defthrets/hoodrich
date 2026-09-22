@@ -1,12 +1,13 @@
 # How the feed talks
 
 The style guide for `data/socials.json`. Read it before adding lines, because the feed is
-5,700 templates and there is no way to tell by eye whether a new one fits — everything you
-write sounds right to you, which is exactly why this exists as a written rule and as a
-measurement (`python tools\socials_check.py`) instead of as taste.
+6,000 templates and there is no way to tell by eye whether a new one fits — everything you
+write sounds right to you, which is why this exists as a written rule and as a measurement
+(`python tools\socials_check.py`) instead of as taste.
 
-Researched 2026-09-22 against the conventions of LA street and rap social posting. It
-describes a register, not any real person or set.
+Researched in two passes, both against conventions rather than against any real person: the
+street and rap register, and the ordinary-working-person register for everybody in this city
+who is not in a gang.
 
 ---
 
@@ -19,42 +20,70 @@ Over-lexicalising is the commonest way to get this wrong. A line that is just
 > they think im sleep
 
 is more in-register than one with four slang terms in it. The shape — short, unpunctuated,
-understated — does the work. The vocabulary is a garnish.
+understated — does the work. Vocabulary is a garnish.
 
 Three properties, in order of how much they matter:
 
-1. **Brevity.** A real post runs 4 to 9 words. Length is the tell, not vocabulary.
+1. **Brevity.** A real post runs 4 to 9 words on the street, 6 to 16 for everybody else.
+   Length is the tell, not vocabulary.
 2. **Under-marking.** Punctuation, capitals and conjunctions are *absent*, not replaced with
    something cuter. Nobody is performing informality; they are not spending keystrokes.
 3. **Understatement.** Flat declaratives. Emphasis comes from repetition, capitals or an oath
    phrase, almost never from adjectives or exclamation marks.
+
+And a fourth that applies only to the ordinary cohort: **a quarter of the lines should be
+actively dull.** A feed reads as real in proportion to how much of it is not worth reading. If
+every line has a punchline it reads as a writers' room.
 
 ---
 
 ## What you do NOT have to write
 
 Orthography is applied at runtime, per account, by `Social.Typing`. Write the line in whatever
-case reads clearly and **leave the apostrophes in** — the styler removes them in the mouth of
-anybody who types that way, and keeps them in the auntie's.
+case reads clearly, **leave the apostrophes in**, and **leave the terminal punctuation off**.
+The styler strips for the people who type that way and adds for the people who don't.
 
-So do not hand-write `dont`, `im`, `yall`, `talkin` or a missing full stop in order to sound
-right. You will get them for free from about three-quarters of the cast, and hard-coding them
-takes the choice away from the quarter who would not.
+Do not hand-write `dont`, `im`, `yall` or `talkin` to sound right. You get them free from
+about three-quarters of the cast, and hard-coding them takes the choice away from the quarter
+who would not.
 
-Four bands, set per author by `"types"` in the file, defaulted from the handle:
+Five bands, set per author by `"types"` in the file, defaulted from the handle:
 
 | band | who | what happens |
 |---|---|---|
 | `street` | anybody in a set with no written lines | lowercase, no apostrophes, no full stops, `-in`, sometimes stretches or shouts |
-| `plain` | tidier phone typists | about half of the above |
-| `proper` | the aunties, the elders, the teacher | capitals, apostrophes, full stops, the ellipsis |
+| `young` | an ordinary 20-something with a job and no set | lowercase and unterminated, and **keeps its g's** |
+| `plain` | tidier phone typists, late 20s to mid 30s | about half of the above, and sometimes punctuates |
+| `proper` | the aunties, the elders, the teacher, late 30s | **adds** capitals, full stops, exclamation marks and the ellipsis |
 | `none` | every written voice and every organisation | untouched |
 
-Two things the styler will **not** do, so they are yours:
+`young` deliberately does not drop its g's. `-in` belongs to the street register, and putting
+it in a barista's mouth in Vespucci puts the wrong city in it.
+
+Three things the styler will **not** do, so they are yours:
 
 - It never adds or removes a word. Length and vocabulary are the writer's job.
-- It leaves a word in full capitals alone. So `LONG LIVE BRO` and `FREE THE GNG` survive a
-  street typist, which is right — those are shouted out loud too.
+- It leaves a word in full capitals alone, so `LONG LIVE BRO` and `FREE THE GNG` survive a
+  street typist — right, because those are shouted out loud too.
+- It never restores a name's capital. `vespucci` stays lowercase in a proper author's mouth.
+  That was tried and cut: this file is half lowercase by design, so Franklin appears in lower
+  case six times for every capital, and guessing capitalises ordinary words mid-sentence.
+
+---
+
+## How loud each person is
+
+Almost nobody posts. It is the best-measured thing about social media and the thing fiction
+gets most wrong: the top quarter of users on a measured platform produced 97% of the posts,
+and the bottom three quarters a median of zero a month.
+
+So the author is drawn by weight, not evenly. Four bands off the handle, and the loudest tenth
+write about half the feed. Override with `"volume"` on an author when it is characterisation —
+a new parent is the highest-volume account in any real feed, and one or two people should be
+pinned to the bottom band so that their turning up means something.
+
+Comments stay on a flat roll on purpose. The people who never post are exactly the people who
+comment.
 
 ---
 
@@ -68,140 +97,183 @@ typed.
 |---|---|---|
 | `Ambient` | every voice-less person in the city | general. No set markers, no regional tells |
 | `AmbientHood` | Families and the neighbours with no set | Chamberlain Hills, full |
+| `Ambient` + region | everybody, when you are standing there | see below |
+| `Ambient` + time of day | everybody, at that hour | see below |
 | `AmbientOrg`, `OrgEvent` | organisations only | corporate. Leave it corporate |
 | `OursGloats`, `OursMourns`, `WarLiveOurs`, `DissTrack` | Families | full, plus the set's own spelling |
-| `ProductGood/Bad`, `Hospital`, `HouseRaided`, `WarHeld`, `WarLost`, `RankUp` | Families and the neighbours | written from inside. First person is safe here |
+| `ProductGood/Bad`, `Hospital`, `HouseRaided`, `WarHeld`, `WarLost`, `RankUp` | Families and the neighbours | written from inside. First person is safe |
 | `BallasTaunt` | Ballas | purple. Blood-coded |
 | `VagosTaunt` | Vagos | LA Chicano, **not** Black LA |
 | `RivalMourns`, `RivalGloats`, `WarLiveRival`, `Wasted*` | whoever the live rival is | **unmarked.** See below |
 | everything else | anybody | general |
 
 **The unmarked sets are the trap.** `GangFor` hands `RivalMourns` and the four `Wasted` sets to
-whichever gang is actually fighting you tonight, and that is one of eight — including the
-Triads, the Armenians, the Koreans and a biker chapter in Sandy Shores. Nothing set-marked can
-go in them: no `on hood`, no `bacc`, no `blood`, no `ese`. A Korean posting "on hood" is the
-same class of bug as the Azteca who used to send love to Aunt Denise.
+whichever gang is fighting you tonight, and that is one of eight — including the Triads, the
+Armenians, the Koreans and a biker chapter in Sandy Shores. Nothing set-marked can go in them:
+no `on hood`, no `bacc`, no `blood`, no `ese`. A Korean posting "on hood" is the same class of
+bug as the Azteca who used to send love to Aunt Denise.
 
 ### Two sets, two spellings
 
-Used lightly — a word or two per post, and only in the sets one side alone speaks. This is a
-graphemic taboo: a rival's initial is avoided in writing and replaced with your own.
+Used lightly — a word or two per post, and only in the sets one side alone speaks. A rival's
+initial is avoided in writing and replaced with your own.
 
-- **Families** (green) avoid `ck`, which reads as an initialism: `back` → `bacc`, `block` →
-  `blocc`, `check` → `checc`. Address: `cuh`, `cuz`, `twin`, `gng`, `lil bro`, `big homie`.
+- **Families** (green) avoid `ck`: `back` → `bacc`, `block` → `blocc`. Address: `cuh`, `cuz`,
+  `twin`, `gng`, `lil bro`, `big homie`.
 - **The purple** avoid `c`: `crazy` → `brazy`, `cool` → `bool`, `what's cracking` → `wus
   brackin`. Address: `blood`, `bloodie`.
 
-It clusters on words that already carry weight — the greeting, the neighbourhood, the address
-term — and passes straight through neutral vocabulary. A post where every C is a B is a parody.
-Note that `brazy` and `thicc` both escaped into general internet use years ago and no longer
-mark anybody; `bacc`, `blocc` and `bool` still do.
+It clusters on words that already carry weight and passes through neutral vocabulary. A post
+where every C is a B is a parody. Note `brazy` and `thicc` escaped into general internet use
+years ago and no longer mark anybody; `bacc`, `blocc` and `bool` still do. Do not write the
+reciprocal insult forms — that part is purely an attack, and the signal is already carried.
 
-Do not write the reciprocal insult forms — appending a letter to a rival's name to mean killer.
-That part of the system is purely an attack and the reader-facing signal is already carried by
-the spellings, the address terms and the colour.
+---
+
+## Where you are, and when it is
+
+The feed knows four things about the world at the moment it writes a post, and all four are
+wired.
+
+| it knows | how | slot or set |
+|---|---|---|
+| the zone under the player | `Main.ZoneNameHere` | `{here}` |
+| the road under the player | `Main.StreetNameHere` | `{street}` |
+| which part of the map that zone is in | `regions` in this file | `Ambient<Region>` |
+| the hour and the weather | `Social.Moment` | `{timeofday}`, `{weathertalk}`, `Ambient<Part>` |
+
+**Regions** are `south`, `docks`, `city`, `vinewood`, `beach`, `blaine`, mapping every zone
+code the game can report except North Yankton and the island. A region set takes a slice of
+the ambient roll, not the whole thing — people travel, and a feed that never mentions anywhere
+else is as wrong as one that never mentions here. Add a region's chatter by creating
+`AmbientSouth`, `AmbientBeach` and so on; if the set does not exist, the roll silently falls
+back to `Ambient`.
+
+**Times of day** are `latenight`, `earlymorning`, `morning`, `midday`, `afternoon`, `evening`,
+`night`, from `Moment.Part`. Same deal: `AmbientLatenight`, `AmbientMidday`. These exist
+because a slot can only change a phrase inside a line — it cannot stop somebody posting about
+the school run at two in the morning, because the subject lives in the line.
+
+`{timeofday}` and `{weathertalk}` now read the game before they read a list. Their word lists
+live under `moments` and `weather`, keyed by the same bucket names. Both fall back to the flat
+`slots` entry when a bucket is missing, so an older file still works.
+
+---
+
+## The four tells that make a line Los Angeles
+
+A line with none of these is probably generic-urban. With two, it is probably here.
+
+1. **A freeway with `the` in front of the number.** "took the 110 north at 4." Never "took
+   110", never "I-110".
+2. **Distance as time, and usually two times.** "twenty minutes, or an hour if you leave now."
+3. **A cross street instead of a block count.** Not "two blocks over."
+4. **An exact dollar amount.** Rent, the ticket, the fare, the fill, the tow.
+
+And a fifth that is not a tell but a posture: **complaint is the primary mode of sociability
+here.** A complaint post is a friendly post.
+
+### Do not use
+
+| wrong | it reads as | write instead |
+|---|---|---|
+| the subway | New York | the Metro, the train, the bus, the B line |
+| bodega, corner deli | New York | the liquor store, the market, the mini mart |
+| the stoop | New York | the driveway, the carport, the front steps |
+| brownstone, walk-up, fire escape, the super, radiator, basement | wrong housing stock | the dingbat, the courtyard building, the back house, the manager in unit 1, the wall heater |
+| the projects | not the local term | the courts, or the name of the place |
+| snow, winter coats, shovelling | does not happen | a beanie at 58 degrees, a day trip up the mountain |
+| walking everywhere | nobody does | driving, parking, the walk from the far space |
+| Cali | never a resident | LA, SoCal, out here |
+| hella | Bay Area | so, bomb, tough, stupid, crazy |
+| deadass | New York | fr, ong, no cap |
+| highway, expressway, the interstate | not the word | freeway, surface streets, the onramp |
+| counting blocks | rarely used | cross streets |
+| lol, tbh, atm, smfh | outside the register | see the vocabulary below |
+
+Spanish in an ordinary Angeleno's mouth is fine and constant at the **food and place-name**
+level — taco, torta, pan dulce, carniceria, Sepulveda, La Cienega — with no italics and no
+explanation. `órale`, `ese`, `vato`, `carnal`, `firme` and the rest of Caló are **in-group and
+generationally marked**: they belong to a Chicano character quoting an uncle, not to a barista
+as default voice. A young Mexican-American character in LA today says "bet", "fasho", "no
+manches" and "bro" long before they say "órale, ese".
 
 ---
 
 ## The formulas
 
-The most conventionalised part of the register, and the place a wrong note is most conspicuous.
-Capitals are close to obligatory on these.
+The most conventionalised part of the street register, and where a wrong note is most
+conspicuous. Capitals are close to obligatory.
 
-**The dead.** `LONG LIVE [NAME]`, `LL` plus initials (`LLT`, `LLB`), `RIP` (lowercase `rip` is
-fine and not disrespectful), `til i see you again`, `on the dead homies`. Anniversaries are a
-bare month/day with no year — `6/12` — or a count: `2 years today`. The deceased is a nickname
-or initials, never a full name. Birthday posts for the dead are their own genre: `you would be
-24 today`.
+**The dead.** `LONG LIVE [NAME]`, `LL` plus initials, `RIP` (lowercase `rip` is fine),
+`til i see you again`, `on the dead homies`. Anniversaries are a bare month/day with no year —
+`6/12` — or a count. The deceased is a nickname or initials, never a full legal name.
 
 Register is flat and short. The grief is carried by the formula and the capitals, not by
 adjectives. **A long, eloquent, correctly punctuated grief post is the single most inauthentic
 thing in this file.**
 
-**The locked up.** `FREE [NAME]`, `FREE THE GNG`, `free my twin`, `free em all`. Countdowns:
-`90 days left`, `he home in november`, `one more winter`. Homecoming: `HE HOME`, `bro touched
-down`, `welcome home twin`.
+**The locked up.** `FREE [NAME]`, `FREE THE GNG`, `free my twin`. Countdowns: `90 days left`,
+`he home in november`. Homecoming: `HE HOME`, `bro touched down`.
 
 ---
 
 ## Antagonism
 
-**Rivals are never named.** Naming an individual is both an exposure and a status concession.
-Reference is oblique, and usually locational:
-
-> the opps · the op · certain people · some of yall · whoever it apply to · them people ·
-> the block over · that side · whoever did that
+**Rivals are never named.** Reference is oblique and usually locational: the opps, certain
+people, some of yall, whoever it apply to, the block over, that side.
 
 The subtweet is the whole convention: a post *about* somebody, addressed to the public, in the
-third person, with no trigger. The target knows, nobody else does, and nothing actionable was
-said.
+third person, with no trigger. The target knows, nobody else does, nothing actionable was said.
 
-> heard some of yall talkin. its cool
-
-**Stance is dismissive, not hot.** Contempt reads as indifference — `i aint worried`, `they
-know what it is`, `nothin to talk about`. Overt threat-writing reads as young and unserious,
-which makes it useful for exactly that characterisation and wrong as a default.
-
-The denial that confirms is also live: posting `this aint about nobody` to an accusation nobody
-made publicly.
+**Stance is dismissive, not hot.** Contempt reads as indifference. Overt threat-writing reads
+as young and unserious, which makes it useful for exactly that characterisation and wrong as a
+default.
 
 ---
 
 ## Vocabulary
 
-Everything here is on the research's **nationally current** list unless marked, so it is safe
-in the shared word lists and in any mouth.
-
-`fr` / `frfr` (the highest-frequency token in the whole register) · `ong` · `icl` (prefer over
-`ngl`, which reads internet-generic) · `rn` · `idc` · `wyd` · `otw` · `fs` · `wtm` · `ard` ·
-`nun` · `gng` · `twin` · `op` / `opps` · `tryna` · `finna` · `imma` / `ima` · `prolly` · `bet` ·
-`no cap` · `tap in` · `locked in` · `we outside` · `say less` · `crashout`
+**Street, nationally current, safe in the shared word lists:** `fr` / `frfr` (the highest
+frequency token in the register) · `ong` · `icl` (prefer over `ngl`) · `rn` · `idc` · `wyd` ·
+`otw` · `nun` · `gng` · `twin` · `op` / `opps` · `tryna` · `finna` · `imma` · `bet` · `no cap`
+· `tap in` · `locked in` · `we outside`.
 
 **`bro` is a pronoun, not just an address.** The register narrates third parties with it —
-`bro said he otw`, `bro really did that`. This is under-imitated and worth using.
+`bro said he otw`. Under-imitated and worth using.
 
-**LA-marked** (the Families sets and `AmbientHood` only): `cuh` / `cuzz` / `cuddie` · `on hood`
-· `on the dead homies` · `the homies` · `big homie` / `lil homie` · `unc` · `mobbin` · `slide` ·
-`the shop` (barbershop) · `the swap meet` · `the courts` (never "the projects") · **`the` before
-a freeway number — `the 110`, `the 405`** which is the single most reliable LA marker there is ·
-area codes as place names: `310`, `323`, `213`, `562`.
+**LA-marked** (Families sets and `AmbientHood` only): `cuh` · `on hood` · `on the dead homies`
+· `the homies` · `big homie` / `lil homie` · `unc` · `mobbin` · `slide` · `the shop`
+(barbershop) · `the swap meet` · `the courts`.
 
-**Grammar to preserve.** These are AAVE, not errors, and correcting them is the fastest way to
-sound like a novelist: zero copula (`he outside`), habitual `be` (`he be at the shop every
-saturday` = habitually), habitual `stay` (`the op stay watchin`), negative concord (`i aint told
-nobody nothin`), zero third-person `-s` (`he own it`), possessive `they` (`they car`), adjectival
-`sleep` (`they think im sleep`).
+**Ordinary cohort, and this is a different code.** Lowercase, unterminated, ironic by default,
+and built on stock constructions: `no because`, `tell me why`, `the way I`, `not me [verb]ing`,
+`it's giving`, `the fact that`, `this man`, `im cooked`, `anyway` as a closer. Age is carried
+almost entirely by punctuation, not by words — which is why the bands do most of this work and
+you should not reach for slang to signal it.
 
-**Numbers are digits.** `19`, `at 4`, `til 11`, `2 years`, `10 deep`. Never spelled out.
+**Grammar to preserve** in the street sets. These are AAVE, not errors, and correcting them is
+the fastest way to sound like a novelist: zero copula (`he outside`), habitual `be` (`he be at
+the shop every saturday`), habitual `stay`, negative concord (`i aint told nobody nothin`),
+zero third-person `-s`, possessive `they`, adjectival `sleep`.
 
-### Do not use
+**Numbers are digits.** `19`, `at 4`, `til 11`, `10 deep`.
 
-| token | reads as |
-|---|---|
-| `hella` | Bay Area. LA says `stupid`, `crazy`, `tough`, `dumb` |
-| `deadass` | New York |
-| `my g`, `son`, `b`, `shorty`, `bodega`, `the projects` | New York |
-| `slatt`, `slime` as a primary address | Atlanta |
-| `jawn` | Philadelphia |
-| `folks`, `joe`, `on foenem` | Chicago (`opps` itself is fine — it went national) |
-| `lol`, `tbh`, `atm`, `smfh`, `af`, `brb` | outside the register entirely |
-| `hmu` | 2012. Displaced by `tap in` |
-| `smh` | still live but reads 30+. Fine on an elder |
-| `lls` | ambiguous — it reads as "laughing like shit" (dated). Spell out `long live` |
-| `otp` | reads as fandom, not "on the phone" |
-| `ts` meaning "this" | TikTok. `ts` is "this shit" and is a noun phrase |
-| `!`, `!!!`, `...` | the first two almost never; the ellipsis is a `proper` band marker |
-
-Snow, subways, stoops and winter coats are the same class of error at the level of world
-building. This city has heat, cars and outdoor food.
+**Never `{money}` or `{count}` in an ambient set.** Ambient posts are built with no amount, so
+both fill with a zero. Write the figure into the line.
 
 ---
 
 ## No emoji
 
-Standing rule for every mod in this repo, and it costs nothing here: the register carries
-itself on capitalisation, elision, letter-stretching, punctuation and length. Text symbols
-(`▶ ● ▲ ★`) only.
+Standing rule for every mod in this repo, and it costs nothing: the register carries itself on
+capitalisation, elision, letter-stretching, punctuation and length. Text symbols only.
+
+The substitutions that do the most work: **the lone full stop** after a short word is the
+eye-roll and the cold shoulder; **`anyway` as a closer** is the shrug; **letter repetition**
+is warmth and intensity; **ALL CAPS on one word** is the emphasis; **`lmao` sentence-final** is
+the softener, not a laugh; **`im dead`** is the skull; **`<3`** is the heart and is plain
+ASCII.
 
 ---
 
@@ -211,15 +283,18 @@ itself on capitalisation, elision, letter-stretching, punctuation and length. Te
 python tools\socials_check.py
 ```
 
-Errors first — an unknown slot prints its own braces on the phone, and a duplicate line just
-makes the block repeat itself. Then a table of how the file reads.
+Errors first — an unknown slot prints its own braces on the phone, and a duplicate line makes
+the block repeat itself. Then a table of how the file reads.
 
 The `words`, `abbrev` and `emoji` columns are about the screen. **`Cap` and `apost` are about
 the source only**, because `Typing` restyles both at runtime. To measure the screen, compile
 `src\Hoodrich\Social\Typing.cs` into a throwaway console app and run the real thing over the
-file — a mirror of it written in Python would only ever agree with itself.
+file — a mirror written in Python would only ever agree with itself. That harness has now
+caught four bugs that review missed, including the styler rewriting slot names.
 
-Targets, over a set: 8 to 9 words, a third of lines carrying a token, nothing in the "do not
-use" table. The long observational lines in `Ambient`, `AmbientHood` and `Local` are a
-deliberate exception — that voice is the mod's, the phone wraps and grows the card so nothing
-truncates, and flattening it to six words would remove the thing it is good at.
+Targets, over a set: 8 to 9 words for the street, 9 to 12 for everybody else, a third of lines
+carrying a token, nothing in the do-not-use tables.
+
+The long observational lines in `Ambient`, `AmbientHood` and `Local` are a deliberate
+exception. That voice is the mod's, the phone wraps and grows the card so nothing truncates,
+and flattening it to six words would remove the thing it is good at.
