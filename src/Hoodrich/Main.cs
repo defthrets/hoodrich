@@ -878,6 +878,10 @@ namespace Hoodrich
                 };
 
                 _pricing = new Pricing(_cfg, _state) { Turf = _turf, Crew = _crew, Market = _market, Blocks = _blocks };
+
+                // The selling half of Api/Drugs, which could not be handed over at Wire time
+                // because the ladder did not exist yet. See Api.Drugs.WireTrade.
+                Api.Drugs.WireTrade(_pricing);
                 _raid = new StashRaid(_cfg, _state, _stash) { Crew = _crew };
                 _cutting = new Cutting(_state.Stash, _state);
 
@@ -1802,13 +1806,13 @@ namespace Hoodrich
                     // watching the back fence, and nobody else. The decks, the dancing and the
                     // fifteen bodies are an evening, not a permanent installation.
                     .Stand(new Vector3(-199.196f, -1726.450f, 32.664f), 190.000f,
-                           "WORLD_HUMAN_DRINKING", Fam(0), armed: false)
+                           "WORLD_HUMAN_DRINKING", Fam(0), armed: false, drift: 3f)
 
                     // Her, on a cigarette. The yard had women dancing, drinking and on the
                     // decks and not one stood about doing nothing in particular, which is most
                     // of what anybody does at a party.
                     .Stand(new Vector3(-197.277f, -1728.437f, 32.664f), 262.000f,
-                           "WORLD_HUMAN_SMOKING", Women, armed: false)
+                           "WORLD_HUMAN_SMOKING", Women, armed: false, drift: 3f)
 
                     // Dancing, not "partying". WORLD_HUMAN_PARTYING is somebody holding a
                     // drink and nodding; this is somebody actually moving to what is coming
@@ -1818,10 +1822,10 @@ namespace Hoodrich
                            "WORLD_HUMAN_PARTYING", Women, armed: false, anim: Dancing, party: true)
 
                     .Stand(new Vector3(-201.294f, -1730.396f, 32.664f), 46.000f,
-                           "WORLD_HUMAN_SMOKING_POT", Fam(2), armed: false, party: true)
+                           "WORLD_HUMAN_SMOKING_POT", Fam(2), armed: false, party: true, drift: 3f)
 
                     .Stand(new Vector3(-201.679f, -1727.661f, 32.664f), 118.000f,
-                           "WORLD_HUMAN_DRINKING", Women, armed: false, party: true)
+                           "WORLD_HUMAN_DRINKING", Women, armed: false, party: true, drift: 3f)
 
                     // On the decks. Facing the yard, which is the direction the music goes.
                     //
@@ -1850,7 +1854,17 @@ namespace Hoodrich
                     .Stand(new Vector3(-194.412f, -1727.852f, 32.664f), 349.215f,
                            "WORLD_HUMAN_PARTYING", Working, armed: false, anim: DancingAlt, party: true)
 
-                    // THE TWO WHO MOVE, and they are the two with the least to do: a man whose
+                    // THE TWO WHO ALWAYS MOVE, and six more who now take a walk.
+                    //
+                    // It was two, on the argument that a crowd where everybody mills about is
+                    // as wrong as a diorama. Still true of the DANCERS and the deejay, who are
+                    // all doing something that happens standing still -- but Michael watched
+                    // the yard on 2026-09-22 and it read as furniture, so everybody whose
+                    // whole station is "holding a drink" now gets a DRIFT: a walk of a few
+                    // metres as one of his breaks, and back to his mark after it. That is a
+                    // different thing from the wander below, which is where he lives.
+                    //
+                    // THE TWO WHO LIVE ON THE MOVE: a man whose
                     // entire station is "holding a drink" has no reason to be welded to a spot
                     // for twenty hours, and a yard where every single person is fixed reads as
                     // a diorama rather than a party.
@@ -1882,10 +1896,10 @@ namespace Hoodrich
                            "WORLD_HUMAN_PARTYING", Strippers, armed: false, anim: Stripping, party: true)
 
                     .Stand(new Vector3(-203.007f, -1729.627f, 32.664f), 251.512f,
-                           "WORLD_HUMAN_DRINKING", Fam(0), armed: false, party: true)
+                           "WORLD_HUMAN_DRINKING", Fam(0), armed: false, party: true, drift: 3.5f)
 
                     .Stand(new Vector3(-206.169f, -1731.598f, 32.664f), 340.253f,
-                           "WORLD_HUMAN_SMOKING", Fam(1), armed: false, party: true)
+                           "WORLD_HUMAN_SMOKING", Fam(1), armed: false, party: true, drift: 3.5f)
 
                     // Somebody watching the back of the lot, where the skips are and the fence
                     // is low enough to come over. Armed, and the only man here who is -- a yard

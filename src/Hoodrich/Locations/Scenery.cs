@@ -1009,6 +1009,18 @@ namespace Hoodrich.Locations
 
             if (item.Attached) Stick(scene, item, made);
 
+            // SOMEWHERE TO SIT, IF IT IS A THING PEOPLE SIT ON. A chair out of a scene file is
+            // furniture like any other, and the crews look for cushions rather than for the
+            // game's own scenario points -- which a prop a script spawned does not have. Only
+            // the models Seating recognises by name; everything else offers nothing, which is
+            // what happened to all of them before. See Locations.Seating.
+            var seat = made as Prop;
+
+            if (seat != null && Seating.IsSeat(item.ModelName))
+            {
+                Seating.Offer(seat, seat, item.ModelName);
+            }
+
             var ped = made as Ped;
             if (ped == null) return;
 
@@ -3579,6 +3591,11 @@ namespace Hoodrich.Locations
                 try
                 {
                     if (e != null) _tiles.Remove(e.Handle);
+
+                    // The cushions on it go with it, or somebody is sat on the memory of a
+                    // chair in an empty street. See Register.
+                    if (e is Prop) Seating.Withdraw(e);
+
                     if (e != null && e.Exists()) e.Delete();
                 }
                 catch

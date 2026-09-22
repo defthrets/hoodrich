@@ -158,6 +158,47 @@ namespace Hoodrich.Gangs
         private const int RestClip = 3;
 
         /// <summary>
+        /// Two of them turned to each other, talking with their hands and out loud.
+        ///
+        /// THE ONE KIND OF BREAK THAT TAKES TWO PEOPLE. Everything else here is something a
+        /// man does on his own next to other men doing something on their own, which is a
+        /// waiting room rather than a yard. Both are put on the same clock so they finish
+        /// together and both walk back to their own marks afterwards.
+        /// </summary>
+        private const int RestChat = 4;
+
+        /// <summary>How near the other one has to be, how likely it is, and how long it lasts.</summary>
+        private const float ChatReach = 6f;
+        private const int ChatChance = 30;
+        private const int ChatForMinMs = 12000;
+        private const int ChatForMaxMs = 26000;
+
+        /// <summary>
+        /// What they say. The game's own ambient lines, in the speaker's own voice.
+        ///
+        /// The set is kept quiet round Franklin so the game stops challenging him on his own
+        /// block -- see Affiliation.CalmHome -- so the gag comes off for our line and CalmHome
+        /// puts it back on its next pass, which is how BlockTalk does it too.
+        /// </summary>
+        private static readonly string[] ChatLines =
+        {
+            "CHAT_STATE", "GENERIC_HOWS_IT_GOING", "GENERIC_YES", "GENERIC_WHATEVER"
+        };
+
+        private static readonly string[] ChatReplies =
+        {
+            "CHAT_RESP", "GENERIC_YES", "GENERIC_NO", "GENERIC_THANKS"
+        };
+
+        /// <summary>How far he will cross for a seat, how long the walk gets, and what counts as there.</summary>
+        private const float SeatWalkRange = 14f;
+        private const int SeatWalkMs = 20000;
+        private const float SeatArriveWithin = 1.2f;
+
+        /// <summary>The cushion somebody is walking to, by station. See RestSit.</summary>
+        private readonly Dictionary<int, Seating.Cushion> _seatGoing = new Dictionary<int, Seating.Cushion>();
+
+        /// <summary>
         /// Things people do at a party that nobody does on a gate: a dance, a gang sign, a
         /// slow clap, being sick behind a car. See Gangs.PartyClips for the rows. Null for a
         /// yard where breaks are cigarettes and walks. Only during party hours -- see
@@ -610,6 +651,25 @@ namespace Hoodrich.Gangs
             if (prop != null) _hands[index] = prop;
         }
 
+        /// <summary>
+        /// Whether he is still holding what he is meant to be holding.
+        ///
+        /// ASKED EVERY SETTLE PASS, and it is what lets the prop be asked for without waiting.
+        /// Hand used to stop the script for half a second per man until the model arrived, so
+        /// one call at spawn was always enough; it asks and comes back now, which means the
+        /// first try usually fails and somebody has to try again. This is that somebody -- and
+        /// it also covers a bottle that was shot out of his hand or streamed away, which
+        /// nothing covered before.
+        /// </summary>
+        private bool EmptyHanded(int index, Ped ped)
+        {
+            if (string.IsNullOrEmpty(HeldAt(index))) return false;
+            if (ped == null || !ped.Exists()) return false;
+
+            Prop held;
+            return !_hands.TryGetValue(index, out held) || held == null || !held.Exists();
+        }
+
         /// <summary>The paint, on and off. See _sprays.</summary>
         private void Sprays(int now)
         {
@@ -1001,9 +1061,43 @@ namespace Hoodrich.Gangs
 
             if (_restUntil[index] != 0)
             {
+                // ON HIS WAY TO A CHAIR. He was told to walk to it rather than put on it, so
+                // the sitting happens when he gets there. See RestSit.
+                Seating.Cushion going;
+
+                if (_restKind[index] == RestSit && _seatGoing.TryGetValue(index, out going) && going != null)
+                {
+                    if (ped.Position.DistanceTo(going.At) <= SeatArriveWithin + 0.5f)
+                    {
+                        _seatGoing.Remove(index);
+
+                        Function.Call(Hash.TASK_START_SCENARIO_AT_POSITION, ped.Handle,
+                                      SeatDoing[_seatPick % SeatDoing.Length],
+                                      going.At.X, going.At.Y, going.At.Z, going.Facing, 0, true, true);
+
+                        Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
+                    }
+                    else if (now >= _restUntil[index])
+                    {
+                        // He never made it -- a gate, a bin, somebody stood in the way. The
+                        // break ends below and the settle pass walks him home, which is what
+                        // it is for.
+                        _seatGoing.Remove(index);
+                    }
+                }
+
                 if (now < _restUntil[index]) return false;
 
                 var was = _restKind[index];
+
+                // THE SEAT GOES BACK IN THE ROOM. A cushion still claimed by somebody who has
+                // stood up is a cushion nobody else can ever use, and there are three of them
+                // in a yard of sixteen people.
+                if (was == RestSit)
+                {
+                    Seating.Let(ped);
+                    _seatGoing.Remove(index);
+                }
 
                 _restUntil[index] = 0;
                 _restAt[index] = now + _rest.Next(RestEveryMinMs, RestEveryMaxMs);
@@ -1037,7 +1131,14 @@ namespace Hoodrich.Gangs
             // him, which the settle pass then tidies up on its own.
             // A party clip first, because it is the one that only exists while the party
             // is on; then the furniture, because it depends on there being something to use.
-            var kind = PartyClips != null && PartyClips.Length > 0 && PartyOn && _rest.Next(100) < PartyClipChance ? RestClip
+            // A WORD WITH WHOEVER IS NEAREST, before anything he would do on his own. Only
+            // when there is somebody to have it with: Neighbour answers -1 for a man stood on
+            // his own, mid-break, dancing, seated or walking in, and then this is the same
+            // list of breaks it always was.
+            var mate = _rest.Next(100) < ChatChance ? Neighbour(index, ped) : -1;
+
+            var kind = mate >= 0 ? RestChat
+                     : PartyClips != null && PartyClips.Length > 0 && PartyOn && _rest.Next(100) < PartyClipChance ? RestClip
                      : Furniture && _rest.Next(100) < FurnitureChance ? RestSit
                      : roam > 0f ? RestWalk
                      : RestPose;
@@ -1046,15 +1147,55 @@ namespace Hoodrich.Gangs
 
             _restUntil[index] = now + (kind == RestSit ? _rest.Next(SatForMinMs, SatForMaxMs)
                                        : kind == RestClip ? _rest.Next(ClipForMinMs, ClipForMaxMs)
+                                       : kind == RestChat ? _rest.Next(ChatForMinMs, ChatForMaxMs)
                                        : _rest.Next(RestForMinMs, RestForMaxMs));
 
             Shoulder(index, ped, false);
 
-            if (kind == RestSit)
+            if (kind == RestChat)
+            {
+                if (!Words(index, ped, mate, _restUntil[index]))
+                {
+                    // He turned out not to be there after all. An ordinary pose break instead.
+                    _restKind[index] = RestPose;
+                    _restUntil[index] = now + _rest.Next(RestForMinMs, RestForMaxMs);
+                    Idle(index, ped, Doing(index), Facing(index), MarkAt(index), Seated(index), null);
+                }
+            }
+            else if (kind == RestSit)
             {
                 Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
-                Function.Call(Hash.TASK_USE_NEAREST_SCENARIO_TO_COORD, ped.Handle,
-                              at.X, at.Y, at.Z, SeatNearRange, -1);
+
+                // OUR OWN FURNITURE FIRST, AND WALKED TO.
+                //
+                // TASK_USE_NEAREST_SCENARIO_TO_COORD finds the GAME'S scenario points, and a
+                // couch this mod dragged into a yard has none -- nor has a chair out of a
+                // scene file. So a yard whose only seats are ours had a furniture break that
+                // found no furniture and left the man standing exactly where he was, which is
+                // what Michael was looking at on 2026-09-22. Seating measures what is actually
+                // there and hands out the cushions on it, one to a person.
+                //
+                // HE WALKS TO IT. The seated stations start the scenario AT the cushion, which
+                // is right for somebody who has been sat there all evening and wrong for
+                // somebody crossing a yard in front of you -- that is a man vanishing off his
+                // mark and appearing on a couch. So the walk is issued here and the sitting
+                // happens on arrival, at the top of this method.
+                var cushion = Seating.Take(ped, at, SeatWalkRange);
+
+                if (cushion != null)
+                {
+                    _seatGoing[index] = cushion;
+
+                    Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, ped.Handle,
+                                  cushion.At.X, cushion.At.Y, cushion.At.Z, 1.0f,
+                                  SeatWalkMs, SeatArriveWithin, 0, cushion.Facing);
+                }
+                else
+                {
+                    Function.Call(Hash.TASK_USE_NEAREST_SCENARIO_TO_COORD, ped.Handle,
+                                  at.X, at.Y, at.Z, SeatNearRange, -1);
+                }
+
                 Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
             }
             else if (kind == RestWalk)
@@ -1081,6 +1222,122 @@ namespace Hoodrich.Gangs
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// The nearest of them worth having a word with, or -1.
+        ///
+        /// ANYBODY WHO IS SIMPLY STANDING THERE. A dancer is dancing, a wanderer is walking, a
+        /// man on a couch is sat down and a man on his way in has not arrived -- none of them
+        /// is at a loose end, and interrupting one to talk is how a party turns into a queue.
+        /// Somebody already on a break is left alone for the same reason, which is also what
+        /// stops three people being pulled into one conversation.
+        /// </summary>
+        private int Neighbour(int index, Ped ped)
+        {
+            if (ped == null || !ped.Exists()) return -1;
+
+            var best = -1;
+            var bestSq = ChatReach * ChatReach;
+
+            for (var j = 0; j < _crew.Count; j++)
+            {
+                if (j == index) continue;
+
+                var other = _crew[j];
+                if (other == null || !other.Exists() || !other.IsAlive) continue;
+                if (other.IsInCombat || other.IsRagdoll) continue;
+
+                if (j < _restUntil.Count && _restUntil[j] != 0) continue;
+                if (WalkingIn(j)) continue;
+                if (AnimAt(j) != null || WanderAt(j) > 0f || Sits(j) || Seated(j) || SeatNear(j)) continue;
+
+                try
+                {
+                    if (Dealing.Serving.Is(other)) continue;
+                }
+                catch
+                {
+                    // Then he is fair game.
+                }
+
+                var gap = other.Position.DistanceToSquared(ped.Position);
+                if (gap > bestSq) continue;
+
+                bestSq = gap;
+                best = j;
+            }
+
+            return best;
+        }
+
+        /// <summary>
+        /// The two of them turned to each other and talking, on one clock.
+        ///
+        /// The game's own chat task, which is what two peds on a corner in the base game are
+        /// running -- it faces them and gives them the hands. The line on top of it is ours,
+        /// because the task itself is silent. False when the other one has gone between being
+        /// picked and being asked, which is a frame's worth of window and still worth having.
+        /// </summary>
+        private bool Words(int index, Ped who, int mate, int until)
+        {
+            if (mate < 0 || mate >= _crew.Count || who == null || !who.Exists()) return false;
+
+            var other = _crew[mate];
+            if (other == null || !other.Exists() || !other.IsAlive) return false;
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, who.Handle);
+                Function.Call(Hash.CLEAR_PED_TASKS, other.Handle);
+
+                Function.Call(Hash.TASK_CHAT_TO_PED, who.Handle, other.Handle, 16, 0f, 0f, 0f, 0f, 0f);
+                Function.Call(Hash.TASK_CHAT_TO_PED, other.Handle, who.Handle, 16, 0f, 0f, 0f, 0f, 0f);
+
+                Function.Call(Hash.SET_PED_KEEP_TASK, who.Handle, true);
+                Function.Call(Hash.SET_PED_KEEP_TASK, other.Handle, true);
+
+                // HANDS FREE, BOTH OF THEM. A man having a word with a rifle in his hands
+                // plays the chat through the gun; Shoulder is what the other breaks use and
+                // each of them puts his own back when his own break ends.
+                Shoulder(index, who, false);
+                Shoulder(mate, other, false);
+
+                Say(who, ChatLines);
+                Say(other, ChatReplies);
+
+                // THE SAME CLOCK, so they finish together rather than one of them walking off
+                // mid-sentence -- and his next break is pushed out past this one, or he would
+                // start another the moment this ends.
+                if (mate < _restUntil.Count) _restUntil[mate] = until;
+                if (mate < _restKind.Count) _restKind[mate] = RestChat;
+                if (mate < _restAt.Count) _restAt[mate] = until + _rest.Next(RestEveryMinMs, RestEveryMaxMs);
+                if (mate < _restPick.Count) _restPick[mate] = _rest.Next(RestDoing.Length);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("entourage: " + _who + " -- could not start a word: " + ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>One ambient line, in his own voice.</summary>
+        private void Say(Ped ped, string[] lines)
+        {
+            if (ped == null || !ped.Exists() || lines == null || lines.Length == 0) return;
+
+            try
+            {
+                Function.Call(Hash.BLOCK_ALL_SPEECH_FROM_PED, ped.Handle, false, false);
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, ped.Handle,
+                              lines[_rest.Next(lines.Length)], "SPEECH_PARAMS_FORCE");
+            }
+            catch
+            {
+                // A missing line costs nothing.
+            }
         }
 
         /// <summary>
@@ -1297,6 +1554,17 @@ namespace Hoodrich.Gangs
                     Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, ped.Handle, 0, false);
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, true);
                     Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 0, true);
+
+                    // ON FOOT AND ON THE FLAT. A walk back to a mark, a wander round the yard
+                    // or a cross to a chair goes ROUND a fence, never over it, and never off a
+                    // ledge or up a ladder. A man at a party vaulting the wall to get to the
+                    // couch is a stuntman; the long way round is what a person does, and the
+                    // navmesh has one. Asked for on 2026-09-22 after watching them climb.
+                    Function.Call(Hash.SET_PED_PATH_CAN_USE_CLIMBOVERS, ped.Handle, false);
+                    Function.Call(Hash.SET_PED_PATH_CAN_USE_LADDERS, ped.Handle, false);
+                    Function.Call(Hash.SET_PED_PATH_CAN_DROP_FROM_HEIGHT, ped.Handle, false);
+                    Function.Call(Hash.SET_PED_PATH_AVOID_FIRE, ped.Handle, true);
+                    Function.Call(Hash.SET_PED_PATH_PREFER_TO_AVOID_WATER, ped.Handle, true);
 
                     if (!armed)
                     {
@@ -1859,6 +2127,9 @@ namespace Hoodrich.Gangs
 
                 if (away <= LeashAt(i))
                 {
+                    // WHAT HE IS MEANT TO BE HOLDING, ASKED FOR AGAIN. See EmptyHanded.
+                    if (EmptyHanded(i, ped)) Hold(i, ped);
+
                     // BEFORE ANYTHING ELSE LOOKS AT HIM. Starting or ending a break re-tasks
                     // him, and everything below is about a man whose task has lapsed -- so
                     // asking those questions on the same pass would test a scenario issued a
