@@ -2337,6 +2337,7 @@ namespace Hoodrich
                 // to a system that can be torn down under it.
                 _social.WhereYouAre = ZoneNameHere;
                 _social.StreetYouAre = StreetNameHere;
+                _social.ZoneCodeYouAre = ZoneCodeHere;
                 _social.YourGang = () => _crew.IsAffiliated ? _crew.Current.Name : "";
                 _social.Changed = () => { _state.Followers = _social.Followers; _state.Touch(); };
 
@@ -5618,6 +5619,28 @@ namespace Hoodrich
         /// Asked of the game rather than worked out from coordinates, because the game already
         /// knows and its answer is the one the map agrees with.
         /// </summary>
+        /// <summary>
+        /// The zone CODE under the player -- CHAMH, SANDY, VESP -- or empty.
+        ///
+        /// The code and not the name, because the feed's region table is keyed on what the
+        /// game actually answers, and because two different zones are both called La Puerta.
+        /// </summary>
+        private static string ZoneCodeHere()
+        {
+            try
+            {
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists()) return "";
+
+                var pos = player.Position;
+                return Function.Call<string>(Hash.GET_NAME_OF_ZONE, pos.X, pos.Y, pos.Z) ?? "";
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
         private string ZoneNameHere()
         {
             try

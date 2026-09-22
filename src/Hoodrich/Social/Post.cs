@@ -69,6 +69,15 @@ namespace Hoodrich.Social
         public Typing Types = Typing.AsWritten;
 
         /// <summary>
+        /// How much this one talks, as a weight rather than a rate.
+        ///
+        /// Only meaningful against the other accounts in the same draw: an author of 100 is
+        /// picked a hundred times as often as an author of 1 when both are eligible. See
+        /// SocialFeed.Loudest for why the spread is this wide.
+        /// </summary>
+        public int Volume = 8;
+
+        /// <summary>
         /// A company, a station, an agency -- anything that is not a person.
         ///
         /// Carried as the gender rather than as its own flag because that is the field that
