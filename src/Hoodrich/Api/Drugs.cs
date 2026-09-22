@@ -62,6 +62,7 @@ namespace Hoodrich.Api
             _state = null;
             _catalogue = null;
             _highs = null;
+            _pricing = null;
         }
 
         /// <summary>Whether Hoodrich is here AND has finished starting up.</summary>
@@ -283,6 +284,244 @@ namespace Hoodrich.Api
             {
                 Core.Log.Debug("Api.Drugs.Use failed: " + ex.Message);
                 return "Could not";
+            }
+        }
+
+        // ---- the catalogue, and putting product back in -------------------------
+
+        /// <summary>
+        /// Every drug that exists, whether or not any is on you.
+        ///
+        /// NOT Ids(), WHICH IS A DIFFERENT QUESTION. Ids answers "what am I carrying" and is
+        /// what a pocket screen wants. A caller that has to invent what somebody ELSE was
+        /// carrying - what was in a dead man's jacket - needs to name a drug it has never
+        /// seen, and Ids can only ever name the ones you already hold.
+        ///
+        /// Mirrors Bare Minimum's Api.Pantry.Menu, which draws the same line for the same
+        /// reason.
+        /// </summary>
+        public static string[] Catalogue()
+        {
+            try
+            {
+                if (!Ready) return new string[0];
+
+                var found = new List<string>();
+                foreach (var d in _catalogue.All)
+                {
+                    if (d != null && !string.IsNullOrEmpty(d.Id)) found.Add(d.Id);
+                }
+                return found.ToArray();
+            }
+            catch { return new string[0]; }
+        }
+
+        /// <summary>
+        /// Puts street-ready product INTO his pockets. The grams that actually fit.
+        /// </summary>
+        ///
+        /// <remarks>
+        /// THE OPPOSITE DIRECTION FROM EVERYTHING ELSE HERE, and the one the surface was
+        /// missing. Use takes product away, Sell takes it away, ToBag and ToPocket move it
+        /// between two containers that both already belong to this mod - so a caller that
+        /// FINDS product somewhere Hoodrich has never heard of, in a dead man's jacket or a
+        /// searched glovebox, had no way to hand it over.
+        ///
+        /// AT THE PURITY IT WAS FOUND AT, not at full strength. Product picked up off a body
+        /// is whatever that person was carrying, and letting an outside caller mint pure
+        /// product would make looting strictly better than buying.
+        ///
+        /// CAPACITY IS RESPECTED - regardless is false - so this refuses rather than
+        /// overfilling, and the caller is expected to notice it got less than it offered and
+        /// leave the remainder where it found it.
+        /// </remarks>
+        public static float Loot(string id, float grams, float purity)
+        {
+            try
+            {
+                if (!Ready || string.IsNullOrEmpty(id) || grams <= 0.005f) return 0f;
+
+                var def = _catalogue.Get(id);
+                if (def == null) return 0f;
+
+                if (purity < 0.05f) purity = 0.05f;
+                if (purity > 1f) purity = 1f;
+
+                var added = _state.Stash.AddPackaged(id, grams, purity, false);
+
+                if (added > 0.005f)
+                {
+                    _state.Touch();
+                    Core.Log.Info("Api.Drugs: took in " + added.ToString("0.#") + "g of " + NameOf(id) +
+                                  " at " + (purity * 100f).ToString("0") + "% from another mod.");
+                }
+
+                return added;
+            }
+            catch (Exception ex)
+            {
+                Core.Log.Debug("Api.Drugs.Loot failed: " + ex.Message);
+                return 0f;
+            }
+        }
+
+        // ---- selling it to somebody standing in front of you -------------------
+
+        /// <summary>
+        /// Set by Main once Pricing exists, which is AFTER Wire runs.
+        ///
+        /// A second call rather than a parameter on Wire, because Wire is made the moment the
+        /// save has filled the stash and the ladder is not built until forty lines later.
+        /// Moving Wire down would delay every other answer on this surface to buy nothing.
+        /// </summary>
+        private static Economy.Pricing _pricing;
+
+        internal static void WireTrade(Economy.Pricing pricing)
+        {
+            _pricing = pricing;
+        }
+
+        /// <summary>Whether the selling half of this surface is up. Ready alone is not enough.</summary>
+        public static bool CanTrade
+        {
+            get
+            {
+                try { return Ready && _pricing != null; }
+                catch { return false; }
+            }
+        }
+
+        /// <summary>
+        /// What that much would fetch right now, before anything moves.
+        ///
+        /// Off the same ladder a corner sale uses, so a caller quoting a price and then
+        /// calling Sell gets the number it showed. Nought when it cannot be priced.
+        /// </summary>
+        public static int Quote(string id, float grams)
+        {
+            try
+            {
+                if (!CanTrade || string.IsNullOrEmpty(id) || grams <= 0.005f) return 0;
+
+                var def = _catalogue.Get(id);
+                if (def == null) return 0;
+
+                var have = _state.Stash.PackagedOf(id);
+                var take = Math.Min(grams, have);
+                if (take <= 0.005f) return 0;
+
+                return _pricing.SaleValue(def, take, _state.Stash.PurityOf(id));
+            }
+            catch { return 0; }
+        }
+
+        /// <summary>
+        /// How likely a buyer is to knock this back for being stepped on, 0 to 1.
+        ///
+        /// THE ROLL IS THE CALLER'S, not ours. A corner customer's refusal is decided by
+        /// PostUp because PostUp owns that encounter; a mod running its own conversation owns
+        /// its own, and it may well want to fold this into whatever else that person thinks
+        /// of you. So the chance is published and the decision is left alone.
+        /// </summary>
+        public static float RefusalChance(string id)
+        {
+            try
+            {
+                if (!CanTrade || string.IsNullOrEmpty(id)) return 0f;
+                return Economy.Pricing.BadCutChance(_state.Stash.PurityOf(id));
+            }
+            catch { return 0f; }
+        }
+
+        /// <summary>
+        /// Sells product to somebody in front of you. The dollars actually paid, or nought.
+        /// </summary>
+        ///
+        /// <remarks>
+        /// THE WHOLE ACT, for the same reason Use is the whole act. A method that only took
+        /// the weight off would leave the caller to invent a price, and then dealing through
+        /// another mod would be a SECOND economy: money that never touched the ladder, weight
+        /// that never moved the block, sales that never earned respect and never cost
+        /// notoriety. One of those two economies would be wrong and nobody could say which.
+        ///
+        /// So this is PostUp's sale with the encounter taken out: the ladder prices what was
+        /// actually handed over, the money is given, and every number a sale on the corner
+        /// moves is moved here too - respect, grams sold, deals made, lifetime earnings, the
+        /// last transfer the bank card shows, and the block's own saturation so somewhere
+        /// sold dry stays sold dry.
+        ///
+        /// WHAT IT DOES NOT DO is roll for a refusal or apply heat. The caller decided this
+        /// person was buying before it got here; see RefusalChance and Refused.
+        ///
+        /// Nought or less asks for everything of that kind in your pockets.
+        /// </remarks>
+        public static int Sell(string id, float grams)
+        {
+            try
+            {
+                if (!CanTrade || string.IsNullOrEmpty(id)) return 0;
+
+                var def = _catalogue.Get(id);
+                if (def == null) return 0;
+
+                var have = _state.Stash.PackagedOf(id);
+                var want = grams <= 0.005f ? have : Math.Min(grams, have);
+                if (want <= 0.005f) return 0;
+
+                // Purity is read BEFORE the weight leaves, because removing the last of a
+                // batch resets what the stash reports and the price would follow it.
+                var purity = _state.Stash.PurityOf(id);
+
+                var sold = _state.Stash.RemovePackaged(id, want);
+                if (sold <= 0.005f) return 0;
+
+                var payout = _pricing.SaleValue(def, sold, purity);
+
+                UI.Cash.Give(payout);
+
+                _state.SoldAt(purity);
+                _state.AddRespect(1f + def.Tier * 0.4f);
+                _state.GramsSold += sold;
+                _state.TotalDealsMade++;
+                _state.TotalEarned += payout;
+                _state.LastDeal = payout;
+                _state.Touch();
+
+                _pricing.SoldHere(sold);
+
+                Core.Log.Info("Api.Drugs: sold " + sold.ToString("0.#") + "g of " + NameOf(id) +
+                              " for $" + payout + " through another mod's screen.");
+
+                return payout;
+            }
+            catch (Exception ex)
+            {
+                Core.Log.Debug("Api.Drugs.Sell failed: " + ex.Message);
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// A buyer turned the product down for being cut.
+        ///
+        /// The other half of the purity system, which is worth nothing if a refusal only ever
+        /// costs one sale: stretching product has to have a price. Same two marks a refusal on
+        /// the corner leaves - a point of notoriety, and the block's memory of what you were
+        /// selling.
+        /// </summary>
+        public static void Refused(string id)
+        {
+            try
+            {
+                if (!CanTrade || string.IsNullOrEmpty(id)) return;
+
+                _state.AddNotoriety(1f);
+                _state.RefusedAt(_state.Stash.PurityOf(id));
+                _state.Touch();
+            }
+            catch (Exception ex)
+            {
+                Core.Log.Debug("Api.Drugs.Refused failed: " + ex.Message);
             }
         }
 
