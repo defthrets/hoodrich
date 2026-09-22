@@ -2468,6 +2468,7 @@ namespace Hoodrich.Social
             // A template that starts with {here} or {subject} opens on a place or a set --
             // Chamberlain Hills, the Ballas -- and those keep their capitals whoever is typing.
             var opens = !template.TrimStart().StartsWith("{", StringComparison.Ordinal);
+            var first = true;
 
             while (guard++ < 12)
             {
@@ -2476,6 +2477,15 @@ namespace Hoodrich.Social
 
                 var close = text.IndexOf('}', open + 1);
                 if (close < 0) break;
+
+                // WHETHER THIS SLOT IS THE FIRST WORD OF THE POST.
+                //
+                // It matters for the word lists, which are written with a capital -- "My
+                // cousin", "The barber" -- and a good third of the templates open on one.
+                // Without this every one of those posts started with a capital letter
+                // whoever was typing, which is the exact thing the styler is for.
+                var atStart = first && open == 0;
+                first = false;
 
                 var key = text.Substring(open + 1, close - open - 1);
                 var value = ValueFor(key, subject, amount, by);
@@ -2487,7 +2497,7 @@ namespace Hoodrich.Social
                 // names and numbers and are left alone.
                 if (by != null && !by.Types.Idle && IsWordList(key))
                 {
-                    value = by.Types.Apply(value, false);
+                    value = by.Types.Apply(value, atStart);
                 }
 
                 text = text.Substring(0, open) + value + text.Substring(close + 1);

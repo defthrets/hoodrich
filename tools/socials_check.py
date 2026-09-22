@@ -13,6 +13,18 @@ post, how many lines carry an abbreviation, how many carry an emoji, how many st
 their apostrophes. Written on 2026-09-22, when the answer was 11.2 words, 1.7% and 0.0%, and
 the whole file read as one thoughtful bystander rather than as a street.
 
+WHAT THE TWO PUNCTUATION COLUMNS DO AND DO NOT TELL YOU. Cap and apost are counted AS
+WRITTEN, and the feed does not print what is written: Social.Typing decides orthography per
+account at load and applies it in Fill, so a line stored with its capital and its apostrophes
+loses both in the mouth of any of the sixty-odd people who type that way, and keeps both in
+the auntie's. Those two columns are therefore about the source -- useful, because the source
+is what somebody edits -- and not about the screen. To measure the screen, compile Typing.cs
+into a throwaway console app and run the real thing over the file; a mirror of it written in
+Python would only ever agree with itself.
+
+The columns that ARE about the screen are words, abbrev and emoji. Typing never adds or
+removes a word, so length and vocabulary read the same here as they do in play.
+
     python tools\\socials_check.py            everything
     python tools\\socials_check.py --sets     the per-set table only
     python tools\\socials_check.py --quiet    errors only; exit 1 if any
@@ -152,7 +164,8 @@ def table(doc, least=12):
             if len(v) >= least and not k.startswith("_")]
     rows.sort(key=lambda kv: -len(kv[1]))
 
-    print("%-24s %5s %6s %7s %7s %7s %7s" % ("set", "lines", "words", "Cap", "apost", "abbrev", "emoji"))
+    print("%-24s %5s %6s %7s %7s %7s %7s"
+          % ("set", "lines", "words", "Cap*", "apost*", "abbrev", "emoji"))
     print("-" * 66)
 
     for k, v in rows:
@@ -186,6 +199,9 @@ def main():
     if not quiet:
         print()
         table(doc)
+        print()
+        print("* as written. Social.Typing restyles both of these per author at runtime,")
+        print("  so they are the source's figures and not the screen's. See the docstring.")
 
     return 1 if bad else 0
 

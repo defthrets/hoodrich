@@ -1700,6 +1700,96 @@
       "pic": "",
       "bars": false,
       "voice": "cop_dunn_lspd"
+    },
+    {
+      "handle": "grovelaundry_ls",
+      "name": "Grove Coin Laundry",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "forumwash_ls",
+      "name": "Forum Dr Hand Wash",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "davis_nailbar",
+      "name": "Davis Nail Bar",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "chamberlain_dental",
+      "name": "Chamberlain Dental",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "ls_selfstore",
+      "name": "LS Self Storage",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "southside_locks",
+      "name": "Southside Lock & Key",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "innocence_pizza",
+      "name": "Innocence Ave Pizza",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "davis_pharmacy",
+      "name": "Davis Pharmacy",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "forum_cleaners",
+      "name": "Forum Cleaners",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": ""
+    },
+    {
+      "handle": "davis_tyre",
+      "name": "Davis Tyre & Wheel",
+      "gang": "",
+      "verified": false,
+      "gender": "none",
+      "pic": "",
+      "voice": ""
     }
   ],
   "comments": {
@@ -1926,13 +2016,22 @@
       "I can't",
       "not even playing",
       "on everything",
-      "deadass",
       "man listen",
       "for real",
       "no lie",
-      "swear down",
       "I'm weak",
-      "y'all not ready"
+      "y'all not ready",
+      "fr",
+      "frfr",
+      "ong",
+      "icl",
+      "no cap",
+      "on gang",
+      "i swear",
+      "im dead",
+      "bruh",
+      "nah fr",
+      "yktv"
     ],
     "opinion": [
       "wild",
@@ -1945,7 +2044,11 @@
       "long overdue",
       "embarrassing",
       "about time",
-      "not surprising at all"
+      "not surprising at all",
+      "mad",
+      "crazy work",
+      "tough",
+      "not it"
     ],
     "rival": [
       "Ballas",
@@ -2014,7 +2117,16 @@
       "the block don't forget",
       "this gonna be a whole thing",
       "here we go again",
-      "it's only Tuesday"
+      "it's only Tuesday",
+      "we been knew",
+      "nobody shocked",
+      "on god",
+      "it be like that",
+      "yall seein this",
+      "im not sayin nothin",
+      "same as last week",
+      "aint even new",
+      "thats crazy work"
     ],
     "source": [
       "My cousin",
@@ -2025,7 +2137,14 @@
       "My little brother",
       "Dude at the bus stop",
       "The old head on the corner",
-      "My auntie"
+      "My auntie",
+      "Bro",
+      "Twin",
+      "One of the homies",
+      "Lil bro",
+      "Unc",
+      "The lady at the shop",
+      "Somebody on the block"
     ],
     "hearsay": [
       "heard",
@@ -2033,7 +2152,11 @@
       "been saying",
       "told me",
       "posted about",
-      "was going on about"
+      "was going on about",
+      "said",
+      "swear they seen",
+      "was sayin",
+      "put it out there"
     ],
     "bodypart": [
       "jaw",
@@ -3613,7 +3736,14 @@
       "Somebody's dinner's on the floor and their window's on the lawn on {here}",
       "Everybody on {here} knows the car. Nobody's saying the car",
       "{source} {hearsay} it was over something from months ago",
-      "Whoever's doing this on {here}, there's kids on this street"
+      "Whoever's doing this on {here}, there's kids on this street",
+      "slow car. no plate. you know the rest",
+      "same car been round twice",
+      "get off the corner. now",
+      "whoever that was, everybody clocked the car",
+      "car came down slow and nobody was walkin",
+      "they aint even stop properly",
+      "it was a rental. it always is"
     ],
     "Busted": [
       "LSPD got somebody on {here} {timeofday}",
@@ -3656,7 +3786,27 @@
       "Somebody's mother getting a phone call she's had before",
       "Bail money going round the block already",
       "Whoever's talking got somebody took today",
-      "They knew exactly where to look on {here}. Somebody told"
+      "They knew exactly where to look on {here}. Somebody told",
+      "FREE BRO",
+      "FREE THE GNG",
+      "free my twin fr",
+      "free the homies. all of em",
+      "free em all and bring em home",
+      "they got bro this mornin",
+      "bro gone. dont ask me nothin",
+      "phones off. dont call the house",
+      "lawyer money by friday. dont play",
+      "whoever talkin, we know",
+      "somebody talked. thats the only way",
+      "90 days and hes home",
+      "he home in november",
+      "one more winter and thats it",
+      "see you in the spring twin",
+      "commissary sunday. pull up",
+      "put somethin on his books",
+      "HE HOME",
+      "bro touched down this mornin",
+      "welcome home twin"
     ],
     "Tagged": [
       "Somebody went over the {rival} tag on {here} {timeofday}. Bold",
@@ -3727,7 +3877,14 @@
       "council's got a graffiti hotline and this block's got a graffiti tradition",
       "third layer of paint on that wall on {here} this month",
       "somebody's tag is on every bus stop between here and downtown. commitment",
-      "the shutters on {localspot} got done and the owner's actually pleased"
+      "the shutters on {localspot} got done and the owner's actually pleased",
+      "they hit the wall on {here} overnight",
+      "somebody been busy with a can",
+      "that was up by morning. somebody was out late",
+      "they crossed it out. thats a whole statement",
+      "wall on {here} sayin somethin new today",
+      "paint still wet on {here}",
+      "whoever did that got nerve, ill give em that"
     ],
     "BigSale": [
       "It's busy on {here} {timeofday}. Everybody knows why",
@@ -3833,7 +3990,14 @@
       "Six months ago nobody would've took his call",
       "The block decides who's who and the block has decided",
       "Watch how people stand when he walks up now",
-      "Money changes how a name sounds"
+      "Money changes how a name sounds",
+      "big homie now. earned every bit of it",
+      "salute to bro",
+      "he been solid since day one",
+      "from lil homie to big homie fr",
+      "they gave it to the right one",
+      "took him long enough. congrats twin",
+      "nobody deserve it more. on god"
     ],
     "JoinedGang": [
       "Heard {yours} put somebody on {timeofday}",
@@ -3853,7 +4017,12 @@
       "New face standing where he ain't stood before",
       "That's somebody's son making a decision",
       "He'll find out what it costs soon enough",
-      "Been hanging round the block for months. Finally made it official"
+      "Been hanging round the block for months. Finally made it official",
+      "welcome to the gng",
+      "he been around since he was little. its official now",
+      "one more. salute",
+      "hes family now. treat him like it",
+      "lil bro in. dont let him do nothin stupid"
     ],
     "LeftGang": [
       "Somebody walked away from {yours}. That's rare",
@@ -3871,7 +4040,12 @@
       "Heard somebody stepped back. Takes more than staying does",
       "He's out. Whether they let him be out is another thing",
       "One less on the corner. He'll be alright",
-      "Walking away is the hardest thing anybody on this block ever does"
+      "Walking away is the hardest thing anybody on this block ever does",
+      "he gone. thats his business",
+      "no smoke. he did his time out here",
+      "let him go. he got kids",
+      "everybody dont stay forever",
+      "he still family. just not out here"
     ],
     "Delivery": [
       "Nice car parked up on {here} that definitely don't live here",
@@ -3941,7 +4115,7 @@
       "{source} {hearsay} somebody took that old van down the docks. Nobody takes that van nowhere",
       "Whoever's driving that filthy Rumpo, wash it. That's all",
       "Seen the green van heading south on the freeway {timeofday}. Wild",
-      "{source} {hearsay} somebody off {here} got sent down Elysian for somethin'",
+      "{source} {hearsay} somebody off {here} got sent down Elysian for somethin",
       "That van passed me doing 40 in a 60. Whatever's in it, they ain't in a rush to get pulled",
       "Docks ain't our end of town. Something's changing",
       "{source} {hearsay} somebody from {yours} got a meeting at the port with the Cheng boy. Good luck",
@@ -4008,7 +4182,17 @@
       "{yours} out in numbers {timeofday}. Something's expected",
       "That's the most people I've seen on that corner in months",
       "They're not standing there for the weather",
-      "Somebody's expecting trouble and getting ahead of it"
+      "Somebody's expecting trouble and getting ahead of it",
+      "nobody movin by theyself rn",
+      "we outside. all of us",
+      "gng deep on {here} tonight",
+      "everybody together till further notice",
+      "dont be out here on your own",
+      "four deep to the store. thats where we at",
+      "they stay watchin. so we stay together",
+      "tap in before you come down {here}",
+      "the homies on {here} and nobody sittin",
+      "big homie said nobody alone this week"
     ],
     "YouDidThePort": [
       "Long drive. Worth it",
@@ -4319,7 +4503,29 @@
       "they run the block for the camera and go home to the valley",
       "one of you at a time is all it's ever been",
       "keep talkin. it makes finding you easier",
-      "grove, davis, all of it. ours by the time you finish typing"
+      "grove, davis, all of it. ours by the time you finish typing",
+      "some of yall was loud last week",
+      "certain people gone real quiet",
+      "whoever it apply to, you know",
+      "aint worried. never was",
+      "we dont chase nobody",
+      "they know what it is",
+      "nothin to talk about honestly",
+      "green dont mean nothin over here blood",
+      "purple on every corner you scared of",
+      "bool. keep postin",
+      "thats brazy. post more",
+      "wus brackin. nobody answered",
+      "you can tell who dont come outside no more",
+      "the block over been quiet all week",
+      "some of yall type more than you walk",
+      "post it again. we still here",
+      "yall want a war or a hashtag",
+      "he typin. thats what he doin. typin",
+      "we aint said a name. why you mad",
+      "certain people know exactly what this is",
+      "keep our name out it and we keep yours",
+      "one of yall know what you did"
     ],
     "VagosTaunt": [
       "Rancho ain't yours. it ain't ever gonna be yours.",
@@ -4405,7 +4611,25 @@
       "every corner you claim we let you have",
       "when it's serious y'all call the police like everybody else",
       "we don't need a hashtag to hold a street",
-      "keep taking pictures. it's all you take"
+      "keep taking pictures. it's all you take",
+      "some of these vatos be talkin",
+      "orale. keep talkin ese",
+      "we aint worried carnal",
+      "el barrio dont move for nobody",
+      "firme. post it again",
+      "certain people real loud on here",
+      "yellow on every corner and yall know it",
+      "they know where we at. nobody came",
+      "la raza dont chase",
+      "puro talk. nothin else",
+      "we dont say names. we dont have to",
+      "some of yall was never outside",
+      "the green be postin. thats all they do",
+      "ask around about us. go ahead",
+      "aint nobody come down rancho yet",
+      "whoever it apply to. simon",
+      "we been here. we stay here",
+      "yall loud till the block empty"
     ],
     "RivalMourns": [
       "long live my dawg. whoever did it, we coming. and we know.",
@@ -4475,7 +4699,24 @@
       "somebody's mother crying tonight and somebody's laughing. we remember both",
       "he was seventeen. seventeen",
       "everything stops today. everything",
-      "we know exactly who and we know exactly where"
+      "we know exactly who and we know exactly where",
+      "phones off",
+      "dont call me today",
+      "we aint postin till its done",
+      "he was 20",
+      "twenty. thats the whole life",
+      "his mother found out off the internet",
+      "who was with him",
+      "we know who. we know where",
+      "half of yall laughin get a turn",
+      "he was on his way home",
+      "i just seen him yesterday",
+      "everything stops today",
+      "dont say his name unless you movin",
+      "they caught him alone. thats all they got",
+      "we dont post about it",
+      "that aint over",
+      "his people gonna feel this"
     ],
     "RivalGloats": [
       "one less green shirt on the map.",
@@ -4543,7 +4784,19 @@
       "that's what the block costs",
       "we told them exactly what would happen and it happened",
       "green don't hold nothing but a grudge",
-      "check the map. check it again next week"
+      "check the map. check it again next week",
+      "told yall",
+      "we outside. still",
+      "aint nobody come. i waited",
+      "they was loud last week",
+      "some of yall need to stay home",
+      "we aint gotta say nothin else",
+      "quiet over there now aint it",
+      "nobody took nothin from us",
+      "run it back whenever",
+      "that was too easy honestly",
+      "everybody knew how that was goin",
+      "post about it. we here"
     ],
     "OursGloats": [
       "one block at a time. Grove wasn't lost in a day and it won't come back in one",
@@ -4619,7 +4872,25 @@
       "add it up. we're winning and it ain't close",
       "they'll say they let us have it. they always do",
       "one more block and they can have the freeway",
-      "hold it, don't post it. but this one's worth posting"
+      "hold it, don't post it. but this one's worth posting",
+      "we outside",
+      "WE OUTSIDE",
+      "green on {here} and it aint movin",
+      "on hood we run this",
+      "told yall. thats all",
+      "said what we said",
+      "they aint want no smoke fr",
+      "loud last week. quiet now",
+      "wasnt nobody out there. i looked",
+      "bacc on the blocc where we belong",
+      "thats ours. always was",
+      "the blocc held. yall can go home",
+      "gng did that. no names",
+      "yall seen it. i aint gotta say it",
+      "aint nobody take nothin from us",
+      "we been knew how that was gonna go",
+      "run it bacc. we here",
+      "no cap that was too easy"
     ],
     "OursMourns": [
       "my granddaddy's house is on Grove. can't even drive down it now",
@@ -4684,7 +4955,46 @@
       "everything my uncle built and we can't stand on it",
       "not a good week to be from here",
       "we'll get it back. saying it out loud so i believe it",
-      "hard to explain to a kid why we can't walk that way"
+      "hard to explain to a kid why we can't walk that way",
+      "LONG LIVE BRO",
+      "LONG LIVE TWIN. on everything",
+      "LLB. thats it thats the post",
+      "long live my twin fr",
+      "on the dead homies we aint done",
+      "on hood somebody answerin for this",
+      "he was 19",
+      "nineteen. write that down",
+      "bro was just here",
+      "cant believe im typin this",
+      "icl i aint ready for the funeral",
+      "not bro. anybody but bro",
+      "gng down one. thats all im sayin",
+      "phones off today",
+      "aint answerin nobody",
+      "dont call me. not today",
+      "we outside for him tonight",
+      "everybody meet at the courts",
+      "bacc on the blocc for him tonight",
+      "he was solid every single time",
+      "never folded. not once",
+      "twin never told on nobody",
+      "somebody mama got that call tonight",
+      "his mama on the balcony right now",
+      "his lil brother keep askin when he comin bacc",
+      "they aint even take his chain. they just wanted him gone",
+      "9 days ago he was on this corner",
+      "6/12. every year",
+      "two years next month",
+      "i still got his last text open",
+      "why him",
+      "who was he with",
+      "yall was never his friend stop postin",
+      "half of yall aint check on him alive",
+      "dont put his face on nothin yet",
+      "he aint no hashtag",
+      "quiet on here till its handled",
+      "we dont post. we handle it",
+      "the block owe him one and the block pays"
     ],
     "DissTrack": [
       "new one droppin --  \"you talk on the internet, we walk on the block / you post up for pictures, we post up on rocks\" ",
@@ -4721,26 +5031,26 @@
       "\"you was on the block when the block was safe / we was on the block when it wasn't a place\"",
       "\"purple in the hills 'cause they can't stay here / green on the corner every day this year\"",
       "\"they put a candle where a man used to stand / now they wanna talk about a truce and a plan\"",
-      "\"i don't need a hook, i need a corner and a phone / half of your set already sittin' at home\"",
+      "\"i don't need a hook, i need a corner and a phone / half of your set already sittin at home\"",
       "\"you a driver, not a shooter, and we know which is which / been knew the difference since the Forum Drive ditch\"",
       "\"talk about respect with a borrowed gun / talk about the set, you ain't even one\"",
-      "\"Grove Street raised me, Chamberlain paid me / everything after that is somethin' they gave me\"",
-      "\"count your bodies, i'll count my rent / you spent the whole year on somethin' i already spent\"",
-      "\"they call it a war 'cause it sounds better than losin' / they call it a truce 'cause it sounds better than movin'\"",
+      "\"Grove Street raised me, Chamberlain paid me / everything after that is somethin they gave me\"",
+      "\"count your bodies, i'll count my rent / you spent the whole year on somethin i already spent\"",
+      "\"they call it a war 'cause it sounds better than losin / they call it a truce 'cause it sounds better than movin\"",
       "\"i been through Davis when Davis was quiet / been through the same block when the block was a riot\"",
-      "\"your boy was a legend for about a weekend / now he's a hashtag and a candle they leanin'\"",
-      "\"we don't do interviews, we do addresses / you do the talkin', we do the guesses\"",
-      "\"came from the courts where the nets is gone / been runnin' this corner since the lights come on\"",
+      "\"your boy was a legend for about a weekend / now he's a hashtag and a candle they leanin\"",
+      "\"we don't do interviews, we do addresses / you do the talkin, we do the guesses\"",
+      "\"came from the courts where the nets is gone / been runnin this corner since the lights come on\"",
       "\"you was a Balla when it was a costume / i was a Family before i had a room\"",
       "\"they say i changed. yeah, the price did / same old block, i just know what a house cost\"",
-      "\"i don't rap, i just tell you what happened / everything after that is somebody clappin'\"",
+      "\"i don't rap, i just tell you what happened / everything after that is somebody clappin\"",
       "\"put yellow on the wall, we put green over it / put a name on the wall, we don't go over it\"",
       "\"tell the whole east side we ain't hard to find / we the ones outside when it's raining, standing in line\"",
       "\"i ain't got a chain, i got a lawyer on retainer / that's the difference between a boy and an earner\"",
       "\"you was on Bleeter, i was on Forum / you got followers, i got a quorum\"",
-      "\"davis courts, nets gone, still we shoot / purple on grove sittin' on stolen loot\"",
+      "\"davis courts, nets gone, still we shoot / purple on grove sittin on stolen loot\"",
       "\"stretch came home, sold a strap to the other side / that's why nobody let bro in the ride\"",
-      "\"auntie denise on the porch doin' yoga / whole block knows she meaner than the soldiers\"",
+      "\"auntie denise on the porch doin yoga / whole block knows she meaner than the soldiers\"",
       "lamar said he produced it. lamar produced a phone recording in the LD organics office",
       "\"innocence boulevard, ain't nobody innocent / 24/7 on forum, every hour we in it\"",
       "hao's mod shop played it out the bay all day and the purple drove past twice, slow",
@@ -4800,7 +5110,17 @@
       "his auntie heard that track and made him take it down",
       "the beat's from a free pack and the bars are from a real place",
       "kid can actually rap. wrong subject matter but he can rap",
-      "everybody's a poet till somebody pulls up"
+      "everybody's a poet till somebody pulls up",
+      "\"you got a set on your chest and a lie in your teeth / every corner you claim got somebody else lease\"",
+      "\"you aint gotta say my name, say the street / say what time you was there, say who you was with\"",
+      "\"they askin who he talkin bout, i said whoever fits / thats the whole point of it, thats the whole trick\"",
+      "\"you post the location after, i was there at the time / one of us got a story, one of us got a rhyme\"",
+      "\"i dont do subliminals, i do a date and a door / you do a caption and a crying face and four\"",
+      "\"you went and got a chain, i went and got the block / you got a video, i got the whole clock\"",
+      "\"every time it get real yo phone go flat / aint no service where you at, we all noticed that\"",
+      "\"talk to me nice or dont talk at all / i aint hard to find, im the one on the wall\"",
+      "\"you was never outside, you was outside the frame / standin by the car in somebody else name\"",
+      "\"they gon ask me who its for, im sayin whoever mad / if it aint about you then why you look so sad\""
     ],
     "CopKilled": [
       "Officer down on {hood}. This whole city about to be hell for a week",
@@ -5025,8 +5345,8 @@
       "note to self: remember the alley"
     ],
     "YouCarryingBulk": [
-      "twenty spaces and i'm usin' all of em",
-      "carryin' more than i should be. as usual",
+      "twenty spaces and i'm usin all of em",
+      "carryin more than i should be. as usual",
       "bag's heavy. that's a good problem"
     ],
     "YouDaily": [
@@ -5194,7 +5514,15 @@
       "half of {rival} live somewhere else and claim here",
       "{rival} talking about a war they started and can't finish",
       "we ain't seen {rival} on that corner in weeks and they still claim it",
-      "{rival} got one man doing the work and forty taking the credit"
+      "{rival} got one man doing the work and forty taking the credit",
+      "them two at it again",
+      "here we go. again",
+      "block empty. everybody knew before i did",
+      "two sets outside and neither one backin up",
+      "somebody gonna lose somebody tonight",
+      "aint nobody winnin this one",
+      "its been buildin all week",
+      "this the third time this month"
     ],
     "GangOnGangBallas": [
       "{rival} out here acting brand new. we remember",
@@ -5585,7 +5913,15 @@
       "doctors said another inch and we'd be having a different conversation",
       "get well soon my guy. block ain't the same without you outside",
       "whoever's asking, he's alive and that's all you need",
-      "prayers up. that's it. that's the post"
+      "prayers up. that's it. that's the post",
+      "prayers up",
+      "hes breathin. thats all i know",
+      "pillbox. thats all im sayin",
+      "dont come up here. too many people already",
+      "whole family in that waitin room",
+      "he stable. stop callin",
+      "nobody knows nothin yet. stop askin",
+      "he gon be alright. he got to be"
     ],
     "CarBurned": [
       "car burning down by the water in la puerta. nobody around it either",
@@ -5699,7 +6035,15 @@
       "windows still shaking on {street}",
       "phone lit up in four group chats at once. everybody heard it",
       "if you're on {street} stay in til it settles",
-      "quiet now. that's almost worse"
+      "quiet now. that's almost worse",
+      "that was close",
+      "everybody inside. now",
+      "count that. four",
+      "on the floor of my own front room again",
+      "who is that. who IS that",
+      "my window rn. my actual window",
+      "kids was outside. KIDS",
+      "thats not fireworks"
     ],
     "WarHeld": [
       "they came and they left with less than they brought. block held",
@@ -5729,7 +6073,14 @@
       "came for everything, left with nothing",
       "we held. that's the whole report",
       "they won't try that again this month",
-      "nobody on our side missing. that's the win"
+      "nobody on our side missing. that's the win",
+      "blocc held. goodnight",
+      "nobody got through. thats it",
+      "we still here. same corner",
+      "they came and they left. thats all",
+      "aint nothin changed round here",
+      "same blocc same people",
+      "everybody made it in. thats the win"
     ],
     "WarLost": [
       "we lost that one. no point saying otherwise",
@@ -5761,7 +6112,14 @@
       "hard night. no way to dress it up",
       "they took ground and we'll take it back. later",
       "everybody's got an opinion this morning. wasn't nobody outside last night",
-      "regroup. that's all there is to say"
+      "regroup. that's all there is to say",
+      "we lost that one",
+      "aint gonna lie that hurt",
+      "icl they got us today",
+      "count us. we aint done",
+      "regroup. thats all im sayin",
+      "we take the L and we remember it",
+      "nobody postin tonight"
     ],
     "YouDissAztecas": [
       "aztecas got two streets and act like it's a country",
@@ -5986,7 +6344,7 @@
       "come off the timeline and onto the block then",
       "he from chamberlain and act like he from somewhere",
       "we know his people, his car, and his hours",
-      "keep our name out your mouth, shorty",
+      "keep our name out your mouth, lil bro",
       "he posted from the 24/7 on forum. we know which pump",
       "tell auntie denise to keep the porch light on. franklin gonna need it",
       "lamar already deleted his reply. that's the smart one",
@@ -6163,13 +6521,13 @@
       "beat that boy down with hands on {here}. no strap needed",
       "didn't even pull nothing out. didn't have to",
       "clinton got stretched out on the pavement and it wasn't even close",
-      "he swung once. once. then he was on the floor lookin' at the sky",
+      "he swung once. once. then he was on the floor lookin at the sky",
       "we put hands on him like it was the school yard",
-      "that's what you get walkin' through here on foot, homie",
+      "that's what you get walkin through here on foot, homie",
       "no shots, no laws, no story. just him on the ground",
       "took his whole chain and left him breathing. that's mercy",
       "man got folded on {street} in front of everybody",
-      "he can't even say we shot him. we ain't shoot nothin'",
+      "he can't even say we shot him. we ain't shoot nothin",
       "dropped him with something that was leaning by a wall",
       "he woke up in pillbox with a headache and no excuse",
       "put clinton on his back outside the checkout with nothing but hands. CGF golden boy folded like a chair",
@@ -6276,7 +6634,16 @@
       "the corner's busy and it ain't the weather",
       "heard it's proper. that's all i'll say on a public app",
       "hasn't been like this on {here} since years ago",
-      "everybody's suddenly got somewhere to be on {here}"
+      "everybody's suddenly got somewhere to be on {here}",
+      "everything movin. tap in",
+      "same as last time. ask around",
+      "aint nobody complainin",
+      "line been steady since 6",
+      "gone before midday fr",
+      "yall know where we at",
+      "we dont do samples no more",
+      "quality stayed the same. thats the whole thing",
+      "one price. dont ask twice"
     ],
     "ProductBad": [
       "Baby powder and prayers",
@@ -6319,7 +6686,14 @@
       "you can't sell garbage to the same block twice",
       "reputation's gone in a week. took years to build",
       "whoever's serving that on {here}, people talk",
-      "regulars gone somewhere else. that's how it ends"
+      "regulars gone somewhere else. that's how it ends",
+      "that wasnt us. dont bring that here",
+      "somebody servin trash on {here}",
+      "aint no way thats ours",
+      "if it came cheap it wasnt us",
+      "whoever sold that gotta answer",
+      "we dont serve that. ever",
+      "half these dudes steppin on everything"
     ],
     "StoreRobbed": [
       "the 24/7 on {street} just got done. dude had a gun on the counter man",
@@ -6912,9 +7286,9 @@
     "PortChanged": [
       "Somebody new on the dock gate this morning. Older. Doesn't smile. Doesn't drink",
       "{source} {hearsay} the Cheng boy ain't been seen at the port in a week. Not one shift",
-      "Whoever was runnin' that yard on the quiet, that's over. Grown men down there now",
+      "Whoever was runnin that yard on the quiet, that's over. Grown men down there now",
       "Heard the drunk one got sent home. Like, HOME home. Different country home",
-      "Port's runnin' smoother than it has all year and nobody's sayin' why",
+      "Port's runnin smoother than it has all year and nobody's sayin why",
       "New guy at the water don't haggle, don't chat, don't remember your name. Refreshing honestly",
       "{source} {hearsay} somebody put a name in front of the old man. Brave. Stupid. Same thing",
       "That yard used to be a mess and now it's a business. Somebody made a phone call",
@@ -6932,13 +7306,13 @@
       "Somebody talked. That's the only way that happens",
       "Auntie sat on the step when I pulled up. That's the part I can't shake",
       "Lost more in twenty minutes than I made all week",
-      "Should've moved it. Kept sayin' I'd move it",
+      "Should've moved it. Kept sayin I'd move it",
       "Whole house turned over and they still didn't find the floor",
-      "That's what I get for keepin' it all one place",
-      "Startin' again then. Ain't the first time",
+      "That's what I get for keepin it all one place",
+      "Startin again then. Ain't the first time",
       "Real talk -- it's just weight. Auntie's alright. That's the score that matters",
       "They knew what room to go in. Sit with that for a minute",
-      "Cleaned out. And I got people askin' me for a re-up today of all days",
+      "Cleaned out. And I got people askin me for a re-up today of all days",
       "Ain't nobody comfortable no more, not even indoors",
       "Note to self: a house is a house, it ain't a safe",
       "LSPD at denise's on forum dr {timeofday}. She's still doing yoga on the lawn. Only one not shook",
@@ -7696,8 +8070,8 @@
       "walked past the old fan shop and got performed AT. on a tuesday",
       "he asked me if i was busy. i said yeah. he said cool cool cool. he was not cool",
       "why do the lights flicker on that whole block every night at the same time. asking for the whole block",
-      "ain't no way that man payin' con edison what he payin' for a shop that ain't sold a fan since 2019",
-      "leroy's electrical been closed six years and somebody still runnin' power to it. that's all i'm sayin'",
+      "ain't no way that man payin con edison what he payin for a shop that ain't sold a fan since 2019",
+      "leroy's electrical been closed six years and somebody still runnin power to it. that's all i'm sayin",
       "og vee got a whole basement he won't let nobody in. respectfully, what is DOWN there"
     ],
     "Tuned": [
@@ -7876,7 +8250,20 @@
       "wall on {here} says it better than i can",
       "for everybody we lost off this block. that's a long list",
       "he was seventeen. i'm not letting anybody forget that",
-      "rest easy. we're still out here doing it wrong without you"
+      "rest easy. we're still out here doing it wrong without you",
+      "LONG LIVE MY TWIN",
+      "LLT forever",
+      "3 years today",
+      "a year today. still dont feel real",
+      "you would be 24 today twin",
+      "happy birthday bro",
+      "same wall same time",
+      "still got you in my phone",
+      "poured one out on the blocc",
+      "on the dead homies i aint forgot",
+      "miss you gng",
+      "see you when i get there",
+      "til i see you again"
     ],
     "YouBought": [
       "twenty thousand new friends overnight. all of them real, obviously",
@@ -8960,13 +9347,13 @@
       ],
       "RivalKilled": [
         "Somebody's people came up short in {here}. Not mine",
-        "That's how that goes. Nobody had to do nothin' about it and here we are",
+        "That's how that goes. Nobody had to do nothin about it and here we are",
         "I don't celebrate that. I just note it"
       ],
       "JoinedGang": [
         "New face round the block. We'll see what he's about",
         "Somebody just signed on. Ask me in a month if it took",
-        "Aight. Another one workin'. Everybody works"
+        "Aight. Another one workin. Everybody works"
       ]
     },
     "tao_cheng_ls": {
@@ -10039,7 +10426,7 @@
     },
     "cletus_hunts": {
       "Ambient": [
-        "Wind's in your face or you're wastin' the whole mornin'",
+        "Wind's in your face or you're wastin the whole mornin",
         "You photograph it, I sell the meat, we split it. That's the arrangement",
         "Neighbour of mine out here in Sandy Shores is the loudest man alive",
         "Elk don't care about your schedule, son",
@@ -10050,11 +10437,11 @@
         "You don't need a fancy scope. You need to sit still and shut up",
         "Up at four. Coffee, jerky, gone. Home by nine and the day's already over",
         "Somebody left the gates open on the ridge road again. City people, I'd wager",
-        "Rain come through and washed the tracks right out. Whole mornin' for nothin'",
+        "Rain come through and washed the tracks right out. Whole mornin for nothin",
         "Got a freezer full and nobody to feed. Come by with a cooler",
         "Mule deer round here got smarter and I got slower. That's the arrangement now",
         "Fella asked if I use a bow. I said I use whatever's in the truck",
-        "Wind shifted at the last second and he was gone. That's the whole of huntin'"
+        "Wind shifted at the last second and he was gone. That's the whole of huntin"
       ]
     },
     "dom_jumps": {
