@@ -1394,7 +1394,15 @@ namespace Hoodrich.Social
         /// where they were yesterday, and a feed where nobody ever mentions anywhere else is
         /// as wrong as one that never mentions here.
         /// </summary>
-        private const double RegionChance = 0.22;
+        private const double RegionChance = 0.16;
+
+        /// <summary>
+        /// And how much of it is about the hour it actually is.
+        ///
+        /// Taken out of the general pool rather than off the other three, because the general
+        /// pool is the one that has no idea what time it is.
+        /// </summary>
+        private const double MomentChance = 0.14;
 
         /// <summary>
         /// The ambient set for where the player is standing, or "Ambient" if there is not one.
@@ -1404,6 +1412,24 @@ namespace Hoodrich.Social
         /// are deliberately absent -- or nobody has written that region's lines yet. This is
         /// why the feature can be wired up before a single line of its content exists.
         /// </summary>
+        /// <summary>
+        /// The ambient set for the hour it is now, or "Ambient" if there is not one.
+        ///
+        /// AmbientLatenight, AmbientEarlymorning, AmbientMorning, AmbientMidday,
+        /// AmbientAfternoon, AmbientEvening, AmbientNight -- named off Moment.Part, so adding
+        /// a time of day to the feed is a data edit and never a code one.
+        /// </summary>
+        private string MomentSet()
+        {
+            var part = Moment.Now();
+            if (string.IsNullOrEmpty(part)) return "Ambient";
+
+            var set = "Ambient" + char.ToUpperInvariant(part[0]) + part.Substring(1);
+
+            List<string> lines;
+            return _templates.TryGetValue(set, out lines) && lines.Count > 0 ? set : "Ambient";
+        }
+
         private string RegionSet()
         {
             if (ZoneCodeYouAre == null || _regionOf.Count == 0) return "Ambient";
@@ -1461,6 +1487,7 @@ namespace Hoodrich.Social
                 which = pick < HoodChance ? "AmbientHood"
                       : pick < HoodChance + LocalChance ? "Local"
                       : pick < HoodChance + LocalChance + RegionChance ? RegionSet()
+                      : pick < HoodChance + LocalChance + RegionChance + MomentChance ? MomentSet()
                       : "Ambient";
             }
 

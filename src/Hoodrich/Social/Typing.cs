@@ -586,10 +586,30 @@ namespace Hoodrich.Social
             var b = new StringBuilder(text.Length);
             var word = new StringBuilder();
             var first = true;
+            var afterStop = false;
+
+            // A SLOT NAME IS NOT A SENTENCE. Open runs on the whole line rather than inside
+            // Spelling, so unlike the letter rules it sees the braces -- and the harness
+            // caught it turning {excuse} into {Excuse}, which is not a slot and would have
+            // printed its own braces on the phone.
+            var inSlot = false;
 
             for (var i = 0; i <= text.Length; i++)
             {
                 var c = i < text.Length ? text[i] : '\0';
+
+                if (c == '{') inSlot = true;
+                else if (c == '}') inSlot = false;
+
+                if (inSlot || c == '}')
+                {
+                    b.Append(word);
+                    word.Length = 0;
+                    first = false;
+
+                    if (i < text.Length) b.Append(c);
+                    continue;
+                }
 
                 if (char.IsLetter(c) || c == '\'')
                 {
@@ -602,7 +622,11 @@ namespace Hoodrich.Social
                     var w = word.ToString();
                     word.Length = 0;
 
-                    if (first && char.IsLower(w[0]))
+                    // EVERY SENTENCE, not only the first. Somebody who writes in sentences
+                    // writes "Donut shop was open at 4. Donut shop is always open at 4";
+                    // capitalising the opener alone left the second half in lower case, which
+                    // is a shape nobody has typed either.
+                    if ((first || afterStop) && char.IsLower(w[0]))
                     {
                         w = char.ToUpperInvariant(w[0]) + w.Substring(1);
                     }
@@ -620,7 +644,10 @@ namespace Hoodrich.Social
 
                     b.Append(w);
                     first = false;
+                    afterStop = false;
                 }
+
+                if (c == '.' || c == '!' || c == '?') afterStop = true;
 
                 if (i < text.Length) b.Append(c);
             }
