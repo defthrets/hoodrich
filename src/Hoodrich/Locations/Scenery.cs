@@ -1395,7 +1395,14 @@ namespace Hoodrich.Locations
 
                 Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, made.Handle, true, true);
 
-                if (!item.Visible) made.IsVisible = false;
+                // NOBODY IS STOOD UP INVISIBLE. The flag is a trap that feeds itself: a ped
+                // who had not streamed in when a capture was taken reads back as invisible,
+                // the capture writes that down, the file stands him up invisible, and the
+                // next capture over him writes it down again. Fifty-one of Parkview's roof
+                // peds went round that loop until they were found hanging there unseen.
+                //
+                // A PROP may still be hidden on purpose -- hidden.xml is nothing else.
+                if (!item.Visible && item.What != Spooner.Kind.Ped) made.IsVisible = false;
                 if (item.Opacity >= 0 && item.Opacity < 255) made.Opacity = item.Opacity;
                 if (item.Invincible) Function.Call(Hash.SET_ENTITY_INVINCIBLE, made.Handle, true);
 

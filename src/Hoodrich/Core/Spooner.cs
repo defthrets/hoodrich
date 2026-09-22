@@ -948,7 +948,11 @@ namespace Hoodrich.Core
                 Roll = rot.Y,
                 Yaw = rot.Z,
                 Frozen = what != Kind.Ped,
-                Visible = e.IsVisible
+
+                // A PED IS WRITTEN DOWN AS SEEN, whatever he looked like at the moment the
+                // key went down. One who has not streamed in yet answers false, and writing
+                // that into the file is how a scene comes to stand its people up invisible.
+                Visible = what == Kind.Ped || e.IsVisible
             };
         }
     }
