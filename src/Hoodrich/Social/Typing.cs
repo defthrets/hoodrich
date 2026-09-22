@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -22,10 +22,17 @@ namespace Hoodrich.Social
     /// reads as sloppy; eighty per cent of PEOPLE who never use one reads as a phone.
     ///
     /// Nothing in here invents vocabulary. Slang is meaning and belongs in the words somebody
-    /// actually wrote. This only ever removes and flattens -- which is what the research found
-    /// does the work: strip the apostrophes, strip the full stops, lowercase the opener, and
-    /// -ing becomes -in. Four rules, and a corpus is most of the way home before a single word
-    /// of it changes.
+    /// actually wrote. What it does is punctuation and case: strip the apostrophes, strip the
+    /// full stops, lowercase the opener, -ing becomes -in. Four rules, and a corpus is most of
+    /// the way home before a single word of it changes.
+    ///
+    /// AND IT ADDS AS WELL AS STRIPS, which it did not at first, and that was a real hole. The
+    /// ordinary-register research measured this file and found 98.9% of its lines end on
+    /// nothing at all, 0.0% carry an exclamation mark and 0.0% carry an ellipsis. A styler that
+    /// could only take things away therefore had nothing to give the proper band, so the
+    /// aunties and the teacher punctuated exactly like the nineteen-year-olds and the whole
+    /// upper half of the age range had no written identity of its own. Punctuates and Exclaims
+    /// are that half.
     /// </summary>
     internal sealed class Typing
     {
@@ -58,6 +65,34 @@ namespace Hoodrich.Social
         public bool Trails;
 
         /// <summary>
+        /// Finishes the sentence. The other half of the job, and the half that was missing.
+        ///
+        /// 98.9% of the lines in the file end on nothing, so a styler that could only strip
+        /// gave every author in the city the punctuation of a twenty-three-year-old. Somebody
+        /// who writes in sentences has to be able to end one.
+        /// </summary>
+        public bool Punctuates;
+
+        /// <summary>
+        /// The exclamation mark, which for this cohort is not excitement, it is the smile.
+        ///
+        /// Its ABSENCE is what reads as cold from somebody who normally uses one, which is the
+        /// opposite of how it works twenty years younger, where one is fine and three is a
+        /// parent. Only ever on a band that punctuates in the first place.
+        /// </summary>
+        public bool Exclaims;
+
+        /// <summary>
+        /// Starts the sentence with a capital, which is the other thing a styler that could
+        /// only strip was unable to do.
+        ///
+        /// Without it the proper band produced the worst of both: a full stop on the end and
+        /// a lowercase word at the front, which is a shape nobody has ever typed. Somebody who
+        /// finishes a sentence began one.
+        /// </summary>
+        public bool Capitalises;
+
+        /// <summary>
         /// Somebody whose words are their own.
         ///
         /// Every hand-written voice defaults to this, and so does every organisation. Weazel
@@ -68,7 +103,8 @@ namespace Hoodrich.Social
         public static readonly Typing AsWritten = new Typing();
 
         public bool Idle => !Lower && !NoApostrophes && !NoStops && !Dropping
-                            && !Stretches && !Shouts && !Trails;
+                            && !Stretches && !Shouts && !Trails
+                            && !Punctuates && !Exclaims && !Capitalises;
 
         // ======================================================================
         // Who types how
@@ -79,6 +115,8 @@ namespace Hoodrich.Social
         ///
         /// street -- the default for anybody in a set who has no written lines of their own.
         ///           Nearly everything off, orthographically speaking.
+        /// young  -- an ordinary twenty-odd-year-old with a job and no set. Lowercase and
+        ///           unterminated, and keeps its g's.
         /// plain  -- a phone, but a tidier one. Half of them keep their apostrophes.
         /// proper -- capitals, apostrophes, full stops and the ellipsis. The aunties, the
         ///           teacher, the elders. Not an oversight: the research is explicit that
@@ -92,9 +130,19 @@ namespace Hoodrich.Social
 
             switch (band.ToLowerInvariant())
             {
-                case "street": return Roll(handle, 90, 85, 90, 85, 55, 25, 0);
-                case "plain":  return Roll(handle, 70, 55, 72, 45, 25, 12, 8);
-                case "proper": return Roll(handle, 0, 0, 0, 0, 0, 0, 55);
+                //                        lower apos stops drop strtch shout trail punct excl caps
+                case "street": return Roll(handle, 90, 85, 90, 85, 55, 25,  0,   0,  0,   0);
+
+                // An ordinary twenty-odd-year-old. Lowercase and unterminated like the block,
+                // and NOT dropping its g's -- -in belongs to the street register and putting
+                // it in a barista's mouth puts the wrong city in it.
+                case "young":  return Roll(handle, 92, 70, 92,  0, 40, 15,  0,   0,  0,   0);
+
+                case "plain":  return Roll(handle, 70, 55, 72, 45, 25, 12,  8,  18,  8,  22);
+
+                // Writes in sentences, and can now finish one.
+                case "proper": return Roll(handle,  0,  0,  0,  0,  0,  0, 55,  92, 60, 100);
+
                 default:       return AsWritten;
             }
         }
@@ -109,7 +157,8 @@ namespace Hoodrich.Social
         /// people, not seventy-three.
         /// </summary>
         private static Typing Roll(string handle, int lower, int apos, int stops,
-                                   int dropping, int stretch, int shout, int trail)
+                                   int dropping, int stretch, int shout, int trail,
+                                   int punct, int excl, int caps)
         {
             return new Typing
             {
@@ -119,7 +168,15 @@ namespace Hoodrich.Social
                 Dropping       = Chance(handle, 4, dropping),
                 Stretches      = Chance(handle, 5, stretch),
                 Shouts         = Chance(handle, 6, shout),
-                Trails         = Chance(handle, 7, trail)
+                Trails         = Chance(handle, 7, trail),
+                Punctuates     = Chance(handle, 8, punct),
+                Exclaims       = Chance(handle, 10, excl),
+
+                // NEVER BOTH. Lower takes the capital off the opener and Capitalises puts one
+                // on, and Capitalises runs second, so an author who rolled both would have
+                // simply cancelled the first one out and looked like an author who rolled
+                // neither. Somebody either starts sentences with capitals or they do not.
+                Capitalises    = !Chance(handle, 1, lower) && Chance(handle, 12, caps)
             };
         }
 
@@ -161,8 +218,17 @@ namespace Hoodrich.Social
         /// Somebody is a person, and then every line in the file that opens with the word
         /// keeps a capital it should have lost.
         /// </summary>
-        private static readonly HashSet<string> Names =
-            new HashSet<string>(StringComparer.Ordinal);
+        private static readonly Dictionary<string, int> Capped =
+            new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        private static readonly Dictionary<string, int> Lowered =
+            new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        private static void Count(Dictionary<string, int> table, string key)
+        {
+            int had;
+            table[key] = table.TryGetValue(key, out had) ? had + 1 : 1;
+        }
 
         public static void Learn(IEnumerable<string> lines)
         {
@@ -191,11 +257,19 @@ namespace Hoodrich.Social
                         var w = word.ToString();
                         word.Length = 0;
 
-                        // Not the opener, not standing behind a full stop, capitalised, and
-                        // not a shout -- BREAKING and OGs are not people.
-                        if (!first && !afterStop && char.IsUpper(w[0]) && HasLower(w))
+                        // Not the opener and not standing behind a full stop: those two
+                        // positions take a capital for reasons that have nothing to do with
+                        // the word, so they are no evidence either way.
+                        if (!first && !afterStop)
                         {
-                            Names.Add(w);
+                            if (char.IsUpper(w[0]) && HasLower(w))
+                            {
+                                Count(Capped, w);
+                            }
+                            else if (char.IsLower(w[0]))
+                            {
+                                Count(Lowered, w);
+                            }
                         }
 
                         first = false;
@@ -220,12 +294,26 @@ namespace Hoodrich.Social
             return false;
         }
 
+        /// <summary>
+        /// Whether a word is somebody's name, on the balance of how the file spells it.
+        ///
+        /// ONE SIGHTING IS ENOUGH, and a ratio test was tried and abandoned. The idea was
+        /// that a word should have to be capitalised more often than not to count, so that
+        /// "Lost" the biker chapter would not protect "lost" the verb. Measured against the
+        /// actual file it rejected Franklin, Denise, Grove and Lamar -- because this corpus is
+        /// half lower case by design, so a real name appears in lower case far more often than
+        /// in upper, and lowercase frequency turns out to be no evidence at all.
+        ///
+        /// So the bar is back to a single mid-sentence capital, which is the right way round:
+        /// being wrong here costs one opener an unnecessary capital letter, and being wrong the
+        /// other way puts somebody's name in lower case in every post that mentions them.
+        /// </summary>
         public static bool IsName(string word)
         {
-            return !string.IsNullOrEmpty(word) && Names.Contains(word);
+            return !string.IsNullOrEmpty(word) && Capped.ContainsKey(word);
         }
 
-        public static int NamesKnown => Names.Count;
+        public static int NamesKnown => Capped.Count;
 
         // ======================================================================
         // The typing
@@ -295,6 +383,8 @@ namespace Hoodrich.Social
             // leaves anything with a slot in it alone regardless -- a place name in capitals
             // reads as a headline, not as somebody raising their voice.
             if (NoStops) text = StripStop(text);
+            if (Capitalises && opens) text = Open(text);
+            if (Punctuates && opens) text = Finish(text, seed);
             if (Trails && opens) text = Trail(text, seed);
             if (Shouts && opens) text = Shout(text, seed);
 
@@ -384,7 +474,7 @@ namespace Hoodrich.Social
 
             var word = text.Substring(start, end - start);
             if (!HasLower(word)) return text;   // BREAKING, LOCAL, FREE
-            if (IsName(word)) return text;      // Franklin, Grove, Weazel
+            if (IsName(word)) return text;      // Franklin, Grove, Weazel -- but not "Lost"
 
             return text.Substring(0, start) + char.ToLowerInvariant(word[0])
                  + word.Substring(1) + text.Substring(end);
@@ -474,6 +564,98 @@ namespace Hoodrich.Social
             return text.Substring(0, end - 1) + text.Substring(end);
         }
 
+        /// <summary>
+        /// A full stop on the end, or now and then the exclamation mark instead.
+        ///
+        /// Everything that already ends in SOMETHING is left alone: a question keeps its
+        /// mark, a couplet keeps its closing quote, an ellipsis stays an ellipsis, and a line
+        /// that finishes on a slot is finished by whatever the slot puts there. A bare
+        /// fragment of one word is left as well -- "anyway" with a full stop on it is a
+        /// different and much colder post than the one somebody wrote.
+        /// </summary>
+        /// <summary>
+        /// The first letter up, every lone i up, and the names put back.
+        ///
+        /// The mirror of LowerIt, and it needs the name list for the same reason: somebody who
+        /// writes in sentences writes Vespucci and I, and a band that could only manage the
+        /// opening letter produced "The mask counter at vespucci had a shelf longer than i
+        /// expected", which is worse than either register on its own.
+        /// </summary>
+        private static string Open(string text)
+        {
+            var b = new StringBuilder(text.Length);
+            var word = new StringBuilder();
+            var first = true;
+
+            for (var i = 0; i <= text.Length; i++)
+            {
+                var c = i < text.Length ? text[i] : '\0';
+
+                if (char.IsLetter(c) || c == '\'')
+                {
+                    word.Append(c);
+                    continue;
+                }
+
+                if (word.Length > 0)
+                {
+                    var w = word.ToString();
+                    word.Length = 0;
+
+                    if (first && char.IsLower(w[0]))
+                    {
+                        w = char.ToUpperInvariant(w[0]) + w.Substring(1);
+                    }
+                    else if (w == "i" || w.StartsWith("i'", StringComparison.Ordinal))
+                    {
+                        w = "I" + w.Substring(1);
+                    }
+
+                    // DELIBERATELY NOT PUTTING NAMES BACK. Restoring "vespucci" to "Vespucci"
+                    // needs to know which lowercase words are names, and this file cannot tell
+                    // you: it is written half in lower case, so Franklin appears lowercase six
+                    // times for every capital. Guessing would capitalise ordinary words in the
+                    // middle of sentences, which is a louder mistake than leaving a place name
+                    // in lower case -- and somebody typing quickly does that anyway.
+
+                    b.Append(w);
+                    first = false;
+                }
+
+                if (i < text.Length) b.Append(c);
+            }
+
+            return b.ToString();
+        }
+
+        private string Finish(string text, int seed)
+        {
+            var end = text.Length;
+            while (end > 0 && text[end - 1] == ' ') end--;
+            if (end == 0) return text;
+
+            var last = text[end - 1];
+
+            if (last == '.' || last == '!' || last == '?') return text;
+            if (last == '"' || last == '\'' || last == '}' || last == ':' ||
+                last == ',' || last == '-' || last == '/') return text;
+
+            if (!char.IsLetterOrDigit(last) && last != ')') return text;
+
+            // One word on its own is a verdict, not a sentence.
+            var words = 1;
+            for (var i = 0; i < end; i++)
+            {
+                if (text[i] == ' ') words++;
+            }
+
+            if (words < 2) return text;
+
+            var mark = Exclaims && seed % 100 < 34 ? "!" : ".";
+
+            return text.Substring(0, end) + mark + text.Substring(end);
+        }
+
         private static string Trail(string text, int seed)
         {
             if (seed % 100 >= 30) return text;
@@ -482,10 +664,16 @@ namespace Hoodrich.Social
             while (end > 0 && text[end - 1] == ' ') end--;
             if (end == 0) return text;
 
-            if (text[end - 1] != '.') return text;
             if (end >= 2 && text[end - 2] == '.') return text;
 
-            return text.Substring(0, end) + ".." + text.Substring(end);
+            // After a full stop, the other two dots. Otherwise all three, but only where a
+            // sentence could have ended: never after a quote, a slot or a comma.
+            if (text[end - 1] == '.') return text.Substring(0, end) + ".." + text.Substring(end);
+
+            var last = text[end - 1];
+            if (!char.IsLetterOrDigit(last) && last != ')') return text;
+
+            return text.Substring(0, end) + "..." + text.Substring(end);
         }
 
         /// <summary>One held letter on a reaction word, and only sometimes.</summary>
