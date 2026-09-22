@@ -1063,8 +1063,16 @@ namespace Hoodrich.Gangs
                 try
                 {
                     var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage) continue;
-                    if (!model.Request(1500)) continue;
+
+                    // ASKED, NOT WAITED FOR. Request(1500) hands the frame back to the game
+                    // and does not return until the model lands or a second and a half has
+                    // gone -- and every frame in between is a frame with none of this mod's
+                    // HUD on it, which is the phone blinking while you are reading it. It only
+                    // ever actually waited when another mod had the streamer busy. This runs
+                    // on a repeating pass, so "not yet" costs a moment and nothing else. See
+                    // Core.Streamer, whose whole comment is this bug measured.
+                    if (!Core.Streamer.Here(model)) continue;
+
                     return model;
                 }
                 catch

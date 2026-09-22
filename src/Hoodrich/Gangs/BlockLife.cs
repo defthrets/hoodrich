@@ -173,7 +173,10 @@ namespace Hoodrich.Gangs
                 try
                 {
                     var model = new Model(name);
-                    if (!model.IsValid || !model.IsInCdImage || !model.Request(1200)) continue;
+
+                    // Asked rather than waited on, on a pass that comes round again. See
+                    // Core.Streamer.
+                    if (!Core.Streamer.Here(model)) continue;
 
                     var handle = Function.Call<int>(Hash.CREATE_PED, PedTypeCiv, model.Hash,
                                                     at.X, at.Y, at.Z,

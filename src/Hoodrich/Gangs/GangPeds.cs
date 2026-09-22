@@ -95,7 +95,13 @@ namespace Hoodrich.Gangs
             try
             {
                 var model = new Model(propName);
-                if (!model.IsValid || !model.IsInCdImage || !model.Request(500)) return null;
+
+                // Asked rather than waited on. Half a second each does not sound like
+                // anything until a yard of eight people is built in one pass and every one of
+                // them is holding a bottle -- which is the ten dark frames the watchdog
+                // reported. Null means "not this pass"; the caller asks again. See
+                // Core.Streamer and Entourage.Hold.
+                if (!Core.Streamer.Here(model)) return null;
 
                 var prop = World.CreateProp(model, who.Position, false, false);
                 model.MarkAsNoLongerNeeded();
