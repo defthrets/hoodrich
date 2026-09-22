@@ -482,7 +482,37 @@ namespace Hoodrich.Locations
             try
             {
                 var ours = Paths.Scenery;
-                if (Directory.Exists(ours)) files.AddRange(Directory.GetFiles(ours, "*.xml", SearchOption.AllDirectories));
+
+                if (Directory.Exists(ours))
+                {
+                    var dumps = 0;
+
+                    foreach (var path in Directory.GetFiles(ours, "*.xml", SearchOption.AllDirectories))
+                    {
+                        // A CAPTURE IS NOT A SCENE. What the capture key writes is everything
+                        // that stood round you at the moment you pressed it -- this scene, any
+                        // other scene in reach, and whatever happened to be walking past. It is
+                        // written in here to be merged into a scene by hand, and it was being
+                        // read straight back as a scene of its own: a second copy of the lot,
+                        // every session, and another copy again for every press of the key.
+                        //
+                        // Only the files we put here by name are scenes. Rename a capture and
+                        // it becomes one.
+                        if (Path.GetFileName(path).StartsWith("capture-", StringComparison.OrdinalIgnoreCase))
+                        {
+                            dumps++;
+                            continue;
+                        }
+
+                        files.Add(path);
+                    }
+
+                    if (dumps > 0)
+                    {
+                        Log.Info("Scenery: " + dumps + " capture file(s) in the scenery folder are left alone. " +
+                                 "A capture is a save to merge, not a scene; rename one to have it built.");
+                    }
+                }
             }
             catch (Exception ex)
             {
