@@ -2314,6 +2314,120 @@
       "the Hookies"
     ]
   },
+  "moments": {
+    "latenight": [
+      "just now",
+      "right now",
+      "at like 3am",
+      "tonight",
+      "a minute ago",
+      "in the middle of the night",
+      "at this hour",
+      "at 4 in the morning"
+    ],
+    "earlymorning": [
+      "just now",
+      "this morning",
+      "before work",
+      "first thing",
+      "on my way in",
+      "last night",
+      "at like 3am",
+      "before the sun was even up"
+    ],
+    "morning": [
+      "this morning",
+      "just now",
+      "about an hour ago",
+      "before work",
+      "last night",
+      "yesterday",
+      "on my way in",
+      "first thing"
+    ],
+    "midday": [
+      "just now",
+      "this morning",
+      "round midday",
+      "about an hour ago",
+      "last night",
+      "on my lunch",
+      "yesterday"
+    ],
+    "afternoon": [
+      "this afternoon",
+      "just now",
+      "about an hour ago",
+      "this morning",
+      "last night",
+      "yesterday",
+      "on my break"
+    ],
+    "evening": [
+      "just now",
+      "this evening",
+      "on my way home",
+      "this afternoon",
+      "tonight",
+      "about an hour ago",
+      "after work"
+    ],
+    "night": [
+      "tonight",
+      "just now",
+      "about an hour ago",
+      "this evening",
+      "late on",
+      "on my way home",
+      "after work"
+    ]
+  },
+  "weather": {
+    "hot": [
+      "It's too hot",
+      "This heat is not normal",
+      "Too hot to be outside",
+      "My car is an oven",
+      "It's a hundred and something out here",
+      "Heat like this makes everybody strange"
+    ],
+    "clear": [
+      "Perfect day",
+      "Not a cloud out there",
+      "Blue sky all day",
+      "Perfect day and I'm at work",
+      "Clear as anything"
+    ],
+    "grey": [
+      "Marine layer ain't lifting",
+      "Grey till noon again",
+      "June gloom in full effect",
+      "Sun'll be out at two like it always is",
+      "Overcast and warm, the worst combination"
+    ],
+    "smog": [
+      "Smoggy as hell",
+      "Can't see the hills today",
+      "Air's thick out here",
+      "Sky's got that brown on it again"
+    ],
+    "fog": [
+      "Can't see the end of the street",
+      "Fog sat on everything",
+      "Fog so thick the lights don't help"
+    ],
+    "rain": [
+      "Rain finally",
+      "It's raining and nobody can drive",
+      "First rain of the year and the roads are a skating rink",
+      "Rain, and every windscreen wiper in this city is original equipment"
+    ],
+    "snow": [
+      "It's freezing for LA",
+      "Snow. Here. Explain that",
+      "Nobody in this city owns a coat"
+    ]
+  },
   "posts": {
     "Local": [
       "man on forum drive doing vests now. no name, no licence, no questions",
@@ -4074,7 +4188,7 @@
       "New face on the corner at {localspot}. Same corner, different week",
       "You can always tell fronted work by how careful a man stands with it",
       "{source} {hearsay} somebody had to go ask for a package this week",
-      "Out there in the {weathertalk} for twenty a gram. That's how it starts",
+      "Out there in that heat for twenty a gram. That's how it starts",
       "Everybody act brand new til they gotta go ask somebody for work",
       "Half this block eating off somebody else's package and pretending otherwise",
       "Man on {here} grinding from zero {timeofday}. Respect where it's due",

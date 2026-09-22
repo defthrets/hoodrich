@@ -558,6 +558,33 @@ namespace Hoodrich.Social
                     if (list.Count > 0) feed._slots[key] = list;
                 }
 
+                // WHAT THE HOUR AND THE SKY ALLOW SOMEBODY TO SAY. Both optional: a file
+                // without them falls back to the flat {timeofday} and {weathertalk} lists,
+                // which is what every version before this one did. See Moment.
+                foreach (var part in doc["moments"].Keys)
+                {
+                    var said = new List<string>();
+                    foreach (var line in doc["moments"][part].Items)
+                    {
+                        var text = line.AsString("");
+                        if (!string.IsNullOrEmpty(text)) said.Add(text);
+                    }
+
+                    if (said.Count > 0) feed._moments[part] = said;
+                }
+
+                foreach (var sky in doc["weather"].Keys)
+                {
+                    var said = new List<string>();
+                    foreach (var line in doc["weather"][sky].Items)
+                    {
+                        var text = line.AsString("");
+                        if (!string.IsNullOrEmpty(text)) said.Add(text);
+                    }
+
+                    if (said.Count > 0) feed._skies[sky] = said;
+                }
+
                 // What each set calls itself, so {rival} can never hand a gang its own name.
                 foreach (var gang in doc["selfWords"].Keys)
                 {
@@ -2625,6 +2652,26 @@ namespace Hoodrich.Social
                 return string.IsNullOrEmpty(colour) ? "them" : colour;
             }
 
+            // WHEN IT ACTUALLY IS, rather than whenever the list fancies.
+            //
+            // This is the most-used slot in the file after the places, and until now it was
+            // ten phrases drawn blind: the feed would report something happening "at like 3am"
+            // while you stood in the afternoon sun, and "last night" before breakfast. Asking
+            // the clock costs one native and turns two hundred and thirty lines from noise
+            // into something that agrees with the window. See Moment.
+            if (string.Equals(key, "timeofday", StringComparison.OrdinalIgnoreCase))
+            {
+                var said = OneOf(_moments, Moment.Now());
+                if (said != null) return said;
+            }
+
+            // And the same for the sky, which used to offer "Rain finally" on a clear day.
+            if (string.Equals(key, "weathertalk", StringComparison.OrdinalIgnoreCase))
+            {
+                var said = OneOf(_skies, Moment.Sky());
+                if (said != null) return said;
+            }
+
             List<string> list;
             if (_slots.TryGetValue(key, out list) && list.Count > 0) return list[_rng.Next(list.Count)];
 
@@ -2652,6 +2699,37 @@ namespace Hoodrich.Social
 
         private readonly Dictionary<string, List<string>> _selfWords =
             new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// What somebody could say about the time RIGHT NOW, by part of the day.
+        ///
+        /// Keyed by Moment.Part -- latenight, earlymorning, morning, midday, afternoon,
+        /// evening, night. Empty means the file has no "moments" block and {timeofday} keeps
+        /// its old behaviour, so an older socials.json still works.
+        /// </summary>
+        private readonly Dictionary<string, List<string>> _moments =
+            new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>What somebody could say about the sky right now, by Moment.SkyFor.</summary>
+        private readonly Dictionary<string, List<string>> _skies =
+            new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// One line out of the bucket the world is currently in, or null to fall back.
+        ///
+        /// Null rather than an empty string on purpose: a bucket that is missing from the data
+        /// has to hand the decision back to the flat list, and "" would print an empty gap in
+        /// the middle of a sentence instead.
+        /// </summary>
+        private string OneOf(Dictionary<string, List<string>> table, string bucket)
+        {
+            if (table.Count == 0 || string.IsNullOrEmpty(bucket)) return null;
+
+            List<string> said;
+            if (!table.TryGetValue(bucket, out said) || said.Count == 0) return null;
+
+            return said[_rng.Next(said.Count)];
+        }
 
         /// <summary>Whether a candidate rival is really the speaker's own lot.</summary>
         private bool IsSelf(string gangId, string candidate)
