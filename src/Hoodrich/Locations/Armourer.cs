@@ -425,6 +425,9 @@ namespace Hoodrich.Locations
                     _ped.IsPersistent = true;
                     _ped.BlockPermanentEvents = true;
 
+                    // The man behind the counter, and only ever the one. See Core.Folk.
+                    Core.Folk.Stamp(_ped, "armourer");
+
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, _ped.Handle, true, true);
                     Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, _ped.Handle, false);
 
