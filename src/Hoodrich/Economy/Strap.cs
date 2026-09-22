@@ -76,6 +76,30 @@ namespace Hoodrich.Economy
         private const int SProduct = 3;
         private const int SSize = 4;
 
+        /// <summary>
+        /// Where the other mod says it is drawing a real bag on his back. See Wear.
+        ///
+        /// THE SAME APPDOMAIN CHANNEL AS EVERYTHING ELSE ON THIS MACHINE, and one int, for
+        /// the reasons set out on Channel above. Nothing here writes it; this end only reads.
+        /// </summary>
+        private const string ShownChannel = "spitmux.bag.shown";
+
+        /// <summary>Whether a real bag model is on his back right now, drawn by somebody else.</summary>
+        private static bool Drawn()
+        {
+            try
+            {
+                var row = AppDomain.CurrentDomain.GetData(ShownChannel) as int[];
+
+                return row != null && row.Length > 0 && row[0] == 1;
+            }
+            catch
+            {
+                // Nobody is drawing anything, then, and the strap is the whole answer.
+                return false;
+            }
+        }
+
         /// <summary>The last drop request answered, so one ask is not answered twice.</summary>
         private int _asked;
 
@@ -392,6 +416,20 @@ namespace Hoodrich.Economy
         {
             try
             {
+                // SOMEBODY ELSE IS DRAWING A REAL ONE, so this does not put a strap on as
+                // well. Bare Minimum hangs an actual bag model off the spine -- a model you
+                // can choose and a position you can dial, neither of which a drawable can be
+                // -- and a man wearing that AND this is wearing two bags.
+                //
+                // IT ONLY SAYS YES WHILE THE PROP ACTUALLY EXISTS, not while the setting is
+                // on, so a build where the model will not load gets the strap back rather
+                // than nothing at all. See Bare Minimum's Food.Strap.
+                if (Drawn())
+                {
+                    Unwear(me);
+                    return;
+                }
+
                 // WHICH STRAP THIS BODY ACTUALLY HAS.
                 //
                 // Drawable seven is the strap on the outfit it was found on, and the number of
