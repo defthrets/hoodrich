@@ -93,6 +93,15 @@ namespace Hoodrich.Social
         public bool Capitalises;
 
         /// <summary>
+        /// Swears with a star in them, or "ahh" for ass. See Dodge.
+        ///
+        /// A public feed gets its swearing dodged by a good share of the people on it -- partly
+        /// habit from platforms that filter, partly because it reads sharper -- and the rest
+        /// type it in full. Which one somebody is does not change between posts.
+        /// </summary>
+        public bool Dodges;
+
+        /// <summary>
         /// Somebody whose words are their own.
         ///
         /// Every hand-written voice defaults to this, and so does every organisation. Weazel
@@ -104,7 +113,7 @@ namespace Hoodrich.Social
 
         public bool Idle => !Lower && !NoApostrophes && !NoStops && !Dropping
                             && !Stretches && !Shouts && !Trails
-                            && !Punctuates && !Exclaims && !Capitalises;
+                            && !Punctuates && !Exclaims && !Capitalises && !Dodges;
 
         // ======================================================================
         // Who types how
@@ -130,18 +139,18 @@ namespace Hoodrich.Social
 
             switch (band.ToLowerInvariant())
             {
-                //                        lower apos stops drop strtch shout trail punct excl caps
-                case "street": return Roll(handle, 90, 85, 90, 85, 55, 25,  0,   0,  0,   0);
+                //                        lower apos stops drop strtch shout trail punct excl caps dodge
+                case "street": return Roll(handle, 90, 85, 90, 85, 55, 25,  0,   0,  0,   0,  35);
 
                 // An ordinary twenty-odd-year-old. Lowercase and unterminated like the block,
                 // and NOT dropping its g's -- -in belongs to the street register and putting
                 // it in a barista's mouth puts the wrong city in it.
-                case "young":  return Roll(handle, 92, 70, 92,  0, 40, 15,  0,   0,  0,   0);
+                case "young":  return Roll(handle, 92, 70, 92,  0, 40, 15,  0,   0,  0,   0,  40);
 
-                case "plain":  return Roll(handle, 70, 55, 72, 45, 25, 12,  8,  18,  8,  22);
+                case "plain":  return Roll(handle, 70, 55, 72, 45, 25, 12,  8,  18,  8,  22,  30);
 
                 // Writes in sentences, and can now finish one.
-                case "proper": return Roll(handle,  0,  0,  0,  0,  0,  0, 55,  92, 60, 100);
+                case "proper": return Roll(handle,  0,  0,  0,  0,  0,  0, 55,  92, 60, 100,  60);
 
                 default:       return AsWritten;
             }
@@ -158,7 +167,7 @@ namespace Hoodrich.Social
         /// </summary>
         private static Typing Roll(string handle, int lower, int apos, int stops,
                                    int dropping, int stretch, int shout, int trail,
-                                   int punct, int excl, int caps)
+                                   int punct, int excl, int caps, int dodge)
         {
             return new Typing
             {
@@ -176,7 +185,8 @@ namespace Hoodrich.Social
                 // on, and Capitalises runs second, so an author who rolled both would have
                 // simply cancelled the first one out and looked like an author who rolled
                 // neither. Somebody either starts sentences with capitals or they do not.
-                Capitalises    = !Chance(handle, 1, lower) && Chance(handle, 12, caps)
+                Capitalises    = !Chance(handle, 1, lower) && Chance(handle, 12, caps),
+                Dodges         = Chance(handle, 14, dodge)
             };
         }
 
@@ -438,6 +448,7 @@ namespace Hoodrich.Social
             if (NoApostrophes) text = StripApostrophes(text);
             if (Dropping) text = DropG(text);
             if (Stretches) text = Stretch(text, seed);
+            if (Dodges) text = Dodge(text);
 
             return text;
         }
@@ -732,6 +743,67 @@ namespace Hoodrich.Social
             }
 
             return text;
+        }
+
+        /// <summary>
+        /// The swears the dodge applies to. Whole words only, so "class" and "Cassidy" are safe.
+        /// </summary>
+        private static readonly HashSet<string> Swears =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "fuck", "fucking", "fuckin", "fucked", "fucker", "fuckers", "motherfucker",
+                "motherfuckers", "shit", "shitty", "bullshit", "bitch", "bitches", "bitchmade",
+                "pussy", "pussies", "ass"
+            };
+
+        /// <summary>
+        /// f*ck, sh*t, b*tch, p*ssy -- the first vowel starred, which is the common shape --
+        /// and ass as "ahh", which has become a word in its own right.
+        /// </summary>
+        private static string Dodge(string text)
+        {
+            var b = new StringBuilder(text.Length);
+            var word = new StringBuilder();
+
+            for (var i = 0; i <= text.Length; i++)
+            {
+                var c = i < text.Length ? text[i] : '\0';
+
+                if (char.IsLetter(c))
+                {
+                    word.Append(c);
+                    continue;
+                }
+
+                if (word.Length > 0)
+                {
+                    var w = word.ToString();
+
+                    if (Swears.Contains(w))
+                    {
+                        if (string.Equals(w, "ass", StringComparison.OrdinalIgnoreCase))
+                        {
+                            w = char.IsUpper(w[0]) && char.IsUpper(w[w.Length - 1]) ? "AHH" : "ahh";
+                        }
+                        else
+                        {
+                            for (var v = 0; v < w.Length; v++)
+                            {
+                                if ("aeiouAEIOU".IndexOf(w[v]) < 0) continue;
+                                w = w.Substring(0, v) + "*" + w.Substring(v + 1);
+                                break;
+                            }
+                        }
+                    }
+
+                    b.Append(w);
+                    word.Length = 0;
+                }
+
+                if (i < text.Length) b.Append(c);
+            }
+
+            return b.ToString();
         }
 
         /// <summary>A short one, said loud. Long ones are not shouted, they are typed.</summary>

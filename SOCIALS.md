@@ -226,9 +226,41 @@ people, some of yall, whoever it apply to, the block over, that side.
 The subtweet is the whole convention: a post *about* somebody, addressed to the public, in the
 third person, with no trigger. The target knows, nobody else does, nothing actionable was said.
 
-**Stance is dismissive, not hot.** Contempt reads as indifference. Overt threat-writing reads
-as young and unserious, which makes it useful for exactly that characterisation and wrong as a
-default.
+### Two registers, and the gang sets use both
+
+**Cold** is the older and more established speaker: contempt as indifference, `i aint worried`,
+`they know what it is`, nothing actionable said.
+
+**Hot** is the young one, and it is what the gang sets now mostly sound like. It is loud,
+profane and violent, and it has its own fixed moves:
+
+- **The scoreboard.** The tally is posted: `we up`, `score updated`, `they counting`.
+- **Disrespecting the dead opp.** `smoking on a green pack`, `rip bozo`, laughing at their RIP.
+- **Loss turns into aggression.** Research on gang-involved youth on social media found grief
+  posts reliably come *before* aggressive ones, so a mourning line pivots to the get-back:
+  `candle lit. clip full`, `crying today. sliding tomorrow`.
+- **Threat by movement.** `slide`, `spin the block`, `pull up`, `on sight`, `caught lacking`.
+- **Insults.** bozo, goofy, clown, bitch made, pussy, lame, scared, folded, ran, dickriding.
+- **Praise for your own.** stepper, hitter, demon, solid, certified, never folded.
+- **US weapon words only.** stick, blicky, glizzy, drum, switch, draco.
+
+Profanity is in the gang sets now and nowhere else. Some authors dodge it (`f*ck`, `b*tch`,
+`goofy ahh`) and some don't — that is a per-author habit in `Typing`, so write the word in full
+and let the styler decide.
+
+**Insults are this city's, not the real world's.** Families call the Ballas grapes, purple dinos
+and lavender boys; the Ballas call the Families green goblins, leprechauns and lime-green lames,
+and say CGF stands for can't get fed. Real-world set insults and kill-tags aimed at real gangs
+do not go in. Racial slurs do not go in either.
+
+**The Ballas speak as themselves when they are the rival.** `RivalGloats`, `RivalMourns`,
+`WarLiveRival` and the four `Wasted` sets are shared by eight gangs and stay unmarked, but
+`SocialFeed.Theirs` prefers `<Set><Gang>` when that exists — `RivalGloatsBallas`,
+`WastedShotBallas` and so on — three times in four. Another gang gets its own voice the same way:
+add the set.
+
+**Do not use London drill.** skeng, ching, mandem, wagwan, peng, duppy, splash, wet. Most drill
+glossaries online are UK and read as the wrong country.
 
 ---
 

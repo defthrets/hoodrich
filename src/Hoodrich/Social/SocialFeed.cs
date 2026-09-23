@@ -2045,6 +2045,8 @@ namespace Hoodrich.Social
 
         private Post Build(string set, string subject, int amount = 0)
         {
+            set = Theirs(set);
+
             for (var attempt = 0; attempt < UniqueTries; attempt++)
             {
                 var post = BuildOnce(set, subject, amount);
@@ -2369,6 +2371,10 @@ namespace Hoodrich.Social
             // alone cannot say which -- DissedBack is written six times over, once each, and
             // the author pool has to match the words.
             if (!string.IsNullOrEmpty(_forceGang)) return _forceGang;
+
+            // A rival's own version is spoken by that rival and nobody else. See Theirs.
+            var theirs = TheirsBelongTo(set);
+            if (theirs != null) return theirs;
 
             switch (set)
             {
@@ -3099,6 +3105,68 @@ namespace Hoodrich.Social
         /// since before half of you was born" is a Vagos line; handing it to the Lost MC makes
         /// it a line about nothing.
         /// </summary>
+        /// <summary>
+        /// The sets whose speaker is whoever the live rival is. See GangFor.
+        ///
+        /// Their shared lines have to be sayable by any of eight gangs, so the words are kept
+        /// unmarked. Theirs lets a gang have its own version on top.
+        /// </summary>
+        private static readonly string[] TheirSets =
+        {
+            "RivalMourns", "RivalGloats", "WarLiveRival",
+            "WastedShot", "WastedMelee", "WastedCar", "WastedBlast"
+        };
+
+        /// <summary>How often a gang with its own version uses it rather than the shared pool.</summary>
+        private const double TheirsChance = 0.75;
+
+        /// <summary>
+        /// The rival's own version of a rival-voiced set, when one exists.
+        ///
+        /// THE SAME TRICK THE REPLIES ALREADY USE. DissedBack, FoundYou and GangOnGang have
+        /// always tried "&lt;Set&gt;&lt;Gang&gt;" first. The rival voice never did, so when the Ballas
+        /// killed you they had to gloat in words a Korean crew or a biker chapter could equally
+        /// have posted, and the purple never once sounded purple at the moment it mattered most.
+        ///
+        /// Not every time: a quarter of the posts still come from the shared pool, because a
+        /// set that only ever speaks in its own register reads as a costume.
+        /// </summary>
+        private string Theirs(string set)
+        {
+            if (string.IsNullOrEmpty(set) || !string.IsNullOrEmpty(_forceGang)) return set;
+            if (Array.IndexOf(TheirSets, set) < 0) return set;
+
+            var rival = string.IsNullOrEmpty(_rivalGang) ? "ballas" : _rivalGang;
+            var own = set + Pretty(rival);
+
+            List<string> lines;
+            if (!_templates.TryGetValue(own, out lines) || lines.Count == 0) return set;
+
+            return _rng.NextDouble() < TheirsChance ? own : set;
+        }
+
+        /// <summary>
+        /// Which gang a rival-voiced set's own version belongs to, or null if it is not one.
+        ///
+        /// WITHOUT THIS THE NEW SETS WOULD HAVE LEAKED. GangFor matches set names exactly, so
+        /// "RivalGloatsBallas" fell through its switch to the default, which is "anybody" -- and
+        /// a Families account could have posted the Ballas gloating over a dead Family.
+        /// </summary>
+        private static string TheirsBelongTo(string set)
+        {
+            if (string.IsNullOrEmpty(set)) return null;
+
+            foreach (var root in TheirSets)
+            {
+                if (set.Length > root.Length && set.StartsWith(root, StringComparison.Ordinal))
+                {
+                    return set.Substring(root.Length).ToLowerInvariant();
+                }
+            }
+
+            return null;
+        }
+
         private static string Pretty(string gangId)
         {
             if (string.IsNullOrEmpty(gangId)) return "";
