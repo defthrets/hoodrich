@@ -158,6 +158,27 @@ the school run at two in the morning, because the subject lives in the line.
 live under `moments` and `weather`, keyed by the same bucket names. Both fall back to the flat
 `slots` entry when a bucket is missing, so an older file still works.
 
+### The real cast has a patch too
+
+A voice only answers a set it has lines for, and a region set is just another set. So Trevor,
+Ron, Maude and the rest of Blaine have `AmbientBlaine` lines under `voices`, the De Santas have
+`AmbientVinewood`, Floyd has `AmbientDocks`, and they turn up when you are near where they live.
+The voiced roll on a region set is the event rate (`VoicedEventChance`, 0.55), not the ambient
+one, so keep each voice to a few region lines. Enough to be recognised, not so many that they
+drown out the locals.
+
+**Look it up before you write it.** Every character line is written from their actual lore, not
+from what the name suggests. Grand Theft Wiki (`grandtheftwiki.com/<Name>`) has most of them.
+Fandom returns 402 to scripts. A line **hints**: Norton knows whose name is on the grave in
+Ludendorff, Dom keeps looking at the dam, Molly hates hangars. It never says the thing out loud.
+Other people's lines about the cast go in the shared region set where it happened (Ron's radio
+show in `AmbientBlaine`, Simeon's window in `AmbientCity`) and are written plain, because
+Typing styles them.
+
+Keep a character's `gang` to what the lore says, because it sets their colour and who they
+answer in a beef. Ortega is an Azteca. Gustavo Mota is ex-Vagos. Oscar Guzman has no set of
+ours at all.
+
 ---
 
 ## The four tells that make a line Los Angeles

@@ -954,7 +954,7 @@
       "pic": "",
       "verified": false,
       "voice": "ortega_vla",
-      "gang": "vagos"
+      "gang": "aztecas"
     },
     {
       "handle": "gustavo_mota",
@@ -963,7 +963,7 @@
       "pic": "",
       "verified": true,
       "voice": "gustavo_mota",
-      "gang": "marabunta"
+      "gang": "vagos"
     },
     {
       "handle": "ashley_lost",
@@ -998,8 +998,7 @@
       "gender": "male",
       "pic": "",
       "verified": true,
-      "voice": "oscar_guzman",
-      "gang": "marabunta"
+      "voice": "oscar_guzman"
     },
     {
       "handle": "patricia_m",
@@ -3912,7 +3911,16 @@
       "Somebody's selling churros outside {localspot} and the whole street smells incredible",
       "Fruit stand on {hood} has better produce than any supermarket in this city",
       "Somebody's grandma sells tamales out a cooler on {hood} and there's always a queue",
-      "The pizza place on {hood} delivers in eleven minutes and I've never seen a driver"
+      "The pizza place on {hood} delivers in eleven minutes and I've never seen a driver",
+      "Bull Shark ad came on the radio three times in one drive. I can feel my voice getting deeper",
+      "Lazlow is back on TV doing Fame or Shame. Same ponytail. Less of it",
+      "The Underbelly of Paradise is just an FIB agent getting his hair done between arrests",
+      "Epsilon wants five thousand dollars for the next tract. I want my twenty back from the first one",
+      "Somebody painted KIFFLOM on a bus shelter. Epsilon denies it. Epsilon also denies dinosaurs",
+      "Heard Friedlander is getting a TV show. His patients should get a cut",
+      "Barry's petition to legalise it has fewer signatures than the petition to make Barry stop asking",
+      "Tracey De Santa went viral on Fame or Shame and her dad is still trying to get it taken down",
+      "Bull Shark Testosterone delivered to your door for five hundred. Brucie, I have a door, not a problem"
     ],
     "MissionTaken": [
       "Seen {yours} pulling up on {here}. Something about to happen",
@@ -8724,7 +8732,21 @@
       "why do the lights flicker on that whole block every night at the same time. asking for the whole block",
       "ain't no way that man payin con edison what he payin for a shop that ain't sold a fan since 2019",
       "leroy's electrical been closed six years and somebody still runnin power to it. that's all i'm sayin",
-      "og vee got a whole basement he won't let nobody in. respectfully, what is DOWN there"
+      "og vee got a whole basement he won't let nobody in. respectfully, what is DOWN there",
+      "Stretch came home and inside a month D was dead. I'm just talking about the timing",
+      "Stretch been standing outside the rec centre talking to people in purple. I seen it with my own eyes",
+      "They let Stretch out early AGAIN. Nobody gets let out early that many times for good behaviour",
+      "Stretch is too short to be called Stretch and too loud to be trusted",
+      "Lamar got snatched by the Ballas at a sawmill and he still talks this loud. Some people never learn",
+      "Lamar always round Denise's house talking about the community. Grown folks business I guess",
+      "Denise locked Franklin out and turned his room into a centre for women and women arts. He found out from the key",
+      "Denise had her women's meeting and four women came. And Lamar",
+      "Tonya called Franklin about JB's flu again. Everybody on Forum knows what that flu is",
+      "Tanisha's doctor told her her nails look too ghetto for dinner and she is STILL marrying him",
+      "Simeon fired Franklin and Lamar over one car and they both went on to do much, much worse",
+      "Franklin moved to the hills and the dog went with him. Lamar stayed. Make of that what you want",
+      "Lamar says Benny's put him at the top of the list for lowriders. He wrote the list himself",
+      "Gerald never comes outside but every Vagos van on the freeway seems to know his name"
     ],
     "Tuned": [
       "somebody just rolled out the muffler shop on {hood} on new rims. loud too",
@@ -9040,7 +9062,12 @@
       "the ice cream truck plays the same eleven seconds forever",
       "guy outside {shop} has a table of phone chargers and one of them is real",
       "my barber moved to a shop twenty minutes further and I still drive out there",
-      "nothing to report. hot, loud, fine"
+      "nothing to report. hot, loud, fine",
+      "Lester up in El Burro Heights has blackout curtains, six antennas and a van nobody ever drives",
+      "Garment factory in Murrieta Heights hasn't made a garment in years and the lights are on at four in the morning",
+      "Fame or Shame auditions at the Maze Bank Arena, queue round the block, Lazlow walked in by security",
+      "Guy in clown makeup at the strip club by the freeway sweeps up and says good morning to everybody. Sweetest man alive",
+      "Vagos in Cypress Flats say one of theirs got pulled off a prison bus because a man with a cane asked nicely"
     ],
     "AmbientCity": [
       "parked in a structure, took a ticket, could not find the machine, classic",
@@ -9072,7 +9099,17 @@
       "library has AC and wifi and nobody asks you anything",
       "{source} {hearsay} that building on {street} is finally getting torn down",
       "the good taco truck moved and nobody told me",
-      "quiet day. nothing happened. filed that under a win"
+      "quiet day. nothing happened. filed that under a win",
+      "Simeon at Premium Deluxe lost Community Hero again and says the panel is racist. Third year running",
+      "Somebody drove a car straight through Simeon's showroom window with him standing right behind it",
+      "Simeon sold my cousin a car she could not afford and repo'd it the week after. That is the business model",
+      "A man peed on the Premium Deluxe sign and Simeon wrote four paragraphs about respect",
+      "Hedge fund guy jumped off the Maze Bank roof on his lunch break again. His ex wife is still waiting on a cheque",
+      "Lifeinvader CEO's new phone blew up on stage. Rest in peace to the man and honestly to the phone",
+      "Bought Betta Pharmaceuticals because a friend of a friend said so. Up forty percent in a week. Not asking questions",
+      "Steve Haines filming his show on the FIB steps again. Two agents holding the lights and one holding his coffee",
+      "The FIB guy with the TV show arrested my neighbour on camera and then asked him to do it again for the angle",
+      "Every shop in Little Seoul pulls the shutter at the same minute when the old man's car comes past"
     ],
     "AmbientBeach": [
       "marine layer did not burn off at all today",
@@ -9100,7 +9137,16 @@
       "cold enough for a jacket and I am from here so I am wearing two",
       "somebody set up a whole birthday at the fire rings and brought a folding table",
       "the volleyball people have been out since 7 and I respect and fear them",
-      "no notes on today. grey, quiet, fine"
+      "no notes on today. grey, quiet, fine",
+      "Therapist on Del Perro Beach charges five hundred a session and ends it right when it gets good",
+      "Friedlander looks like the happy trees painter and bills like a divorce lawyer",
+      "Mary-Ann on the Vespucci path challenged my dad to a race. He is sixty one and he still has not recovered",
+      "Mary-Ann says she is not irritable. She said it very, very loudly",
+      "Brucie is selling testosterone out of his car at Muscle Beach. Five hundred dollars. He has a card machine",
+      "Muscle Beach smells of oil and Bull Shark and a man is yelling ALPHA at a pelican",
+      "Tao Cheng bought out the whole beach club in Pacific Bluffs and was asleep in a deck chair by midnight",
+      "Tao Cheng's translator has the stare of a man who has translated everything and been paid for none of it",
+      "Steve Haines doing a segment on the Del Perro Ferris wheel. The man loves a view"
     ],
     "AmbientVinewood": [
       "road shut for a shoot and the detour is uphill both ways somehow",
@@ -9127,7 +9173,28 @@
       "jacarandas are going and my windscreen is purple and sticky and I do not care",
       "the hill is on fire with brake lights every evening at 6",
       "somebody has been building something behind that fence for two years",
-      "quiet up here tonight which is the thing you actually pay for"
+      "quiet up here tonight which is the thing you actually pay for",
+      "Heard a man in Rockford Hills pulled a house off a hillside with a truck over a tennis coach",
+      "The De Santa kid tried to sell his dad's yacht online and the buyers stole it with him still on it",
+      "The De Santa girl auditioned for Fame or Shame and her dad chased the host out of the arena",
+      "Lazlow walking round Vinewood with half a ponytail and a face full of piercings he says he did not ask for",
+      "Jimmy Boston has a star on the Walk of Fame and a robe from the Epsilon Program. Only one of those did he earn",
+      "Epsilon people outside the building again asking if I know the tenets. I know the price",
+      "Epsilon made a man wear a blue robe for ten days straight and then asked him for more money",
+      "Realtor in Rockford Hills paid a guy to scare off his rival and then called the cops on the guy. Josh. His name is Josh",
+      "Josh Bernstein's house burned down and he filed the insurance claim before the fire truck got there",
+      "Two old English pensioners going through the bins outside Tyler Dixon's again. Security knows them by name",
+      "Al Di Napoli has a restraining order against two British tourists and they are STILL in Vinewood",
+      "Paparazzi guy was in a dumpster outside Poppy Mitchell's place at five this morning. Beverly go home",
+      "Beverly the paparazzo called me Clay Jackson again. I look nothing like Clay Jackson",
+      "Old director in the hills has a star on the Walk of Fame and nobody will say why the neighbours stopped visiting",
+      "Found a torn piece of an old letter under a bench on the boulevard. Signed P. I do not want to read the rest",
+      "Devin Weston calls himself an adventure capitalist. His lawyer calls it something else when he's out of the room",
+      "Solomon Richards is premiering Meltdown and half of Vinewood is pretending they read the script",
+      "Tracey De Santa doing her Fame or Shame routine on the corner for an hour. For the content",
+      "The De Santas get a new tennis coach every season and the old ones never come back",
+      "Amanda De Santa left with her yoga instructor for four days and came back with a new mat",
+      "Madrazo's wife was gone a whole week and came back smiling. Nobody in that house knows what to do with that"
     ],
     "AmbientBlaine": [
       "drove forty minutes for a part and forty minutes back and it was the wrong part",
@@ -9155,7 +9222,34 @@
       "quiet out here in a way the city cannot do",
       "stars are stupid tonight. that is it, that is the post",
       "{source} {hearsay} they are opening something out by {landmark}. they are not",
-      "rattlesnake sign on the trail and I turned round, I am not brave"
+      "rattlesnake sign on the trail and I turned round, I am not brave",
+      "Liquor Ace in Sandy Shores hasn't sold a bottle of liquor in a year and it has never once closed",
+      "The guy smoking at the Liquor Ace window watches every car that goes past. Every single one",
+      "Nervous Ron on Blaine County Talk Radio again calling his business partner Philip Trevors. Nobody will ever crack that code",
+      "Ron used to be an accountant with a wife and a house. Then he moved in next door to that man",
+      "Somebody pushed a trailer into the Zancudo River with a truck and the owner was still inside it",
+      "Aztecas driving up to Sandy Shores in convoys. Whatever that liquor store did to them it is not getting a refund",
+      "Aztecas hit the liquor store in Sandy Shores and not one of them drove home",
+      "Maude in Grapeseed has a fax machine and a wall of faces and she has found every single one of them",
+      "Maude says she wants a white picket fence and a dog called Skip. The woman runs bail bonds. Skip is the joke",
+      "UFO guy in Sandy Shores wants fifty spaceship parts. I brought him a hubcap. He was not happy with me",
+      "Cletus won't shoot a doe but he took out my satellite dish from three hundred yards",
+      "Cletus sells his elk to hipsters in the city for four times what it is worth. Respect honestly",
+      "Stab City has been quiet since that week. Nobody out there will say what happened at the camp",
+      "Johnny K is gone and the Lost act like they don't know who did it. Everybody knows who did it",
+      "Every biker in Stab City goes quiet when a certain truck comes past. You know the one",
+      "Civil Border Patrol stopped me outside the Yellow Jack. I was born in Paleto Bay",
+      "Border patrol guy with the accent asked for MY papers. Bro you are Russian",
+      "Those border patrol clowns tased a whole mariachi band. Mid song",
+      "Guy in Raton Canyon been chasing bigfoot nine years. Word is bigfoot is a man in a suit who likes being chased",
+      "Abigail at the Sonar dock paid a diver ten dollars and a signed photo of her dead husband. TEN dollars",
+      "Everybody in Paleto knows Frank Mathers' airlock did not fail on its own",
+      "Old man out at McKenzie Field wants somebody to fly cargo over the Alamo Sea. Asked me like he was asking for a lift",
+      "Lady just out of prison moved straight into her son's trailer and now she's asking the whole park for Deludamol",
+      "The O'Neil farm in Grapeseed burned down with the O'Neils in it. Nobody out here is sad about it",
+      "Man in a blue robe walking across the Senora desert asked me what day it was. Said he was nearly done",
+      "Paleto bank still has marks on the walls from that morning. Men in armour walking down the high street like it was a parade",
+      "Somebody flew a baby blue plane into Sandy Shores Airfield for a movie star in a robe. Blaine County has seen it all now"
     ],
     "AmbientDocks": [
       "trucks from 5am and they do not stop",
@@ -9175,7 +9269,12 @@
       "whole lot floods when it rains and nobody has ever fixed it",
       "seagull took a whole sandwich out of a man's hand and we all saw it",
       "it is loud down here in a way you stop hearing after a month",
-      "clocked out, sat in the car, did not turn the key for ten minutes"
+      "clocked out, sat in the car, did not turn the key for ten minutes",
+      "Longshoreman called Floyd hasn't smiled in a month. Some guy and his cousin moved into his fiancee's place",
+      "Floyd from the port told us he stole a pencil in the third grade and still can't forgive himself. We bought him a pencil",
+      "Guy in clown makeup came down the port asking about container ships and they sent him into the sewage outflow",
+      "Merryweather had a very bad night at the port and a very good lawyer by the morning",
+      "Hao at LS Customs can hear a bad tune over a jet taking off. It is a gift and a curse"
     ],
     "AmbientLatenight": [
       "who else is up. be honest",
@@ -9440,7 +9539,15 @@
         "Snow in North Yankton got into my bones and never left",
         "Drove past a Cluckin' Bell and genuinely considered it. That's where I'm at",
         "My daughter wants to be famous. For what, she hasn't decided",
-        "Everybody thinks the hard part was the work. The hard part is the afternoons"
+        "Everybody thinks the hard part was the work. The hard part is the afternoons",
+        "Somebody asked if I'd ever been to North Yankton. I said never. I said it a little fast",
+        "Pulled a house off a hillside once over a tennis coach. Wasn't even his house. Two and a half million dollar lesson",
+        "My son tried to sell my boat online. The buyers stole it. With him still on it",
+        "Stood in front of a headstone with my own name on it this year. Nobody tells you what that does to a man",
+        "My own son spiked my drink so we could talk. I spent the night fighting things that were not there. We did not talk",
+        "Produced a picture. Meltdown. Solomon Richards. Look it up, I'll wait",
+        "Joined a group that wanted a robe, a long walk and a lot of my money. I took some of it back. Kifflom",
+        "Guy in a Bean Machine said I look like a man who died in 2004. I said I get that a lot"
       ],
       "MissionDone": [
         "Heard about {here}. Kid's got potential. Terrible instincts, but potential",
@@ -9454,6 +9561,11 @@
       ],
       "RivalKilled": [
         "Another one in {here}. This city eats people and asks for seconds"
+      ],
+      "AmbientVinewood": [
+        "Rockford Hills at six. Sprinklers on, nobody knows what anybody does for a living. Perfect",
+        "The house on the hill still hasn't been rebuilt. Some things you can't take back. That one had a price on it",
+        "Richards Majestic lot on a weekday. Solomon's table in the commissary is the only seat in this town I want"
       ]
     },
     "tpindustries": {
@@ -9481,7 +9593,16 @@
         "The trailer is not a home, it is a BASE OF OPERATIONS with a bed in it",
         "Everybody wants to be an entrepreneur until it's four in the morning in a shed",
         "I have been betrayed by my best friend and I still send him things",
-        "Ate at a place in Paleto. Would go back. Would burn it down. BOTH"
+        "Ate at a place in Paleto. Would go back. Would burn it down. BOTH",
+        "Woke up on a beach in a dress. LOVELY dress. Not mine. Somebody's fiancee is going to have QUESTIONS",
+        "My mother is out. She is in my trailer. She wants pills and a father figure and I can only provide ONE",
+        "They said I was too unstable to fly. I have a PLANE now. Who's unstable. WHO",
+        "The O'Neil brothers HAD a farm. Past tense. Grammar is IMPORTANT",
+        "Johnny from the Lost had a lot to say about me. Johnny from the Lost doesn't say much any more",
+        "Got a lovely apartment in the city now. Belongs to a longshoreman. We're WORKING IT OUT",
+        "Patricia sat in my trailer for a week and never once looked at me like I was an animal. I would DIE for that woman",
+        "Pushed a trailer into the Zancudo this morning. Ortega was in it. We had a FRANK conversation",
+        "Canadian by birth. Sandy Shores by DISASTER"
       ],
       "MissionDone": [
         "SOMEBODY out in {here} is having a BEAUTIFUL day and it is NOT the {rival}",
@@ -9498,6 +9619,12 @@
       ],
       "Brawl": [
         "HANDS ONLY? In THIS economy? Respect. Genuinely. That's craftsmanship"
+      ],
+      "AmbientBlaine": [
+        "Sandy Shores Airfield. MY airfield. The planes are real and the paperwork is THEORETICAL",
+        "The Liquor Ace has not sold a drop of liquor in a year. We sell SOMETHING. Come by. Don't",
+        "Stab City has been very quiet since I dropped in. You're WELCOME, Blaine County",
+        "McKenzie Field. Two planes and a runway made of holes. PARADISE"
       ]
     },
     "lamar_d_ls": {
@@ -9535,7 +9662,12 @@
         "You know what's crazy? I been right about everything and nobody keeps score",
         "I need a manager. Not for nothin specific. Just in general",
         "Every plan I make works. The execution is where other people let me down",
-        "Tanisha never liked me and that's a her problem"
+        "Tanisha never liked me and that's a her problem",
+        "I'm never going near a sawmill again. Not for work, not for wood, not for NOTHING",
+        "Simeon fired me for something Franklin did and I STILL put that job on my resume. Repossession specialist",
+        "Me and Denise talk. Grown folks talk. Y'all need to mind y'all business",
+        "Stretch said the deal was good. Stretch ALWAYS say the deal good. That's how you know",
+        "Benny's got a list for lowriders and I'm at the top of it. Don't ask who wrote the list"
       ],
       "MissionTaken": [
         "Got my boy on something. Watch",
@@ -9568,6 +9700,12 @@
         "Aye, whatever that is out there right now? That ain't got nothing to do with me. I want that on the record, dawg",
         "I told somebody. I said DON'T get greedy. Nobody listen to Lamar til it's too late",
         "Don't be telling people I sent you out there. I ain't sent nobody nowhere and I don't know them people"
+      ],
+      "AmbientHood": [
+        "Grove Street to Forum Drive to the rec centre and back. That's the tour, that's the history, that's me",
+        "Somebody put a purple tag by the rec centre. It's green now. Don't ask whose hands",
+        "Back when Frank lived on Forum you could just holler at the window. Now you gotta call the HILLS",
+        "Denise got a sign on the door now. Centre for women and women arts. I still got a key though"
       ]
     },
     "grimes_ls": {
@@ -9626,7 +9764,12 @@
         "The system was designed this way. I have read the books, I know",
         "Franklin thinks money solves it. Money made it a different shape, that is all",
         "My kitchen is not a meeting room and I would like that understood",
-        "Everybody wants to be somebody until it involves getting up early"
+        "Everybody wants to be somebody until it involves getting up early",
+        "Franklin's old room is now a centre for women and women arts. He found out from the lock",
+        "Magenta and I led a spirit walk through Strawberry. Four came. One stayed. That is a movement",
+        "A grown man left my bathroom like that for YEARS. The candle is still recovering",
+        "Tavell calls. Tavell always calls. I'm just saying who calls",
+        "Lamar comes by to talk about the community. We talk. About the community. Stop asking"
       ],
       "MissionDone": [
         "Whatever's going on in {here}, it's a symptom of a much larger problem",
@@ -9644,6 +9787,10 @@
         "Now they're out there arguing at all hours. Whatever changed out there changed for the worse and everybody knows it",
         "Lady under the dryer was going on about whatever's going round now. I said I don't want to hear it. Then I heard all of it",
         "I have said for years this ends bad for the ones doing it and the ones living around it. I'll be right here when y'all catch up"
+      ],
+      "AmbientHood": [
+        "This week at the centre: reclaiming the kitchen. Bring a dish and a boundary",
+        "Forum Drive has a liquor store for every church and neither one opens on time"
       ]
     },
     "tanisha_j": {
@@ -9664,14 +9811,19 @@
         "Paid the bills before the fun money and that is why I'm the boring one",
         "New manager wants us in early. New manager can come in early then",
         "Some people grow. Some people just get better at the same thing",
-        "My husband works nights at the hospital. Real work, real hours",
+        "My fiance works nights at the hospital. Real work, real hours",
         "I keep hearing about somebody doing well. Doing well how, is the question",
         "You cannot love somebody into changing. I tried it for years",
         "Chamberlain is home. It is also the thing I had to leave to have a life",
         "Everybody on this block knows everybody's business and nobody knows anybody",
-        "I did not marry a doctor to be impressive. I married a man who is home at night",
+        "I am not marrying a doctor to be impressive. I am marrying a man who is home at night",
         "Being from somewhere is not the same as being stuck there",
-        "The version of him I wanted was in there. It just was never coming out on its own"
+        "The version of him I wanted was in there. It just was never coming out on its own",
+        "Jayden says it's library, not liberry. He corrects me because he cares. He told me so",
+        "Paris in the spring. From Chamberlain Hills to Paris. Tell me again what can't be done",
+        "Jayden said my nails were too ghetto for his work dinner. I kept the nails. I went to the dinner",
+        "Some people only knock on your door when somebody's been taken. That's all I'm saying",
+        "Ended something over the phone once in the middle of his day. It was the kindest way I had"
       ],
       "MissionDone": [
         "I heard about {here}. I'm not saying anything. I'm just saying I heard",
@@ -9679,6 +9831,9 @@
       ],
       "MissionFailed": [
         "And what exactly was the plan there"
+      ],
+      "AmbientHood": [
+        "Drove through Chamberlain to see my cousin and three people asked about Franklin before they said hello"
       ]
     },
     "lc_technical": {
@@ -9713,7 +9868,14 @@
         "Sold at the peak. Bought at the bottom. Told nobody. That's the whole discipline",
         "Every plan fails at the point where somebody improvises",
         "My chair costs more than most people's cars and it is worth every cent",
-        "I could ruin four companies before lunch. I had lunch instead"
+        "I could ruin four companies before lunch. I had lunch instead",
+        "If I were you I'd look at Betta Pharmaceuticals this week. I'm not you. Nobody is",
+        "Lifeinvader launched a new phone today. I hear the demo really went off",
+        "The garment factory hasn't made a garment in years. The sewing machines are load bearing",
+        "People ask about the cane. I ask about their passwords. We both learn something",
+        "Buy low. Remove an obstacle. Sell high. That's not advice, that's history",
+        "Upgrading the bungalow. Retirement is a very expensive hobby",
+        "Somebody's webcam in Vinewood has been on for three days. Tape. Please. For both our sakes"
       ],
       "MissionDone": [
         "The activity in {here} is showing up in three places it shouldn't. Whoever you are: tidy up",
@@ -9725,6 +9887,10 @@
       ],
       "RankUp": [
         "Somebody's name is coming up in places names should not come up"
+      ],
+      "AmbientSouth": [
+        "El Burro Heights. Nobody comes up the hill. I watch everybody who doesn't",
+        "Murrieta Heights, four in the morning, a factory with its lights on. Nothing to see. Move along"
       ]
     },
     "ron_conspiracy": {
@@ -9751,11 +9917,23 @@
         "Broadcasting from the trailer until they find the trailer",
         "Chemtrails over Zancudo again. Look up. LOOK UP",
         "Nobody asks who benefits. I ask who benefits",
-        "My equipment picked something up and I have not slept since"
+        "My equipment picked something up and I have not slept since",
+        "On Blaine County Talk Radio tonight. My business partner Philip Trevors sends his regards. That is a fake name. Nobody will crack it",
+        "I was an accountant. I had a wife. I had a LAWN. Then I took some advice from a neighbour",
+        "Alimony is due. Alimony is always due. The government and my ex-wife share a calendar",
+        "My file on Merryweather is getting thicker and I am getting thinner. Those facts are CONNECTED",
+        "New batch of moonshine. Tastes like diesel and freedom. Mostly diesel",
+        "They call me Nervous Ron. I am CAUTIOUS. Cautious Ron. Put that on the mailbox",
+        "The UFOs are cloaked. That is why you cannot see them. That is the entire POINT of a cloak",
+        "Guy from Los Santos in the golf shirts is back. Something about him says witness protection. I have a nose for it"
       ],
       "MissionDone": [
         "What happened in {here} was NOT what they're telling you happened",
         "This is exactly what they want you looking at. EXACTLY"
+      ],
+      "AmbientBlaine": [
+        "Sandy Shores has more antennas per head than anywhere in America. Ask yourself who is LISTENING",
+        "The sky over the Alamo Sea did the thing again at two in the morning. You all slept through it. I did not"
       ]
     },
     "wade_h": {
@@ -9783,10 +9961,18 @@
         "somebody said i look scary. i cried a bit about that",
         "i been to the desert and i been to the city and the desert is quieter",
         "i don't really understand money but T says he'll sort it",
-        "my hair takes a long time and nobody notices"
+        "my hair takes a long time and nobody notices",
+        "they sent me down the port to look at boats and then they sent me in a pipe. it was a poop pipe",
+        "i live at the club now. the girls are real nice and they let me hold the mop",
+        "cousin floyd hasn't called. T says him and debra went on a trip. a real long one",
+        "my makeup took forty minutes today. it's for fatal incursion. they're a band. the best band",
+        "i used to have friends called daisy and kush. then they met T. now i just have T"
       ],
       "MissionDone": [
         "sounds like somebody had a real busy day. hope they're ok"
+      ],
+      "AmbientSouth": [
+        "the club by the freeway has a big neon sign and it hums all night. i like the hum. it's like a friend"
       ]
     },
     "jimmydsvinewood": {
@@ -9817,11 +10003,20 @@
         "i've been meaning to go outside. like as a concept",
         "my mum booked me a personal trainer. i booked myself a nap",
         "the fridge in this house is a lie. it's all salad and my dad's whisky",
-        "everyone in vinewood is famous for nothing. i could do that"
+        "everyone in vinewood is famous for nothing. i could do that",
+        "got a neck tattoo that says ENTITLED and honestly it's just accurate branding",
+        "tried to sell a boat online and got a little bit kidnapped. can we move on",
+        "put something in my dad's drink so we could finally talk and he fought the air for three hours. we did not talk",
+        "hit a guy with my bong to save my dad's life. the bong did not survive. i'm a hero and a widower",
+        "my car got repo'd with my DAD hiding in the back seat. that's how my family meets people",
+        "righteous slaughter at 3am is the only place in my life i get respect"
       ],
       "MissionDone": [
         "wait people actually DO stuff out there?? like in real life??",
         "my dad definitely knows something about {here} and he definitely won't say"
+      ],
+      "AmbientVinewood": [
+        "rockford hills is so quiet you can hear the gardeners judging you"
       ]
     },
     "traceyd_official": {
@@ -9850,10 +10045,18 @@
         "Everyone says get a backup plan. A backup plan is just quitting slowly",
         "New headshots. Same face, better lighting",
         "Mum thinks yoga is a personality and she is not wrong she is just not right either",
-        "Vinewood is not fake it is just very honest about what it wants"
+        "Vinewood is not fake it is just very honest about what it wants",
+        "Tracey Suxx is a stage name and it's EMPOWERING dad",
+        "fame or shame called me back!! the host is literally the worst person alive but it's EXPOSURE",
+        "went on a boat with some producers and my dad showed up. in the ocean. i don't want to talk about it",
+        "my dad and his gross bearded friend chased the host out of my own audition. never showing my face again (showing my face friday)",
+        "thinking about college. like as content. college content"
       ],
       "MissionDone": [
         "everyone's talking about {here} and no one will tell me what happened"
+      ],
+      "AmbientVinewood": [
+        "vinewood blvd at golden hour is basically a free ring light"
       ]
     },
     "amanda_ds": {
@@ -9884,10 +10087,18 @@
         "Tracey is auditioning again. I am supportive. I am SO supportive",
         "The pool needs cleaning and somebody is being paid to clean the pool",
         "I do not have a problem, I have a routine",
-        "Everybody in this neighbourhood has a therapist and a secret and I have both"
+        "Everybody in this neighbourhood has a therapist and a secret and I have both",
+        "The tennis coach is no longer a tennis coach. I would not ask what he does now",
+        "Fabien says I have the spine of a much younger woman. He has seen my spine. Professionally",
+        "Family therapy was four thousand dollars and Jimmy slept through it. Worth every cent",
+        "My husband once took a truck to a hillside over a tennis lesson. The lesson has not been rescheduled",
+        "I left him for a yoga instructor for four days. Four days was plenty"
       ],
       "MissionDone": [
         "Whatever is happening in {here}, I guarantee somebody's husband is involved"
+      ],
+      "AmbientVinewood": [
+        "Portola Drive for the shoes, Rockford Hills for the coffee, home for the silence"
       ]
     },
     "drfriedlander": {
@@ -9913,10 +10124,19 @@
         "Some people come here to be understood. Most come here to be agreed with",
         "The unexamined life is fine, actually, for most people. Not for my clients",
         "I have a waiting list and a beach house and those facts are related",
-        "Everyone in this city is one honest conversation from a breakthrough. Nobody wants it"
+        "Everyone in this city is one honest conversation from a breakthrough. Nobody wants it",
+        "Five hundred for the first session. The truth gets more expensive the closer you get to it",
+        "I end sessions at the moment of breakthrough. Breakthroughs are best experienced at home, and rebooked",
+        "Television has approached me. I cannot discuss it. It is about several of you",
+        "People say I look like the man who paints happy trees. I paint happy clients. Invoiced",
+        "A patient told me today that he has killed people. We ran four minutes over. I billed the four minutes",
+        "Family session tomorrow. Four thousand dollars and nobody is allowed off the couch"
       ],
       "MissionDone": [
         "The violence in {here} is displaced rage and I could help, for a fee"
+      ],
+      "AmbientBeach": [
+        "Del Perro. A house on the sand and a couch that has heard everything. The tide does not judge and neither do I, at these rates"
       ]
     },
     "devinweston": {
@@ -9945,10 +10165,20 @@
         "A hostile takeover is only hostile to people who were losing anyway",
         "The collection is not about cars. It is about the fact that they are mine",
         "Sentiment is the most expensive thing you can own",
-        "People ask what I do. I take. It's a verb, it's fine"
+        "People ask what I do. I take. It's a verb, it's fine",
+        "I am not a vulture capitalist. Vultures wait. I'm an ADVENTURE capitalist",
+        "Real power is never having to vote. I haven't voted in twenty years and look at me",
+        "I own eleven percent of a security company. The other eighty nine percent do what I say anyway",
+        "Bought a film studio for the parking. The films are a tax situation",
+        "Hired three men to find me five cars. Paid them in patience. They did not appreciate the currency",
+        "Molly handles the details. The details have never once handled Molly"
       ],
       "MissionDone": [
         "There's a business opportunity in whatever just happened in {here}. There always is"
+      ],
+      "AmbientVinewood": [
+        "Tongva Hills. Ocean view, private road and a very short list of people allowed on it",
+        "The cliffs by my place drop straight into the Pacific. Gorgeous. I keep meaning to put a rail up"
       ]
     },
     "simeon_premium": {
@@ -9977,10 +10207,19 @@
         "You laugh at the paperwork until the paperwork owns your house",
         "I came here with nothing. Now I have a forecourt and a headache",
         "The customer is always right until he signs, then the CONTRACT is always right",
-        "A test drive is not a loan. I should not have to explain this"
+        "A test drive is not a loan. I should not have to explain this",
+        "Lost Community Hero AGAIN. The panel is racist. Against Armenians. Against heroes. Against me",
+        "A car came through my showroom window with my own employee at the wheel. My friend, the insurance does not believe me",
+        "Hired two young men for recovery work. They recovered a car, a dog and my window. Fired",
+        "My nephew Sacha is learning the business. The business is learning to hide from Sacha",
+        "A vagrant has urinated on my sign. The sign says PREMIUM. He did not respect the premium",
+        "Took a lady to dinner. She paid. I texted forty times to thank her. She has changed her number, my friend"
       ],
       "MissionDone": [
         "Whoever was in {here} today, you owe me for a windscreen"
+      ],
+      "AmbientCity": [
+        "Pillbox Hill. Premium Deluxe. Come in, sit down, and do not look at the new window"
       ]
     },
     "m_madrazo": {
@@ -10009,7 +10248,12 @@
         "There are men who talk and men who arrange. I arrange",
         "Disrespect is not a feeling, it is a debt",
         "I am a reasonable man surrounded by people testing exactly how reasonable",
-        "Some problems you solve with money. Those are the good problems"
+        "Some problems you solve with money. Those are the good problems",
+        "A man pulled a house off a hillside that I was paying for. We have come to an arrangement. It involved a statue",
+        "My cousin Javier liked to talk to lawyers. Liked",
+        "Somebody took my wife for a drive once. She came back happier. I have forgiven neither of them",
+        "Two and a half million is not a fine. It is a lesson with a number on it",
+        "I have a tennis court. I do not have a tennis coach. I would advise nobody to become one"
       ],
       "MissionDone": [
         "Somebody has been making noise in {here}. I hope for their sake it stays there"
@@ -10036,10 +10280,18 @@
         "Some lawyers argue. I make arguing unnecessary",
         "I did not go to law school to be liked",
         "The paperwork is the weapon. Everything else is theatre",
-        "I answer to exactly one person and it is not any of you"
+        "I answer to exactly one person and it is not any of you",
+        "I do not do airports. Hangars, engines, the whole business. I send somebody",
+        "The film is in a safe place. I am the safe place",
+        "Payment is delayed, not denied. I have now explained this to three very angry men four times",
+        "A man with a beard and no shirt told me I was his type. He was not mine. He was barely a type",
+        "My employer is an adventure capitalist and I am the adventure's legal department"
       ],
       "MissionDone": [
         "Anything occurring in {here} is not affiliated with my employer. Legally. At all"
+      ],
+      "AmbientDocks": [
+        "LSIA twice this week. The engines are so loud you can feel them pulling at you. I hate every hangar in the building"
       ]
     },
     "agenthaines_fib": {
@@ -10067,7 +10319,12 @@
         "Everybody's a critic until they need somebody to do the thing",
         "I don't break rules. I outrank them",
         "Do you know what a warrant costs in TIME? Do you?",
-        "Los Santos doesn't have a crime problem, it has a coverage problem"
+        "Los Santos doesn't have a crime problem, it has a coverage problem",
+        "The IAA misplaced a man. I found him. In a chair. Talking. Very cooperative",
+        "Budget cuts at the Bureau and the show still has a wind machine. That's called priorities",
+        "Humane Labs is a lovely facility. Great parking. I cannot comment further",
+        "My partner Dave worries. Dave is the worrier. I'm the TALENT",
+        "Somebody called me corrupt on the internet. I had him audited. That's not corrupt, that's thorough"
       ],
       "MissionDone": [
         "We are AWARE of the situation in {here} and we are handling it. On camera",
@@ -10075,6 +10332,9 @@
       ],
       "Busted": [
         "Another win for the good guys. Tag me in the clip"
+      ],
+      "AmbientBeach": [
+        "Filming a segment on the Del Perro Ferris wheel. Incredible light up there. Nowhere to go but round"
       ]
     },
     "d_norton": {
@@ -10098,7 +10358,12 @@
         "The right thing and the survivable thing are rarely the same thing",
         "Everybody in this building is somebody's asset. Including me",
         "I keep a case closed and a man alive and neither one is on any form",
-        "Getting old in this job is the achievement nobody congratulates you for"
+        "Getting old in this job is the achievement nobody congratulates you for",
+        "There's a grave in Ludendorff with the wrong man in it. I was there when they dug it",
+        "I write letters to a man in prison and sign them with another man's name. It's the job. It's also what keeps me up",
+        "Some money comes in monthly. I don't ask what it's for. I know what it's for",
+        "Steve wants another episode. I want an early night. One of us always gets what he wants",
+        "If anything ever happens to Steve, the network already has my measurements"
       ],
       "MissionDone": [
         "Something happened in {here} and I already know I'm going to be asked about it"
@@ -10130,10 +10395,17 @@
         "A woman in this business needs one good contact and a lot of patience",
         "He signed. He agreed. He knew. And here we are",
         "I have found men hiding in places I will not describe",
-        "Skipping bail is a lifestyle choice with a very short lifespan"
+        "Skipping bail is a lifestyle choice with a very short lifespan",
+        "I would like a garden, a white fence, a husband and a dog called Skip. The dog is the easy part",
+        "The O'Neil brothers all look the same and I have paper on every one of them. I pay by the head, not by the name",
+        "My tablets are not the tablets you think they are. Mind your business",
+        "Hired an old acquaintance to bring in four skips. All four came in. Not all four were happy about the condition"
       ],
       "MissionDone": [
         "Half the people in {here} have outstanding warrants. Just so we're all aware"
+      ],
+      "AmbientBlaine": [
+        "Grapeseed. A trailer, a fax machine and a wall of faces I fully intend to see again"
       ]
     },
     "lazlow": {
@@ -10160,10 +10432,18 @@
         "I interview the young and I resent them. That's the format",
         "I used to break bands. Now I break contracts",
         "The industry moved on and I made a career out of pointing at where it went",
-        "Everyone's a personality now. I was a personality when it was HARD"
+        "Everyone's a personality now. I was a personality when it was HARD",
+        "Somebody cut off my ponytail in a tattoo parlour. I'm calling it a hate crime. The police are calling it Tuesday",
+        "Got a tattoo I did not choose. A father chose it for me. It is not a tasteful choice",
+        "Chased out of the Maze Bank Arena by two grown men and thrown in the river. Fame or Shame is back Friday",
+        "Four new piercings in my face and I did not sign a release for any of them",
+        "Every contestant's dad thinks his daughter is the exception. She is not. He is also not"
       ],
       "MissionDone": [
         "Whatever went down in {here} would make GREAT television and I am available"
+      ],
+      "AmbientSouth": [
+        "Fame or Shame auditions at the Maze Bank Arena. Bring your talent or your dignity. Not both, we don't have the room"
       ]
     },
     "beverly_paparazzi": {
@@ -10181,10 +10461,19 @@
         "I have been punched by three people you have heard of",
         "The magazines want it cheap and exclusive. Pick one",
         "I sat outside a restaurant for nine hours for one frame. Worth it",
-        "My work will be in a gallery one day and you will all pretend you knew"
+        "My work will be in a gallery one day and you will all pretend you knew",
+        "Madison Fox got the Poppy Mitchell shot. Madison Fox is a hack with a zoom lens and no soul",
+        "Poppy Mitchell in a police chase at dawn, drunk as a lord, and I was RIGHT behind her. My life's work",
+        "Mistook a man for Clay Jackson again. My upbringing was very sheltered and very beige",
+        "Missed the shot of the decade because the flash did not fire. A tragedy on the level of the ancients",
+        "My parents wanted a dentist. I am a historian. A documenter. An artist in a dumpster",
+        "Samantha Muldoon has taken out another restraining order. That is three. I have them framed"
       ],
       "MissionDone": [
         "MISSED it. I was in {hood} and it happened in {here}. My LIFE"
+      ],
+      "AmbientVinewood": [
+        "Inside a hedge on Vinewood Boulevard since four. Good hedge. Great sightline"
       ]
     },
     "solomon_richards": {
@@ -10207,10 +10496,17 @@
         "Everybody in this town wants to be in the movies. Nobody wants to make one",
         "I have three awards and a lawsuit and I am prouder of the lawsuit",
         "The audience is not stupid. The audience is TIRED",
-        "Give me one honest performance and I'll forgive you the budget"
+        "Give me one honest performance and I'll forgive you the budget",
+        "Meltdown. My picture. The man who produced it had more nerve than half this town",
+        "Somebody walked off with a reel of Meltdown once. It came back. In this business everything comes back",
+        "I have outlived four studio heads and I will outlive whoever buys the next one",
+        "A money man wanted my picture shelved. Money men come and go. Mostly go"
       ],
       "MissionDone": [
         "There's a picture in what happened in {here}. There's a picture in everything"
+      ],
+      "AmbientVinewood": [
+        "Richards Majestic, nine in the morning, and the kid on the gate did not know my face. Fire him. No. Promote him. He has instincts"
       ]
     },
     "nigel_and_mrs_t": {
@@ -10238,10 +10534,17 @@
         "A star waved at us. It may have been a gesture of another kind",
         "One simply cannot get a decent cup of tea in this entire county",
         "Mrs Thornhill has a list. I have a camera. Between us we have a holiday",
-        "The Americans are terribly friendly until you follow them home"
+        "The Americans are terribly friendly until you follow them home",
+        "We have acquired Willie's gold tooth. Please do not ask how. Mrs Thornhill has asked me not to say how",
+        "Al Di Napoli is quite safe, we are told. In a garage. With water. We think with water",
+        "Mistook a gentleman in Sandy Shores for Jock Cranley. He was terribly obliging. And terribly frightening",
+        "Mark Fostenburg's golf club has joined the collection. Mr Fostenburg did not wish to part with it"
       ],
       "MissionDone": [
         "One does hear the most thrilling things about {here}"
+      ],
+      "AmbientVinewood": [
+        "The bins in the Vinewood Hills go out on a Thursday. We know because we are there on the Wednesday"
       ]
     },
     "barry_legalize": {
@@ -10252,7 +10555,11 @@
         "IT'S A PLANT. it grows out the GROUND. explain to me what is illegal about the GROUND",
         "signatures today: eleven. two of them said Kifflom. i'll take it",
         "somebody smoked my entire petition. i understand but i am also upset",
-        "the trees been talking again and honestly they make more sense than the council"
+        "the trees been talking again and honestly they make more sense than the council",
+        "organised a smoke in at city hall. forgot to go. one guy showed up. LEGEND",
+        "gave a guy one hit and he started fighting clowns. that is on him",
+        "another guy smoked with me and swore he got abducted. still didn't sign. the aliens didn't sign either",
+        "petition update: four hundred signatures. three hundred and ninety of them are me"
       ],
       "MissionDone": [
         "somebody out in {here} doing something and i bet it's the government"
@@ -10260,7 +10567,7 @@
     },
     "tonya_towing": {
       "Ambient": [
-        "JD better answer this phone",
+        "JB better answer this phone",
         "Truck's out again. Somebody's car is sitting somewhere getting a ticket right now",
         "I'm not asking for much. I'm asking for a LITTLE",
         "JB's not answering again so if anybody sees the truck out by Davis, that's ours",
@@ -10284,10 +10591,16 @@
         "The truck don't drive itself and the phone don't answer itself",
         "You'd be amazed how many people park somewhere they shouldn't and act surprised",
         "I'm tired. That's the whole post",
-        "This yard been in the family and it's gonna stay in the family if it kills me"
+        "This yard been in the family and it's gonna stay in the family if it kills me",
+        "JB's sick again. Sick. That's the word we using",
+        "Franklin said last time was the last time. He been saying it since the first time",
+        "Been outside the liquor store on Forum since nine and the only thing that came through was the heat"
       ],
       "MissionDone": [
         "Whatever happened in {here}, somebody's car got left behind and that's MY business"
+      ],
+      "AmbientHood": [
+        "Forum Drive at noon, on the wall outside the liquor store. That's my office. Don't knock"
       ]
     },
     "maryann_fitness": {
@@ -10317,10 +10630,17 @@
         "Six in the morning and the beach path is mine",
         "If you cannot keep up do not comment",
         "Rest days are for people with something else to do",
-        "I have never once been beaten by anybody who did not cheat"
+        "I have never once been beaten by anybody who did not cheat",
+        "I am not irritable. Ask anybody. Ask them QUIETLY",
+        "Raced a man up the Vinewood Hills on bikes. He had a beard and a temper. I had the better line",
+        "Swam the bay in the dark for training. The water was angrier than me. Barely",
+        "Man on the beach told me to smile. I smiled at the finish line. Not for him"
       ],
       "MissionDone": [
         "Ran through {here} this morning. Pace was excellent. Atmosphere was not"
+      ],
+      "AmbientBeach": [
+        "Vespucci to the pier and back before seven. If you are on the path, you are in the race"
       ]
     },
     "marnie_epsilon": {
@@ -10341,7 +10661,11 @@
         "The robe is not a costume. I wear it to the shops. Yes, all of the shops",
         "Woke up in the Senora Desert with no shoes on and complete clarity",
         "Nine paradigms and I am on the second one. It cost me a car. Worth it",
-        "Somebody from my old life found me on Bleeter. I did not reply. Kifflom"
+        "Somebody from my old life found me on Bleeter. I did not reply. Kifflom",
+        "I tried acting in Liberty City. A different kind of film. The Program does not judge and neither should you",
+        "A man from Liberty City got me home once. When I think about decent people I think about him. It is a short list",
+        "Clean four years. Kifflom three. The overlap is not an accident",
+        "Recruited a man in a nice golf shirt. He gave generously. Then less generously. Then he took some BACK"
       ],
       "MissionDone": [
         "The energy in {here} is very loud today and not in a healing way"
@@ -10369,10 +10693,17 @@
         "New car. Same me. Bigger me actually",
         "Chest day is a state of mind and today is chest day",
         "People say I'm intense. People say that from BEHIND me",
-        "I don't sleep I RECHARGE"
+        "I don't sleep I RECHARGE",
+        "BULL SHARK delivered to your door, bro. five hundred. you're WORTH it",
+        "Mori says I'm too loud. Mori's in Liberty City being quiet and small. ALPHA",
+        "people ask if it's steroids. it's CHARACTER bro. in a syringe",
+        "roid rage is just passion that hasn't found a gym yet"
       ],
       "MissionDone": [
         "somebody in {here} got that AGGRESSION. respect. channel it bro"
+      ],
+      "AmbientBeach": [
+        "muscle beach at noon. oil, iron and me. the holy trinity bro"
       ]
     },
     "gerald_ls": {
@@ -10399,7 +10730,11 @@
         "Everybody in this city think they inventing something. Ain't nothing new down here",
         "I been shot at, locked up, and lied to. Still here. Still answering",
         "The block runs on people who show up. Everybody else is talking",
-        "Don't ask me twice about the same thing. I remember the first time"
+        "Don't ask me twice about the same thing. I remember the first time",
+        "Lamar brought me a new face today. Lamar brings everybody. Lamar would bring the police",
+        "Vagos had a van full of something on the freeway this morning. Had",
+        "I don't do the stealing. I do the knowing where it's going",
+        "Ballas got a deal set for tonight. Nobody told them I got invited"
       ],
       "MissionDone": [
         "Heard my people was busy in {here}. Good"
@@ -10413,22 +10748,25 @@
         "New face round the block. We'll see what he's about",
         "Somebody just signed on. Ask me in a month if it took",
         "Aight. Another one workin. Everybody works"
+      ],
+      "AmbientHood": [
+        "Every car on Grove with tint got my number in its phone. I never gave it out"
       ]
     },
     "tao_cheng_ls": {
       "Ambient": [
         "LOS SANTOS. LOS. SAN. i love it here i love it HERE",
-        "my uncle says i am an embarrassment. my uncle. is not. at this party",
+        "my father says i am an embarrassment. my father. is not. at this party",
         "does anyone know where i am. genuinely. no joke. someone",
         "woke up in the car. car was in the garage. so its fine. its FINE. everything fine",
-        "my translator is on the phone to my uncle AGAIN. this is. this is betrayal",
+        "my translator is on the phone to my father AGAIN. this is. this is betrayal",
         "bahama mamas tonight and tomorrow and its all. its all one night really",
         "lost a shoe. found a shoe. differnt shoe. better shoe honestly. upgrade",
         "somebody explain the slaughterhouse again i wasnt. i was not listening",
         "vip means very important people. and i am. i am the people",
         "bought thirty bottles. thirty. i dont think i know thirty. thirty peoples",
         "every club plays the same song and i LOVE it every time. every time",
-        "my uncle wants a MEETING. at NINE. in the MORNING. of the day",
+        "my father wants a MEETING. at NINE. in the MORNING. of the day",
         "del perro pier at four in the morning. reccomend. recomend. i recommend this",
         "im not drunk im. im jetlagged. its been. how long have i been here",
         "somebody took my phone. im typing this on my phone. so we found it",
@@ -10449,10 +10787,10 @@
         "cant find my car. cant find. did i have a car today. i had a car",
         "gonna sleep for. for a year. starting tomorow. tommorow. not today",
         "everybody in this city is so. theyre so NICE when you buy things",
-        "my uncle sent four men to find me. FOUR. i am one man. one",
+        "my father sent four men to find me. FOUR. i am one man. one",
         "new club opened on the boulevard and i was there before the sign was up",
         "they put my name on a table. a TABLE. with my name. thats respect",
-        "uncle says the port is the business. the port is a car park with boats",
+        "father says the port is the business. the port is a car park with boats",
         "if you have never had breakfast at nine at night you have never lived",
         "everyone keeps telling me to be careful. careful of WHAT. of a tuesday",
         "the beach at sunrise is. its actually. dont tell anyone i said that",
@@ -10461,7 +10799,7 @@
         "los santos has a hundred clubs and i am going to. all of them. all",
         "you know whats underrated. the little chicken place. by the. the one",
         "wore the same jacket three days running and got compliments all three",
-        "uncle wants me to sit in on meetings. i AM sitting. im sitting right now",
+        "father wants me to sit in on meetings. i AM sitting. im sitting right now",
         "the pool at the hotel closes at eleven and that is a human rights issue",
         "made a friend last night. dont know his name. we are still friends",
         "why does nobody here sleep. i love it. i love that nobody sleeps",
@@ -10473,7 +10811,10 @@
         "Los Santos is a wonderful city and I remember almost none of it",
         "One day this is all mine. That is not a threat it is succession planning",
         "Everybody underestimates me. Everybody. It is very useful",
-        "I have been told to be more serious. I will start on Monday"
+        "I have been told to be more serious. I will start on Monday",
+        "they put me in a. a freezer once. for my safety. safest i ever. ever felt",
+        "the o'neil brothers were my. my recommendation. do not. do not bring it up at dinner",
+        "my translator says a man in sandy shores is. is bad for business. i liked him. he had a. a big face"
       ],
       "MissionDone": [
         "somethin happen in {here}?? i was there. i think. probably. was i there",
@@ -10483,6 +10824,9 @@
         "everyone in the club is talking about {here} and i am nodding along",
         "whatever happened in {here} did not happen to me so its a good day",
         "my translator went quiet when {here} came up. thats how you know"
+      ],
+      "AmbientBeach": [
+        "pacific bluffs beach club. my fathers favourite. he goes. i stay. we. we take turns"
       ]
     },
     "hao_tuner": {
@@ -10512,13 +10856,19 @@
         "Cops know about the meet. They come, we go, we come back",
         "Money in the engine, not the wrap",
         "Been racing this city since before the apps",
-        "Show me the times. I don't care what it cost"
+        "Show me the times. I don't care what it cost",
+        "Hao's Special Works is open at the Car Meet. Bring me something worth my time",
+        "Mrs De Santa brought her car in again. Nice lady. Terrible with kerbs",
+        "Franklin brings me cars. Lamar brings me Franklin. Both are acceptable"
       ],
       "MissionDone": [
         "Somebody drove through {here} like they meant it. Noted"
       ],
       "DriveBy": [
         "Whoever that was, the driving was better than the shooting"
+      ],
+      "AmbientDocks": [
+        "LS Customs by the airport. A plane overhead every ninety seconds and I can still hear a bad tune through all of them"
       ]
     },
     "weazelnews": {
@@ -11043,7 +11393,11 @@
         "An arrangement is only as good as the memory of the men who made it",
         "I have buried more partners than most men have had",
         "Respect is not requested. It is observed, or it is corrected",
-        "The triads did not come here to be small"
+        "The triads did not come here to be small",
+        "My men once brought me the wrong man. They believed he was precious to somebody. He was, but not in the way they believed",
+        "The O'Neil brothers were a partnership I entered on my son's advice. My son will not be advising again",
+        "An abattoir is a quiet place for a difficult conversation. The acoustics are forgiving",
+        "The beach club in Pacific Bluffs serves a tolerable tea. I leave at the same hour every week. Routine is a comfort"
       ],
       "OursGloats": [
         "The matter is settled. It did not need to be loud",
@@ -11065,6 +11419,9 @@
         "I have read three accounts of {here} and none of them agree",
         "Noise in {here} again. Noise is how amateurs announce themselves",
         "Whatever happened in {here} did not require our involvement"
+      ],
+      "AmbientCity": [
+        "Little Seoul at dusk. Every shutter on the block comes down at the same minute. That is not a coincidence"
       ]
     },
     "ortega_vla": {
@@ -11091,10 +11448,15 @@
         "Everybody in Blaine County pays somebody. Choose wisely",
         "My people do not run. We relocate, strategically",
         "You come to my desert and you disrespect me in my own desert",
-        "Los Aztecas is a family before it is anything else"
+        "Los Aztecas is a family before it is anything else",
+        "Yellow all over Rancho and not one of them will stand on Senora Road after dark",
+        "My trailer is in the Zancudo River. I was in it at the time. Somebody in Sandy Shores knows exactly who",
+        "A gringo with a truck and no shirt pushed my home into the water and then he wanted to TALK",
+        "The Aztecas are paying a visit to a liquor store in Sandy Shores that does not sell liquor. Everybody is coming",
+        "I sleep in my cousin's car now. The river kept the trailer. The river can have it"
       ],
-      "VagosTaunt": [
-        "Yellow all over Rancho and not one of them will stand on Senora Road after dark"
+      "AmbientBlaine": [
+        "The Zancudo is brown and slow and full of my furniture"
       ]
     },
     "gustavo_mota": {
@@ -11113,10 +11475,17 @@
         "A man wants to be a soldier and a celebrity. Pick one",
         "Cops sit at the end of the street with the engine running. We wave",
         "Every year somebody says the east side is finished. Every year it is not",
-        "Keep the phone dumb and the mouth shut. Everything else is decoration"
+        "Keep the phone dumb and the mouth shut. Everything else is decoration",
+        "Lester had me pulled off a prison bus. Best job interview I ever had",
+        "First job was a security truck. Two hundred grand. My cut was a fraction of a fraction. Still paid the lawyer",
+        "Four big jobs with the same crew and I'm the only name nobody remembers. That's how you stay alive",
+        "Gun for hire. Not gun for conversation"
       ],
       "VagosTaunt": [
         "North side, south side, east side. Where exactly did you think you were stood"
+      ],
+      "AmbientSouth": [
+        "Cypress Flats. Trains all night and a yellow rag on every fence"
       ]
     },
     "ashley_lost": {
@@ -11143,10 +11512,17 @@
         "i'm fine. i've been fine for years",
         "somebody's always leaving in this town and somebody's always coming back worse",
         "i don't need saving i need a lift",
-        "the desert is quiet which is the problem with the desert"
+        "the desert is quiet which is the problem with the desert",
+        "the news said i died at a party in paleto. i read it at a party in paleto",
+        "rehab six. or seven. they stop giving you the certificate after four",
+        "a man broke a bottle over johnny's head in front of the whole trailer park and we all just stood there",
+        "i did some things with some people i shouldn't have and one of them was the worst man in the county"
       ],
       "RivalMourns": [
         "another one gone and the same men will pretend to care at the same bar"
+      ],
+      "AmbientBlaine": [
+        "stab city at sunset, all rust and dogs. some nights it's almost pretty"
       ]
     },
     "clay_lostmc": {
@@ -11164,7 +11540,14 @@
         "Trailer roof went in the wind again. Held it down with what we had, which was a door",
         "Six bikes out front on a Tuesday. Slow week",
         "Wrenched on it all afternoon and the thing still will not idle",
-        "There is one good stretch of road in Blaine County and everybody knows the one"
+        "There is one good stretch of road in Blaine County and everybody knows the one",
+        "They call me Crowdog. They do not call me often",
+        "Forgot the cigars. Rode back for them. That is what a Road Captain does. He goes back",
+        "Four of us came out of Alderney. The desert is working on the rest",
+        "I do not talk much. It has kept me alive longer than the talkers"
+      ],
+      "AmbientBlaine": [
+        "Stab City gate, nine at night. If you hear a bike you do not know, you are the bike we do not know"
       ]
     },
     "terry_lostmc": {
@@ -11181,25 +11564,33 @@
         "Rode through Grapeseed at dusk and hit every bug in the county",
         "Man in a truck cut me off on Route 68. He apologised eventually",
         "If it does not leak it does not run. Ask anybody who has been out here",
-        "Wind came up off the desert and took the awning off the front of the bar"
+        "Wind came up off the desert and took the awning off the front of the bar",
+        "Light cigarettes. The feds put the full ones on a list",
+        "Federal helicopter over Stab City twice today. Waved both hands. Let them count the fingers",
+        "I love this country. I do not trust one man who runs it. Both of those are patriotism",
+        "Guns are my business. Opinions are free and I have a trailer full",
+        "Came out of Alderney with Johnny, Clay and Angus. Do your own arithmetic on who is left"
+      ],
+      "AmbientBlaine": [
+        "Route 68 along the Alamo Sea at dawn, bike running rough, sky full of federal"
       ]
     },
     "oscar_guzman": {
       "Ambient": [
-        "La Fuente Blanca. Ranch business. Nothing to see and nothing to say",
-        "Senora Road is quiet and Mr Madrazo intends it to stay quiet",
-        "People keep turning up at that house unannounced. It keeps going badly for them",
-        "Horses fed at five. Gate locked at six. That is the whole report",
-        "A truck came up the road, turned around, went back down. We noted it",
-        "Somebody flew a drone over the ranch. The drone is in the barn now",
-        "The fence on the north side is down again. Coyotes or people. Both are people",
-        "Mr Madrazo does not take calls at the ranch. He does not take them anywhere",
-        "Dust on everything out here. You clean it, you wait an hour, you clean it",
-        "We do not need more men. We need the men we have to be quieter",
-        "Someone asked what we grow here. Nothing. It is a ranch and it is private",
-        "The dogs bark at the road all night. Twice this month they were right",
-        "A man parked on Senora Road to photograph the sunset. We watched him do it",
-        "I have worked this land longer than most men out here have been alive"
+        "McKenzie Field, Grapeseed. The planes go out heavy and come back light. That is the whole business",
+        "My pilot flies like he is angry at the ground. Maybe he is. The cargo arrives",
+        "Guns across the county by truck on Tuesday and by air on Thursday. The desert does not ask",
+        "The runway has holes. The hangar has holes. The business does not have holes",
+        "In Blaine County since 2008. The sheriff has changed four times. I have not",
+        "A man from Sandy Shores bought my airfield and then went to work for me out of it. Strange country",
+        "Drop the cargo on the flare, not near the flare. I have said this to three pilots. Two are still pilots",
+        "The planes are old and so am I. Neither of us has come down yet",
+        "Mexico is a long flight in a slow plane. I have made it more times than I can count",
+        "Old men make the best smugglers. Nobody looks twice at an old man in a hangar"
+      ],
+      "AmbientBlaine": [
+        "Grapeseed smells of cows and aviation fuel. It is a good smell when you are being paid",
+        "McKenzie Field at dawn. One plane warm, one plane cold, and a very nervous man on the radio"
       ]
     },
     "patricia_m": {
@@ -11215,7 +11606,11 @@
         "A bird comes to the same window every morning at the same hour. We have an arrangement",
         "I asked to drive myself to the store. A man drove me to the store",
         "The lemons came early this year and I have made more preserves than this house will ever eat",
-        "There is a new gate on the drive. Nobody thought to mention it to me"
+        "There is a new gate on the drive. Nobody thought to mention it to me",
+        "A man with terrible manners took me out to the desert for a week. He was kinder to me than anybody in twenty years",
+        "Martin has promised to be kinder. He promised on a Tuesday. It is Thursday",
+        "The desert was the first quiet I had in twenty years and I did not choose to go there",
+        "I have a friend in Sandy Shores. Martin does not know. Martin knows"
       ]
     },
     "chef_tpi": {
@@ -11241,10 +11636,17 @@
         "Somebody tried to cut mine with something. I found out. It got handled",
         "A clean lab is a long career",
         "I keep my head down and my product up. That's the whole philosophy",
-        "People think this is chemistry. It's cooking, and cooking is patience"
+        "People think this is chemistry. It's cooking, and cooking is patience",
+        "People ask how I got this job. There was an interview at a cash-for-gold place. It went well for everyone but the cash-for-gold place",
+        "I am not saying I was in Paleto Bay that morning. I am saying the bank was very loud",
+        "I smoke at the window because the window is the only part of the building that is legal",
+        "Aztecas through the front, bikers through the back, and the batch was fine. Priorities"
       ],
       "Delivery": [
         "Product moved, nobody exploded. Good week for Trevor Philips Industries"
+      ],
+      "AmbientBlaine": [
+        "Sandy Shores at dawn. Extractor fan humming, one man at a window with a cigarette. Me. That is the view"
       ]
     },
     "floyd_hebert": {
@@ -11270,7 +11672,14 @@
         "Everything was fine. Everything WAS fine",
         "I don't want any trouble I just want my apartment back",
         "Somebody used my kitchen. I'm not going to say who",
-        "I've been crying in the stairwell again and that's between me and the stairwell"
+        "I've been crying in the stairwell again and that's between me and the stairwell",
+        "I stole a pencil in the third grade. I have never told anybody and I think about it every single day",
+        "Wade is family. Wade's friend is not family. Wade's friend is in the bath",
+        "One of Debra's dresses is missing and a man came home in a dress. I have decided these are separate things",
+        "Debra is back Thursday. I have cleaned everything twice and it still looks like what happened"
+      ],
+      "AmbientDocks": [
+        "The port at five in the morning. The only place left where nobody is sitting on my couch"
       ]
     },
     "cris_formage": {
@@ -11298,7 +11707,15 @@
         "You cannot buy happiness. You can, however, make a qualifying contribution",
         "Those who leave were never really here",
         "The desert reveals what the city hides. Come to the desert",
-        "Kifflom, brother-brother. Kifflom"
+        "Kifflom, brother-brother. Kifflom",
+        "The world is one hundred and fifty seven years old. Your doubts are older. Discard them",
+        "Dinosaurs are a fabrication. The donation portal is not",
+        "Kraff was Emperor of the Fourth Paradigm. You are not Kraff. Payment plans are available",
+        "Ten days in the robe, brother-brother. The robe knows when you take it off",
+        "Someone has taken a great deal from the Program. The Program forgives. The Program's lawyers are in a different paradigm"
+      ],
+      "AmbientVinewood": [
+        "Walk past the Epsilon Building slowly. Slower. The truth prefers a walking pace and a cheque book"
       ]
     },
     "omega_ufo": {
@@ -11327,7 +11744,13 @@
         "The lights over the desert are not planes. I know what a plane sounds like",
         "Everybody laughs until the day they stop laughing",
         "I have not been indoors properly in some years and I have never been clearer",
-        "The signal comes from above and it is patient"
+        "The signal comes from above and it is patient",
+        "A young man from the city brought me every part. All fifty. I built the ship. He drove off in it. That is the cosmic joke",
+        "The dog tags stay on. The government gave them to me and the government can come and take them back",
+        "There was a man in the nineties who knew what I know. They got to him. They will not get to me"
+      ],
+      "AmbientBlaine": [
+        "Sandy Shores Airfield after midnight. Those are not landing lights"
       ]
     },
     "cbp_joe": {
@@ -11346,7 +11769,14 @@
         "Somebody moved our cones in the night. We have more cones",
         "Sandy Shores does not know the half of what we do out here, and that is the arrangement",
         "Batteries. It is always batteries. Nobody tells you that part about defending a nation",
-        "Took the truck to the ridge at sundown. Nothing happened. Nothing happened because we were there"
+        "Took the truck to the ridge at sundown. Nothing happened. Nothing happened because we were there",
+        "The detector beeped at an entire mariachi band. The detector has never been wrong. Except that once",
+        "One of the band turned out to be born in Los Santos. Paperwork is not my department",
+        "Hired a local contractor. Big fella, no shirt. Something about him said do not argue with him about the border",
+        "Josef married Janet from the Yellow Jack, so Josef stays. The exceptions are MY decision"
+      ],
+      "AmbientBlaine": [
+        "Yellow Jack Inn, eight o'clock. Two stools, one thermos, a very watchful evening"
       ]
     },
     "lspd_official": {
@@ -11460,7 +11890,20 @@
       "AmbientOrg": [
         "La Fuente Blanca. By appointment. There are no appointments",
         "The family has interests either side of the border and no interest in discussing them",
-        "Anybody looking for Mr Madrazo has already been found"
+        "Anybody looking for Mr Madrazo has already been found",
+        "La Fuente Blanca. Ranch business. Nothing to see and nothing to say",
+        "Senora Road is quiet and Mr Madrazo intends it to stay quiet",
+        "People keep turning up at that house unannounced. It keeps going badly for them",
+        "Horses fed at five. Gate locked at six. That is the whole report",
+        "A truck came up the road, turned around, went back down. We noted it",
+        "Somebody flew a drone over the ranch. The drone is in the barn now",
+        "The fence on the north side is down again. Coyotes or people. Both are people",
+        "Mr Madrazo does not take calls at the ranch. He does not take them anywhere",
+        "Dust on everything out here. You clean it, you wait an hour, you clean it",
+        "We do not need more men. We need the men we have to be quieter",
+        "Someone asked what we grow here. Nothing. It is a ranch and it is private",
+        "The dogs bark at the road all night. Twice this month they were right",
+        "A man parked on Senora Road to photograph the sunset. We watched him do it"
       ]
     },
     "abigail_dock": {
@@ -11480,7 +11923,12 @@
         "The dive shop gave me a discount and I nearly cried in front of a stranger",
         "The sea does not lose things. It holds them until you are serious",
         "His jacket still hangs by the door and I am not taking questions on that",
-        "Got a letter addressed to Mr Mathers. Filed it with all the others"
+        "Got a letter addressed to Mr Mathers. Filed it with all the others",
+        "I offered a very fair reward. Ten dollars and a signed photograph of Frank. He was an important man",
+        "Somebody scratched words into that airlock and people keep asking me about it. Ask his first wife",
+        "The police are involved in what happened to Frank and I will not be taking questions",
+        "Went to the airport for a holiday. Told security a man was bothering me. He was, in a way",
+        "Frank left his wife for me. The sea left him for nobody"
       ]
     },
     "cletus_hunts": {
@@ -11500,7 +11948,14 @@
         "Got a freezer full and nobody to feed. Come by with a cooler",
         "Mule deer round here got smarter and I got slower. That's the arrangement now",
         "Fella asked if I use a bow. I said I use whatever's in the truck",
-        "Wind shifted at the last second and he was gone. That's the whole of huntin"
+        "Wind shifted at the last second and he was gone. That's the whole of huntin",
+        "I don't shoot does. That's the one rule. Your satellite dish is a different conversation",
+        "Sold four pounds of elk to a fella in Los Santos with a moustache and opinions about kale",
+        "Dog tags are from the service. Which service is between me and the service",
+        "Texted a fella the photo of his elk. Gut shot. Ruined the meat. We had words"
+      ],
+      "AmbientBlaine": [
+        "Marina Drive in Sandy Shores. Porch light on, rifle clean, coffee on. Come by with a cooler"
       ]
     },
     "dom_jumps": {
@@ -11520,7 +11975,15 @@
         "my doctor used the word again. the word is concerning. i call it Tuesday",
         "wingsuit's back from repair. cost more than my car. worth more than my car",
         "three jumps before lunch. lunch was a shake in a parking garage. BOOM",
-        "nobody films it right. everybody films the ground. film the FACE"
+        "nobody films it right. everybody films the ground. film the FACE",
+        "ex wife wants a number. i gave her my altitude",
+        "missed the kid's thing to jump the maze bank. she'll understand when she's older and has a chute",
+        "the dam. no chute. next level. purity. BOOM",
+        "work hates me. the office hates me. gravity LOVES me",
+        "rode a quad bike out of a cargo plane. landed. mostly. BOOM"
+      ],
+      "AmbientCity": [
+        "maze bank roof at noon. security knows me by name now. they don't say it nicely"
       ]
     },
     "jimmy_boston_ep": {
@@ -11539,7 +12002,14 @@
         "Was told blue is not my colour. By a man dressed entirely in beige",
         "Doing a Weazel News segment about the Program. They will cut it. They always cut it",
         "Donated again this morning. Everything feels lighter. The wallet and the soul",
-        "Kifflom. Somebody keyed the blue car outside the chapter on Spanish Avenue"
+        "Kifflom. Somebody keyed the blue car outside the chapter on Spanish Avenue",
+        "Delivered to Sandy Shores Airfield: one baby blue Velum. Blue is the colour of Kraff",
+        "Thesis grade in record time. Some people read the tracts. I KNOW the tracts",
+        "Cris and I watch adult films together to prove we are above them. We are ABOVE them",
+        "My agent says the robe is hurting my bookings. My robe says my agent is hurting my robe"
+      ],
+      "AmbientVinewood": [
+        "Walked the Walk of Fame to my own star in full robe. A tourist asked if I was a wizard. In a sense"
       ]
     },
     "josef_cbp": {
@@ -11557,7 +12027,11 @@
         "I did not come to this country in order to stand in a field. And yet",
         "Somebody drove past and shouted something at us. We wrote down the time",
         "There was a coyote. Joe drew his weapon. It was a coyote",
-        "My back is finished. I will patrol sitting down. It is still patrol"
+        "My back is finished. I will patrol sitting down. It is still patrol",
+        "Janet at the Yellow Jack says I must learn English. I know papers, stop and yes. It is enough",
+        "In my country the border patrols you. Here we patrol the border. It is very relaxing",
+        "The detector beeped at Joe once. We did not discuss it",
+        "I came to this country the correct way. Through Janet"
       ]
     },
     "josh_realty": {
@@ -11594,7 +12068,15 @@
         "The dog next door has better manners than the man who owns this trailer",
         "Nobody in this county can make a decent cup of tea and nobody is sorry about it",
         "I was very nearly in pictures. Very nearly. Ask anybody who was there",
-        "Left a list on the counter. I expect the list to be done by the time I am back"
+        "Left a list on the counter. I expect the list to be done by the time I am back",
+        "My son never once visited me inside. Not once. Not a card",
+        "I asked my son if he had a girlfriend. I would have been fine with a boyfriend. I would have been fine with ANYTHING",
+        "Somebody fetch me the Deludamol. A truckload. It is for my nerves and my nerves are enormous",
+        "I danced in clubs before any of you were born. I was the headliner. Some nights",
+        "I have asked my son to find me a man. A father for him. He should have one by now"
+      ],
+      "AmbientBlaine": [
+        "Sandy Shores. A trailer park full of men and not a gentleman among them"
       ]
     },
     "mrs_thornhill_uk": {
@@ -11614,7 +12096,11 @@
         "Our hotel is dreadful but the window faces exactly the right way",
         "I keep everything catalogued. Nigel keeps everything in the boot of the car",
         "Los Santos has no proper pavements and I have written to somebody about it",
-        "A security man asked us to move along. We moved along. Then we came back"
+        "A security man asked us to move along. We moved along. Then we came back",
+        "Kerry McIntosh's little dog has a new collar. We have the old one. The old one is better",
+        "Tyler Dixon's shirt is in a sealed bag in my case. It still smells of him, and faintly of panic",
+        "One finds it terribly hard to say goodbye, even to people one has only borrowed",
+        "A leading man has a restraining order against us. It is in the scrapbook. It has his signature on it"
       ]
     },
     "dreyfuss_ace": {
@@ -11633,15 +12119,23 @@
         "Slept badly. Awake at four. Sat with the lamp on until a reasonable hour",
         "Somebody has been leaving flowers at the bottom of the drive. Please do not",
         "Burned a box of papers on Sunday. The neighbours may smell what they like",
-        "A man rang about the rights to the old pictures. There are no rights"
+        "A man rang about the rights to the old pictures. There are no rights",
+        "Somebody is collecting paper from all over the county. I would ask them, politely, to stop",
+        "Nineteen seventy five was a formative year for the craft. More for some of us than others",
+        "I still send her family a card every year. It would be rude not to",
+        "Art requires suffering. I have never been shy about where it comes from",
+        "My star on the Walk of Fame is cleaned on a Tuesday. I watch from the car"
+      ],
+      "AmbientVinewood": [
+        "The Vinewood Hills after dark. The houses up here keep their secrets better than the people in them"
       ]
     },
     "bigfoot_raton": {
       "Ambient": [
-        "Eight years in Raton Canyon. EIGHT. And I have seen him twice",
+        "Nine years in Raton Canyon. NINE. And I have seen him twice",
         "The buggy's packed. Anybody serious, you know where I am",
         "They laugh in Sandy Shores. They laughed at every man who was right",
-        "Eight years of tracks and they still want a photograph. Tracks ARE evidence",
+        "Nine years of tracks and they still want a photograph. Tracks ARE evidence",
         "New boots. Broke them in on the ridge above the canyon. Blisters and no sighting",
         "The river noise up there covers everything. That is exactly why nobody hears him",
         "Somebody left beer cans at my glassing spot. In RATON CANYON. Have some respect",
@@ -11650,8 +12144,15 @@
         "A ranger told me to move the buggy. I moved the buggy. I did not move",
         "They put him on a shirt in Sandy Shores and sell it to tourists. None of them have looked",
         "Best light is the hour before dawn and nobody else is willing to be up for it",
-        "Camera got wet at the crossing. Eight years, and it is the camera that gets wet",
-        "I am not lonely out there. That is the part people cannot understand"
+        "Camera got wet at the crossing. Nine years, and it is the camera that gets wet",
+        "I am not lonely out there. That is the part people cannot understand",
+        "He spoke to me once. It sounded like shoot me again. I have chosen to believe I misheard",
+        "Nine years. People said give up. People said a lot of things",
+        "Found a zip in the brush by the river. A big zip. Probably nothing",
+        "Fur on a thorn bush in Raton Canyon. Synthetic, the lab said. The lab is in on it"
+      ],
+      "AmbientBlaine": [
+        "Raton Canyon at first light. River loud, trees quiet, and something big standing very still"
       ]
     },
     "chengholdings_ls": {
@@ -11716,7 +12217,16 @@
         "Cash. That's the whole conversation",
         "You want it clean, that costs. You want it now, that costs more",
         "Half these young ones never held one before they bought one",
-        "I keep my business in one place and my mouth in another"
+        "I keep my business in one place and my mouth in another",
+        "They let me out early again. People wanna make something of that, let em",
+        "D ain't here to say what happened and neither am i",
+        "Everybody got a theory about the sawmill. I got an alibi",
+        "Renatta rode for me the whole time. Only one who did",
+        "They call me short behind my back. Behind my back is where they stay"
+      ],
+      "AmbientHood": [
+        "The rec centre is the only place round here where people still listen",
+        "Green on every wall and not one of them walls had my back"
       ]
     },
     "cop_hale_lspd": {
