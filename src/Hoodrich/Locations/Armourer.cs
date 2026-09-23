@@ -368,7 +368,13 @@ namespace Hoodrich.Locations
             if (_ped != null && _ped.Exists())
             {
                 if (away > DespawnRange) Despawn();
-                else if (!_held) Settle();
+                else
+                {
+                    // The one look at what is under him, once the yard has streamed in.
+                    if (!_dropped && _dropAt != 0 && now >= _dropAt) StandHimOnSomething();
+
+                    if (!_held) Settle();
+                }
 
                 return;
             }
@@ -450,6 +456,10 @@ namespace Hoodrich.Locations
 
                     Settle();
 
+                    // NOT NOW. See StandHimOnSomething for why it waits.
+                    _dropped = false;
+                    _dropAt = Game.GameTime + DropAfterMs;
+
                     Log.Info("Stretch is out at " + spot + ".");
                     SayWhatTakesADrum();
                     return;
@@ -491,6 +501,31 @@ namespace Hoodrich.Locations
         /// </summary>
         private float _standingZ = float.NaN;
 
+        /// <summary>Whether he has already been put down this spawn. See StandHimOnSomething.</summary>
+        private bool _dropped;
+
+        /// <summary>When to take that one look, or 0 for not scheduled.</summary>
+        private int _dropAt;
+
+        /// <summary>
+        /// Long enough after he is put down for the yard around him to have streamed.
+        ///
+        /// HE IS STOOD AMONG PROPS AND THE PROPS ARE THE POINT. A ray cast on the frame he is
+        /// created finds whatever has loaded, which at that moment is usually the bare map --
+        /// so it would measure him against concrete a metre under his own crates and drop him
+        /// through them. Waiting costs a second of him standing where he was already standing.
+        /// </summary>
+        private const int DropAfterMs = 1500;
+
+        /// <summary>
+        /// The furthest this will ever move him, and it is a backstop rather than a tuning.
+        ///
+        /// He is a metre above his crates when he is wrong. Anything beyond this is not a
+        /// floating man, it is a ray that found the inside of the world, and putting him there
+        /// is worse than leaving him in the air.
+        /// </summary>
+        private const float MaxDrop = 1.5f;
+
         /// <summary>
         /// Puts him on whatever is actually under him.
         ///
@@ -517,7 +552,10 @@ namespace Hoodrich.Locations
         {
             try
             {
-                if (_ped == null || !_ped.Exists()) return;
+                if (_ped == null || !_ped.Exists() || _dropped) return;
+
+                _dropped = true;
+                _dropAt = 0;
 
                 var feet = _ped.Position;
 
@@ -529,9 +567,15 @@ namespace Hoodrich.Locations
                 if (!hit.DidHit) return;
 
                 var drop = feet.Z - hit.HitPosition.Z;
-                if (drop <= FloatBy) return;
+                if (drop <= FloatBy || drop > MaxDrop) return;
 
-                _ped.PositionNoOffset = new Vector3(feet.X, feet.Y, hit.HitPosition.Z);
+                // Position AND NOT PositionNoOffset, which is what buried him. The no-offset
+                // setter puts a ped's ORIGIN at the height given; the plain one puts his FEET
+                // there, which is what every other line in this file means by a height and
+                // what Spot itself is. Written the other way he went into the ground by most
+                // of his own height, and because this used to run from Settle it then did it
+                // again from wherever he had landed, over and over.
+                _ped.Position = new Vector3(feet.X, feet.Y, hit.HitPosition.Z);
                 _ped.Heading = Heading;
                 _standingZ = hit.HitPosition.Z;
 
@@ -615,10 +659,6 @@ namespace Hoodrich.Locations
                 {
                     _ped.Position = home;
                 }
-
-                // And if that left him in the air, put him down. Cheap: one ray, and only
-                // when it actually moves him does anything else happen.
-                StandHimOnSomething();
 
                 if (!Function.Call<bool>(Hash.IS_PED_USING_SCENARIO, _ped.Handle, "WORLD_HUMAN_SMOKING"))
                 {
