@@ -126,6 +126,17 @@ namespace Hoodrich.Gangs
 
         /// <summary>When he last passed each spot, so he rides all of the park and not one corner.</summary>
         public readonly Dictionary<int, int> Seen = new Dictionary<int, int>();
+
+        // ---- riding the path you recorded. See Rollers.RidePath and Gangs.BikePath. --------
+
+        /// <summary>Which way along the path he is going: 1 with it, -1 back along it.</summary>
+        public int Way = 1;
+
+        /// <summary>The path he joined, by BikePath.Version. Nought: he is not on one.</summary>
+        public int PathVersion;
+
+        /// <summary>His time up and on his way out along the path: by when he is out regardless.</summary>
+        public int LeaveBy;
     }
 
     /// <summary>
@@ -492,6 +503,9 @@ namespace Hoodrich.Gangs
 
             _parkWorld = new ParkWorld(Ours, Moving);
             _awayFromBad = AwayFromBad;
+
+            // The path you rode, if there is one. See BikePath.
+            BikePath.Load();
         }
 
         // ---- per-tick ----------------------------------------------------------
@@ -499,6 +513,10 @@ namespace Hoodrich.Gangs
         public void Update()
         {
             var now = Game.GameTime;
+
+            // THE PATH RECORDER, EVERY FRAME, whatever else is switched off: a point every few
+            // metres while you ride it, and the line drawn under you. See BikePath.
+            BikePath.Tick();
 
             // ABOVE THE THROTTLE ON PURPOSE. A wheelie is held by pushing on the bike every
             // frame it lasts; the same push at nine-hundred-millisecond intervals is a pothole.
@@ -703,7 +721,7 @@ namespace Hoodrich.Gangs
 
             // Headed into the park, he is not there until he is at the door. Sixteen metres out
             // is still on the road, and the first line he is given is checked from where he is.
-            var toPark = roll.OnFoot && roll.StopThere && ParkUsable && _park.Inside(roll.Target);
+            var toPark = roll.OnFoot && roll.StopThere && ParkUsable && ParkTarget(roll.Target);
             var arrived = toPark ? ParkArrive : ArrivedRange;
 
             if (roll.Target != Vector3.Zero && here.DistanceTo(roll.Target) < arrived)
@@ -805,8 +823,8 @@ namespace Hoodrich.Gangs
             {
                 // Into the park, a mate finds his own way in rather than a spot a few metres off
                 // his lead's -- in the park, a few metres off is inside a ramp.
-                where = ParkUsable && _park.Inside(lead.Target)
-                    ? _park.Spots[_park.EntryFor(roll.Car.Position)]
+                where = ParkUsable && ParkTarget(lead.Target)
+                    ? ParkEntry(roll.Car.Position)
                     : Beside(lead.Target);
             }
             else if (roll.OnFoot && stop)
@@ -1133,7 +1151,10 @@ namespace Hoodrich.Gangs
             // THE PARK FIRST, once it has been looked over and when it is near enough to ride
             // to. In by the way nearest where he is coming from; see Ride for what happens once
             // he is there.
-            if (ParkUsable && Park.Flat2(_park.Centre, from) < HangoutRange)
+            // Your path, when there is one: on at the point of it nearest where he is.
+            if (PathOn && BikePath.DistanceTo(from) < HangoutRange) return ParkEntry(from);
+
+            if (ParkUsable && !PathOn && Park.Flat2(_park.Centre, from) < HangoutRange)
             {
                 var door = _park.EntryFor(from);
                 if (door >= 0) return _park.Spots[door];
@@ -1400,7 +1421,7 @@ namespace Hoodrich.Gangs
                     // would have him arrive at the door doing fifteen, and the door is where the
                     // checked lines start -- a man going that fast is past the first one before
                     // he has been given it.
-                    if (roll.StopThere && ParkUsable && _park.Inside(roll.Target) &&
+                    if (roll.StopThere && ParkUsable && ParkTarget(roll.Target) &&
                         Park.Flat2(roll.Car.Position, roll.Target) < ParkApproach)
                     {
                         want = Math.Min(want, ParkSpeed + 1f);
@@ -2078,7 +2099,26 @@ namespace Hoodrich.Gangs
         private readonly List<Vector3> _heading = new List<Vector3>();
 
         private bool ParkOn => _cfg == null || _cfg.RollerParkRide;
-        private bool ParkUsable => ParkOn && _park != null && _park.Ready;
+
+        /// <summary>
+        /// A path you recorded, and the setting to ride it. While this is on the survey is not
+        /// used at all: they ride your line. See BikePath and RidePath.
+        /// </summary>
+        private bool PathOn => ParkOn && (_cfg == null || _cfg.RollerParkPath) && BikePath.Ready;
+
+        private bool ParkUsable => ParkOn && (PathOn || (_park != null && _park.Ready));
+
+        /// <summary>Whether a destination is the park: a point of your path, or inside the surveyed park.</summary>
+        private bool ParkTarget(Vector3 at) => PathOn ? BikePath.On(at) : _park != null && _park.Ready && _park.Inside(at);
+
+        /// <summary>Where somebody coming from there gets on: the nearest point of your path, or the survey's way in.</summary>
+        private Vector3 ParkEntry(Vector3 from)
+        {
+            if (PathOn) return BikePath.Points[BikePath.Nearest(from)];
+
+            var door = _park.EntryFor(from);
+            return door >= 0 ? _park.Spots[door] : Vector3.Zero;
+        }
         private bool InsidePark(Vector3 at) => ParkOn && _park != null && _park.Inside(at);
 
         private Vector3 ParkCentre => _cfg == null
@@ -2219,6 +2259,10 @@ namespace Hoodrich.Gangs
                 }
             }
 
+            // RIDING YOUR PATH, NOT A SURVEY. Nothing to look over: the park stays as a circle,
+            // so every other destination still keeps out of it, and not a ray is spent.
+            if (PathOn) return;
+
             Ped player;
 
             try
@@ -2309,6 +2353,10 @@ namespace Hoodrich.Gangs
             roll.PathAt = 0;
             roll.LegNode = -1;
             roll.LegTo = Vector3.Zero;
+
+            roll.PathVersion = 0;
+            roll.Way = 1;
+            roll.LeaveBy = 0;
 
             roll.WatchAt = now;
             roll.LastSpeed = 0f;
@@ -2402,6 +2450,23 @@ namespace Hoodrich.Gangs
 
             if (bike == null || !bike.Exists()) return;
             if (rider == null || !rider.Exists() || !rider.IsAlive) return;
+
+            // YOUR PATH, when there is one. See RidePath.
+            if (PathOn)
+            {
+                RidePath(roll, now);
+                return;
+            }
+
+            // Riding your path until it went -- forgotten, or switched off. What he holds are
+            // points of it, not spots on the survey's map, so he starts the survey's over.
+            if (roll.PathVersion != 0)
+            {
+                roll.PathVersion = 0;
+                roll.Path = null;
+                roll.LegNode = -1;
+                roll.LegTo = Vector3.Zero;
+            }
 
             // The park went while he was in it -- switched off, or looked over again and found
             // wanting. Out the ordinary way.
@@ -2557,6 +2622,275 @@ namespace Hoodrich.Gangs
             }
 
             if (roll.LegTo == Vector3.Zero) NextParkLeg(roll, now);
+        }
+
+        // ---- riding your path -------------------------------------------------------------
+
+        /// <summary>How much of your path one line takes at most, how close to it the line keeps, and the shortest line given.</summary>
+        private const float PathLegMost = 16f;
+        private const float PathHug = 1.0f;
+        private const float PathLegLeast = 6f;
+
+        /// <summary>Time up: this long to get round to the way out, and how near it counts as out.</summary>
+        private const int PathLeaveMostMs = 60000;
+        private const float PathOut = 8f;
+
+        /// <summary>The point of your path nearest a road, and which path that was worked out for.</summary>
+        private int _pathExit = -1;
+        private int _pathExitFor = -1;
+
+        /// <summary>
+        /// One look at one rider on your path.
+        ///
+        /// THE SAME RIDER ON A DIFFERENT MAP. What Ride does with the survey's spots this does
+        /// with the points you rode: a straight line along as much of it as keeps to it, the
+        /// next one handed over before the end of this one, round and round a loop or to the end
+        /// and back. When his time is up he carries on round to the point nearest a road and
+        /// rides out there.
+        ///
+        /// WHAT IS DIFFERENT IS WHAT HE WATCHES FOR. The survey's lines were checked, so anything
+        /// in the way was new and worth taking off the map. Yours were ridden -- a ramp in front
+        /// of him is a ramp you rode over -- so he brakes for people and anything moving and for
+        /// nothing else. If he hits something anyway the log says where, so that stretch can be
+        /// ridden again.
+        /// </summary>
+        private void RidePath(Roll roll, int now)
+        {
+            var bike = roll.Car;
+            var pos = bike.Position;
+            var speed = bike.Speed;
+
+            // ---- a burnout running ------------------------------------------------------
+            if (roll.BurnUntil != 0)
+            {
+                if (now < roll.BurnUntil)
+                {
+                    roll.LastSpeed = 0f;
+                    return;
+                }
+
+                roll.BurnUntil = 0;
+
+                try { Function.Call(Hash.SET_VEHICLE_BURNOUT, bike.Handle, false); }
+                catch { }
+
+                roll.BurnAfter = now + _rng.Next(BurnRestMinMs, BurnRestMaxMs) * 2;
+                roll.LegTo = Vector3.Zero;
+                roll.ProgressFrom = pos;
+                roll.ProgressAt = now + ProgressMs;
+            }
+
+            // ---- a path recorded since he joined this one: he joins that ----------------
+            if (roll.PathVersion != BikePath.Version)
+            {
+                roll.PathVersion = BikePath.Version;
+                roll.LegNode = -1;
+                roll.LegTo = Vector3.Zero;
+            }
+
+            // ---- time up: on round to the way out ---------------------------------------
+            if (!roll.Leaving && now >= roll.SitUntil)
+            {
+                roll.Leaving = true;
+                roll.LeaveBy = now + PathLeaveMostMs;
+            }
+
+            if (roll.Leaving)
+            {
+                var exit = PathExit();
+
+                if (now >= roll.LeaveBy || exit < 0 || Park.Flat2(pos, BikePath.Points[exit]) < PathOut)
+                {
+                    roll.ParkDone = true;
+                    return;
+                }
+            }
+
+            // ---- a stop nobody asked for ------------------------------------------------
+            if (!roll.Braking && roll.LegTo != Vector3.Zero &&
+                roll.LastSpeed > CrashFrom && roll.LastSpeed <= ParkSpeed + 1.5f &&
+                speed < roll.LastSpeed * CrashDrop)
+            {
+                Log.Info(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    "Rollers: a rider hit something on your path at {0:0.0}, {1:0.0}. If it keeps happening there, ride that stretch again.",
+                    pos.X, pos.Y));
+
+                roll.LegTo = Vector3.Zero;
+            }
+
+            roll.LastSpeed = speed;
+
+            // ---- the end of the line ----------------------------------------------------
+            // Near it he is asked for the next one -- which round a corner is this one still,
+            // until he is into the corner. See BikePath.Ahead.
+            var due = roll.LegTo != Vector3.Zero && Park.Flat2(pos, roll.LegTo) < LegDone;
+
+            if (due && !roll.Leaving && now >= roll.BurnAfter)
+            {
+                if (RoomToBurn(roll))
+                {
+                    roll.LegTo = Vector3.Zero;
+                    Burn(roll, now);
+                    return;
+                }
+
+                roll.BurnAfter = now + BurnRestMinMs;
+            }
+
+            // ---- people, and anything moving --------------------------------------------
+            if (roll.LegTo != Vector3.Zero && (speed > 0.6f || roll.Braking))
+            {
+                Vector3 seen;
+                var what = Ahead(bike, speed, Park.Flat2(pos, roll.LegTo) + 1f, out seen, true);
+
+                if (what == Sight.Clear)
+                {
+                    if (roll.Braking)
+                    {
+                        roll.Braking = false;
+                        roll.BrakeSince = 0;
+                        SetSpeed(roll, LegSpeed(roll, pos));
+                    }
+                }
+                else if (!roll.Braking)
+                {
+                    roll.Braking = true;
+                    roll.BrakeSince = now;
+                    SetSpeed(roll, 0.5f);
+                }
+                else if (now - roll.BrakeSince > PersonWaitMs)
+                {
+                    // Still there. The line again from here, and the drive task goes round him.
+                    roll.Braking = false;
+                    roll.BrakeSince = 0;
+                    roll.LegTo = Vector3.Zero;
+                }
+            }
+
+            // ---- getting anywhere -------------------------------------------------------
+            if (now >= roll.ProgressAt)
+            {
+                var moved = Park.Flat2(pos, roll.ProgressFrom);
+
+                roll.ProgressFrom = pos;
+                roll.ProgressAt = now + ProgressMs;
+
+                if (moved >= StallMove)
+                {
+                    roll.Stalls = 0;
+                }
+                else if (!roll.Braking)
+                {
+                    roll.LegTo = Vector3.Zero;
+
+                    if (++roll.Stalls >= StallsMost)
+                    {
+                        Log.Info(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                            "Rollers: a rider could not get on along your path at {0:0.0}, {1:0.0} and rode out.",
+                            pos.X, pos.Y));
+
+                        roll.ParkDone = true;
+                        return;
+                    }
+                }
+            }
+
+            if (roll.LegTo == Vector3.Zero || due) NextPathLeg(roll);
+        }
+
+        /// <summary>The next straight line along your path, from wherever his wheels are.</summary>
+        private void NextPathLeg(Roll roll)
+        {
+            var pts = BikePath.Points;
+
+            if (pts.Count < 2)
+            {
+                roll.ParkDone = true;
+                return;
+            }
+
+            var wheels = Wheels(roll.Car);
+
+            // Joining it: at the nearest point, going the way that has more of it ahead.
+            if (roll.LegNode < 0 || roll.LegNode >= pts.Count)
+            {
+                var n = BikePath.Nearest(wheels);
+
+                if (n < 0)
+                {
+                    roll.ParkDone = true;
+                    return;
+                }
+
+                roll.Way = BikePath.Loop || n < pts.Count / 2 ? 1 : -1;
+                roll.LegNode = n;
+
+                if (Park.Flat2(wheels, pts[n]) > LegDone)
+                {
+                    GoPath(roll, n);
+                    return;
+                }
+            }
+
+            var way = roll.Way;
+            var k = BikePath.Ahead(roll.LegNode, ref way, wheels, PathLegMost, PathHug, PathLegLeast);
+
+            // Nothing past the point he is riding to keeps to the path from here yet: he rides on
+            // into it on the task he already has, rather than being handed the same one again.
+            if (k == roll.LegNode && roll.LegTo != Vector3.Zero) return;
+
+            roll.Way = way;
+            GoPath(roll, k);
+        }
+
+        /// <summary>Off along one line, to one point of your path.</summary>
+        private void GoPath(Roll roll, int index)
+        {
+            roll.LegNode = index;
+            roll.LegTo = BikePath.Points[index];
+            roll.Braking = false;
+            roll.BrakeSince = 0;
+
+            var speed = LegSpeed(roll, roll.Car.Position);
+            var to = roll.LegTo;
+
+            try
+            {
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, roll.Driver.Handle, roll.Car.Handle,
+                              to.X, to.Y, to.Z, speed, 0, roll.Car.Model.Hash, ParkStyle, 1.5f, true);
+
+                Function.Call(Hash.SET_DRIVE_TASK_CRUISE_SPEED, roll.Driver.Handle, speed);
+                Function.Call(Hash.SET_PED_KEEP_TASK, roll.Driver.Handle, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Rollers: could not send a rider along the path: " + ex.Message);
+            }
+        }
+
+        /// <summary>The point of your path nearest a road: where he rides out. Worked out once a path.</summary>
+        private int PathExit()
+        {
+            if (_pathExitFor == BikePath.Version) return _pathExit;
+
+            _pathExitFor = BikePath.Version;
+            _pathExit = -1;
+
+            var pts = BikePath.Points;
+            var best = float.MaxValue;
+
+            // Every other point is plenty, and it is a native call apiece.
+            for (var i = 0; i < pts.Count; i += 2)
+            {
+                var d = _parkWorld.ToRoad(pts[i]);
+                if (d < 0f || d >= best) continue;
+
+                best = d;
+                _pathExit = i;
+            }
+
+            if (_pathExit < 0 && pts.Count > 0) _pathExit = 0;
+            return _pathExit;
         }
 
         /// <summary>
@@ -2748,7 +3082,7 @@ namespace Hoodrich.Gangs
         /// Then the ground a couple of metres on, for a drop, a step, or the top of something
         /// placed -- a ray reads a ramp's surface as ground, and a bike does not.
         /// </summary>
-        private Sight Ahead(Vehicle bike, float speed, float limit, out Vector3 at)
+        private Sight Ahead(Vehicle bike, float speed, float limit, out Vector3 at, bool peopleOnly = false)
         {
             at = Vector3.Zero;
 
@@ -2783,10 +3117,13 @@ namespace Hoodrich.Gangs
                 var car = who as Vehicle;
                 if (car != null && Moving(car)) return Sight.Person;
 
+                // On a path somebody rode, a thing in front of him is a thing he rode past or over.
+                if (peopleOnly) continue;
+
                 return Sight.Thing;
             }
 
-            if (limit < GroundAhead) return Sight.Clear;
+            if (peopleOnly || limit < GroundAhead) return Sight.Clear;
 
             var probe = pos + fwd * GroundAhead;
             var under = pos.Z - WheelsBelow;
@@ -3065,7 +3402,9 @@ namespace Hoodrich.Gangs
                     var at = roll.Car.Position;
                     Bad(at);
                     Log.Info(string.Format(System.Globalization.CultureInfo.InvariantCulture,
-                        "Rollers: a rider came off in the park at {0:0.0}, {1:0.0}. Nobody is sent past there again this session.",
+                        PathOn
+                            ? "Rollers: a rider came off on your path at {0:0.0}, {1:0.0}. If it keeps happening there, ride that stretch again."
+                            : "Rollers: a rider came off in the park at {0:0.0}, {1:0.0}. Nobody is sent past there again this session.",
                         at.X, at.Y));
                 }
 

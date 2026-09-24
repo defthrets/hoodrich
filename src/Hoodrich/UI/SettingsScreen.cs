@@ -657,6 +657,49 @@ namespace Hoodrich.UI
             Tick("Riders pull wheelies", "Block", "RollerWheelies",
                  () => c.RollerWheelies, v => c.RollerWheelies = v,
                  "On the straights, when they have the room for it");
+
+            // THE RIDERS' PATH. The park survey keeps finding a couple of dozen places to ride
+            // among everything Parkview has put down, so the way round is ridden once by hand
+            // and the riders ride that. Michael asked for it on 2026-09-24. See Gangs.BikePath.
+            Tick("Riders ride your path", "Block", "RollerParkPath",
+                 () => c.RollerParkPath, v => c.RollerParkPath = v,
+                 "Once you have recorded one. Off, they find their own way round the park");
+
+            var record = new Opt
+            {
+                Kind = OptKind.Action,
+                Label = Gangs.BikePath.Recording ? "Stop recording, and keep the path" : "Record the riders' path",
+                Note = "Ride where they should ride -- a BMX is best -- then stop it here. Finish where you started for a loop"
+            };
+
+            // The row says what pressing it does NEXT, so it is renamed as soon as it is pressed.
+            record.Do = () =>
+            {
+                if (Gangs.BikePath.Recording) Notify.Important(Gangs.BikePath.Stop());
+                else Gangs.BikePath.Start();
+
+                record.Label = Gangs.BikePath.Recording ? "Stop recording, and keep the path" : "Record the riders' path";
+            };
+
+            _rows.Add(record);
+
+            Readout("The riders' path", () => Gangs.BikePath.Describe());
+
+            Tick("Show the riders' path", "", "",
+                 () => Gangs.BikePath.Showing, v => Gangs.BikePath.Showing = v,
+                 "Drawn on the ground while this is ticked. Not saved");
+
+            Slide("How fast they ride it", "Block", "RollerParkSpeed",
+                  () => c.RollerParkSpeed, v => c.RollerParkSpeed = v, 2f, 9f, 0.5f, "0.0", " m/s",
+                  note: "5 is a kid on a BMX. They slow for corners and for people on their own");
+
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Danger,
+                Label = "Forget the riders' path",
+                Note = "Deletes it. They go back to finding their own way round the park",
+                Do = () => Notify.Important(Gangs.BikePath.Forget())
+            });
             Tick("The lowriders come out", "Block", "CruiseEnabled",
                  () => c.CruiseEnabled, v => c.CruiseEnabled = v,
                  "Lowriders one night, donks the next: three in a line, slow, after ten");

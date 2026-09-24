@@ -689,6 +689,12 @@ namespace Hoodrich.Core
         public bool RollerParkRide = true;
 
         /// <summary>
+        /// Whether they ride the path you recorded, when there is one, instead of finding their
+        /// own way round the park. See Gangs.BikePath.
+        /// </summary>
+        public bool RollerParkPath = true;
+
+        /// <summary>
         /// The middle of the park and how far it reaches. The default sits between the courts
         /// and the skate ramps placed south-west of them, far enough out to take in all of it.
         /// </summary>
@@ -1031,6 +1037,7 @@ namespace Hoodrich.Core
                                                      s.RollerWheelieLift), 0f, 8f);
 
             s.RollerParkRide = ini.GetBool("Block", "RollerParkRide", s.RollerParkRide);
+            s.RollerParkPath = ini.GetBool("Block", "RollerParkPath", s.RollerParkPath);
             s.RollerParkX = ini.GetFloat("Block", "RollerParkX", s.RollerParkX);
             s.RollerParkY = ini.GetFloat("Block", "RollerParkY", s.RollerParkY);
             s.RollerParkZ = ini.GetFloat("Block", "RollerParkZ", s.RollerParkZ);
