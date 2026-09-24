@@ -682,6 +682,24 @@ namespace Hoodrich.Core
         /// <summary>How hard. See Rollers.Lift for why this is a setting and not a constant.</summary>
         public float RollerWheelieLift = 1.9f;
 
+        /// <summary>
+        /// Whether a crew that stops rides round the park rather than circling one spot. See
+        /// Gangs.Park for how the park is looked at before anybody is sent into it.
+        /// </summary>
+        public bool RollerParkRide = true;
+
+        /// <summary>
+        /// The middle of the park and how far it reaches. The default sits between the courts
+        /// and the skate ramps placed south-west of them, far enough out to take in all of it.
+        /// </summary>
+        public float RollerParkX = -252f;
+        public float RollerParkY = -1578f;
+        public float RollerParkZ = 31f;
+        public float RollerParkRadius = 70f;
+
+        /// <summary>How fast they ride in the park, in metres a second. Five is a kid on a BMX.</summary>
+        public float RollerParkSpeed = 5f;
+
         // ---- joining -----------------------------------------------------------
 
         /// <summary>Grams a gang leader fronts you when he takes you on.</summary>
@@ -1011,6 +1029,13 @@ namespace Hoodrich.Core
             s.RollerWheelies = ini.GetBool("Block", "RollerWheelies", s.RollerWheelies);
             s.RollerWheelieLift = Clamp(ini.GetFloat("Block", "RollerWheelieLift",
                                                      s.RollerWheelieLift), 0f, 8f);
+
+            s.RollerParkRide = ini.GetBool("Block", "RollerParkRide", s.RollerParkRide);
+            s.RollerParkX = ini.GetFloat("Block", "RollerParkX", s.RollerParkX);
+            s.RollerParkY = ini.GetFloat("Block", "RollerParkY", s.RollerParkY);
+            s.RollerParkZ = ini.GetFloat("Block", "RollerParkZ", s.RollerParkZ);
+            s.RollerParkRadius = Clamp(ini.GetFloat("Block", "RollerParkRadius", s.RollerParkRadius), 20f, 120f);
+            s.RollerParkSpeed = Clamp(ini.GetFloat("Block", "RollerParkSpeed", s.RollerParkSpeed), 2f, 9f);
 
             Log.Level = s.LogLevel;
             Log.Info("Settings loaded: phone key=" + s.PhoneKey +
