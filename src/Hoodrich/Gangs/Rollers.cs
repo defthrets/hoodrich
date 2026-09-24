@@ -2396,8 +2396,20 @@ namespace Hoodrich.Gangs
             roll.LegTo = Vector3.Zero;
 
             roll.PathVersion = 0;
-            roll.Way = 1;
             roll.LeaveBy = 0;
+
+            // WHICH WAY ROUND. Some go round your loop backwards -- Michael asked for it mixed up
+            // on 2026-09-24 -- and a crew goes the same way as each other: whichever of them got
+            // on first chose, and the rest follow him round.
+            roll.Way = BikePath.Loop && _rng.Next(100) < ReverseChance ? -1 : 1;
+
+            foreach (var other in _out)
+            {
+                if (other == roll || !other.InPark || !SameCrew(roll, other)) continue;
+
+                roll.Way = other.Way;
+                break;
+            }
 
             roll.WatchAt = now;
             roll.LastSpeed = 0f;
@@ -2678,6 +2690,9 @@ namespace Hoodrich.Gangs
         /// <summary>How near the start of your path a rider has to come to take it, and how long after coming off it before he will again.</summary>
         private const float PathJoinRange = 35f;
         private const int PathAgainMs = 120000;
+
+        /// <summary>Out of a hundred crews, how many go round a loop backwards. Near half: mixed up.</summary>
+        private const int ReverseChance = 45;
         private const float PathOut = 8f;
 
         /// <summary>The point of your path nearest a road, and which path that was worked out for.</summary>
@@ -2874,7 +2889,10 @@ namespace Hoodrich.Gangs
                     return;
                 }
 
-                roll.Way = BikePath.Loop || n < pts.Count / 2 ? 1 : -1;
+                // A loop keeps the way round he was given when he got on (see StartPark); a
+                // there-and-back path is ridden towards whichever end has more of it ahead.
+                if (!BikePath.Loop) roll.Way = n < pts.Count / 2 ? 1 : -1;
+                else if (roll.Way == 0) roll.Way = 1;
                 roll.LegNode = n;
 
                 if (Park.Flat2(wheels, pts[n]) > LegDone)
