@@ -908,13 +908,28 @@ namespace Hoodrich.Core
                     found.Add(p);
                 }
 
+                var worn = new List<string>();
+
                 foreach (var prop in World.GetNearbyProps(centre, radius))
                 {
                     if (prop == null || !prop.Exists()) continue;
                     if (!Function.Call<bool>(Hash.IS_ENTITY_A_MISSION_ENTITY, prop.Handle)) continue;
                     if (Ignore != null && Ignore(prop.Handle)) continue;
 
+                    // NOTHING SOMEBODY IS WEARING, HOLDING OR CARRYING. See Worn.
+                    if (Worn(prop.Handle))
+                    {
+                        worn.Add(Names.Of(prop.Model));
+                        continue;
+                    }
+
                     found.Add(Basics(prop, Kind.Prop));
+                }
+
+                if (worn.Count > 0)
+                {
+                    Log.Info("Left out " + worn.Count + " prop(s) stuck to a person or a car, which " +
+                             "would stand in the air where they are now: " + string.Join(", ", worn) + ".");
                 }
 
                 foreach (var car in World.GetNearbyVehicles(centre, radius))
@@ -931,6 +946,39 @@ namespace Hoodrich.Core
             }
 
             return found;
+        }
+
+        /// <summary>
+        /// Whether a prop is stuck to a person or a car rather than standing on its own.
+        ///
+        /// THE BAG ON HIS BACK IS A REAL PROP. Bare Minimum makes it and marks it as a mission
+        /// entity, the way every script marks what it makes, so the one sieve above let it
+        /// straight through -- and a scene file written here has no way to say "stuck to a
+        /// person", every placement goes down as isAttached false. So it was written as a
+        /// free-standing prop at waist height, tipped eighty degrees, wherever he happened to
+        /// be stood when the key went down. Three of them were merged into Parkview's shipped
+        /// scenes that way and hung in the air by the courts and in the motel room until
+        /// Michael saw them on 2026-09-24. The phone in his hand, a drink, a cigarette and a
+        /// body he is carrying are all the same story.
+        ///
+        /// STUCK TO A CAR is left out for the same reason: written down where it is, it stays
+        /// hanging there when the car drives off. STUCK TO ANOTHER PROP is kept, because a
+        /// sign bolted to a post written where it stands is still on the post.
+        ///
+        /// A question the game cannot answer counts as not worn: better one stray in a file
+        /// that is read before it is loaded than a whole scene quietly missing a piece.
+        /// </summary>
+        private static bool Worn(int handle)
+        {
+            try
+            {
+                return Function.Call<bool>(Hash.IS_ENTITY_ATTACHED_TO_ANY_PED, handle) ||
+                       Function.Call<bool>(Hash.IS_ENTITY_ATTACHED_TO_ANY_VEHICLE, handle);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private static Placed Basics(Entity e, Kind what)
