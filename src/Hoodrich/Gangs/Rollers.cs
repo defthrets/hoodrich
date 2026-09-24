@@ -514,10 +514,6 @@ namespace Hoodrich.Gangs
         {
             var now = Game.GameTime;
 
-            // THE PATH RECORDER, EVERY FRAME, whatever else is switched off: a point every few
-            // metres while you ride it, and the line drawn under you. See BikePath.
-            BikePath.Tick();
-
             // ABOVE THE THROTTLE ON PURPOSE. A wheelie is held by pushing on the bike every
             // frame it lasts; the same push at nine-hundred-millisecond intervals is a pothole.
             // Everything below here is a decision and can wait its turn, but this is physics
@@ -2628,7 +2624,7 @@ namespace Hoodrich.Gangs
 
         /// <summary>How much of your path one line takes at most, how close to it the line keeps, and the shortest line given.</summary>
         private const float PathLegMost = 16f;
-        private const float PathHug = 1.0f;
+        private const float PathHug = 0.75f;
         private const float PathLegLeast = 6f;
 
         /// <summary>Time up: this long to get round to the way out, and how near it counts as out.</summary>

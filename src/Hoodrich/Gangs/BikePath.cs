@@ -24,8 +24,9 @@ namespace Hoodrich.Gangs
     /// bikes were not working and asked on 2026-09-24 for a setting to record the path himself.
     ///
     /// HOW. Settings, The block, "Record the riders' path". Ride it -- a BMX is best, but on
-    /// foot or in a car records just the same -- and stop it on the same row. A point is kept
-    /// every few metres of ground covered. Finish near where you started and it is a loop they
+    /// foot or in a car records just the same -- and stop it on the same row, with the settings
+    /// open or shut: it records whatever is on screen (see Main.OnTick). A point is kept every
+    /// metre of ground covered. Finish near where you started and it is a loop they
     /// ride round; finish anywhere else and they ride it there and back. It is written to
     /// bike-path.txt beside the log, a point a line, so it can be read and put right by hand.
     ///
@@ -35,8 +36,13 @@ namespace Hoodrich.Gangs
     /// </summary>
     internal static class BikePath
     {
-        /// <summary>A point every this many metres of ground covered while recording.</summary>
-        private const float Spacing = 3f;
+        /// <summary>
+        /// A point every metre of ground covered while recording. EVERY METRE, NOT EVERY THREE:
+        /// Michael wants his track copied exactly, and a bend taken at three-metre steps is a
+        /// polygon. The riders do not pay for it -- a straight is still handed over as one long
+        /// line (see Ahead) -- and a lap of the whole park is a few hundred lines of text.
+        /// </summary>
+        private const float Spacing = 1f;
 
         /// <summary>Finish within this of the start and it is a loop.</summary>
         private const float LoopGap = 15f;
@@ -53,7 +59,7 @@ namespace Hoodrich.Gangs
 
         /// <summary>How far round the player the path is drawn, and how much of it at most.</summary>
         private const float DrawReach = 150f;
-        private const int DrawMost = 400;
+        private const int DrawMost = 1200;
 
         /// <summary>The path the riders ride. Empty until one is recorded.</summary>
         public static readonly List<Vector3> Points = new List<Vector3>();

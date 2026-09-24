@@ -3739,6 +3739,14 @@ namespace Hoodrich
 
             if (_parked || _cfg == null || !_cfg.Enabled) return;
 
+            // THE RIDERS' PATH RECORDER, ABOVE EVERY SCREEN. Every screen below returns out of
+            // the tick while it is open, and the recorder was in Rollers.Update, underneath all
+            // of them -- so with the settings up, which is where it is stopped, not one point was
+            // taken. Michael rode a whole loop with them open and got "too short". Here it records
+            // whatever is on screen. See Gangs.BikePath.
+            Core.Pace.At("BikePath.Tick");
+            Gangs.BikePath.Tick();
+
             // FRANKLIN'S MOD. Michael and Trevor get none of it.
             //
             // Everything in here is his: his set, his block, his phone, his fifteen-year-old
