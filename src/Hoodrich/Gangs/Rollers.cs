@@ -137,6 +137,9 @@ namespace Hoodrich.Gangs
 
         /// <summary>His time up and on his way out along the path: by when he is out regardless.</summary>
         public int LeaveBy;
+
+        /// <summary>Just off the path: not taken back onto it by riding past its start before this.</summary>
+        public int PathAgainAt;
     }
 
     /// <summary>
@@ -204,10 +207,12 @@ namespace Hoodrich.Gangs
 
         /// <summary>How many ride out together when they ride out together.</summary>
         private const int PackMin = 2;
-        private const int PackMax = 3;
 
-        /// <summary>Chance a bike going out brings his crew rather than going alone.</summary>
-        private const int PackChancePercent = 45;
+        /// <summary>Up to four since 2026-09-24: Michael wants them round his path in groups sometimes.</summary>
+        private const int PackMax = 4;
+
+        /// <summary>Chance a bike going out brings his crew rather than going alone. Half, since 2026-09-24.</summary>
+        private const int PackChancePercent = 50;
 
         /// <summary>
         /// How far off the lead's own spot the rest of a crew are aimed.
@@ -413,16 +418,17 @@ namespace Hoodrich.Gangs
         /// </summary>
         private static readonly string[] Engines =
         {
-            // The Manchez first and twice, because it is what was asked for and because a
-            // crew that turns up on three different bikes is three men who happen to be
-            // riding, where three on the same one is a crew.
-            "manchez", "manchez",
+            // SANCHEZ DIRT BIKES AND STREET BLAZER QUADS, two each, because Michael asked for
+            // them by name on 2026-09-24 -- round his path, and they had been one bike in seven
+            // and one in fourteen. A crew rides whatever its lead rides (see the matching in
+            // Pick), so two of each here is a whole crew of them twice as often.
+            "sanchez", "sanchez2",
+            "blazer4", "blazer4",
 
-            // The Street Blazer, then the plain one behind it.
-            "blazer4", "blazer",
-
-            // Dirt bikes, which is the same answer at a different price.
-            "sanchez", "sanchez2"
+            // The Manchez stays, which was asked for before: once now rather than twice. The
+            // plain Blazer went -- it was the quad behind the Street Blazer, and he asked for
+            // the Street Blazer.
+            "manchez"
         };
 
         /// <summary>
@@ -438,11 +444,11 @@ namespace Hoodrich.Gangs
         private static readonly string[] Pedals = { "bmx" };
 
         /// <summary>
-        /// How often a rider is on a pedal bike rather than an engine. The share the old
-        /// mixed list gave them by count -- eight bicycles among fourteen -- kept as a
-        /// number now the two are separate lists, so the street looks the same as it did.
+        /// How often a rider is on a pedal bike rather than an engine. Was 57, the share the
+        /// old mixed list gave BMXes by count; down to 40 on 2026-09-24 so the dirt bikes and
+        /// quads he asked for are most of what comes out, and the BMX is still about.
         /// </summary>
-        private const int PedalChance = 57;
+        private const int PedalChance = 40;
 
         private static readonly string[] SpareBikes = { "bmx" };
 
@@ -661,6 +667,9 @@ namespace Hoodrich.Gangs
 
                     LeavePark(roll);
 
+                    // Out past the start of it, very likely: not straight back round.
+                    roll.PathAgainAt = now + PathAgainMs;
+
                     roll.Phase = RollPhase.Rolling;
                     roll.Nudges = 0;
                     Aim(roll, now);
@@ -713,6 +722,18 @@ namespace Hoodrich.Gangs
                     Log.Debug("Rollers: one wandered off the blocks and was handed back.");
                     return true;
                 }
+            }
+
+            // YOUR PATH, FROM WHERE IT STARTS. A rider who comes by the start of the path you
+            // rode takes it -- round from its first point, the way you rode it. Michael asked for
+            // exactly that on 2026-09-24: the bikes use it when they are close to the start.
+            // Not straight after coming off it, and not when he is already on his way there.
+            if (roll.OnFoot && PathOn && now >= roll.PathAgainAt &&
+                !(roll.StopThere && ParkTarget(roll.Target)) &&
+                Park.Flat2(here, BikePath.First) < PathJoinRange)
+            {
+                ToPath(roll, now);
+                return false;
             }
 
             // Headed into the park, he is not there until he is at the door. Sixteen metres out
@@ -1148,7 +1169,7 @@ namespace Hoodrich.Gangs
             // to. In by the way nearest where he is coming from; see Ride for what happens once
             // he is there.
             // Your path, when there is one: on at the point of it nearest where he is.
-            if (PathOn && BikePath.DistanceTo(from) < HangoutRange) return ParkEntry(from);
+            if (PathOn && Park.Flat2(BikePath.First, from) < HangoutRange) return ParkEntry(from);
 
             if (ParkUsable && !PathOn && Park.Flat2(_park.Centre, from) < HangoutRange)
             {
@@ -2110,7 +2131,8 @@ namespace Hoodrich.Gangs
         /// <summary>Where somebody coming from there gets on: the nearest point of your path, or the survey's way in.</summary>
         private Vector3 ParkEntry(Vector3 from)
         {
-            if (PathOn) return BikePath.Points[BikePath.Nearest(from)];
+            // Your path is got on at its start, and ridden round from there. See Steer.
+            if (PathOn) return BikePath.First;
 
             var door = _park.EntryFor(from);
             return door >= 0 ? _park.Spots[door] : Vector3.Zero;
@@ -2200,8 +2222,12 @@ namespace Hoodrich.Gangs
         private const IntersectFlags SeeFlags = IntersectFlags.Map | IntersectFlags.Objects
                                               | IntersectFlags.Vehicles | IntersectFlags.Peds;
 
-        /// <summary>Room round the back wheel a burnout needs, and how near nobody may be stood.</summary>
-        private const float BurnRoom = 3.5f;
+        /// <summary>
+        /// Room round the back wheel a burnout needs, and how near nobody may be stood. 2.5 m
+        /// rather than 3.5: the bike does not go anywhere while it smokes, and at 3.5 almost
+        /// nowhere along a path that runs by a wall or a bench had room, so they never did it.
+        /// </summary>
+        private const float BurnRoom = 2.5f;
         private const float BurnPeople = 5f;
 
         /// <summary>
@@ -2344,6 +2370,25 @@ namespace Hoodrich.Gangs
             roll.Leaving = false;
             roll.ParkDone = false;
             roll.SitUntil = now + _rng.Next(ParkRideMinMs, ParkRideMaxMs);
+
+            // YOUR PATH, ROUND AT LEAST ONCE. A minute or two of the survey's park was plenty,
+            // but a loop you rode is something to go round: all of it, and up to half again,
+            // timed off its own length at a little under his park speed for the corners.
+            if (PathOn)
+            {
+                var lap = (int)(BikePath.Metres * (BikePath.Loop ? 1f : 2f) / Math.Max(2f, ParkSpeed - 1f) * 1000f);
+                roll.SitUntil = now + lap + _rng.Next(lap / 2 + 1);
+            }
+
+            // A CREW GOES ROUND TOGETHER AND LEAVES TOGETHER: one clock between them, the
+            // lead's, whichever of them got there first.
+            var lead = roll.Lead != null && _out.Contains(roll.Lead) ? roll.Lead : null;
+            if (lead != null && lead.InPark) roll.SitUntil = lead.SitUntil;
+
+            foreach (var mate in _out)
+            {
+                if (mate.Lead == roll && mate.InPark) mate.SitUntil = roll.SitUntil;
+            }
 
             roll.Path = null;
             roll.PathAt = 0;
@@ -2629,6 +2674,10 @@ namespace Hoodrich.Gangs
 
         /// <summary>Time up: this long to get round to the way out, and how near it counts as out.</summary>
         private const int PathLeaveMostMs = 60000;
+
+        /// <summary>How near the start of your path a rider has to come to take it, and how long after coming off it before he will again.</summary>
+        private const float PathJoinRange = 35f;
+        private const int PathAgainMs = 120000;
         private const float PathOut = 8f;
 
         /// <summary>The point of your path nearest a road, and which path that was worked out for.</summary>
@@ -2721,12 +2770,19 @@ namespace Hoodrich.Gangs
             // until he is into the corner. See BikePath.Ahead.
             var due = roll.LegTo != Vector3.Zero && Park.Flat2(pos, roll.LegTo) < LegDone;
 
+            // HE STOPS AND LIGHTS UP THE BACK WHEEL. Now and then, where there is room, a man on
+            // an engine pulls up, holds it on the brake and smokes the back tyre for a few
+            // seconds, then rides on -- and his crew beside him do it with him. Michael asked for
+            // it on 2026-09-24. Not on a BMX, which has no engine to do it with.
             if (due && !roll.Leaving && now >= roll.BurnAfter)
             {
-                if (RoomToBurn(roll))
+                if (!Pedal(roll) && RoomToBurn(roll))
                 {
+                    var ms = PathBurnMinMs + _rng.Next(PathBurnMaxMs - PathBurnMinMs);
+
                     roll.LegTo = Vector3.Zero;
-                    Burn(roll, now);
+                    Burn(roll, now, ms);
+                    CrewBurns(roll, now, ms);
                     return;
                 }
 
@@ -2837,6 +2893,97 @@ namespace Hoodrich.Gangs
 
             roll.Way = way;
             GoPath(roll, k);
+        }
+
+        /// <summary>
+        /// Off to the start of your path, to ride it: the same instruction Aim gives a rider going
+        /// to hang out, with the start as the place. Steer starts him on it when he gets there.
+        /// </summary>
+        private void ToPath(Roll roll, int now, bool crew = true)
+        {
+            var where = BikePath.First;
+
+            // NUDGES ARE LEFT AS THEY ARE, on purpose. A man who cannot get to the start is
+            // pointed somewhere else by the stuck check, rides past the start again, and is sent
+            // back to it -- and if this cleared his count he would do that for ever instead of
+            // being handed back.
+            roll.Target = where;
+            roll.StopThere = true;
+            roll.LookedAt = now;
+            roll.WasAt = roll.Car.Position;
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, roll.Driver.Handle);
+
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, roll.Driver.Handle, roll.Car.Handle,
+                              where.X, where.Y, where.Z, CruiseBike, 0, roll.Car.Model.Hash, StyleBike, 4f, true);
+
+                Function.Call(Hash.SET_DRIVE_TASK_CRUISE_SPEED, roll.Driver.Handle, CruiseBike);
+                roll.Cruise = 0f;
+                roll.PaceAt = 0;
+
+                Function.Call(Hash.SET_DRIVER_ABILITY, roll.Driver.Handle, 1.0f);
+                Function.Call(Hash.SET_PED_KEEP_TASK, roll.Driver.Handle, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Rollers: could not send a rider to the path: " + ex.Message);
+            }
+
+            if (!crew) return;
+
+            // HIS CREW COMES WITH HIM, wherever they are behind him: a crew that splits at the
+            // start of the path is two groups of strangers.
+            var with = 0;
+
+            foreach (var other in _out)
+            {
+                if (other == roll || !other.OnFoot || other.InPark || !SameCrew(roll, other)) continue;
+                if (other.Phase != RollPhase.Rolling || (other.StopThere && ParkTarget(other.Target))) continue;
+                if (other.Car == null || !other.Car.Exists()) continue;
+                if (other.Driver == null || !other.Driver.Exists() || !other.Driver.IsAlive) continue;
+
+                ToPath(other, now, false);
+                with++;
+            }
+
+            Log.Info("Rollers: a rider came by the start of your path and took it" +
+                     (with > 0 ? ", and " + with + " of his crew with him." : "."));
+        }
+
+        /// <summary>How long a burnout on the path lasts, and how near his crew have to be to join in.</summary>
+        private const int PathBurnMinMs = 3000;
+        private const int PathBurnMaxMs = 6500;
+        private const float CrewBurnNear = 15f;
+
+        /// <summary>His crew, near him on the path, pull up and do it with him, and all ride on after.</summary>
+        private void CrewBurns(Roll roll, int now, int ms)
+        {
+            foreach (var other in _out)
+            {
+                if (other == roll || !other.InPark || other.Leaving || other.BurnUntil != 0) continue;
+                if (!SameCrew(roll, other) || Pedal(other)) continue;
+                if (other.Car == null || !other.Car.Exists()) continue;
+                if (other.Driver == null || !other.Driver.Exists() || !other.Driver.IsAlive) continue;
+                if (Park.Flat2(other.Car.Position, roll.Car.Position) > CrewBurnNear) continue;
+
+                other.LegTo = Vector3.Zero;
+                Burn(other, now, ms + _rng.Next(-600, 601));
+            }
+        }
+
+        /// <summary>Whether two of them rode out together: one the other's lead, or both the same man's.</summary>
+        private static bool SameCrew(Roll a, Roll b)
+        {
+            return a.Lead == b || b.Lead == a || (a.Lead != null && a.Lead == b.Lead);
+        }
+
+        /// <summary>A pedal bike: no engine, so no burnout.</summary>
+        private static bool Pedal(Roll roll)
+        {
+            try { return roll.Car != null && roll.Car.Exists() && roll.Car.Model.IsBicycle; }
+            catch { return true; }
         }
 
         /// <summary>Off along one line, to one point of your path.</summary>
@@ -3228,9 +3375,9 @@ namespace Hoodrich.Gangs
             }
         }
 
-        private void Burn(Roll roll, int now)
+        private void Burn(Roll roll, int now, int ms = 0)
         {
-            var ms = BurnMinMs + _rng.Next(BurnMaxMs - BurnMinMs);
+            if (ms <= 0) ms = BurnMinMs + _rng.Next(BurnMaxMs - BurnMinMs);
 
             try
             {

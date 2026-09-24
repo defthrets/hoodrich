@@ -78,6 +78,12 @@ namespace Hoodrich.Gangs
         /// <summary>A path to ride. Not while a new one is being ridden -- that one is not finished.</summary>
         public static bool Ready => Points.Count >= MinPoints;
 
+        /// <summary>Where it starts: the first point he rode. Where the riders get on.</summary>
+        public static Vector3 First => Points.Count > 0 ? Points[0] : Vector3.Zero;
+
+        /// <summary>How long it is, closing leg and all.</summary>
+        public static float Metres => _length;
+
         private static float _length;
         private static bool _loaded;
 

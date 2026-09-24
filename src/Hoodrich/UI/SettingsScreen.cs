@@ -663,7 +663,7 @@ namespace Hoodrich.UI
             // and the riders ride that. Michael asked for it on 2026-09-24. See Gangs.BikePath.
             Tick("Riders ride your path", "Block", "RollerParkPath",
                  () => c.RollerParkPath, v => c.RollerParkPath = v,
-                 "Once you have recorded one. Off, they find their own way round the park");
+                 "Once you have recorded one: anybody on a bike who comes by its start takes it. Off, they find their own way");
 
             var record = new Opt
             {
