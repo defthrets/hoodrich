@@ -1697,6 +1697,20 @@ namespace Hoodrich.Locations
 
             Cars();
 
+            // THE PERFORMERS ARE SENT FOR FIRST, NOT LAST. They used to be fetched only once
+            // half the kerbs were taken, and by then the world round Chamberlain Hills is past
+            // its ped line -- Parkview's eighty people are two hundred metres from Carson --
+            // so the crowd got in and the show did not: the button gave a car park. They go
+            // now, while there is room, drive in over the minute the street takes to park, and
+            // wait at the ring until it has. See Keep.
+            _emptySaid = 0;
+            _inSaid = 0;
+
+            while (Queued() < Stages.Length)
+            {
+                if (!In()) break;
+            }
+
             // THE WORD GOES OUT, AND ONLY THE WORD.
             //
             // One post naming the junction, so somebody reading the feed can decide to come --
@@ -1706,7 +1720,7 @@ namespace Hoodrich.Locations
             // something once it has been loud for a while.
             if (Social != null) Social.On(SocialEvent.TakeoverOn);
 
-            Log.Info("Takeover: on. " + _toCome + " on their way.");
+            Log.Info("Takeover: on. " + _toCome + " on their way, " + Queued() + " performer(s) sent for.");
         }
 
         /// <summary>People set off in small lots rather than all at once.</summary>
@@ -4533,11 +4547,11 @@ namespace Hoodrich.Locations
 
                     if (!r.AtStage)
                     {
-                        // THE PIT IS BUSY. Somebody is out wide on a loop, and a car driving in
-                        // to its own spot crosses the ground a loop sweeps. He waits at the edge
-                        // until everybody is back on their spots -- and the clock that gives up
-                        // on arriving waits with him. See Pit.
-                        if (_wide && r.Car.Position.DistanceTo(Circle) < WideHoldOff)
+                        // THE PIT IS BUSY, OR THE STREET IS NOT PARKED YET. Somebody out wide
+                        // on a loop sweeps the ground a car driving in would cross; and nobody
+                        // skids until half the kerbs are taken, see Ringed. Either way he waits
+                        // at the edge -- and the clock that gives up on arriving waits with him.
+                        if ((_wide || !_ringed) && r.Car.Position.DistanceTo(Circle) < WideHoldOff)
                         {
                             Wait(r);
                             r.Sent += TickMs;
@@ -4755,6 +4769,28 @@ namespace Hoodrich.Locations
             // whenever the circle happens to be busy.
             // NOBODY SKIDS UNTIL THE STREET IS PARKED. See Ringed.
             if (!Ringed()) return;
+
+            // AND IF NOBODY IS, THE LOG SAYS SO, with the numbers that name the link: nobody on
+            // the list is In failing (its own line says why), people on the list but nobody at
+            // a spot is them not getting there, and somebody at a spot but nobody spinning is
+            // the arrival chain.
+            if (Spinning() == 0 && now - _emptySaid >= EmptyEveryMs)
+            {
+                _emptySaid = now;
+
+                var listed = 0;
+                var there = 0;
+
+                foreach (var r in _running)
+                {
+                    if (r.Car == null || !r.Car.Exists()) continue;
+                    listed++;
+                    if (r.AtStage) there++;
+                }
+
+                Log.Info("Takeover: nothing in the middle yet -- " + listed + " performer(s) on the list, " +
+                         there + " at a spot, " + (listed - there) + " on the way. " + Core.Crowded.Line() + ".");
+            }
 
             var round = 0;
 
@@ -5424,28 +5460,30 @@ namespace Hoodrich.Locations
             // "intense FPS drop and makes my game crash" and kocabac's ERR_MEM_EMBEDDEDALLOC
             // are both the shape of a world with nothing left in its pools, and a takeover is
             // the one thing here capable of emptying them on its own.
-            if (Core.Crowded.Busy)
+            // THE HARD LINE, NOT THE SOFT ONE. See Crowded.Full: four performers are the whole
+            // point of the thirty cars and sixty people spawned round them.
+            if (Core.Crowded.Full)
             {
-                Core.Crowded.HeldOff("Takeover");
+                Core.Crowded.HeldOff("Takeover performers");
                 return false;
             }
 
             try
             {
                 var from = OnRoad(DriveFromMin + (float)_rng.NextDouble() * (DriveFromMax - DriveFromMin));
-                if (from == Vector3.Zero) return false;
+                if (from == Vector3.Zero) return Refused("no road point to start from");
 
                 // NOT A SHOW CAR. It keeps the paint, the rims, the bodywork and the neon;
                 // it loses the coloured tyre smoke and the coloured headlights. See Dress.
                 var car = Contender(from);
-                if (car == null) return false;
+                if (car == null) return Refused("no car (model not ready, or the pool is full)");
 
                 var driver = Behind(car);
 
                 if (driver == null)
                 {
                     car.Delete();
-                    return false;
+                    return Refused("no driver (model not ready, or the pool is full)");
                 }
 
                 var r = new Runner
@@ -5474,14 +5512,38 @@ namespace Hoodrich.Locations
                 r.Sent = Game.GameTime;
 
                 _running.Add(r);
+
+                Log.Info("Takeover: a performer sent for stage " + stage + " from " +
+                         (int)from.DistanceTo(Circle) + " m out.");
                 return true;
             }
             catch (Exception ex)
             {
-                Log.Debug("Takeover could not send one in: " + ex.Message);
-                return false;
+                return Refused(ex.Message);
             }
         }
+
+        /// <summary>
+        /// A performer could not be sent, and why -- in the log, once every fifteen seconds
+        /// while it keeps happening. AN EMPTY PIT WAS THE ONE FAILURE THIS FILE COULD NOT SEE:
+        /// every way this could fail was a quiet false, so a night where the middle stayed
+        /// empty produced a log identical to one where it did not.
+        /// </summary>
+        private bool Refused(string why)
+        {
+            var now = Game.GameTime;
+
+            if (now - _inSaid >= EmptyEveryMs)
+            {
+                _inSaid = now;
+                Log.Info("Takeover: could not send a performer -- " + why + ". " + Core.Crowded.Line() + ".");
+            }
+
+            return false;
+        }
+
+        private int _inSaid;
+        private int _emptySaid;
 
         /// <summary>Their go is over. Grip back, smoke off, and out the way they came.</summary>
         private void Leave(Runner r)
