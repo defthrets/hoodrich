@@ -4578,20 +4578,31 @@ namespace Hoodrich.Locations
                     }
                     else if (r.Going)
                     {
-                        // ON HIS WAY BACK IN. Nothing else happens to him until he is either
-                        // there or has been trying long enough that here is as good as there.
-                        var there = r.Car.Position.DistanceTo(HomePoint(r)) < BackWhen;
+                        // ON HIS WAY BACK IN. Back on the lock the moment he is near enough the
+                        // middle -- crossing the inner ring still moving, so the skid starts
+                        // pointed in -- or when he has stopped anywhere near his mark, which is
+                        // as near as the crowd is going to let him get. The test before this
+                        // wanted him within three metres of a mark the drive task itself stops
+                        // three short of, so he sat there twelve seconds a time and then did it
+                        // again: "they keep stopping". On Davis one did that four times and left.
+                        var d = r.Car.Position.DistanceTo(Circle);
+                        var near = d < Roam - 4f;
 
-                        if (there || now - r.GoneAt > BackGiveUpMs)
+                        if (!near)
+                        {
+                            try { near = r.Car.Speed < 1f && r.Car.Position.DistanceTo(HomePoint(r)) < BackNear; }
+                            catch { }
+                        }
+
+                        if (near || now - r.GoneAt > BackGiveUpMs)
                         {
                             r.Going = false;
                             r.Still = 0;
 
-                            // A CAR THAT NEVER GETS THERE IS LET GO OF. Four returns in a row
-                            // that ran out of time is a mark he cannot reach -- a wreck on it,
-                            // a crowd that will not part -- and a performer starting his show
-                            // wherever the clock ran out is the stop-start this fixes.
-                            if (there) r.Hauls = 0;
+                            // A CAR THAT NEVER GETS IN IS LET GO OF. Four returns in a row that
+                            // ran out of time still outside the leash is a middle he cannot
+                            // reach -- a wreck on it, a crowd that will not part.
+                            if (near || d <= Roam) r.Hauls = 0;
                             else r.Hauls++;
 
                             if (r.Hauls >= HaulsMost)
@@ -4626,17 +4637,13 @@ namespace Hoodrich.Locations
                         // every standing burnout off at three and a half seconds of the five.
                         if (now >= r.NextAction) Show(r, now);
                     }
-                    else if (r.Car.Position.DistanceTo(Circle) > Roam)
+                    else if (OffCourse(r))
                     {
-                        // TOO FAR OUT. Back to his mark -- see Home. THIS IS THE WHOLE LEASH:
-                        // the physics does the skidding, and when it has carried him too far
-                        // from the middle he drives back and lets it go again.
-                        Home(r, now);
-                    }
-                    else if (Wedged(r, now))
-                    {
-                        // OR HE CANNOT MOVE. Same answer: a route back to his mark is also the
-                        // thing that gets a car off whatever it is caught on.
+                        // OFF COURSE. Back to his mark -- see Home. THIS IS THE WHOLE LEASH: the
+                        // physics does the skidding, and only when it has carried him too far
+                        // from the middle -- still moving, so a car sat spinning its tyres
+                        // anywhere inside the ring is left to it -- does he drive back and let
+                        // it go again. "They need to keep going until they are off course."
                         Home(r, now);
                     }
                     else
@@ -6095,45 +6102,20 @@ namespace Hoodrich.Locations
             }
         }
 
-        /// <summary>
-        /// Whether he has stopped being able to move.
-        ///
-        /// A CAR GOING ROUND IS NEVER STILL. A donut is nothing but movement, so a performer
-        /// reading nearly zero for several seconds is caught on something -- a kerb, a bollard,
-        /// another car, the wall of people. Waiting a few seconds rather than acting on one
-        /// reading is what stops the moment between two temp actions being mistaken for it.
-        /// </summary>
-        private static bool Wedged(Runner r, int now)
-        {
-            try
-            {
-                if (r.Car.Speed > SpinningSpeed) { r.Still = 0; return false; }
-            }
-            catch
-            {
-                return false;
-            }
+        /// <summary>Stopped within this of his mark on the way back counts as back: as near as the crowd lets him. See Keep.</summary>
+        private const float BackNear = 8f;
 
-            if (r.Still == 0) { r.Still = now; return false; }
-
-            if (now - r.Still < WedgedMs) return false;
-
-            r.Still = 0;
-            return true;
-        }
-
-        /// <summary>Near enough to his mark to pick the show back up, and the most it is given. See Roam for why four.</summary>
-        private const float BackWhen = 3f;
-        private const int BackGiveUpMs = 12000;
+        /// <summary>The most a return is given before he starts again where he is.</summary>
+        private const int BackGiveUpMs = 9000;
 
         /// <summary>
-        /// Below this he is not going round, and this long says he is stuck. Half a metre a
-        /// second and five seconds: a tight donut on the physics turns the car about its front
-        /// wheels at not much more than a metre a second, and the old metre-and-a-bit for three
-        /// and a half seconds was calling that stuck and sending him home.
+        /// Past the leash and still doing more than this, metres a second, is a car sliding
+        /// away. Slower is a car spinning its tyres, and it is left to it: there is no stuck
+        /// test any more. A performer wedged on something with the rears going is still the
+        /// show, and the old test -- stopped for a few seconds means send him home -- was
+        /// the other half of "they keep stopping".
         /// </summary>
-        private const float SpinningSpeed = 0.5f;
-        private const int WedgedMs = 5000;
+        private const float LeashSpeed = 2f;
 
         /// <summary>Where a performer belongs: his own mark, or the middle if he has none.</summary>
         private Vector3 HomePoint(Runner r)
@@ -6177,16 +6159,29 @@ namespace Hoodrich.Locations
                 var r = SpinRadius + 5f;
                 var most = Ring - 5f;
 
-                // NEVER INSIDE THE WAY BACK. Whatever the ini says -- Michael runs a 3 -- a
-                // car that has just counted as back at his mark is at most the mark ring plus
-                // BackWhen from the middle, and the leash sits two metres past that or the
-                // stop-start is back. Twelve as it stands, and Davis is capped there anyway.
-                var least = PitchRing + BackWhen + 2f;
-
-                if (r < least) r = least;
+                // Never under ten, whatever the ini says -- Michael runs a 3 -- because a car
+                // is back on the lock four metres inside this, and four metres inside anything
+                // less is on top of the middle.
+                if (r < 10f) r = 10f;
                 if (r > most) r = most;
                 return r;
             }
+        }
+
+        /// <summary>
+        /// Off course: sliding away past the leash, or into the crowd whatever he is doing.
+        /// A car past the leash but doing walking pace is not sliding anywhere; it is spinning
+        /// its tyres where it stopped, and that is the show.
+        /// </summary>
+        private bool OffCourse(Runner r)
+        {
+            var d = r.Car.Position.DistanceTo(Circle);
+
+            if (d > Ring - 3f) return true;
+            if (d <= Roam) return false;
+
+            try { return r.Car.Speed > LeashSpeed; }
+            catch { return true; }
         }
 
         /// <summary>How many returns in a row may run out of time before he is let go of. See Keep.</summary>
@@ -6313,11 +6308,15 @@ namespace Hoodrich.Locations
         /// blocked -- a ped clipped, a car nudged, a gunshot -- so he keeps his foot in. Only
         /// the performers, and only while they perform: taken off again the moment one leaves.
         ///
-        /// HIS CAR IS A CAR. It used to be made collision-proof, strong, undentable and
-        /// unpuncturable here as well, and a car like that does not crash, it goes through --
-        /// Michael watched one go through everything on the junction and asked for crashes.
-        /// So it takes the knocks the way any car does: it dents, it can pop a tyre, it can be
-        /// stopped by something solid, and one that is done is retired. See Broken.
+        /// HIS CAR IS A CAR. It used to be made collision-proof, strong and undentable here as
+        /// well, and a car like that does not crash, it goes through -- Michael watched one go
+        /// through everything on the junction and asked for crashes. So it takes the knocks the
+        /// way any car does: it dents, it can be stopped by something solid, wheels can come
+        /// off in a crash, and one that is done is retired. See Broken.
+        ///
+        /// BUT THE TYRES DO NOT POP FROM SPINNING. This game blows a tyre out after half a
+        /// minute of wheelspin, and a performer down to a rim is retired -- which, with the
+        /// tyres left normal, was the show stopping about once a minute.
         /// </summary>
         private static void Reckless(Runner r, bool on)
         {
@@ -6326,6 +6325,11 @@ namespace Hoodrich.Locations
                 if (r.Driver != null && r.Driver.Exists())
                 {
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, r.Driver.Handle, on);
+                }
+
+                if (r.Car != null && r.Car.Exists())
+                {
+                    Function.Call(Hash.SET_VEHICLE_TYRES_CAN_BURST, r.Car.Handle, !on);
                 }
             }
             catch
