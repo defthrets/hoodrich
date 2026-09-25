@@ -669,19 +669,25 @@ namespace Hoodrich.Core
 
 
         /// <summary>
-        /// How wide the loops the cars drive are, in metres.
+        /// How wide the loops the cars drive are, in metres, at most.
         ///
         /// In the ini because it is a number that can only be judged by standing at the
-        /// junction and watching, and it has been judged by eye more than once. Each car loops
-        /// round its own mark at exactly this, held on it -- they do not slide off it any more.
-        /// Kept off the crowd whatever it is set to. See Takeover.LoopSize.
+        /// junction and watching, and it has been judged by eye more than once. A car opens
+        /// its donut out into a loop round its own spot now and then, and this is the widest
+        /// that loop gets: each car takes what its slice of the junction has room for below
+        /// it -- four and a half metres on Carson at the walked ring, five on Davis -- and
+        /// stays off the crowd and the next car whatever it is set to. See Wedge.
         /// </summary>
         public float TakeoverSpinRadius = 8f;
 
         /// <summary>The fastest a car goes round a loop, metres a second. Tight loops go slower on their own.</summary>
         public float TakeoverLoopSpeed = 10f;
 
-        /// <summary>How fast a donut turns, degrees a second. 150 is a turn every two and a half seconds.</summary>
+        /// <summary>
+        /// How fast a donut turns, degrees a second, give or take: each car takes between three
+        /// quarters of this and a bit over it, and picks again every time it hooks up. 150 is a
+        /// turn every two and a half seconds.
+        /// </summary>
         public float TakeoverDonutSpeed = 150f;
 
         /// <summary>Whether groups of the set walk the back streets on foot.</summary>

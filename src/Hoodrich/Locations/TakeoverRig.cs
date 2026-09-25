@@ -126,21 +126,6 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
-        /// How far a car's place round its loop may differ from the others', in radians.
-        ///
-        /// THE CARS LOOP TOGETHER, and that is what keeps them off each other. Each loops round
-        /// its own mark, and if they all go the same way at the same rate from the same angle,
-        /// every car is the one next to it moved over by the distance between their marks -- so
-        /// the gap between them never changes at all, however big the loops. A little of each
-        /// car's own on top, so it is not a formation; little enough that no two ever close by
-        /// more than a metre and a half.
-        /// </summary>
-        public static float JitterMost(float radius)
-        {
-            return Math.Min(0.4f, 1.5f / Math.Max(1f, radius));
-        }
-
-        /// <summary>
         /// How far round a loop has gone after t seconds, and how fast it is going: up to speed
         /// over the ramp, round, and down again over the ramp, ending exactly on a whole number of
         /// laps. Plain arithmetic, so it is the same whatever the frame rate.
@@ -180,12 +165,17 @@ namespace Hoodrich.Locations
             return end;
         }
 
-        /// <summary>How long a loop of so many laps takes, ramps and all.</summary>
-        public static float LoopTime(int laps, float omega, float ramp)
+        /// <summary>How long a loop of so many turns takes, ramps and all. Turns need not be whole: a spiral counts its parts.</summary>
+        public static float LoopTime(float turns, float omega, float ramp)
         {
-            var cruise = laps * 2f * (float)Math.PI / omega - ramp;
+            var cruise = turns * 2f * (float)Math.PI / omega - ramp;
             if (cruise < 0f) cruise = 0f;
             return cruise + 2f * ramp;
+        }
+
+        public static float LoopTime(int laps, float omega, float ramp)
+        {
+            return LoopTime((float)laps, omega, ramp);
         }
     }
 }
