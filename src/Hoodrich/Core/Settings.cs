@@ -624,10 +624,17 @@ namespace Hoodrich.Core
         /// How wide the loops the cars drive are, in metres.
         ///
         /// In the ini because it is a number that can only be judged by standing at the
-        /// junction and watching, and it has been judged by eye more than once. The cars aim
-        /// at a circle this wide and slide well outside it, which is what it should look like.
+        /// junction and watching, and it has been judged by eye more than once. Each car loops
+        /// round its own mark at exactly this, held on it -- they do not slide off it any more.
+        /// Kept off the crowd whatever it is set to. See Takeover.LoopSize.
         /// </summary>
         public float TakeoverSpinRadius = 8f;
+
+        /// <summary>The fastest a car goes round a loop, metres a second. Tight loops go slower on their own.</summary>
+        public float TakeoverLoopSpeed = 10f;
+
+        /// <summary>How fast a donut turns, degrees a second. 150 is a turn every two and a half seconds.</summary>
+        public float TakeoverDonutSpeed = 150f;
 
         /// <summary>Whether groups of the set walk the back streets on foot.</summary>
         /// <summary>
@@ -1016,6 +1023,8 @@ namespace Hoodrich.Core
             s.TakeoverEveryNights =
                 (int)Clamp(ini.GetInt("Block", "TakeoverEveryNights", s.TakeoverEveryNights), 1f, 14f);
             s.TakeoverSpinRadius = Clamp(ini.GetFloat("Block", "TakeoverSpinRadius", s.TakeoverSpinRadius), 2f, 18f);
+            s.TakeoverLoopSpeed = Clamp(ini.GetFloat("Block", "TakeoverLoopSpeed", s.TakeoverLoopSpeed), 3f, 16f);
+            s.TakeoverDonutSpeed = Clamp(ini.GetFloat("Block", "TakeoverDonutSpeed", s.TakeoverDonutSpeed), 60f, 300f);
             s.TakeoverRadius = Clamp(ini.GetFloat("Block", "TakeoverRadius", s.TakeoverRadius), 0f, 60f);
 
             s.WalkersEnabled = ini.GetBool("Block", "WalkersEnabled", s.WalkersEnabled);

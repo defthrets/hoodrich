@@ -987,6 +987,14 @@ namespace Hoodrich.Locations
 
         }
 
+        /// <summary>What the rig is doing with a performer. See Rigs.</summary>
+        private enum RigMode
+        {
+            None,
+            Donut,
+            Loop
+        }
+
         private sealed class Runner
         {
             public Vehicle Car;
@@ -1045,13 +1053,25 @@ namespace Hoodrich.Locations
             public bool Returning;
 
             /// <summary>
-            /// When he stops holding it on the spot and lets it run, and whether he has.
-            ///
-            /// A DONUT AND THEN A BIG ONE. See Wider -- the same lock and the same throttle,
-            /// with nothing holding him near his mark any more.
+            /// Held on his line by hand, every frame: a donut on his mark, or a loop round it.
+            /// See Rigs. None while he is arriving, braking, smoking or being fetched back.
             /// </summary>
-            public int WideAt;
-            public bool Wide;
+            public RigMode Rig;
+
+            /// <summary>Donut: where his front axle is pinned, and how far that axle is ahead of the car's middle.</summary>
+            public Vector3 Pivot;
+            public float Axle;
+
+            /// <summary>The heading the rig is holding him at, and how fast a donut turns it, degrees a second.</summary>
+            public float Heading;
+            public float DonutRate;
+
+            /// <summary>Loop: his own place round it, a little off everybody else's. See TakeoverRig.JitterMost.</summary>
+            public float Jitter;
+
+            /// <summary>When this donut began, and since when he has been further off his line than the rig allows.</summary>
+            public int RigSince;
+            public int OffAt;
 
             /// <summary>Driving back to the middle mid-show, and when he set off. See Home.</summary>
             public bool Going;
@@ -1345,6 +1365,12 @@ namespace Hoodrich.Locations
 
                 // AND THE TAP GETS TURNED DOWN. See Quieter.
                 Quieter();
+
+                // THE PERFORMERS, HELD ON THEIR LINES. Every frame or not at all: a car set on
+                // a line once every seven hundred milliseconds is a car that slides off it for
+                // six hundred and ninety-nine of them, which is the thing this replaced. See Rigs.
+                try { Rigs(now); }
+                catch (Exception ex) { Log.Debug("Takeover: the rig tripped: " + ex.Message); }
             }
 
             if (now - _lastTick < TickMs) return;
@@ -1428,6 +1454,7 @@ namespace Hoodrich.Locations
                         Sweep(now);
                         Shove(now);
                         Keep(now);
+                        Loops(now);
                         Working(now);
                         Chatter(now);
                         Racket(now);
@@ -1567,6 +1594,12 @@ namespace Hoodrich.Locations
 
             // The regulars turn up to every one of these, so the count starts again with it.
             _headed = 0;
+
+            // No loop carried over from the last one, and the rig proves itself again. See Rigs.
+            _looping = false;
+            _nextLoop = 0;
+            _proven = false;
+            _probe = null;
 
             // THE ROADS STAY ON, AND THAT IS A REVERSAL OF SOMETHING TRIED AND MEASURED.
             //
@@ -4454,6 +4487,17 @@ namespace Hoodrich.Locations
 
                     if (!r.AtStage)
                     {
+                        // THE MARKS ARE BUSY. Everybody is looping round theirs, and a car
+                        // driving in to its own crosses every one of those loops on the way. He
+                        // waits at the edge until they are back on their marks -- and the clock
+                        // that gives up on arriving waits with him.
+                        if (_looping && r.Car.Position.DistanceTo(Circle) < LoopHoldOff)
+                        {
+                            Wait(r);
+                            r.Sent += TickMs;
+                            continue;
+                        }
+
                         if (r.Car.Position.DistanceTo(bay) > StageArrived)
                         {
                             // HE WAITS WHERE HE IS RATHER THAN NOT AT ALL, and this is why the
@@ -4528,9 +4572,17 @@ namespace Hoodrich.Locations
                     {
                         // ON HIS WAY BACK IN. Nothing else happens to him until he is either
                         // there or has been trying long enough that here is as good as there.
-                        if (r.Car.Position.DistanceTo(Circle) < BackWhen ||
+                        if (r.Car.Position.DistanceTo(HomePoint(r)) < BackWhen ||
                             now - r.GoneAt > BackGiveUpMs)
                         {
+                            // Not while the others are looping: they sweep the ground round
+                            // their marks, and he starts again when they are back on them.
+                            if (_looping)
+                            {
+                                Wait(r);
+                                continue;
+                            }
+
                             r.Going = false;
                             r.Still = 0;
 
@@ -4548,23 +4600,28 @@ namespace Hoodrich.Locations
                         // may start; being stopped says whether he does. See Braking.
                         Braking(r, now);
                     }
-                    else if (r.Car.Position.DistanceTo(Circle) > (r.Wide ? WideRoam : Roam))
+                    else if (r.OffAt != 0 && now - r.OffAt > OffCourseMs)
                     {
-                        // TOO FAR OUT. Back to the middle -- see Home.
+                        // KNOCKED OFF HIS LINE and the rig cannot pull him back onto it --
+                        // something hit him, or he is sat on something. Driven back to his mark
+                        // and started again from there. See Home.
+                        Log.Info("Takeover: a performer was knocked off his line. Back to his mark.");
                         Home(r, now);
                     }
-                    else if (Wedged(r, now))
+                    else if (r.Rig != RigMode.None && Wedged(r, now))
                     {
-                        // OR HE CANNOT MOVE. Same answer: a route to the middle is also the
+                        // OR HE CANNOT MOVE. Same answer: a route back to his mark is also the
                         // thing that gets a car off whatever it is caught on.
+                        //
+                        // ONLY WHILE THE RIG HAS HIM. A car stood still smoking is stood still
+                        // on purpose, and asking whether it is wedged cut every standing burnout
+                        // off at three and a half seconds of the five.
                         Home(r, now);
                     }
                     else
                     {
-                        // A MINUTE ON THE SPOT AND THEN HE LETS IT RUN. See Wider.
-                        if (!r.Wide && r.WideAt != 0 && now >= r.WideAt) Wider(r);
-
-                        // A temp action expires; the show is topped up before it does.
+                        // A temp action expires; the show is topped up before it does. The rig
+                        // does the rest, every frame. See Rigs.
                         if (now >= r.NextAction) Show(r, now);
                     }
 
@@ -5386,6 +5443,7 @@ namespace Hoodrich.Locations
             r.Leaving = true;
             r.Circling = false;
             r.Burn = 0;
+            r.Rig = RigMode.None;
 
             try
             {
@@ -5661,14 +5719,11 @@ namespace Hoodrich.Locations
             r.Burn = now + SettleMs;
             r.NextAction = now + SettleMs + BurnMs;
 
-            // AND THE MINUTE STARTS AGAIN, wherever he has come from. Settle is the one door
-            // every arrival goes through -- a fresh car, one hauled back off a wide lap, one
-            // that went home and came back for another turn -- so this is the only place that
-            // has to say it. A runner who kept his old clock would open straight out into the
-            // wide one on arrival and skip the brake and the smoke, which are the two parts
-            // everybody is stood there to watch.
-            r.WideAt = 0;
-            r.Wide = false;
+            // THE RIG LETS GO FOR THE STOP AND THE SMOKE. A car held on a line by hand cannot
+            // brake and cannot stand still smoking; the rig takes him again at the lock. Settle
+            // is the one door every arrival goes through, so this is the one place to say it.
+            r.Rig = RigMode.None;
+            r.OffAt = 0;
             r.Going = false;
             r.Still = 0;
 
@@ -5831,9 +5886,9 @@ namespace Hoodrich.Locations
         /// pivot on. It is where the smoke comes from too -- a wheel spinning on reduced grip
         /// smokes on its own, which is why the burnout native was never needed for the look.
         ///
-        /// IT TRAVELS A LITTLE AND THAT IS THE PRICE. Nothing is holding it, so a donut wanders
-        /// across the tarmac over a minute or two. Roam brings it back to the middle. Being
-        /// and then is a cheaper thing to watch than a car that never turned.
+        /// IT USED TO TRAVEL, AND NOW IT DOES NOT. Nothing held it, so a donut wandered across
+        /// the tarmac and slid off course, and a leash hauled it back. The rig holds it now --
+        /// the car goes where the line goes and this rig is only the smoke. See Rigs.
         ///
         /// One method rather than three copies, because Show, Lock and the return from a
         /// correction all have to agree about this or the car changes character mid-spin.
@@ -5855,9 +5910,8 @@ namespace Hoodrich.Locations
                 //
                 // The rig that turns a car is the one this file had before: the rears loose and
                 // the fronts free. Reduced grip lets the back step out, drift tyres loosen it
-                // further, and the steering lock then has something to pivot about. Nothing
-                // holds it, so it does travel a little -- which is what Roam is for, and
-                // hauling one back every so often is a cheaper price than not going round.
+                // further, and the wheels spinning on it are the smoke. Where the car goes is
+                // the rig's, not the tyres' -- see Rigs.
                 Function.Call(Hash.SET_VEHICLE_BURNOUT, car.Handle, false);
 
                 Slick(car, true);
@@ -5899,16 +5953,22 @@ namespace Hoodrich.Locations
             r.NextAction = now + LockMs - TopUpLead;
             r.Burn = 0;
 
-            // The minute starts at the first lock and not before, so the five seconds of
-            // standing smoke are not counted as part of it. Set once: Show is called again
-            // every twelve seconds to top the lock up, and a clock that restarted each time
-            // would never come round.
-            if (r.WideAt == 0) r.WideAt = now + DonutMs;
+            // THE RIG TAKES HIM, if it has not already. From here to the end of his night he
+            // is on a line by hand -- a donut on his mark, or a loop round it with the others --
+            // and the lock below is only the wheel and the throttle: the smoke, the noise and
+            // the front wheels turned. Where the car goes is the rig's. See Rigs.
+            if (r.Rig == RigMode.None) StartDonut(r, now);
 
             try
             {
                 Still(r.Car);
-                Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, r.Car.Handle, Spin(r.Way), LockMs);
+
+                // IN A LOOP HE HOLDS OPPOSITE LOCK. A car going sideways round a circle is
+                // steering OUT of it -- that is what holding a drift is -- and full lock into
+                // the turn on a car that is already going round reads as a car spinning out.
+                var way = r.Rig == RigMode.Loop ? -_loopWay : r.Way;
+
+                Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, r.Car.Handle, Spin(way), LockMs);
             }
             catch
             {
@@ -5942,14 +6002,22 @@ namespace Hoodrich.Locations
             r.GoneAt = now;
             r.Still = 0;
 
+            // The rig lets go: he is being driven, not held. It takes him again at his mark.
+            r.Rig = RigMode.None;
+            r.OffAt = 0;
+
+            // TO HIS OWN MARK, NOT THE MIDDLE. The middle is where the others' marks are round,
+            // and a car driven into it at twelve metres a second arrives in somebody's donut.
+            var to = HomePoint(r);
+
             try
             {
                 Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
                 Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
 
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle,
-                              r.Car.Handle, Circle.X, Circle.Y, Circle.Z,
-                              12f, 0, r.Car.Model.Hash, RushStyle, 3f, true);
+                              r.Car.Handle, to.X, to.Y, to.Z,
+                              EaseSpeed, 0, r.Car.Model.Hash, RushStyle, 3f, true);
             }
             catch
             {
@@ -5984,17 +6052,7 @@ namespace Hoodrich.Locations
             return true;
         }
 
-        /// <summary>
-        /// How far from the MIDDLE he may get, before and after he lets it run wide.
-        ///
-        /// BOTH MEASURED FROM THE CIRCLE, not from his marker. The ring of people stands at
-        /// about nineteen metres, so fifteen is the most anybody can be given without a car
-        /// arriving in the front row.
-        /// </summary>
-        private const float Roam = 11f;
-        private const float WideRoam = 15f;
-
-        /// <summary>Near enough to the middle to pick the lock back up, and the most it is given.</summary>
+        /// <summary>Near enough to his mark to pick the show back up, and the most it is given.</summary>
         private const float BackWhen = 6f;
         private const int BackGiveUpMs = 12000;
 
@@ -6002,60 +6060,471 @@ namespace Hoodrich.Locations
         private const float SpinningSpeed = 1.2f;
         private const int WedgedMs = 3500;
 
-        /// <summary>
-        /// THE BRAKE COMES OFF AND THE SAME DONUT TURNS INTO A BIG ONE.
-        ///
-        /// A minute is a long time to watch one car turning on one spot, and it is also longer
-        /// than anybody actually holds one: a donut tightens until the tyres give up and then
-        /// it opens out, because the driver stops fighting it and lets the car go where the
-        /// throttle is sending it. That is the whole move here -- SAME LOCK, SAME THROTTLE,
-        /// nothing let off except what was keeping him in one place.
-        ///
-        /// TWO THINGS ARE RELEASED AND THEY ARE BOTH BRAKES OF A KIND.
-        ///
-        /// The handbrake, explicitly, because a temp action may have left one on and a car
-        /// with a rear brake dragging cannot travel out of anything. It is a native that costs
-        /// nothing on a car that has none on.
-        ///
-        /// And the room he is allowed. Roam is eleven metres from the middle; past the minute
-        /// it becomes WideRoam at fifteen, which is most of the way to the crowd. A donut that
-        /// is given room travels: the back keeps stepping out, the front washes wide with it,
-        /// and it draws a proper arc across the tarmac instead of a ring round one spot.
-        ///
-        /// HE IS STILL FETCHED HOME, just from further out. A car that gets genuinely away
-        /// from its driver is brought back to the middle rather than driven into the ring of
-        /// people -- and coming back picks the lock straight up again rather than standing him
-        /// up for another five seconds of smoke. See Home.
-        /// </summary>
-        private void Wider(Runner r)
+        /// <summary>Where a performer belongs: his own mark, or the middle if he has none.</summary>
+        private Vector3 HomePoint(Runner r)
         {
-            r.Wide = true;
+            return r.Stage >= 0 ? Pitch(r.Stage) : Circle;
+        }
 
-            try
+        // ==================================================================
+        // The rig: donuts and loops, held on the line by hand
+        // ==================================================================
+
+        /// <summary>
+        /// Every performer on the rig, every frame.
+        ///
+        /// THEY WERE SLIDING OFF COURSE BECAUSE NOTHING WAS HOLDING THEM ON ONE. A performer was
+        /// given full lock and the throttle on tyres cut to two fifths of their grip, and then
+        /// left to the physics -- which builds speed until the tyres let go, and a car with no
+        /// grip and all its throttle goes wherever that happens to point. The leash hauled it
+        /// back from eleven metres out and it did the same again. Every change to this file for
+        /// a month was a different number for grip, lock or leash, and the car was still the
+        /// one deciding where it went.
+        ///
+        /// NOW THE RIG DECIDES. Each frame it says where the car should be and which way it
+        /// should be pointing, and sets the car's heading and velocity to get it there: the
+        /// velocity the path itself has, plus a pull back onto it for whatever the physics did
+        /// since the last frame. The wheel and the throttle are still the driver's -- the lock
+        /// is still held, so the rears spin and smoke and the fronts are turned -- but the car
+        /// goes where the line goes.
+        ///
+        /// TWO LINES, and a performer is always on one of them:
+        ///
+        ///   A DONUT on his own mark. The front axle is pinned and the back goes round it at a
+        ///   hundred and fifty degrees a second, which is what one is. Wherever he came to rest,
+        ///   the pivot creeps onto the mark itself at a metre a second, so every donut ends up
+        ///   exactly where the marks put it and nowhere near the next car.
+        ///
+        ///   A LOOP round his own mark, TakeoverSpinRadius wide, going sideways with the nose
+        ///   turned into the circle. EVERYBODY LOOPS TOGETHER -- the same way, at the same rate,
+        ///   from nearly the same angle -- and that is what makes it safe: each car is the one
+        ///   next to it moved over by the gap between their marks, so the gap between them never
+        ///   closes however tight or wide the loops. So many laps, ending where they began, and
+        ///   straight back into a donut. See Loops.
+        ///
+        /// Checked offline over both junctions' real marks, at every loop size the settings
+        /// allow: no two cars ever come within two metres of each other, and nobody comes
+        /// within three of the crowd.
+        /// </summary>
+        private void Rigs(int now)
+        {
+            if (_running.Count == 0) return;
+
+            float dt;
+
+            try { dt = Game.LastFrameTime; }
+            catch { return; }
+
+            // Paused, or a frame long enough to be a hitch rather than time passing.
+            if (dt <= 0f) return;
+            if (dt > 0.1f) dt = 0.1f;
+
+            if (_looping)
             {
-                Function.Call(Hash.SET_VEHICLE_HANDBRAKE, r.Car.Handle, false);
-            }
-            catch
-            {
-                // He had none on, which is the usual answer.
+                _loopT += dt;
+                if (_loopT >= _loopTotal) EndLoop(now);
             }
 
-            Log.Info("Takeover: one of them has let it run wide.");
+            foreach (var r in _running)
+            {
+                if (r.Rig == RigMode.None) continue;
+                if (r.Car == null || !r.Car.Exists()) continue;
+
+                try
+                {
+                    // Nobody in it, or it is on its roof: nothing to hold. Keep sees it stopped
+                    // and sends it home, which is the right answer to either.
+                    if (r.Driver == null || !r.Driver.Exists() || !r.Driver.IsAlive ||
+                        Function.Call<bool>(Hash.IS_ENTITY_UPSIDEDOWN, r.Car.Handle))
+                    {
+                        r.Rig = RigMode.None;
+                        continue;
+                    }
+
+                    if (r.Rig == RigMode.Donut) Donut(r, dt);
+                    else Loop(r, dt);
+
+                    Steer(r, now);
+                }
+                catch (Exception ex)
+                {
+                    r.Rig = RigMode.None;
+                    Log.Debug("Takeover: the rig let go of one: " + ex.Message);
+                }
+            }
+
+            Proof(now);
+        }
+
+        /// <summary>A donut, one frame: the pivot onto the mark, and the car round the pivot.</summary>
+        private void Donut(Runner r, float dt)
+        {
+            if (r.Stage >= 0)
+            {
+                var mark = Pitch(r.Stage);
+                var to = new Vector3(mark.X - r.Pivot.X, mark.Y - r.Pivot.Y, 0f);
+                var d = to.Length();
+
+                if (d > 0.01f) r.Pivot += to * Math.Min(1f, PivotCreep * dt / d);
+            }
+
+            r.Heading = TakeoverRig.Wrap(r.Heading + r.DonutRate * dt);
+
+            _rigTo = TakeoverRig.DonutMiddle(r.Pivot, r.Heading, r.Axle);
+            _rigFeed = TakeoverRig.DonutVelocity(r.Heading, r.Axle, r.DonutRate);
+        }
+
+        /// <summary>A loop, one frame: his place round his mark at this moment of the loop.</summary>
+        private void Loop(Runner r, float dt)
+        {
+            float rate;
+            var gone = TakeoverRig.LoopAngle(_loopT, _loopOmega, LoopRamp, _loopTotal, out rate);
+
+            var th = _loopTheta0 + r.Jitter + _loopWay * gone;
+            var tangent = TakeoverRig.LoopTangent(th, _loopWay);
+
+            _rigTo = TakeoverRig.LoopPoint(HomePoint(r), _loopRadius, th);
+            _rigFeed = tangent * (rate * _loopRadius);
+
+            // THE NOSE COMES IN AS HE GETS UP TO SPEED and straightens as he slows at the end:
+            // a car doing walking pace is not sideways. Turned toward it rather than snapped,
+            // so coming out of a donut pointing anywhere is a swing and not a jump.
+            var drift = _loopOmega > 0f ? _loopDrift * Math.Min(1f, rate / _loopOmega) : 0f;
+            var heading = TakeoverRig.Wrap(TakeoverRig.HeadingOf(tangent) + _loopWay * drift);
+
+            r.Heading = TakeoverRig.Approach(r.Heading, heading, LoopTurnMost * dt);
+        }
+
+        /// <summary>Where the car should be this frame, and how fast that place is moving. Set by Donut and Loop.</summary>
+        private Vector3 _rigTo;
+        private Vector3 _rigFeed;
+
+        /// <summary>
+        /// The car onto the line: its heading, and a velocity that is the line's own plus a pull
+        /// back onto it. The fall is left to the physics so it stays on the road.
+        /// </summary>
+        private void Steer(Runner r, int now)
+        {
+            var car = r.Car;
+            var at = car.Position;
+
+            var err = new Vector3(_rigTo.X - at.X, _rigTo.Y - at.Y, 0f);
+            var off = err.Length();
+
+            // Further off than the rig should ever let him get: something has hit him or he is
+            // caught on something. Noted here, and Keep sends him to his mark if it lasts.
+            if (off > OffCourse)
+            {
+                if (r.OffAt == 0) r.OffAt = now;
+            }
+            else if (off < BackOnCourse)
+            {
+                r.OffAt = 0;
+            }
+
+            var fix = err * RigGain;
+            var fixLen = fix.Length();
+            if (fixLen > RigGainMost) fix = fix * (RigGainMost / fixLen);
+
+            var v = _rigFeed + fix;
+            var len = v.Length();
+            if (len > RigFastest) v = v * (RigFastest / len);
+
+            var fall = car.Velocity.Z;
+
+            Function.Call(Hash.SET_ENTITY_HEADING, car.Handle, r.Heading);
+            Function.Call(Hash.SET_ENTITY_VELOCITY, car.Handle, v.X, v.Y, fall);
+
+            // No spin of its own on top. The heading above IS the spin, and anything the physics
+            // adds -- a knock, a tyre biting -- would be a second rotation fighting it.
+            Function.Call(Hash.SET_ENTITY_ANGULAR_VELOCITY, car.Handle, 0f, 0f, 0f);
+        }
+
+        /// <summary>The rig takes a performer who has just stopped smoking, or come back to his mark.</summary>
+        private void StartDonut(Runner r, int now)
+        {
+            var car = r.Car;
+            if (car == null || !car.Exists()) return;
+
+            r.Axle = AxleOf(car);
+            r.Heading = TakeoverRig.Wrap(car.Heading);
+
+            // Pinned where his front wheels ARE, so the first frame is a car starting to turn and
+            // not a car jumping to a new spot. The pivot then creeps onto the mark. See Donut.
+            var f = TakeoverRig.Fwd(r.Heading);
+            var at = car.Position;
+            r.Pivot = new Vector3(at.X + f.X * r.Axle, at.Y + f.Y * r.Axle, at.Z);
+
+            // Not all at exactly the same rate, or four donuts are one donut four times.
+            r.DonutRate = r.Way * DonutSpeed * (0.9f + 0.2f * (float)_rng.NextDouble());
+
+            r.RigSince = now;
+            r.OffAt = 0;
+            r.Still = 0;
+            r.Rig = RigMode.Donut;
         }
 
         /// <summary>
-        /// How long he holds it on the spot before letting it out, and how far he may then go.
-        ///
-        /// A MINUTE, WHICH IS ALREADY A LONG TIME TO WATCH ONE CAR. Long enough that the tight
-        /// donut is the thing you remember and the wide one is what it turns into, rather than
-        /// the other way round.
-        ///
-        /// A MINUTE, WHICH IS ALREADY A LONG TIME TO WATCH ONE CAR. Long enough that the tight
-        /// donut is the thing you remember and the wide one is what it turns into, rather than
-        /// the other way round. How far he may then get is Roam and WideRoam, both measured
-        /// from the middle -- see there.
+        /// How far his front axle is ahead of the middle of the car: the front of the model, less
+        /// the bit of bodywork in front of the wheels. A metre and a bit on most things.
         /// </summary>
-        private const int DonutMs = 60000;
+        private static float AxleOf(Vehicle car)
+        {
+            try
+            {
+                var min = new OutputArgument();
+                var max = new OutputArgument();
+                Function.Call(Hash.GET_MODEL_DIMENSIONS, car.Model.Hash, min, max);
+
+                var front = max.GetResult<Vector3>().Y - 0.95f;
+                if (front < 0.9f) front = 0.9f;
+                if (front > 2f) front = 2f;
+                return front;
+            }
+            catch
+            {
+                return 1.3f;
+            }
+        }
+
+        /// <summary>
+        /// Everybody into a loop, when it is time and when nobody is in the way of one.
+        ///
+        /// EVERYBODY OR NOBODY. A loop sweeps the ground round every mark at once, so a car
+        /// still driving in, braking, smoking or being fetched back is somewhere a loop would go
+        /// straight through. It waits until every car there is on its mark and has been doing
+        /// its donut for a while. On the tick.
+        /// </summary>
+        private void Loops(int now)
+        {
+            if (_looping) return;
+
+            if (_nextLoop == 0)
+            {
+                _nextLoop = now + _rng.Next(LoopFirstMinMs, LoopFirstMaxMs);
+                return;
+            }
+
+            if (now < _nextLoop) return;
+
+            var cast = new List<Runner>();
+
+            foreach (var r in _running)
+            {
+                if (r.Leaving) continue;
+                if (r.Car == null || !r.Car.Exists()) continue;
+
+                if (!r.AtStage || r.Going || r.Burn != 0) return;
+                if (r.Rig != RigMode.Donut) return;
+                if (now - r.RigSince < DonutLeastMs) return;
+
+                cast.Add(r);
+            }
+
+            if (cast.Count == 0) return;
+
+            _loopRadius = LoopSize;
+
+            var speed = TakeoverRig.LoopSpeed(_loopRadius, LoopTop);
+
+            _loopOmega = speed / _loopRadius;
+            _loopDrift = TakeoverRig.Drift(_loopRadius);
+            _loopLaps = _rng.Next(LapsMin, LapsMax + 1);
+            _loopTotal = TakeoverRig.LoopTime(_loopLaps, _loopOmega, LoopRamp);
+            _loopT = 0f;
+            _loopWay = _rng.Next(2) == 0 ? 1 : -1;
+            _loopTheta0 = (float)(_rng.NextDouble() * Math.PI * 2.0);
+            _looping = true;
+
+            var jitter = TakeoverRig.JitterMost(_loopRadius);
+
+            foreach (var r in cast)
+            {
+                r.Jitter = ((float)_rng.NextDouble() * 2f - 1f) * jitter;
+                r.Rig = RigMode.Loop;
+                r.OffAt = 0;
+                r.Still = 0;
+
+                // Opposite lock now, not at the next top-up. See Show.
+                Show(r, now);
+            }
+
+            Log.Info(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "Takeover: {0} into loops -- {1:0.0} m round their marks at {2:0.0} m/s, {3} laps, nose in {4:0} degrees.",
+                cast.Count == 1 ? "one car" : cast.Count + " cars", _loopRadius, speed, _loopLaps, _loopDrift));
+        }
+
+        /// <summary>The laps are done: back into a donut where each of them finished, the same way round.</summary>
+        private void EndLoop(int now)
+        {
+            _looping = false;
+            _nextLoop = now + _rng.Next(LoopGapMinMs, LoopGapMaxMs);
+
+            foreach (var r in _running)
+            {
+                if (r.Rig != RigMode.Loop) continue;
+
+                r.Way = _loopWay;
+                StartDonut(r, now);
+
+                // Into the donut's own lock on the next tick. See Show.
+                r.NextAction = 0;
+            }
+        }
+
+        /// <summary>A car on its way in, waiting at the edge while the others loop. See Keep.</summary>
+        private static void Wait(Runner r)
+        {
+            try
+            {
+                Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, r.Car.Handle, 1, 1500);
+            }
+            catch
+            {
+                // He rolls a bit further. The loops are metres off yet.
+            }
+        }
+
+        /// <summary>
+        /// One line in the log, once a takeover, that says the rig is actually doing it: the
+        /// first donut watched for two seconds, what it was asked to turn and what it turned, and
+        /// how near his mark his front wheels stayed. If the game ever stops honouring the
+        /// heading or the velocity, this is where it shows.
+        /// </summary>
+        private void Proof(int now)
+        {
+            if (_proven) return;
+
+            if (_probe == null)
+            {
+                foreach (var r in _running)
+                {
+                    if (r.Rig != RigMode.Donut || now - r.RigSince < 2000) continue;
+
+                    _probe = r;
+                    _probeAt = now;
+                    _probeTurned = 0f;
+                    _probeLast = r.Car.Heading;
+                    _probeWorst = 0f;
+                    return;
+                }
+
+                return;
+            }
+
+            var p = _probe;
+
+            if (p.Rig != RigMode.Donut || p.Car == null || !p.Car.Exists())
+            {
+                _probe = null;
+                return;
+            }
+
+            var h = p.Car.Heading;
+            _probeTurned += TakeoverRig.Diff(_probeLast, h);
+            _probeLast = h;
+
+            var f = TakeoverRig.Fwd(h);
+            var axle = p.Car.Position + f * p.Axle;
+            var off = new Vector3(axle.X - p.Pivot.X, axle.Y - p.Pivot.Y, 0f).Length();
+            if (off > _probeWorst) _probeWorst = off;
+
+            if (now - _probeAt < 2000) return;
+
+            _proven = true;
+            _probe = null;
+
+            Log.Info(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "Takeover: the rig has them -- a donut asked for {0:0} deg/s turned {1:0} deg/s, front wheels within {2:0.00} m of the pivot.",
+                p.DonutRate, _probeTurned * 1000f / (now - _probeAt), _probeWorst));
+        }
+
+        private bool _proven;
+        private Runner _probe;
+        private int _probeAt;
+        private float _probeTurned;
+        private float _probeLast;
+        private float _probeWorst;
+
+        /// <summary>A loop is running, and where it is.</summary>
+        private bool _looping;
+        private float _loopT;
+        private float _loopTotal;
+        private float _loopOmega;
+        private float _loopRadius;
+        private float _loopDrift;
+        private float _loopTheta0;
+        private int _loopWay = 1;
+        private int _loopLaps;
+
+        /// <summary>When the next one may start.</summary>
+        private int _nextLoop;
+
+        /// <summary>
+        /// How big the loops are: the ini's TakeoverSpinRadius, kept off the crowd. A car on a
+        /// loop round a mark seven metres out reaches the mark, plus the loop, plus half a car,
+        /// and the front row stands at the ring.
+        /// </summary>
+        private float LoopSize
+        {
+            get
+            {
+                var most = Ring - PitchRing - 4.5f;
+                var r = SpinRadius;
+
+                if (r > most) r = most;
+                if (r < 2.5f) r = 2.5f;
+                return r;
+            }
+        }
+
+        /// <summary>The ini's top speed for a loop, and a donut's turn, degrees a second.</summary>
+        private float LoopTop => _cfg == null ? 10f : _cfg.TakeoverLoopSpeed;
+        private float DonutSpeed => _cfg == null ? 150f : _cfg.TakeoverDonutSpeed;
+
+        /// <summary>Near enough the middle that a car on its way in waits for a loop to finish.</summary>
+        private float LoopHoldOff => PitchRing + LoopSize + 9f;
+
+        /// <summary>Up to speed and down again over this, in seconds, so nobody jumps.</summary>
+        private const float LoopRamp = 1.5f;
+
+        /// <summary>The first loop of the night, and the gap between the rest.</summary>
+        private const int LoopFirstMinMs = 20000;
+        private const int LoopFirstMaxMs = 35000;
+        private const int LoopGapMinMs = 25000;
+        private const int LoopGapMaxMs = 50000;
+
+        /// <summary>How long everybody has to have been on their donut before a loop.</summary>
+        private const int DonutLeastMs = 12000;
+
+        /// <summary>Laps a loop runs, one to the next.</summary>
+        private const int LapsMin = 3;
+        private const int LapsMax = 5;
+
+        /// <summary>How fast a donut's pivot creeps onto its mark, metres a second.</summary>
+        private const float PivotCreep = 1f;
+
+        /// <summary>
+        /// How hard the rig pulls a car back onto its line: a third of the error closed in a
+        /// tenth of a second, and never more than five metres a second of pull -- enough to hold
+        /// a car on a line, not enough to fling one across the junction if it has been knocked.
+        /// </summary>
+        private const float RigGain = 3f;
+        private const float RigGainMost = 5f;
+
+        /// <summary>The fastest the rig will ever move a car.</summary>
+        private const float RigFastest = 16f;
+
+        /// <summary>How fast the nose may swing onto its loop heading, degrees a second.</summary>
+        private const float LoopTurnMost = 360f;
+
+        /// <summary>
+        /// Off his line: past this far for this long and he is fetched to his mark. The rig
+        /// holds a car within a few centimetres, so four metres is not drift -- it is a knock.
+        /// </summary>
+        private const float OffCourse = 4f;
+        private const float BackOnCourse = 2.5f;
+        private const int OffCourseMs = 1500;
 
         /// <summary>
         /// A performer, performing, does not stop for anybody. The driver's reactions are
