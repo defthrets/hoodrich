@@ -776,6 +776,9 @@ namespace Hoodrich
         private readonly Fixture _armourerStockB;
         private readonly List<InteriorDoor> _doors = new List<InteriorDoor>();
 
+        /// <summary>When NPC Mind's table of our people was last swept. See OnTick.</summary>
+        private int _folkTidiedAt;
+
         /// <summary>Franklin's and Denise's front doors, held open. See HouseDoors.</summary>
         private readonly HouseDoors _houseDoors = new HouseDoors();
         private readonly BlockLife _block;
@@ -3739,6 +3742,16 @@ namespace Hoodrich
 
             if (_parked || _cfg == null || !_cfg.Enabled) return;
 
+            // OUR PEOPLE'S TABLE, TIDIED. Folk lists every ped we vouch for to NPC Mind by
+            // handle, and a handle outlives the ped it was given for. Every couple of seconds
+            // the ones that no longer exist come off. Parkview's script does the same for its
+            // own; the table is one table, so either keeps it tidy for both. See Folk.Prune.
+            if (Game.GameTime - _folkTidiedAt > 2000)
+            {
+                _folkTidiedAt = Game.GameTime;
+                Core.Folk.Prune();
+            }
+
             // THE RIDERS' PATH RECORDER, ABOVE EVERY SCREEN. Every screen below returns out of
             // the tick while it is open, and the recorder was in Rollers.Update, underneath all
             // of them -- so with the settings up, which is where it is stopped, not one point was
@@ -5851,6 +5864,10 @@ namespace Hoodrich
             // is the same answer they get before this mod has started.
             try { Api.Drugs.Unwire(); } catch { /* teardown */ }
             try { Api.Block.Unwire(); } catch { /* teardown */ }
+
+            // And nobody of ours is left on NPC Mind's table vouched for by a script that is
+            // gone. See Folk.Prune.
+            try { Core.Folk.Prune(true); } catch { /* teardown */ }
 
             TryRestore();
 

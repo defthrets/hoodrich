@@ -322,5 +322,46 @@ namespace Hoodrich.Core
 
         /// <summary>The translations, one json per language. Ships with the mod; nothing writes it. See Lang.</summary>
         public static string Lang => Path.Combine(Data, "lang");
+
+        /// <summary>
+        /// Parkview's shipped files: the scene, the doors, the places, the voices. Under the
+        /// data folder like everything else that ships, since 2026-09-25 when Parkview stopped
+        /// being a dll of its own with a folder of its own. See Parkview.Main.
+        /// </summary>
+        public static string Parkview
+        {
+            get
+            {
+                var d = Path.Combine(Data, "parkview");
+                EnsureDir(d);
+                return d;
+            }
+        }
+
+        /// <summary>
+        /// Parkview's scenes: the shipped one, and everything captured or hidden in game beside
+        /// it. Captures are written here rather than under Writable, as they always were: a
+        /// capture is a scene file and belongs with the scene files.
+        /// </summary>
+        public static string ParkviewScenery
+        {
+            get
+            {
+                var d = Path.Combine(Parkview, "scenery");
+                EnsureDir(d);
+                return d;
+            }
+        }
+
+        /// <summary>Where Parkview keeps what it saves: the rented rooms.</summary>
+        public static string ParkviewWritable
+        {
+            get
+            {
+                var d = Path.Combine(Writable, "parkview");
+                EnsureDir(d);
+                return d;
+            }
+        }
 }
 }

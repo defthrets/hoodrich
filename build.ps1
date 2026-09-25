@@ -134,22 +134,6 @@ foreach ($n in $refNames) {
 }
 $refs += "/reference:`"$shvdn`""
 
-# --- Parkview -----------------------------------------------------------------
-# PARKVIEW SHIPS INSIDE THIS DLL (2026-09-25), and it is written in its own repo next door --
-# C:\projects\parkview -- where it is changed day to day. So the copy in src\Hoodrich\Parkview
-# is brought up to date before anything is compiled. A build that skipped this would put an
-# older Parkview into the game than the one in its repo, and nothing would say so.
-# See tools\sync-parkview.py; without the repo next door it builds the copy already here.
-$sync = Join-Path $root 'tools\sync-parkview.py'
-$python = Get-Command python -ErrorAction SilentlyContinue
-
-if ((Test-Path $sync) -and $python) {
-    & $python.Source $sync
-    if ($LASTEXITCODE -ne 0) { throw "Parkview did not copy across cleanly (see above); nothing was built." }
-} elseif (Test-Path $sync) {
-    Write-Host "WARN  no python on PATH -- building the Parkview copy already in src\Hoodrich\Parkview" -ForegroundColor Yellow
-}
-
 # --- sources ----------------------------------------------------------------
 $sources = Get-ChildItem $srcDir -Recurse -Filter *.cs |
     Where-Object { $_.FullName -notmatch '\\(obj|bin)\\' } |
@@ -253,48 +237,13 @@ function Read-IniPairs {
     return $pairs
 }
 
-# PARKVIEW'S FILES, which it keeps where it always kept them: scripts\Parkview.ini and
-# scripts\Parkview\. The dll is this one now. See tools\sync-parkview.py.
-function Deploy-Parkview([string]$scripts) {
-    $pvSrc = Join-Path $root 'parkview'
-    if (-not (Test-Path $pvSrc)) { return }
-
-    # THE SCENES, THE LISTS AND THE VOICES ARE CONTENT, and always written when they differ --
-    # the rule Parkview's own build had, kept. A stale scene from three builds ago is a bug that
-    # looks like the mod. Nothing it does not ship is touched: the captures, hidden.xml, the
-    # room and place saves and the log in that folder are the player's.
-    $dataSrc = Join-Path $pvSrc 'data'
-    $dataDst = Join-Path $scripts 'Parkview'
-    $n = 0
-
-    if (Test-Path $dataSrc) {
-        foreach ($f in Get-ChildItem $dataSrc -Recurse -File) {
-            $rel = $f.FullName.Substring($dataSrc.Length).TrimStart('\')
-            $to = Join-Path $dataDst $rel
-            New-Item -ItemType Directory -Force (Split-Path $to) | Out-Null
-
-            if ((Test-Path $to) -and (Get-FileHash $to).Hash -eq (Get-FileHash $f.FullName).Hash) { continue }
-
-            Copy-Item $f.FullName $to -Force
-            Write-Host "  parkview  $rel" -ForegroundColor Green
-            $n++
-        }
-    }
-
-    if ($n -eq 0) { Write-Host "  parkview  data up to date" -ForegroundColor DarkGray }
-
-    # The ini is the player's, as Hoodrich.ini is: written only when there is none.
-    $iniSrc = Join-Path $pvSrc 'Parkview.ini'
-    $iniDst = Join-Path $scripts 'Parkview.ini'
-
-    if ((Test-Path $iniSrc) -and -not (Test-Path $iniDst)) {
-        Copy-Item $iniSrc $iniDst
-        Write-Host "  new    Parkview.ini" -ForegroundColor DarkGray
-    }
-
-    # AND THE STANDALONE DLL IS SET ASIDE, or every scene is built twice. Renamed rather than
-    # deleted, so it is one rename to have back; ".off" is not a name ScriptHookVDotNet loads.
-    # Parkview also stands down on its own if a second copy starts -- this is the tidy half.
+# PARKVIEW IS PART OF THIS DLL (2026-09-25): its files ship in data\parkview with everything
+# else, and its settings are in Hoodrich.ini. The standalone Parkview.dll is set aside if one is
+# still here, or every scene is built twice. Renamed rather than deleted, so it is one rename to
+# have back; ".off" is not a name ScriptHookVDotNet loads. Parkview also stands down on its own
+# if a second copy starts -- this is the tidy half. The old scripts\Parkview\ folder is left as
+# it is: the mod copies the player's captures and room save out of it on its first start.
+function Retire-Parkview([string]$scripts) {
     foreach ($name in @('Parkview.dll', 'Parkview.pdb')) {
         $old = Join-Path $scripts $name
         if (-not (Test-Path $old)) { continue }
@@ -468,7 +417,7 @@ function Deploy-To([string]$gameDir, [string]$label) {
         }
     }
 
-    Deploy-Parkview $scripts
+    Retire-Parkview $scripts
 }
 
 if ($Deploy) {
@@ -557,16 +506,6 @@ if ($Package) {
 
     if ($masters.Count -gt 0) { $masters | Remove-Item -Force -ErrorAction SilentlyContinue }
 
-    # PARKVIEW, which is inside the dll and keeps its own files where it always did:
-    # scripts\Parkview.ini and scripts\Parkview\. From the synced copy in parkview\, never
-    # from the game folder, which holds this machine's captures and saves.
-    $pvSrc = Join-Path $root 'parkview'
-    if (Test-Path $pvSrc) {
-        $pvOut = Join-Path $scripts 'Parkview'
-        New-Item -ItemType Directory -Force -Path $pvOut | Out-Null
-        Copy-Item (Join-Path $pvSrc 'data\*') $pvOut -Recurse -Force
-        Copy-Item (Join-Path $pvSrc 'Parkview.ini') (Join-Path $scripts 'Parkview.ini')
-    }
 
     # WHICH BUILD THIS DATA CAME WITH. Somebody dropping in a new dll and keeping the old
     # data folder -- because their save lives in it -- is the most common half-broken
@@ -650,10 +589,10 @@ if ($Package) {
     $icons = @(Get-ChildItem (Join-Path $dataDir 'icons') -Filter '*.png' -ErrorAction SilentlyContinue).Count
     if ($icons -lt 50) { $problems += "only $icons icons (expected 50+)" }
 
-    # Parkview: the scene, its ini and the voices. Without the scene it loads and builds nothing.
-    foreach ($needed in @('scripts\Parkview.ini', 'scripts\Parkview\scenery\parkview-apartments.xml',
-                          'scripts\Parkview\voices.txt', 'scripts\Parkview\rooms.txt')) {
-        if (-not (Test-Path (Join-Path $stage $needed))) { $problems += "no $needed" }
+    # Parkview: the scene, the doors and the voices. Without the scene it loads and builds nothing.
+    foreach ($needed in @('parkview\scenery\parkview-apartments.xml', 'parkview\voices.txt',
+                          'parkview\rooms.txt', 'parkview\places.txt', 'parkview\spots.txt')) {
+        if (-not (Test-Path (Join-Path $dataDir $needed))) { $problems += "no $needed" }
     }
 
     # And the one that only applies to the bundle that promises it.

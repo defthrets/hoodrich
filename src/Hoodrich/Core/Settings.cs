@@ -420,6 +420,47 @@ namespace Hoodrich.Core
         public int SceneryQuietFrom = 3;
         public int SceneryQuietTo = 7;
 
+        // ---- Parkview ----------------------------------------------------------
+        //
+        // The scene on the open ground in Chamberlain Hills and everything that lives in it:
+        // the blocks, the eighty-odd people, the rooms behind the doors, the voices. It shares
+        // the [Scenery] settings above -- range, the small hours, whether people live a little
+        // -- and has these of its own. See Parkview.Main.
+
+        /// <summary>Whether Parkview runs at all: the scene, its people, its rooms and its keys.</summary>
+        public bool Parkview = true;
+
+        /// <summary>
+        /// A name over everybody near, all the time. OFF: Michael found it wrong on 2026-09-24 --
+        /// names up over people he could not talk to. NPC Mind shows the name over the one man
+        /// you are looking at, with the prompt to talk to him. See Parkview.Scenery.Tags.
+        /// </summary>
+        public bool ParkviewNames = false;
+
+        /// <summary>Whether the doors on the block can be rented. See Parkview.Rooms.</summary>
+        public bool ParkviewRooms = true;
+
+        /// <summary>What a room costs for a week on the game's clock.</summary>
+        public int ParkviewRent = 250;
+
+        /// <summary>
+        /// Parkview's keys. The F9 family: F9 captures everything placed round you to a scene
+        /// file, Shift reads the scene files again, Control hides the map prop you are looking
+        /// at, Alt sets the rented room to where you stand. Taking over the map prop you are
+        /// looking at is NUMPAD *, because the F9 family is full and Multiply is one of the four
+        /// keys the hotkey map lists as bound to nothing at all.
+        /// </summary>
+        public Keys ParkviewCaptureKey = Keys.F9;
+        public Keys ParkviewCaptureModifier = Keys.None;
+        public Keys ParkviewReloadKey = Keys.F9;
+        public Keys ParkviewReloadModifier = Keys.Shift;
+        public Keys ParkviewHideKey = Keys.F9;
+        public Keys ParkviewHideModifier = Keys.Control;
+        public Keys ParkviewRoomKey = Keys.F9;
+        public Keys ParkviewRoomModifier = Keys.Alt;
+        public Keys ParkviewTakeKey = Keys.Multiply;
+        public Keys ParkviewTakeModifier = Keys.None;
+
         /// <summary>How much longer or shorter every drug-taking animation runs.</summary>
         public float DrugAnimLength = 1f;
 
@@ -749,7 +790,11 @@ namespace Hoodrich.Core
             }
         }
 
-        public static Settings Load()
+        /// <param name="announce">
+        /// Whether to say so in the log. Parkview reads the same file for its own script and
+        /// says nothing: one "Settings loaded" a session is a fact, two is a puzzle.
+        /// </param>
+        public static Settings Load(bool announce = true)
         {
             var s = new Settings();
             var ini = IniFile.Load(Paths.Ini);
@@ -856,6 +901,11 @@ namespace Hoodrich.Core
                 door.Extra = ini.GetString(section, "Extra", "");
                 door.Sprite = (BlipSprite)ini.GetInt(section, "Sprite", 40);
 
+                // What the room is dressed with once it is up: entity sets, groups separated
+                // by semicolons, alternatives by bars. This was never read for a door listed
+                // here, so a section could name them and nothing happened. See InteriorDoor.Dress.
+                door.Sets = ini.GetString(section, "Sets", "");
+
                 // A door with nothing on either end of it is a section somebody started and
                 // did not finish. Better ignored than put at the middle of the map.
                 if (Math.Abs(door.DoorX) < 0.01f && Math.Abs(door.DoorY) < 0.01f) continue;
@@ -953,6 +1003,21 @@ namespace Hoodrich.Core
             s.SceneryLife = ini.GetBool("Scenery", "PedsLive", s.SceneryLife);
             s.SceneryQuietFrom = (int)Clamp(ini.GetInt("Scenery", "QuietFrom", s.SceneryQuietFrom), 0f, 23f);
             s.SceneryQuietTo = (int)Clamp(ini.GetInt("Scenery", "QuietTo", s.SceneryQuietTo), 0f, 23f);
+
+            s.Parkview = ini.GetBool("Parkview", "Enabled", s.Parkview);
+            s.ParkviewNames = ini.GetBool("Parkview", "Names", s.ParkviewNames);
+            s.ParkviewRooms = ini.GetBool("Parkview", "Rooms", s.ParkviewRooms);
+            s.ParkviewRent = (int)Clamp(ini.GetInt("Parkview", "RentPerWeek", s.ParkviewRent), 0f, 100000f);
+            s.ParkviewCaptureKey = ini.GetKey("Parkview", "CaptureKey", s.ParkviewCaptureKey);
+            s.ParkviewCaptureModifier = ini.GetKey("Parkview", "CaptureModifier", s.ParkviewCaptureModifier);
+            s.ParkviewReloadKey = ini.GetKey("Parkview", "ReloadKey", s.ParkviewReloadKey);
+            s.ParkviewReloadModifier = ini.GetKey("Parkview", "ReloadModifier", s.ParkviewReloadModifier);
+            s.ParkviewHideKey = ini.GetKey("Parkview", "HideKey", s.ParkviewHideKey);
+            s.ParkviewHideModifier = ini.GetKey("Parkview", "HideModifier", s.ParkviewHideModifier);
+            s.ParkviewRoomKey = ini.GetKey("Parkview", "SetRoomKey", s.ParkviewRoomKey);
+            s.ParkviewRoomModifier = ini.GetKey("Parkview", "SetRoomModifier", s.ParkviewRoomModifier);
+            s.ParkviewTakeKey = ini.GetKey("Parkview", "TakeKey", s.ParkviewTakeKey);
+            s.ParkviewTakeModifier = ini.GetKey("Parkview", "TakeModifier", s.ParkviewTakeModifier);
 
             // Where each held thing sits in his hand, as set on the settings screen. See Economy.Fit.
             foreach (var prop in Economy.Fit.Names)
@@ -1054,7 +1119,7 @@ namespace Hoodrich.Core
             s.RollerParkSpeed = Clamp(ini.GetFloat("Block", "RollerParkSpeed", s.RollerParkSpeed), 2f, 9f);
 
             Log.Level = s.LogLevel;
-            Log.Info("Settings loaded: phone key=" + s.PhoneKey +
+            if (announce) Log.Info("Settings loaded: phone key=" + s.PhoneKey +
                      " timescale=" + s.WheelTimeScale + " blur=" + s.BlurBackground);
             return s;
         }

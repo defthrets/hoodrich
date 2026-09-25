@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using System.Collections.Generic;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -7,6 +8,10 @@ namespace Hoodrich.Core
 {
     /// <summary>
     /// Telling NPC Mind who the people we put on the street actually are.
+    ///
+    /// The decorator name, its type, Mark and Number are a contract with NPC Mind
+    /// (Integration/Vouched): a man is the same man tomorrow only if this turns him into the
+    /// same number tomorrow.
     ///
     /// WHY ANY OF THIS IS NEEDED. Every ped this mod spawns is made with CREATE_PED and then
     /// marked persistent, which gives it population type 6 or 7 -- and NPC Mind refuses to
@@ -33,6 +38,17 @@ namespace Hoodrich.Core
     /// a minute and would file every session under a different stranger.
     ///
     /// Safe on an install without NPC Mind: it is a decorator on a ped nobody reads.
+    ///
+    /// AND THE DECORATOR NEVER WORKED, which is why there is a table as well. DECOR_REGISTER
+    /// only takes while registration is open, and the game's own startup scripts register
+    /// theirs and lock it before ScriptHookVDotNet loads a single script -- so on Michael's
+    /// machine the register failed in every session from the first, the log said "Could not
+    /// register" every time, and NPC Mind turned away every one of our people as another
+    /// script's mission ped. He pressed E at the whole Families crew and got nothing.
+    ///
+    /// Every script in the scripts folder runs in one AppDomain, so the same vouch goes in a
+    /// table in that domain's data, which needs no registration and no reference: see List.
+    /// NPC Mind reads it whenever the decorator is not there (Integration/Vouched).
     /// </summary>
     internal static class Folk
     {
@@ -52,9 +68,8 @@ namespace Hoodrich.Core
         /// <summary>
         /// Registers the decorator, once.
         ///
-        /// BOTH MODS DO THIS and that is deliberate, not an oversight: registering the same
-        /// name and type twice is a no-op, and neither mod can know which of them SHVDN will
-        /// construct first. Whichever gets there first opens it for both.
+        /// Registering the same name and type twice is a no-op, so it does not matter which
+        /// script in the folder gets there first.
         ///
         /// It can fail -- a script that calls DECOR_REGISTER_LOCK first closes registration for
         /// the session -- and nothing is done about that. The failure is survivable and silent
@@ -73,8 +88,8 @@ namespace Hoodrich.Core
 
                 Log.Info(_ready
                     ? "Our people can be talked to: '" + Decor + "' is registered."
-                    : "Could not register '" + Decor + "' -- something locked decorators " +
-                      "first. Our people will not be talkable this session.");
+                    : "Could not register '" + Decor + "' -- the game locks decorators before " +
+                      "scripts load. Our people are introduced through the shared table instead.");
             }
             catch (Exception ex)
             {
@@ -97,13 +112,17 @@ namespace Hoodrich.Core
         public static void Stamp(Ped ped, string who)
         {
             if (ped == null || string.IsNullOrEmpty(who)) return;
-            if (!Ready()) return;
 
             try
             {
                 if (!ped.Exists()) return;
 
-                Function.Call(Hash.DECOR_SET_INT, ped.Handle, Decor, Number(who));
+                var id = Number(who);
+
+                // BOTH, and the table whatever happens to the decorator: see the note on the
+                // class. The decorator is for an install where registration was left open.
+                if (Ready()) Function.Call(Hash.DECOR_SET_INT, ped.Handle, Decor, id);
+                List(ped, id);
                 _stamped++;
 
                 // PROOF IN THE LOG THAT IT RAN, because there is no other way to tell. A
@@ -180,5 +199,78 @@ namespace Hoodrich.Core
 
         /// <summary>How many we have introduced this session. For the log.</summary>
         public static int Stamped { get { return _stamped; } }
+
+        // ---- the table ------------------------------------------------------------------
+
+        /// <summary>The handles we have put on the table, so we only ever take our own off.</summary>
+        private static readonly HashSet<int> _listed = new HashSet<int>();
+
+        /// <summary>
+        /// NPC Mind's shared table, made if nobody has made it yet. The contract is NPC
+        /// Mind's (Integration/Vouched) and fixed: a Dictionary&lt;int, long&gt; in the
+        /// AppDomain's data under the decorator's own name, ped handle to
+        /// (uint)model hash &lt;&lt; 32 | (uint)id, locked round every read and write.
+        /// </summary>
+        private static Dictionary<int, long> Table()
+        {
+            var domain = AppDomain.CurrentDomain;
+            var table = domain.GetData(Decor) as Dictionary<int, long>;
+            if (table != null) return table;
+
+            table = new Dictionary<int, long>();
+            domain.SetData(Decor, table);
+            return table;
+        }
+
+        /// <summary>
+        /// Puts him on the table. THE MODEL GOES IN WITH HIM because a handle outlives the
+        /// ped it was given for: if one of ours were ever missed on the way out, NPC Mind
+        /// checks the model and will not take the man the game hands that handle to next for
+        /// one of ours.
+        /// </summary>
+        private static void List(Ped ped, int id)
+        {
+            var table = Table();
+            var entry = ((long)unchecked((uint)ped.Model.Hash) << 32) | unchecked((uint)id);
+
+            lock (table) table[ped.Handle] = entry;
+            _listed.Add(ped.Handle);
+        }
+
+        /// <summary>
+        /// Takes ours off the table: the ones that no longer exist, or every one of them when
+        /// <paramref name="all"/> -- which is the way out, when nobody is vouching for them
+        /// any more. Cheap enough for every couple of seconds: one native per person.
+        /// </summary>
+        public static void Prune(bool all = false)
+        {
+            if (_listed.Count == 0) return;
+
+            try
+            {
+                List<int> gone = null;
+
+                foreach (var h in _listed)
+                {
+                    if (!all && Function.Call<bool>(Hash.DOES_ENTITY_EXIST, h)) continue;
+                    if (gone == null) gone = new List<int>();
+                    gone.Add(h);
+                }
+
+                if (gone == null) return;
+
+                var table = AppDomain.CurrentDomain.GetData(Decor) as Dictionary<int, long>;
+
+                foreach (var h in gone)
+                {
+                    _listed.Remove(h);
+                    if (table != null) lock (table) table.Remove(h);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not tidy the people table: " + ex.Message);
+            }
+        }
     }
 }

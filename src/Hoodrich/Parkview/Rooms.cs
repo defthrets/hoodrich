@@ -1,14 +1,13 @@
-﻿// GENERATED -- DO NOT EDIT. This is Parkview, copied in by tools/sync-parkview.py from
-// C:\projects\parkview\src\Parkview\Rooms.cs. Change it there; the next build overwrites this.
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using GTA;
 using GTA.Math;
 using GTA.Native;
+using Hoodrich.Core;
 using Hoodrich.Parkview.Core;
-using Hoodrich.Parkview.UI;
+using Hoodrich.UI;
 
 namespace Hoodrich.Parkview
 {
@@ -212,16 +211,16 @@ namespace Hoodrich.Parkview
 
         // ---- the files ------------------------------------------------------------------
 
-        private string SavePath => Path.Combine(Paths.Writable, "rooms.sav");
+        private string SavePath => Path.Combine(Paths.ParkviewWritable, "rooms.sav");
 
         /// <summary>The shipped list of doors. See data\rooms.txt for the format.</summary>
         private void ReadDoors()
         {
-            var path = Path.Combine(Paths.Data, "rooms.txt");
+            var path = Path.Combine(Paths.Parkview, "rooms.txt");
 
             if (!File.Exists(path))
             {
-                Log.Info("Rooms: no rooms.txt in " + Paths.Data + "; there are no doors to rent.");
+                Log.Info("Rooms: no rooms.txt in " + Paths.Parkview + "; there are no doors to rent.");
                 return;
             }
 
@@ -266,7 +265,7 @@ namespace Hoodrich.Parkview
         /// <summary>The markers that take you somewhere. See data\places.txt.</summary>
         private void ReadPlaces()
         {
-            var path = Path.Combine(Paths.Data, "places.txt");
+            var path = Path.Combine(Paths.Parkview, "places.txt");
             if (!File.Exists(path)) return;
 
             try
@@ -333,7 +332,7 @@ namespace Hoodrich.Parkview
         /// <summary>The things you can do standing somewhere. See data\spots.txt.</summary>
         private void ReadSpots()
         {
-            var path = Path.Combine(Paths.Data, "spots.txt");
+            var path = Path.Combine(Paths.Parkview, "spots.txt");
             if (!File.Exists(path)) return;
 
             try
@@ -380,38 +379,11 @@ namespace Hoodrich.Parkview
         /// name in whatever is loaded, once, and if it is not there the spots that need it
         /// say so and the bed still works.
         /// </summary>
-        private static bool _postedLooked;
-        private static System.Reflection.PropertyInfo _postedReady;
-
         private static bool PostedUp()
         {
-            if (!_postedLooked)
-            {
-                _postedLooked = true;
-
-                try
-                {
-                    foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-                    {
-                        var t = asm.GetType("Hoodrich.Api.Drugs", false);
-                        if (t == null) continue;
-
-                        _postedReady = t.GetProperty("Ready",
-                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-
-                        Log.Info("Rooms: Posted Up is here (" + asm.GetName().Name + ").");
-                        break;
-                    }
-
-                    if (_postedReady == null) Log.Info("Rooms: Posted Up is not loaded; only the bed works.");
-                }
-                catch (Exception ex)
-                {
-                    Log.Debug("Rooms: could not look for Posted Up: " + ex.Message);
-                }
-            }
-
-            try { return _postedReady != null && (bool)_postedReady.GetValue(null, null); }
+            // Posted Up is this dll now, so the only question is whether its side is wired
+            // yet -- Api.Drugs says so, the same as it does for any other mod asking.
+            try { return Api.Drugs.Ready; }
             catch { return false; }
         }
 
@@ -543,7 +515,7 @@ namespace Hoodrich.Parkview
         }
         /// <summary>
         /// What is yours and what the rent is up to, next to the log rather than in the data
-        /// folder -- Program Files is not writable by the game. See Paths.Writable.
+        /// folder -- Program Files is not writable by the game. See Paths.ParkviewWritable.
         /// </summary>
         private void ReadSave()
         {
@@ -765,7 +737,7 @@ namespace Hoodrich.Parkview
 
         public void Update()
         {
-            if (_cfg != null && !_cfg.Rooms) return;
+            if (_cfg != null && !_cfg.ParkviewRooms) return;
 
             var now = Game.GameTime;
 
@@ -873,7 +845,7 @@ namespace Hoodrich.Parkview
 
             if (!door.Rented)
             {
-                Say(door.Name + " -- press ~INPUT_CONTEXT~ to rent it for $" + _cfg.RoomRent + " a week.");
+                Say(door.Name + " -- press ~INPUT_CONTEXT~ to rent it for $" + _cfg.ParkviewRent + " a week.");
                 if (Tapped()) Rent(near);
                 return;
             }
@@ -952,7 +924,7 @@ namespace Hoodrich.Parkview
         private void Rent(int i)
         {
             var door = _doors[i];
-            var rent = _cfg.RoomRent;
+            var rent = _cfg.ParkviewRent;
 
             if (Game.Player.Money < rent)
             {
@@ -992,7 +964,7 @@ namespace Hoodrich.Parkview
             {
                 if (!door.Rented || today < door.Due) continue;
 
-                var rent = _cfg.RoomRent;
+                var rent = _cfg.ParkviewRent;
 
                 if (Game.Player.Money >= rent)
                 {
@@ -1207,7 +1179,7 @@ namespace Hoodrich.Parkview
 
             for (var n = 0; n < 24 && !floored; n++)
             {
-                floored = Core.Ground.Probe(new Vector3(p.To.X, p.To.Y, p.To.Z + 1.5f), out g);
+                floored = Ground.Probe(new Vector3(p.To.X, p.To.Y, p.To.Z + 1.5f), out g);
                 if (!floored) Script.Wait(25);
             }
 
@@ -1292,7 +1264,7 @@ namespace Hoodrich.Parkview
 
             for (var n = 0; n < 24 && !floored; n++)
             {
-                floored = Core.Ground.Probe(new Vector3(to.X, to.Y, to.Z + 1.5f), out g);
+                floored = Ground.Probe(new Vector3(to.X, to.Y, to.Z + 1.5f), out g);
                 if (!floored) Script.Wait(25);
             }
 

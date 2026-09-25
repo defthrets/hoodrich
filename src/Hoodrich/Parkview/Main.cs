@@ -1,11 +1,10 @@
-﻿// GENERATED -- DO NOT EDIT. This is Parkview, copied in by tools/sync-parkview.py from
-// C:\projects\parkview\src\Parkview\Main.cs. Change it there; the next build overwrites this.
 using System;
+using System.IO;
 using System.Windows.Forms;
 using GTA;
 using GTA.Native;
-using Hoodrich.Parkview.Core;
-using Hoodrich.Parkview.UI;
+using Hoodrich.Core;
+using Hoodrich.UI;
 
 namespace Hoodrich.Parkview
 {
@@ -14,9 +13,20 @@ namespace Hoodrich.Parkview
     /// builds it -- Object Spooner files stood up as you come near, props with bodies, floors
     /// laid under slabs that have none, and people who live a little: idle with the thing in
     /// their hand, talk, walk about, walk in and walk off, and are not there in the small hours.
+    /// Plus the rooms behind the block's doors, and the places on the ground that take you
+    /// somewhere.
     ///
-    /// Nothing here talks to any other mod and nothing here is loaded from anywhere but the
-    /// BCL and ScriptHookVDotNet.
+    /// PART OF POSTED UP SINCE 2026-09-25. It was a dll of its own for four days, cut out of
+    /// this mod's scenery loader and grown well past it -- the rooms, the voices, the roaming,
+    /// the hand-off to NPC Mind, nobody left standing in the sky. Michael said it does not
+    /// need to stand alone, it is ours, so it came back in whole: this script, its own Scenery
+    /// and Rooms, and Hoodrich's Core for everything they share. It runs as a second script in
+    /// the dll rather than inside Main's tick, because its keys and its scene are its own and
+    /// its cost -- eighty people -- is worth keeping out of the watchdog that times the rest.
+    ///
+    /// Its files are scripts\Hoodrich\parkview: the scene and the captures in scenery\, and
+    /// voices.txt, rooms.txt, places.txt and spots.txt beside them. Its settings are the
+    /// [Parkview] section of Hoodrich.ini, and it shares [Scenery] with the other scenes.
     /// </summary>
     public sealed class Main : Script
     {
@@ -32,11 +42,11 @@ namespace Hoodrich.Parkview
         {
             try
             {
-                // ONE PARKVIEW AT A TIME. It ships inside Posted Up as well as on its own, and
-                // two copies loaded together build every scene twice -- two of everybody, stood
-                // inside each other, two of every prop. The first to start claims the name for
-                // the session and any other stands down and says where the running one is. The
-                // claim lives in the script domain, so a reload (Insert) starts clean.
+                // ONE PARKVIEW AT A TIME. The standalone Parkview.dll is retired, but a copy of
+                // it left in scripts\ next to this dll would build every scene twice -- two of
+                // everybody, stood inside each other. The first to start claims the name for
+                // the session and any other stands down and says so. The claim lives in the
+                // script domain, so a reload (Insert) starts clean.
                 var claim = AppDomain.CurrentDomain.GetData(OneCopy) as string;
                 var mine = typeof(Main).Assembly.GetName().Name;
 
@@ -44,20 +54,15 @@ namespace Hoodrich.Parkview
                 {
                     _parked = true;
                     Log.Info("Parkview is already running inside " + claim + ".dll, so the copy in " + mine +
-                             ".dll stands down. Take " + mine + ".dll out of scripts to stop this line.");
+                             ".dll stands down. Take the old Parkview.dll out of scripts to stop this line.");
                     return;
                 }
 
                 AppDomain.CurrentDomain.SetData(OneCopy, mine);
 
-                _cfg = Core.Settings.Load();
-                Log.Level = _cfg.LogLevel;
+                Migrate();
 
-                Log.Info("---- environment ----");
-                Log.Info("  " + Build.Name + " " + Build.Version);
-                Log.Info("  scripts " + Paths.Scripts);
-                Log.Info("  data    " + Paths.Data);
-                Log.Info("---------------------");
+                _cfg = Hoodrich.Core.Settings.Load(false);
 
                 _scenes = new Scenery(_cfg);
                 _rooms = new Rooms(_cfg);
@@ -69,22 +74,80 @@ namespace Hoodrich.Parkview
 
                 _greetAt = Game.GameTime + 4000;
 
-                Log.Info(Build.Name + " " + Build.Version + " by " + Build.By + " loaded. " +
-                         Say(_cfg.CaptureKey, _cfg.CaptureModifier) + " captures everything round you, " +
-                         Say(_cfg.ReloadKey, _cfg.ReloadModifier) + " reads the scene files again, " +
-                         Say(_cfg.HideKey, _cfg.HideModifier) + " hides the map prop you are looking at, " +
-                         Say(_cfg.RoomKey, _cfg.RoomModifier) + " sets the rented room to where you stand, " +
-                         Say(_cfg.TakeKey, _cfg.TakeModifier) + " takes over the map prop you are looking at.");
+                Log.Info("Parkview loaded. " +
+                         Say(_cfg.ParkviewCaptureKey, _cfg.ParkviewCaptureModifier) + " captures everything round you, " +
+                         Say(_cfg.ParkviewReloadKey, _cfg.ParkviewReloadModifier) + " reads the scene files again, " +
+                         Say(_cfg.ParkviewHideKey, _cfg.ParkviewHideModifier) + " hides the map prop you are looking at, " +
+                         Say(_cfg.ParkviewRoomKey, _cfg.ParkviewRoomModifier) + " sets the rented room to where you stand, " +
+                         Say(_cfg.ParkviewTakeKey, _cfg.ParkviewTakeModifier) + " takes over the map prop you are looking at.");
             }
             catch (Exception ex)
             {
                 _parked = true;
-                Log.Error("Failed to start; disabled for this session.", ex);
+                Log.Error("Parkview failed to start; disabled for this session.", ex);
             }
         }
 
         /// <summary>The script-domain key the running copy claims. See the constructor.</summary>
         private const string OneCopy = "Parkview.Running";
+
+        /// <summary>
+        /// The standalone Parkview kept its files in scripts\Parkview, and anybody who had it
+        /// has captures, a hidden.xml and a rented room in there. Once, on the first start after
+        /// the merge, they are copied across -- never over anything already here, never the
+        /// shipped scene (which ships here now), and never deleting the old folder. It is
+        /// theirs, and a mistake here would be somebody's week of placing things.
+        /// </summary>
+        private static void Migrate()
+        {
+            try
+            {
+                var old = Path.Combine(Paths.Scripts, "Parkview");
+                if (!Directory.Exists(old)) return;
+
+                var brought = 0;
+
+                var oldScenes = Path.Combine(old, "scenery");
+
+                if (Directory.Exists(oldScenes))
+                {
+                    foreach (var file in Directory.GetFiles(oldScenes, "*.xml"))
+                    {
+                        var name = Path.GetFileName(file);
+
+                        var theirs = name.StartsWith("capture-", StringComparison.OrdinalIgnoreCase)
+                                     || string.Equals(name, "hidden.xml", StringComparison.OrdinalIgnoreCase);
+                        if (!theirs) continue;
+
+                        var to = Path.Combine(Paths.ParkviewScenery, name);
+                        if (File.Exists(to)) continue;
+
+                        File.Copy(file, to);
+                        brought++;
+                    }
+                }
+
+                foreach (var file in Directory.GetFiles(old, "*.sav"))
+                {
+                    var to = Path.Combine(Paths.ParkviewWritable, Path.GetFileName(file));
+                    if (File.Exists(to)) continue;
+
+                    File.Copy(file, to);
+                    brought++;
+                }
+
+                if (brought > 0)
+                {
+                    Log.Info("Parkview: " + brought + " file(s) of yours brought across from scripts\\Parkview -- " +
+                             "the captures, hidden.xml, the rented room. The old folder is left as it was; " +
+                             "Parkview lives in scripts\\Hoodrich\\parkview now.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Parkview: could not look in the old folder: " + ex.Message);
+            }
+        }
 
         private static string Say(Keys key, Keys mod)
         {
@@ -93,7 +156,7 @@ namespace Hoodrich.Parkview
 
         private void OnTick(object sender, EventArgs e)
         {
-            if (_parked || _cfg == null || !_cfg.Enabled) return;
+            if (_parked || _cfg == null || !_cfg.Enabled || !_cfg.Parkview) return;
 
             try
             {
@@ -102,7 +165,7 @@ namespace Hoodrich.Parkview
                 if (!_greeted && now >= _greetAt)
                 {
                     _greeted = true;
-                    Notify.Important("~g~" + Build.Name + " " + Build.Version + "~s~ loaded. " + _scenes.Tally() + ".");
+                    Notify.Important("~g~Parkview~s~ " + _scenes.Tally() + ".");
                 }
 
                 _scenes.Update();
@@ -119,7 +182,7 @@ namespace Hoodrich.Parkview
             }
             catch (Exception ex)
             {
-                Log.Error("Tick threw.", ex);
+                Log.Error("Parkview tick threw.", ex);
             }
         }
 
@@ -137,19 +200,19 @@ namespace Hoodrich.Parkview
 
         private void OnKey(object sender, KeyEventArgs e)
         {
-            if (_parked || _cfg == null || !_cfg.Enabled) return;
+            if (_parked || _cfg == null || !_cfg.Enabled || !_cfg.Parkview) return;
 
             try
             {
-                if (Pressed(e, _cfg.HideKey, _cfg.HideModifier)) { Hide(); return; }
-                if (Pressed(e, _cfg.ReloadKey, _cfg.ReloadModifier)) { Reload(); return; }
-                if (Pressed(e, _cfg.CaptureKey, _cfg.CaptureModifier)) { Capture(); return; }
-                if (Pressed(e, _cfg.RoomKey, _cfg.RoomModifier)) { _rooms.SetRoomHere(); return; }
-                if (Pressed(e, _cfg.TakeKey, _cfg.TakeModifier)) { Take(); return; }
+                if (Pressed(e, _cfg.ParkviewHideKey, _cfg.ParkviewHideModifier)) { Hide(); return; }
+                if (Pressed(e, _cfg.ParkviewReloadKey, _cfg.ParkviewReloadModifier)) { Reload(); return; }
+                if (Pressed(e, _cfg.ParkviewCaptureKey, _cfg.ParkviewCaptureModifier)) { Capture(); return; }
+                if (Pressed(e, _cfg.ParkviewRoomKey, _cfg.ParkviewRoomModifier)) { _rooms.SetRoomHere(); return; }
+                if (Pressed(e, _cfg.ParkviewTakeKey, _cfg.ParkviewTakeModifier)) { Take(); return; }
             }
             catch (Exception ex)
             {
-                Log.Error("Key threw.", ex);
+                Log.Error("Parkview key threw.", ex);
             }
         }
 
@@ -161,7 +224,7 @@ namespace Hoodrich.Parkview
             Log.Flush();
         }
 
-        // ---- the three tools ------------------------------------------------------------
+        // ---- the tools ------------------------------------------------------------------
 
         /// <summary>Takes down what is standing and builds it from the files as they are now.</summary>
         private void Reload()
@@ -169,7 +232,7 @@ namespace Hoodrich.Parkview
             var n = _scenes.Reload();
 
             Notify.Important(n == 0
-                ? "No placements found. Save one in Menyoo's Object Spooner, or put a scene file in scripts\\Parkview\\scenery."
+                ? "No placements found. Save one in Menyoo's Object Spooner, or put a scene file in scripts\\Hoodrich\\parkview\\scenery."
                 : n + " placement(s) read. " + _scenes.Tally() + ".");
         }
 
@@ -199,9 +262,9 @@ namespace Hoodrich.Parkview
             }
 
             var name = "capture-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".xml";
-            var path = System.IO.Path.Combine(Paths.Scenery, name);
+            var path = Path.Combine(Paths.ParkviewScenery, name);
 
-            Notify.Important(Spooner.Write(path, found, "Captured by " + Build.Name)
+            Notify.Important(Spooner.Write(path, found, "Captured by Parkview")
                 ? found.Count + " placement(s) saved as " + name + "."
                 : "Could not write the scene file. See the log.");
         }
@@ -314,7 +377,7 @@ namespace Hoodrich.Parkview
                 Radius = Spooner.DefaultRadius
             };
 
-            var path = System.IO.Path.Combine(Paths.Scenery, "hidden.xml");
+            var path = Path.Combine(Paths.ParkviewScenery, "hidden.xml");
 
             if (!Spooner.Bury(path, one))
             {
@@ -354,8 +417,9 @@ namespace Hoodrich.Parkview
 
             Log.Info("Take: " + name + " at " + at + " is hidden and replaced with one of ours.");
             Notify.Important("~g~" + name + "~s~ is yours now. Move it, then " +
-                             Say(_cfg.CaptureKey, _cfg.CaptureModifier) + " to keep it there.");
+                             Say(_cfg.ParkviewCaptureKey, _cfg.ParkviewCaptureModifier) + " to keep it there.");
         }
+
         /// <summary>How far ahead the hide looks for a prop.</summary>
         private const float HideReach = 12f;
 
@@ -414,7 +478,7 @@ namespace Hoodrich.Parkview
                 Radius = Spooner.DefaultRadius
             };
 
-            var path = System.IO.Path.Combine(Paths.Scenery, "hidden.xml");
+            var path = Path.Combine(Paths.ParkviewScenery, "hidden.xml");
 
             if (!Spooner.Bury(path, one))
             {

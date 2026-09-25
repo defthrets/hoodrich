@@ -89,6 +89,13 @@ GIVEN is already bagged.
   Arrow keys          move       Enter  choose       Backspace  back
   Right on the d-pad  talk to somebody
 
+  Parkview, the block in Chamberlain Hills:
+  F9                  capture everything placed round you to a scene file
+  Shift+F9            read the scene files again
+  Ctrl+F9             hide the map prop you are looking at, for good
+  Alt+F9              set the rented room to where you stand
+  Numpad *            take over the map prop you are looking at
+
 Every key is rebindable in Hoodrich.ini.
 
 
@@ -100,6 +107,11 @@ Every key is rebindable in Hoodrich.ini.
   * Single player only. Do not take this anywhere near GTA Online.
   * Everything is configurable: Hoodrich.ini for settings and keys,
     Hoodrich\*.json for drugs, prices, gangs, missions and chatter.
+  * Parkview -- the block on the open ground in Chamberlain Hills, its people
+    and its rooms -- is part of this mod. Its files are Hoodrich\parkview; its
+    settings are [Parkview] in the ini. If you had the standalone Parkview,
+    take Parkview.dll out of scripts: this one copies your captures and your
+    rented room across from scripts\Parkview on its first start.
   * Problems? Hoodrich\Hoodrich.log says what it did. Set LogLevel=Debug
     in the ini before reporting anything.
   * The Wei Cheng business at the port shows as "Coming soon" on purpose.

@@ -1,11 +1,10 @@
-﻿// GENERATED -- DO NOT EDIT. This is Parkview, copied in by tools/sync-parkview.py from
-// C:\projects\parkview\src\Parkview\Scenery.cs. Change it there; the next build overwrites this.
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using GTA;
 using GTA.Math;
 using GTA.Native;
+using Hoodrich.Core;
 using Hoodrich.Parkview.Core;
 
 namespace Hoodrich.Parkview
@@ -688,7 +687,7 @@ namespace Hoodrich.Parkview
 
             try
             {
-                var ours = Paths.Scenery;
+                var ours = Paths.ParkviewScenery;
 
                 if (Directory.Exists(ours))
                 {
@@ -1068,7 +1067,7 @@ namespace Hoodrich.Parkview
                 int chance;
                 var some = Sometimes(scene.Path, out chance);
 
-                if (some.Count > 0 && !Core.Nights.On("the sometimes at " + scene.Name, chance))
+                if (some.Count > 0 && !Nights.On("the sometimes at " + scene.Name, chance))
                 {
                     foreach (var handle in some) scene.Skip.Add(handle);
                     Log.Info("Scenery: " + some.Count + " of \"" + scene.Name + "\" not here today.");
@@ -1373,7 +1372,7 @@ namespace Hoodrich.Parkview
         private static void StandOnMark(Scene scene, Spooner.Placed item, Ped ped)
         {
             float ground;
-            var elevated = Core.Ground.Probe(new Vector3(item.At.X, item.At.Y, item.At.Z + 1f), out ground) &&
+            var elevated = Ground.Probe(new Vector3(item.At.X, item.At.Y, item.At.Z + 1f), out ground) &&
                            item.At.Z - ground > ElevatedAbove;
 
             scene.Frozen.Add(new Cold
@@ -1552,7 +1551,7 @@ namespace Hoodrich.Parkview
                 // From just above him, looking down: the first solid thing below is where he
                 // stands -- the ground, a wall top, an awning. Not found yet and he is simply
                 // asked about again on the next pass.
-                if (!Core.Ground.Probe(new Vector3(at.X, at.Y, at.Z + 1f), out g)) return false;
+                if (!Ground.Probe(new Vector3(at.X, at.Y, at.Z + 1f), out g)) return false;
 
                 var down = new Vector3(at.X, at.Y, g + 1.0f);
 
@@ -3789,7 +3788,7 @@ namespace Hoodrich.Parkview
         /// </summary>
         private void Tags()
         {
-            if (_cfg != null && !_cfg.SceneryNames) return;
+            if (_cfg != null && !_cfg.ParkviewNames) return;
 
             var me = Game.Player.Character;
             if (me == null || !me.Exists()) return;

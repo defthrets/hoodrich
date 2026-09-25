@@ -1,10 +1,9 @@
-﻿// GENERATED -- DO NOT EDIT. This is Parkview, copied in by tools/sync-parkview.py from
-// C:\projects\parkview\src\Parkview\Core\Voices.cs. Change it there; the next build overwrites this.
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using GTA;
 using GTA.Native;
+using Hoodrich.Core;
 
 namespace Hoodrich.Parkview.Core
 {
@@ -96,13 +95,13 @@ namespace Hoodrich.Parkview.Core
             if (_read) return;
             _read = true;
 
-            var path = Path.Combine(Paths.Data, "voices.txt");
+            var path = Path.Combine(Paths.Parkview, "voices.txt");
 
             try
             {
                 if (!File.Exists(path))
                 {
-                    Log.Info("Voices: no voices.txt in " + Paths.Data + "; the scene's people use its own short lists.");
+                    Log.Info("Voices: no voices.txt in " + Paths.Parkview + "; the scene's people use its own short lists.");
                     return;
                 }
 

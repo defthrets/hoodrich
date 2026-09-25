@@ -1,4 +1,4 @@
-PARKVIEW PLACES
+﻿PARKVIEW PLACES
 ===============
 A marker on the ground with a blip on the map, that takes you somewhere. One
 per line, four fields separated by | :
@@ -18,10 +18,8 @@ where you want to come out, and press the set-room key (Alt+F9). It is written
 to places.sav next to the log and this file is left alone. That is the way to
 try rooms until one is right.
 
-THE MOTEL IS REAL -- walked into on 2026-09-22, bed and lamp and Vespucci Blvd
-on the minimap -- so the destination below is confirmed, not a guess. What it
-is NOT is its own room: the dice game currently comes out at the far end of the
-same motel the apartment door uses. Walk in by the die, find somewhere that
-suits, press Alt+F9, and it gets one of its own.
-
--258.138, -1571.085, 31.896, 131.857 | 151.4023, -1001.7794, -99.0, 180 | 680 | The dice game
+THE DICE GAME IS A DOOR NOW, not a place. Since 2026-09-25 it is the [GamblingDen]
+section of Hoodrich.ini: the same die on the ground, opening into a room of its
+own rather than the far end of the motel the rented rooms share. A door can ask
+the game for an interior by name and check it is really there; a place cannot.
+Nothing is listed below, and that is fine -- add a line and it is a marker again.
