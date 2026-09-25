@@ -213,7 +213,7 @@ namespace Hoodrich.Locations
         /// properly, short enough that one which cannot is available for its turn rather than
         /// grinding at a kerb for the whole night while the middle stands empty.
         /// </summary>
-        private const int StageGiveUpMs = 40000;
+        private const int StageGiveUpMs = 70000;
 
         private Spot[] Spots => _here.Spots;
 
@@ -1047,6 +1047,12 @@ namespace Hoodrich.Locations
 
             /// <summary>Stood on his mark smoking, between the brake and the lock. See Smoke and Show.</summary>
             public bool Smoking;
+
+            /// <summary>He has had his standing burnout, so a return to the mark goes straight to the lock. See Keep.</summary>
+            public bool Smoked;
+
+            /// <summary>How many times in a row he has been sent back to his mark and not got there. See Keep.</summary>
+            public int Hauls;
 
             /// <summary>Driving back to the middle mid-show, and when he set off. See Home.</summary>
             public bool Going;
@@ -4547,7 +4553,23 @@ namespace Hoodrich.Locations
                             // the lock starts from nothing after that.
                             r.Way = _rng.Next(2) == 0 ? 1 : -1;
                             Reckless(r, true);
-                            Settle(r, now);
+
+                            // NOT FROM OUT THERE. A car that gave up on its mark twenty metres
+                            // out and started its show where it stopped was over the leash the
+                            // moment the lock came on, and spent its night being hauled in and
+                            // starting again -- "they keep stopping after a few seconds". Too
+                            // far from the middle to start, he drives to his mark first and has
+                            // his smoke there. See Home and the way back in.
+                            if (r.Car.Position.DistanceTo(Circle) > Roam - 2f)
+                            {
+                                Log.Info("Takeover: a performer stopped " + (int)r.Car.Position.DistanceTo(Circle) +
+                                         " m from the middle -- too far to start there. Driving in first.");
+                                Home(r, now);
+                            }
+                            else
+                            {
+                                Settle(r, now);
+                            }
                         }
                         catch
                         {
@@ -4558,18 +4580,37 @@ namespace Hoodrich.Locations
                     {
                         // ON HIS WAY BACK IN. Nothing else happens to him until he is either
                         // there or has been trying long enough that here is as good as there.
-                        if (r.Car.Position.DistanceTo(HomePoint(r)) < BackWhen ||
-                            now - r.GoneAt > BackGiveUpMs)
+                        var there = r.Car.Position.DistanceTo(HomePoint(r)) < BackWhen;
+
+                        if (there || now - r.GoneAt > BackGiveUpMs)
                         {
                             r.Going = false;
                             r.Still = 0;
 
-                            // STRAIGHT BACK INTO THE LOCK, NOT BACK TO THE BRAKE. He is already
-                            // moving and already sideways; standing him up to do the five
-                            // seconds of smoke again is the stop-start this whole branch exists
-                            // to get rid of. The brake and the burnout are an ARRIVAL, and he
-                            // arrived a minute ago.
-                            Show(r, now);
+                            // A CAR THAT NEVER GETS THERE IS LET GO OF. Four returns in a row
+                            // that ran out of time is a mark he cannot reach -- a wreck on it,
+                            // a crowd that will not part -- and a performer starting his show
+                            // wherever the clock ran out is the stop-start this fixes.
+                            if (there) r.Hauls = 0;
+                            else r.Hauls++;
+
+                            if (r.Hauls >= HaulsMost)
+                            {
+                                Log.Info("Takeover: a performer cannot get back to his mark. He leaves, and somebody else is sent for.");
+                                r.Stage = -1;
+                                r.GoneAt = now;
+                                Leave(r);
+                                continue;
+                            }
+
+                            // STRAIGHT BACK INTO THE LOCK, NOT BACK TO THE BRAKE -- if he has
+                            // had his smoke. He is already moving and already sideways;
+                            // standing him up to do the five seconds again is the stop-start
+                            // this branch exists to get rid of. A car that drove in to its mark
+                            // rather than starting where it stopped has not had it yet, and
+                            // gets it here: the brake, the smoke, then the lock.
+                            if (r.Smoked) Show(r, now);
+                            else Settle(r, now);
                         }
                     }
                     else if (r.Burn != 0)
@@ -4699,6 +4740,15 @@ namespace Hoodrich.Locations
             // Counted separately from the round-the-outside cars all the same: the middle is a
             // PLACE, and letting the two come out of one pool means the mark stands empty
             // whenever the circle happens to be busy.
+            // KEEP THE MARKERS OCCUPIED, FROM THE START. Begin asks once and the first ask can
+            // fail on nothing more than a driver model not loaded yet -- it did, on Davis, and
+            // the next ask used to wait for the street to park. Asked every tick until the list
+            // is full; they wait at the ring until it is parked. See Keep above.
+            while (Queued() < Stages.Length)
+            {
+                if (!In()) break;
+            }
+
             // NOBODY SKIDS UNTIL THE STREET IS PARKED. See Ringed.
             if (!Ringed()) return;
 
@@ -4735,15 +4785,6 @@ namespace Hoodrich.Locations
                 if (r.Stage >= 0) continue;
 
                 round++;
-            }
-
-            // KEEP THE MARKERS OCCUPIED. Somebody should always be sat ready, so the next turn
-            // starts with a car that is already there rather than one that has to be fetched
-            // from a kerb first -- which was the old gap between one car finishing and the
-            // next arriving.
-            while (Queued() < Stages.Length)
-            {
-                if (!In()) break;
             }
 
             // AN EMPTY PIT IS THE ONE FAILURE THIS FILE CANNOT SEE.
@@ -5860,6 +5901,7 @@ namespace Hoodrich.Locations
         {
             r.Burn = 0;
             r.Smoking = true;
+            r.Smoked = true;
             r.NextAction = now + BurnMs;
 
             try
@@ -6045,7 +6087,7 @@ namespace Hoodrich.Locations
 
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle,
                               r.Car.Handle, to.X, to.Y, to.Z,
-                              EaseSpeed, 0, r.Car.Model.Hash, RushStyle, 3f, true);
+                              HomeSpeed, 0, r.Car.Model.Hash, RushStyle, 3f, true);
             }
             catch
             {
@@ -6080,13 +6122,18 @@ namespace Hoodrich.Locations
             return true;
         }
 
-        /// <summary>Near enough to his mark to pick the show back up, and the most it is given.</summary>
-        private const float BackWhen = 6f;
+        /// <summary>Near enough to his mark to pick the show back up, and the most it is given. See Roam for why four.</summary>
+        private const float BackWhen = 4f;
         private const int BackGiveUpMs = 12000;
 
-        /// <summary>Below this he is not going round, and this long says he is stuck.</summary>
-        private const float SpinningSpeed = 1.2f;
-        private const int WedgedMs = 3500;
+        /// <summary>
+        /// Below this he is not going round, and this long says he is stuck. Half a metre a
+        /// second and five seconds: a tight donut on the physics turns the car about its front
+        /// wheels at not much more than a metre a second, and the old metre-and-a-bit for three
+        /// and a half seconds was calling that stuck and sending him home.
+        /// </summary>
+        private const float SpinningSpeed = 0.5f;
+        private const int WedgedMs = 5000;
 
         /// <summary>Where a performer belongs: his own mark, or the middle if he has none.</summary>
         private Vector3 HomePoint(Runner r)
@@ -6120,14 +6167,32 @@ namespace Hoodrich.Locations
         {
             get
             {
-                var r = SpinRadius + 2f;
-                var most = Ring - 7f;
+                // FIVE PAST THE CIRCLE THEY HOLD, and never nearer the crowd than five. It was
+                // two past, and two past an eight-metre circle is ten from the middle -- while
+                // a car counted as back at his mark anywhere within six metres of a mark that
+                // is itself seven out. Back on the lock at thirteen from the middle, hauled in
+                // again at ten: "they keep stopping after a few seconds". The lock now comes
+                // back on within four of the mark, eleven from the middle at the worst, and the
+                // leash is two metres further out than that.
+                var r = SpinRadius + 5f;
+                var most = Ring - 5f;
 
                 if (r > most) r = most;
-                if (r < 6f) r = 6f;
+                if (r < 8f) r = 8f;
                 return r;
             }
         }
+
+        /// <summary>How many returns in a row may run out of time before he is let go of. See Keep.</summary>
+        private const int HaulsMost = 4;
+
+        /// <summary>
+        /// How fast he drives back to his mark. Nine, not the five of the ease-in: the run home
+        /// is the one moment the show stops, and a car that comes back with some pace on and
+        /// hooks straight into the lock reads as a slide that went wide and came back, where
+        /// one that trundles home reads as a car that stopped.
+        /// </summary>
+        private const float HomeSpeed = 9f;
 
         /// <summary>Near enough the middle that a car on its way in waits for the street to park. See Keep.</summary>
         private float HoldOff => Ring + 4f;
