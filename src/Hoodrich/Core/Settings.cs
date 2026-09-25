@@ -678,6 +678,12 @@ namespace Hoodrich.Core
         /// </summary>
         public float TakeoverSpinRadius = 8f;
 
+        /// <summary>What share of its grip a performer keeps on the circle, nought to one. Less is more smoke and more sideways.</summary>
+        public float TakeoverGrip = 0.35f;
+
+        /// <summary>How much engine a performer gets, times the car's own drive force. One is the car as it came.</summary>
+        public float TakeoverPower = 1.6f;
+
         /// <summary>Whether groups of the set walk the back streets on foot.</summary>
         /// <summary>
         public bool WalkersEnabled = true;
@@ -1092,6 +1098,8 @@ namespace Hoodrich.Core
             s.TakeoverEveryNights =
                 (int)Clamp(ini.GetInt("Block", "TakeoverEveryNights", s.TakeoverEveryNights), 1f, 14f);
             s.TakeoverSpinRadius = Clamp(ini.GetFloat("Block", "TakeoverSpinRadius", s.TakeoverSpinRadius), 2f, 18f);
+            s.TakeoverGrip = Clamp(ini.GetFloat("Block", "TakeoverGrip", s.TakeoverGrip), 0.1f, 1f);
+            s.TakeoverPower = Clamp(ini.GetFloat("Block", "TakeoverPower", s.TakeoverPower), 1f, 4f);
             s.TakeoverRadius = Clamp(ini.GetFloat("Block", "TakeoverRadius", s.TakeoverRadius), 0f, 60f);
 
             s.WalkersEnabled = ini.GetBool("Block", "WalkersEnabled", s.WalkersEnabled);

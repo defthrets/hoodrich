@@ -7558,7 +7558,7 @@ namespace Hoodrich.Locations
 
                     if (!_grip.TryGetValue(key, out g))
                     {
-                        g = new Grip { Max = h.TractionCurveMax, Min = h.TractionCurveMin };
+                        g = new Grip { Max = h.TractionCurveMax, Min = h.TractionCurveMin, Force = h.InitialDriveForce };
                         _grip[key] = g;
                     }
 
@@ -7566,6 +7566,10 @@ namespace Hoodrich.Locations
 
                     h.TractionCurveMax = g.Max * SlickTraction;
                     h.TractionCurveMin = g.Min * SlickTraction;
+
+                    // AND MORE ENGINE, the same way and with the same book-keeping: Michael
+                    // asked for more torque or less grip, and both are the ini's now.
+                    h.InitialDriveForce = g.Force * Power;
                 }
                 else
                 {
@@ -7584,6 +7588,7 @@ namespace Hoodrich.Locations
                         {
                             h.TractionCurveMax = g.Max;
                             h.TractionCurveMin = g.Min;
+                            h.InitialDriveForce = g.Force;
                         }
 
                         _grip.Remove(key);
@@ -7614,6 +7619,7 @@ namespace Hoodrich.Locations
 
                     h.TractionCurveMax = pair.Value.Max;
                     h.TractionCurveMin = pair.Value.Min;
+                    h.InitialDriveForce = pair.Value.Force;
                 }
                 catch
                 {
@@ -7629,6 +7635,7 @@ namespace Hoodrich.Locations
         {
             public float Max;
             public float Min;
+            public float Force;
             public int Count;
         }
 
@@ -7636,13 +7643,15 @@ namespace Hoodrich.Locations
         private readonly HashSet<int> _slick = new HashSet<int>();
 
         /// <summary>
-        /// What share of its grip a car keeps on the circle. Nought is ice; one is a road car.
-        ///
-        /// Two fifths, down from three. The donut comes from the tyres and nowhere else now
-        /// -- the engine is the car's own -- so this is the figure that decides whether full
-        /// lock and the throttle is a loop of wheelspin or a car pulling itself round.
+        /// What share of its grip a car keeps on the circle, and how much engine it gets.
+        /// Nought is ice; one is a road car. Both the ini's ([Block] TakeoverGrip and
+        /// TakeoverPower), because they are the two numbers that decide whether full lock and
+        /// the throttle is a loop of wheelspin or a car pulling itself round, and that can only
+        /// be judged from the pavement. They ship at a third of the grip and one and six tenths
+        /// of the drive force -- "more torque so they burn out better, or less grip".
         /// </summary>
-        private const float SlickTraction = 0.42f;
+        private float SlickTraction => _cfg == null ? 0.35f : _cfg.TakeoverGrip;
+        private float Power => _cfg == null ? 1.6f : _cfg.TakeoverPower;
 
         // ==================================================================
         // The kerb
