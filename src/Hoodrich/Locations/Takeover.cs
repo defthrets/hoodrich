@@ -6123,7 +6123,7 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>Near enough to his mark to pick the show back up, and the most it is given. See Roam for why four.</summary>
-        private const float BackWhen = 4f;
+        private const float BackWhen = 3f;
         private const int BackGiveUpMs = 12000;
 
         /// <summary>
@@ -6177,8 +6177,14 @@ namespace Hoodrich.Locations
                 var r = SpinRadius + 5f;
                 var most = Ring - 5f;
 
+                // NEVER INSIDE THE WAY BACK. Whatever the ini says -- Michael runs a 3 -- a
+                // car that has just counted as back at his mark is at most the mark ring plus
+                // BackWhen from the middle, and the leash sits two metres past that or the
+                // stop-start is back. Twelve as it stands, and Davis is capped there anyway.
+                var least = PitchRing + BackWhen + 2f;
+
+                if (r < least) r = least;
                 if (r > most) r = most;
-                if (r < 8f) r = 8f;
                 return r;
             }
         }
