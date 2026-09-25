@@ -408,9 +408,15 @@ namespace Hoodrich.Api
 
                 var have = _state.Stash.PackagedOf(id);
                 var take = Math.Min(grams, have);
-                if (take <= 0.005f) return 0;
 
-                return _pricing.SaleValue(def, take, _state.Stash.PurityOf(id));
+                // THE SAME TWO REFUSALS AS Sell, so a quote is never a number Sell would not
+                // pay. See the notes there.
+                if (take < UseUnit - 0.001f) return 0;
+
+                var purity = _state.Stash.PurityOf(id);
+                if (!Economy.Stash.Sellable(purity)) return 0;
+
+                return _pricing.SaleValue(def, take, purity);
             }
             catch { return 0; }
         }
@@ -453,6 +459,9 @@ namespace Hoodrich.Api
         /// WHAT IT DOES NOT DO is roll for a refusal or apply heat. The caller decided this
         /// person was buying before it got here; see RefusalChance and Refused.
         ///
+        /// WHAT IT REFUSES is what the corner refuses: less than one whole unit, and product
+        /// under the purity floor. Nought comes back and nothing moves.
+        ///
         /// Nought or less asks for everything of that kind in your pockets.
         /// </remarks>
         public static int Sell(string id, float grams)
@@ -466,11 +475,23 @@ namespace Hoodrich.Api
 
                 var have = _state.Stash.PackagedOf(id);
                 var want = grams <= 0.005f ? have : Math.Min(grams, have);
-                if (want <= 0.005f) return 0;
+
+                // ONE WHOLE UNIT AT LEAST -- a gram, or a pill. SaleValue never pays less than
+                // a dollar, which is right for a hand-to-hand and wrong for a slider: a sliver
+                // of a gram came out at $1, so a caller selling slivers over and over was paid
+                // many times what the gram was worth. Nobody on the corner asks for less than
+                // one either -- see PostUp.DealSizes -- and from one up the rounding is cents.
+                if (want < UseUnit - 0.001f) return 0;
 
                 // Purity is read BEFORE the weight leaves, because removing the last of a
                 // batch resets what the stash reports and the price would follow it.
                 var purity = _state.Stash.PurityOf(id);
+
+                // AND NOTHING NOBODY WOULD BUY. The corner refuses product under the floor
+                // before a customer is even called -- see PostUp.Start -- and this has to hold
+                // the same line, or product taken in weak through Loot sells here and nowhere
+                // else. RefusalChance only makes it unlikely; this makes it impossible.
+                if (!Economy.Stash.Sellable(purity)) return 0;
 
                 var sold = _state.Stash.RemovePackaged(id, want);
                 if (sold <= 0.005f) return 0;
@@ -486,6 +507,25 @@ namespace Hoodrich.Api
                 _state.TotalEarned += payout;
                 _state.LastDeal = payout;
                 _state.Touch();
+
+                // AND HIS CREW'S BOOKS, which this left out. A corner sale made while he is
+                // affiliated goes on the gang's earnings and deal count and earns it standing
+                // -- see PostUp.CompleteSale -- so the same sale through another mod's screen
+                // has to as well, or dealing that way never counts for the set he reps.
+                var crew = _pricing.Crew;
+
+                if (crew != null && crew.IsAffiliated)
+                {
+                    var standing = crew.CurrentStanding;
+
+                    if (standing != null)
+                    {
+                        standing.MoneyEarned += payout;
+                        standing.Deals++;
+                    }
+
+                    crew.CreditSale();
+                }
 
                 _pricing.SoldHere(sold);
 
