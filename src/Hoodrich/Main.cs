@@ -902,6 +902,8 @@ namespace Hoodrich
                 _stash = new StashHouse(_cfg);
                 _stash.Told = () => _state.SeenHouse;
                 _stash.Tell = () => { _state.SeenHouse = true; _state.Touch(); };
+                // And the same cupboard from inside the room Parkview rents. See Core.Home.
+                _stash.Elsewhere = () => Core.Home.IsInRoom;
 
                 // THE HOUSE, EXPLAINED ONCE. First time through the door the readout puts up
                 // the kitchen, the bed, the closet and the stash -- see HouseGuide -- and the
@@ -1237,6 +1239,23 @@ namespace Hoodrich
                     Wardrobe.Remember(_state);
                     if (before != string.Join("|", _state.Outfit) && _social != null) _social.On(SocialEvent.Dressed);
                 };
+
+                // THE ROOM PARKVIEW RENTS reaches the same closet, the same counter and the same
+                // cupboard through here: Parkview is a second script in this dll with no hold on
+                // this one, so the screens go on a shelf it can see. See Core.Home.
+                Core.Home.OpenWardrobe = heading =>
+                {
+                    if (_wardrobeScreen == null || _wardrobeScreen.IsOpen || AnyScreenUp()) return;
+                    _wardrobeScreen.Open(heading);
+                };
+                Core.Home.OpenTable = () =>
+                {
+                    if (_cook == null || _cook.IsOpen || AnyScreenUp()) return;
+                    if (_cutting != null && _cutting.IsBusy) return;
+                    _state.SeenKitchen = true;
+                    OpenKitchen("The Table");
+                };
+                Core.Home.Busy = () => AnyScreenUp() || (_cutting != null && _cutting.IsBusy);
 
                 // WITHOUT THIS THE TAG RUNS WOULD BE A STEP BACKWARDS. The old mechanic wrote
                 // its marks into save.json and put them back on the wall next session; the
@@ -3169,8 +3188,10 @@ namespace Hoodrich
 
                 // He delivers to an address, so he needs the address -- and the only place you
                 // can call him from is standing at it.
-                _delivery.AtHome = () => _stash.AtDoor;
-                _dealers.AtHome = () => _stash.AtDoor;
+                // Denise's door and only Denise's: a box is brought to a house, and the room
+                // Parkview rents has no door a plug knows. The cupboard is reached from both.
+                _delivery.AtHome = () => _stash.AtDenise;
+                _dealers.AtHome = () => _stash.AtDenise;
                 _delivery.HouseDoor = _stash.Position;
                 _delivery.House = _stash.Stash;
 
@@ -4149,7 +4170,8 @@ namespace Hoodrich
                 // Working product owns the screen while the choice is being made.
                 if (_cook.IsOpen)
                 {
-                    if (!available || !_kitchen.InReach) _cook.Close();
+                    // Or at the table in the rented room, which is the same screen. See Core.Home.
+                    if (!available || !(_kitchen.InReach || Core.Home.IsAtTable)) _cook.Close();
                     else
                     {
                         Core.Pace.At("_cook.Update");
@@ -5573,8 +5595,9 @@ namespace Hoodrich
         }
 
         /// <summary>Opens the kitchen screen with everything it needs to start a batch.</summary>
-        private void OpenKitchen()
+        private void OpenKitchen(string title = "The Kitchen")
         {
+            _cook.Title = title;
             // The house stash goes in too: you are standing in the kitchen of the place the
             // weight is kept, and having to walk to the other screen to move a kilo eight feet
             // is not a decision, it is an errand.
@@ -5902,6 +5925,7 @@ namespace Hoodrich
             // is the same answer they get before this mod has started.
             try { Api.Drugs.Unwire(); } catch { /* teardown */ }
             try { Api.Block.Unwire(); } catch { /* teardown */ }
+            try { Core.Home.UnwireHouse(); } catch { /* teardown */ }
 
             // And nobody of ours is left on NPC Mind's table vouched for by a script that is
             // gone. See Folk.Prune.

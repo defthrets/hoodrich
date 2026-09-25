@@ -186,6 +186,11 @@ namespace Hoodrich.Parkview
             ReadSave();
             Blips();
 
+            // Where he is stood, for the house: the cupboard opens from inside a rented room
+            // and the cook screen stays up while he is at the table. See Core.Home.
+            Home.InRoom = () => _inside >= 0;
+            Home.AtTable = () => _inside >= 0 && Near("cut", 1.2f);
+
             Log.Info("Rooms: " + _doors.Count + " door(s), " + Mine() + " rented. The room is " +
                      (_roomIsOurs ? "the one you set" : "the one it ships with") + " at " + Say(_room) + ".");
 
@@ -426,6 +431,28 @@ namespace Hoodrich.Parkview
             }
         }
 
+        /// <summary>Whether he is stood within reach of a spot that does this, plus some slack.</summary>
+        private bool Near(string action, float slack)
+        {
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return false;
+
+                foreach (var s in _acts)
+                {
+                    if (s.Action != action) continue;
+                    if (me.Position.DistanceTo(s.At) <= s.Reach + slack) return true;
+                }
+            }
+            catch
+            {
+                /* not near */
+            }
+
+            return false;
+        }
+
         /// <summary>The spots, drawn and offered. Returns true when one took the prompt.</summary>
         private bool Acts(Ped me, int now)
         {
@@ -444,16 +471,61 @@ namespace Hoodrich.Parkview
                     return true;
                 }
 
+                // THE CLOSET AND THE TABLE ARE THE HOUSE'S, reached through Core.Home: the
+                // same wardrobe screen as the closet at Denise's, the same cook screen as her
+                // kitchen counter with "The Table" over it, and the same cupboard behind
+                // both. Until Main has put them on the shelf they say so and do nothing.
+                if (s.Action == "wardrobe")
+                {
+                    if (Home.OpenWardrobe == null)
+                    {
+                        Say(s.Label + " -- Posted Up is not running.");
+                        return true;
+                    }
+
+                    Say("Press ~INPUT_CONTEXT~ to change at " + s.Label + ".");
+
+                    if (Tapped())
+                    {
+                        // TURNED TO PUT THE CLOSET AT HIS BACK. He walked up to it, so it is
+                        // in front of him; the wardrobe camera stands in front of whichever
+                        // way he faces, and a shot of a man against the inside of a closet
+                        // door is the picture Denise's fixed heading was chosen to avoid.
+                        // Round the other way, the closet is behind him and the room is
+                        // behind the camera, which is that same picture in this room.
+                        var away = me.Heading + 180f;
+                        if (away >= 360f) away -= 360f;
+
+                        Home.OpenWardrobe(away);
+                    }
+
+                    return true;
+                }
+
+                if (s.Action == "cut")
+                {
+                    if (Home.OpenTable == null)
+                    {
+                        Say(s.Label + " -- Posted Up is not running.");
+                        return true;
+                    }
+
+                    // The clips warmed while he reads the prompt, the same as at the counter,
+                    // so the batch does not open with a man stood still waiting for them.
+                    Economy.PrepAnimation.Preload("");
+
+                    Say("Press ~INPUT_CONTEXT~ to work the product.");
+                    if (Tapped()) Home.OpenTable();
+                    return true;
+                }
+
                 if (!PostedUp())
                 {
                     Say(s.Label + " -- Posted Up is not running.");
                     return true;
                 }
 
-                // Posted Up is here, but it has no way in from outside itself yet: its
-                // wardrobe is one hard-coded closet at Denise's and the cook screen opens
-                // off the phone. Both need a call on its Api, which is the next piece.
-                Say(s.Label + " -- open it on the phone for now.");
+                Say(s.Label + ".");
                 return true;
             }
 
@@ -503,6 +575,8 @@ namespace Hoodrich.Parkview
         /// <summary>Taken down with the script, so a reload does not leave them stacked up.</summary>
         public void Down()
         {
+            Home.UnwireRoom();
+
             try
             {
                 if (_houseBlip != 0) Function.Call(Hash.REMOVE_BLIP, new OutputArgument(_houseBlip));
@@ -749,6 +823,12 @@ namespace Hoodrich.Parkview
 
             var me = Game.Player.Character;
             if (me == null || !me.Exists() || !me.IsAlive) { Say(null); return; }
+
+            // THE HOUSE HAS THE SCREEN, OR THE HANDS. While the closet or the cook screen is
+            // up, or a batch is running at the table, nothing here is offered and nothing
+            // here listens for the key -- the prompt to leave the room over a man bagging
+            // product is a prompt that either interrupts him or lies.
+            if (Home.IsBusy) { Say(null); return; }
 
             // INSIDE. The way out is the same button as the way in, and it is offered from
             // anywhere in the room rather than off a mark, because a small room has no door
@@ -1284,7 +1364,18 @@ namespace Hoodrich.Parkview
 
             _inside = i;
             Log.Debug("Rooms: into " + _doors[i].Name + " at " + Say(to) + ".");
+
+            // Said once a session, the first time he is in. The room has three spots and a
+            // cupboard you cannot see, and nothing else in here says what any of them do.
+            if (!_toldRoom)
+            {
+                _toldRoom = true;
+                Notify.Ticker("~g~Your spot.~s~ The bed sleeps, the closet dresses you, the table works the product, " +
+                              "and your pockets reach the cupboard from in here.");
+            }
         }
+
+        private bool _toldRoom;
 
         private void Leave()
         {

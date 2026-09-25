@@ -12,7 +12,10 @@ Radius is how near you have to be stood, in metres. Action is one of:
 
 A line starting with # is ignored, and so is anything without three bars.
 
-SLEEP IS OURS. The other two are Posted Up's, and without it they say so and
+THE CLOSET IS DENISE'S CLOSET AND THE TABLE IS HER COUNTER: the same wardrobe
+screen, the same cook screen with "The Table" over it, the same hands on the
+product, and the same cupboard behind both -- what you leave at Denise's is what
+you find here. Since 2026-09-25; see Core.Home. Without Posted Up they say so and
 do nothing -- the room is still a room you can sleep in.
 
 The three below are in the motel room behind B2, read off the coordinate HUD:
