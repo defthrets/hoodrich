@@ -189,7 +189,8 @@ namespace Hoodrich
                                    || _modShop.IsOpen
                                    || _graffiti.IsOpen || _ridePick.IsOpen || _wardrobeScreen.IsOpen
                                    || (_maskScreen != null && _maskScreen.IsOpen)
-                                   || (_boot != null && _boot.IsOpen);
+                                   || (_boot != null && _boot.IsOpen)
+                                   || (_den != null && _den.IsPlaying);
         }
         private bool _dressed;
 
@@ -779,6 +780,10 @@ namespace Hoodrich
         /// <summary>When NPC Mind's table of our people was last swept. See OnTick.</summary>
         private int _folkTidiedAt;
 
+        /// <summary>The gambling den behind the [GamblingDen] door, and the door itself. See Den.Floor.</summary>
+        private Den.Floor _den;
+        private InteriorDoor _denDoor;
+
         /// <summary>Franklin's and Denise's front doors, held open. See HouseDoors.</summary>
         private readonly HouseDoors _houseDoors = new HouseDoors();
         private readonly BlockLife _block;
@@ -1342,8 +1347,22 @@ namespace Hoodrich
                     // find out why -- the prompt does not appear, so there is nothing to read.
                     // The rooms are part of the place; the work inside them is where the
                     // progression belongs.
-                    _doors.Add(new InteriorDoor(spec));
-                }                // The lab has people on it.
+                    var door = new InteriorDoor(spec);
+
+                    // THE DEN'S DOOR IS KEPT, because the room behind it has a floor to run:
+                    // dealers, the jukebox, the games. See Den.Floor.
+                    if (string.Equals(spec.Section, "GamblingDen", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _denDoor = door;
+                    }
+
+                    _doors.Add(door);
+                }
+
+                // The floor behind the den's door. Nothing if the ini has no such door.
+                _den = new Den.Floor(_cfg, _gangs, _denDoor);
+
+                // The lab has people on it.
                 _labCrew = new Entourage(_gangs, "families",
                                          new Vector3(-201.384f, -1707.909f, 32.664f),
                                          313.362f, "the lab")
@@ -4115,6 +4134,18 @@ namespace Hoodrich
                     }
                 }
 
+                // A game at the den owns the screen and the keys while it is up: the bet is
+                // on the arrows and Enter, and nothing else in the mod should read them. It
+                // ends itself when you get up or walk out. See Den.Floor.
+                if (_den != null && _den.IsPlaying)
+                {
+                    Core.Pace.At("_den.Update");
+                    _den.Update();
+                    SlowTick();
+                    _failures = 0;
+                    return;
+                }
+
                 // Working product owns the screen while the choice is being made.
                 if (_cook.IsOpen)
                 {
@@ -4546,6 +4577,13 @@ namespace Hoodrich
                     Core.Pace.At("_armourerStockB.Update");
                     _armourerStockB.Update();
                     foreach (var door in _doors) door.Update();
+
+                    // The floor behind the den's door: dealers stood, jukebox on, a game
+                    // offered when you are at a table. Runs while a game is NOT up; a game
+                    // that is up owns the tick higher up.
+                    Core.Pace.At("_den.Update");
+                    if (_den != null) _den.Update();
+
                     Core.Pace.At("_traffic.Update");
                     _traffic.Update();
                     Core.Pace.At("_bag.Update");
@@ -6003,6 +6041,7 @@ namespace Hoodrich
             try { _homies?.RestoreWorld(); } catch { /* teardown */ }
             try { _armourerStockA?.RestoreWorld(); } catch { /* teardown */ }
             try { _armourerStockB?.RestoreWorld(); } catch { /* teardown */ }
+            try { _den?.RestoreWorld(); } catch { /* teardown */ }
             foreach (var door in _doors)
             {
                 try { door.RestoreWorld(); } catch { /* teardown */ }
