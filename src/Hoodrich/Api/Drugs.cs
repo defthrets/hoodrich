@@ -764,5 +764,95 @@ namespace Hoodrich.Api
                 return "Could not";
             }
         }
+
+        // ---- a search: what it finds, and taking it -------------------------------
+
+        /// <summary>
+        /// Uncut weight of that kind in his pockets. Zero for anything unknown.
+        /// </summary>
+        ///
+        /// <remarks>
+        /// FOR A POLICEMAN, NOT A POCKET SCREEN. Ids and GramsOf answer "what could he use" and
+        /// leave stock out on purpose; a search is not asking that, and a brick in the same
+        /// pocket as a baggie was invisible to a man with his hands on it. Everything from here
+        /// down was added for Five0 Patrol's search, without bumping ApiVersion, the way the bag
+        /// was: a caller asking for these is newer than the surface, and an older one never asks.
+        /// </remarks>
+        public static float BulkOf(string id)
+        {
+            try { return Ready ? _state.Stash.BulkOf(id) : 0f; }
+            catch { return 0f; }
+        }
+
+        /// <summary>Uncut weight of that kind in the bag, on his back or not.</summary>
+        public static float BagBulkOf(string id)
+        {
+            try { return Ready && _state.Bag != null ? _state.Bag.Stash.BulkOf(id) : 0f; }
+            catch { return 0f; }
+        }
+
+        /// <summary>That much weight spelled the way stock is spelled -- kilos past a thousand grams. "" if unknown.</summary>
+        public static string BulkAmountOf(string id, float quantity)
+        {
+            try
+            {
+                if (!Ready) return "";
+                var def = _catalogue.Get(id);
+                return def == null ? "" : def.Bulk(quantity);
+            }
+            catch { return ""; }
+        }
+
+        /// <summary>
+        /// Taken off him by the police: all the product in his pockets, bagged and uncut, and --
+        /// when bagToo -- everything in the bag on his back. How much went, in the stash's units.
+        /// </summary>
+        ///
+        /// <remarks>
+        /// THE ONE WAY OUT OF THE STASH THAT PAYS NOTHING AND COUNTS FOR NOTHING. Not a sale, so
+        /// no money, no respect and no block saturation; not a use, so no high. It is a loss,
+        /// and the only thing it moves is the stash -- which is then saved, because product the
+        /// police took coming back on the next load would make being searched free.
+        ///
+        /// THE WORN BAG ONLY. A bag on a floor two streets away is not on the man being
+        /// searched, whatever bagToo says.
+        ///
+        /// THE LOT, WHATEVER IT IS. Cleared rather than walked kind by kind, so a kind the
+        /// catalogue no longer lists -- an old save, a drug taken out of drugs.json -- goes with
+        /// the rest instead of staying in a pocket nobody can see into.
+        /// </remarks>
+        public static float Seize(bool bagToo)
+        {
+            try
+            {
+                if (!Ready) return 0f;
+
+                var took = _state.Stash.Total;
+                _state.Stash.Clear();
+
+                var bag = _state.Bag;
+                var fromBag = bagToo && bag != null && bag.Worn;
+
+                if (fromBag)
+                {
+                    took += bag.Stash.Total;
+                    bag.Stash.Clear();
+                }
+
+                if (took > 0.005f)
+                {
+                    _state.Touch();
+                    Core.Log.Info("Api.Drugs: " + took.ToString("0.#") + " of product taken by another mod's police" +
+                                  (fromBag ? ", the bag on his back included." : "."));
+                }
+
+                return took;
+            }
+            catch (Exception ex)
+            {
+                Core.Log.Debug("Api.Drugs.Seize failed: " + ex.Message);
+                return 0f;
+            }
+        }
     }
 }
