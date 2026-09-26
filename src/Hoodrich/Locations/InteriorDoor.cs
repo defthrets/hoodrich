@@ -590,6 +590,7 @@ namespace Hoodrich.Locations
 
                 if (early != 0)
                 {
+                    Open(early);
                     Function.Call(Hash.PIN_INTERIOR_IN_MEMORY, early);
                     Dress(early);
                 }
@@ -619,6 +620,7 @@ namespace Hoodrich.Locations
 
                 if (interior != 0)
                 {
+                    Open(interior);
                     Function.Call(Hash.PIN_INTERIOR_IN_MEMORY, interior);
                     Function.Call(Hash.SET_INTERIOR_ACTIVE, interior, true);
                     Dress(interior);
@@ -685,6 +687,7 @@ namespace Hoodrich.Locations
 
                         if (interior != 0)
                         {
+                            Open(interior);
                             Function.Call(Hash.PIN_INTERIOR_IN_MEMORY, interior);
                             Function.Call(Hash.SET_INTERIOR_ACTIVE, interior, true);
                             Dress(interior);
@@ -738,7 +741,9 @@ namespace Hoodrich.Locations
                 // three apart, and without them the next attempt is another guess.
                 Log.Info("Entering " + _spec.Name + ": ipl " + _spec.Ipl + " active=" + iplOn +
                          ", interior=" + interior + ", he is in interior=" + inRoom +
-                         ", waited " + waited + "ms");
+                         ", waited " + waited + "ms" +
+                         (_enabled != 0 ? ", switched on by us" : "") +
+                         (_uncapped != 0 ? ", uncapped by us" : ""));
 
                 if (waited >= StreamCeilingMs)
                 {
@@ -962,7 +967,8 @@ namespace Hoodrich.Locations
             Core.Indoors.Enter(Back, _spec.Name);
             _enteredAt = Game.GameTime;
 
-            // The furniture too, in case whatever put him here did not bring it.
+            // Switched on, and the furniture too, in case whatever put him here did not bring it.
+            Open(room);
             Dress(room);
 
             // Deliberately NOT cleared. If a reload happened while he was inside, the doorway
@@ -1124,6 +1130,9 @@ namespace Hoodrich.Locations
                 // map the story happens in.
                 Map(false);
 
+                // And the room as the game had it. See Open.
+                Close();
+
                 Log.Info("Out of the " + _spec.Name + " to " + Back +
                          (_cameFrom == Vector3.Zero
                               ? " (the ini's door -- nothing remembered the way in)"
@@ -1216,6 +1225,64 @@ namespace Hoodrich.Locations
         /// for a room that was there either way, and the player walked out of a shop into a
         /// city that was not the one he walked into it from.
         /// </summary>
+        /// <summary>
+        /// The room switched on, if the story game has it switched off.
+        ///
+        /// A ROOM CAN BE THERE AND STILL NOT BE THERE. The garages under Pillbox Hill came with
+        /// GTA Online and ship in the story map, and the game finds one at its coordinate -- but
+        /// the story game keeps them switched off, so nothing inside ever streams: no floor, no
+        /// walls, and a man stood in it is in no interior at all. The log said exactly that on
+        /// 2026-09-26 for the six-car garage: "interior=95746, he is in interior=0, waited
+        /// 8000ms", then no floor. The morgue, tried a few minutes before, came up in a second,
+        /// because nothing had it switched off. So a door switches its room on before it goes
+        /// in, says so, and switches it back off on the way out. See Close.
+        /// </summary>
+        private void Open(int interior)
+        {
+            if (interior == 0) return;
+
+            try
+            {
+                if (Function.Call<bool>(Hash.IS_INTERIOR_DISABLED, interior))
+                {
+                    Function.Call(Hash.DISABLE_INTERIOR, interior, false);
+                    _enabled = interior;
+                    Log.Info("The " + _spec.Name + " (interior " + interior + ") was switched off in the story game; switched on.");
+                }
+
+                if (Function.Call<bool>(Hash.IS_INTERIOR_CAPPED, interior))
+                {
+                    Function.Call(Hash.CAP_INTERIOR, interior, false);
+                    _uncapped = interior;
+                    Log.Info("The " + _spec.Name + " (interior " + interior + ") was capped in the story game; uncapped.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not switch on the " + _spec.Name + ": " + ex.Message);
+            }
+        }
+
+        /// <summary>Whatever Open switched on, switched off again: the room as the game had it.</summary>
+        private void Close()
+        {
+            try
+            {
+                if (_uncapped != 0) Function.Call(Hash.CAP_INTERIOR, _uncapped, true);
+                if (_enabled != 0) Function.Call(Hash.DISABLE_INTERIOR, _enabled, true);
+            }
+            catch
+            {
+                // It stays on. It is under the map; nobody walks into it by accident.
+            }
+
+            _uncapped = 0;
+            _enabled = 0;
+        }
+
+        private int _enabled;
+        private int _uncapped;
+
         private void Map(bool on)
         {
             if (!Online)
