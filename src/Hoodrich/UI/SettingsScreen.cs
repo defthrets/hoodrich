@@ -858,6 +858,12 @@ namespace Hoodrich.UI
                   0.5f, 3f, 0.1f, "0.0", "x",
                   note: "Scales every drug animation. The camera follows it");
 
+            // ---- the court -------------------------------------------------------
+            Head("The court");
+            Tick("Show the hoops' rings", "Hoops", "ShowRings",
+                 () => c.HoopRings, v => c.HoopRings = v,
+                 "A ring on each hoop where the ball has to go through. From the next game");
+
             // ---- lamar and tanya -------------------------------------------------
             Head("Lamar and Tanya");
             Slide("Lamar rests between jobs", "Jobs", "LamarRestMinutes",
@@ -1843,6 +1849,7 @@ namespace Hoodrich.UI
                 case "supply": return "crate.png";
                 case "risk": return "warning.png";
                 case "getting high": return "blunt.png";
+                case "the court": return "ball.png";
                 case "lamar and tanya": return "tow.png";
                 case "spooner scenes": return "box.png";
                 case "shortcuts": return "key.png";

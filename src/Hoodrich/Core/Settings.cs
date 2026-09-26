@@ -474,6 +474,13 @@ namespace Hoodrich.Core
         /// <summary>The static emitters that are the den's jukebox, semicolon-separated. Empty is a quiet room.</summary>
         public string DenJukebox = "";
 
+        /// <summary>
+        /// The hoops' rings drawn on the court -- where the ball has to come down through -- to
+        /// practise with. Off, the court is just the court. The game reads [Hoops] ShowRings itself
+        /// as each game starts; this is for the settings screen. See Court.Shootaround.
+        /// </summary>
+        public bool HoopRings;
+
         /// <summary>How much longer or shorter every drug-taking animation runs.</summary>
         public float DrugAnimLength = 1f;
 
@@ -1040,6 +1047,7 @@ namespace Hoodrich.Core
             s.DenMaxBet = (int)Clamp(ini.GetInt("GamblingDen", "MaxBet", s.DenMaxBet), s.DenMinBet, 10000000f);
             s.DenSlotBet = (int)Clamp(ini.GetInt("GamblingDen", "SlotBet", s.DenSlotBet), 1f, 1000000f);
             s.DenJukebox = ini.GetString("GamblingDen", "Jukebox", s.DenJukebox);
+            s.HoopRings = ini.GetBool("Hoops", "ShowRings", s.HoopRings);
 
             // Where each held thing sits in his hand, as set on the settings screen. See Economy.Fit.
             foreach (var prop in Economy.Fit.Names)

@@ -89,15 +89,14 @@ namespace Hoodrich.Court
         /// the game was started. Placed by hand on the court (see RingPlacing); a placing in the
         /// ini is read over these, and a hoop added on the court (D-pad left) is Ring3 and on.
         ///
-        /// Hoop 2's is Michael's own, placed on 2026-09-26: 51 cm across, 3.09 m up, and 5.2 m
-        /// from the spot -- a metre further out than a regulation court puts it, which is where the
-        /// first guess had it. Hoop 1's is hoop 2's turned end for end about the middle of the court
-        /// until he places it too.
+        /// Both are Michael's own, placed on the court on 2026-09-26: 51 cm across and 3.09 m up,
+        /// each 5.2 m out from the top of its key -- a metre further than a regulation court puts
+        /// it, which is where the first guess had them, and balls went in through thin air.
         /// </summary>
         private static readonly Vector3[] RingAt =
         {
-            new Vector3(-197.998f, -1504.840f, 33.707f),
-            new Vector3(-213.102f, -1522.676f, 33.692f)
+            new Vector3(-197.979f, -1504.685f, 33.707f),
+            new Vector3(-213.079f, -1522.687f, 33.692f)
         };
 
         private static readonly float[] RingWide = { 0.254f, 0.254f };
@@ -115,8 +114,16 @@ namespace Hoodrich.Court
         /// </summary>
         private static readonly float[] Grip = { -2.5f, 0f, 4.5f, 10f, 0f, 0f };
 
-        /// <summary>The developer tools are on: the ring placer and the other ways to shoot are offered. Read as a game starts.</summary>
+        /// <summary>The developer tools are on: the placers are offered. Read as a game starts.</summary>
         private bool _dev;
+
+        /// <summary>
+        /// The rings are drawn on the hoops, to practise with -- [Hoops] ShowRings, off unless a
+        /// player turns it on. They were drawn whenever the developer tools were on, and Michael
+        /// asked for them gone once they were placed "unless the settings is up for them".
+        /// Read as a game starts.
+        /// </summary>
+        private bool _showRings;
 
         /// <summary>Street Golf's meter, slowed for a hoop: up and back down over this long while the button is held.</summary>
         private const float ChargeTime = 2.6f;
@@ -336,12 +343,14 @@ namespace Hoodrich.Court
         {
             CourtHost.Swallow();
 
-            // Whether the builder's tools are his.
+            // Whether the builder's tools are his, and whether he wants the rings to see.
             _dev = false;
+            _showRings = false;
 
             try
             {
                 _dev = string.Equals(CourtHost.Read("Developer", "Tools", "false").Trim(), "true", StringComparison.OrdinalIgnoreCase);
+                _showRings = string.Equals(CourtHost.Read("Hoops", "ShowRings", "false").Trim(), "true", StringComparison.OrdinalIgnoreCase);
             }
             catch { }
 
@@ -1270,8 +1279,9 @@ namespace Hoodrich.Court
                                      Control.PhoneCancel, "Put the ball down");
             }
 
-            // Where a basket has to go through, for somebody placing them.
-            if (_dev) Rings(-1);
+            // Where a basket has to go through, for somebody who asked to see it. The ring placer
+            // draws its own, whatever this says.
+            if (_showRings) Rings(-1);
 
             if (_mode == Mode.Holding || _mode == Mode.Charging) Line(me);
             if (_mode == Mode.Charging) Meter();
