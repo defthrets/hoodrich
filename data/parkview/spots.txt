@@ -24,3 +24,9 @@ the bed, the closet, and the table with the bong on it.
 152.844, -1004.358, -99.000 | 1.6 | sleep    | the bed
 151.799, -1000.879, -99.000 | 1.4 | wardrobe | the closet
 153.782, -1007.047, -99.000 | 1.5 | cut      | the table
+
+The two below are in Apartment E2, the janitor's flat, read off the coordinate
+HUD on 2026-09-26: the kitchen bench, and the couch he sleeps on.
+
+-112.144,   -7.693,  70.520 | 1.4 | cut      | the kitchen bench
+-112.082,  -10.433,  70.520 | 1.5 | sleep    | the couch

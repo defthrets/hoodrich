@@ -907,8 +907,9 @@ namespace Hoodrich
                 _stash = new StashHouse(_cfg);
                 _stash.Told = () => _state.SeenHouse;
                 _stash.Tell = () => { _state.SeenHouse = true; _state.Touch(); };
-                // And the same cupboard from inside the room Parkview rents. See Core.Home.
-                _stash.Elsewhere = () => Core.Home.IsInRoom;
+                // And the same cupboard from inside the room Parkview rents, or a place he rents
+                // behind one of the doors -- Apartment E2. See Core.Home.
+                _stash.Elsewhere = () => Core.Home.IsInRoom || _doors.Exists(d => d.IsLet && d.IsInside);
 
                 // THE HOUSE, EXPLAINED ONCE. First time through the door the readout puts up
                 // the kitchen, the bed, the closet and the stash -- see HouseGuide -- and the

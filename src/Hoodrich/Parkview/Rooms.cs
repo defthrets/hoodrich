@@ -195,7 +195,10 @@ namespace Hoodrich.Parkview
             // Where he is stood, for the house: the cupboard opens from inside a rented room
             // and the cook screen stays up while he is at the table. See Core.Home.
             Home.InRoom = () => _inside >= 0;
-            Home.AtTable = () => _inside >= 0 && Near("cut", 1.2f);
+
+            // AT A TABLE WHEREVER ONE STANDS. A spot is only reachable where it is, and since
+            // 2026-09-26 there is one outside the motel -- the kitchen bench in Apartment E2.
+            Home.AtTable = () => Near("cut", 1.2f);
 
             Log.Info("Rooms: " + _doors.Count + " door(s), " + Mine() + " rented. The room is " +
                      (_roomIsOurs ? "the one you set" : "the one it ships with") + " at " + Say(_room) + ".");
@@ -919,6 +922,11 @@ namespace Hoodrich.Parkview
                 Say(null);
                 return;
             }
+
+            // THE SPOTS IN HIS OTHER PLACES. A spot is only reachable where it stands, so one
+            // somewhere that is not a Parkview room -- the bench and the couch in Apartment E2,
+            // behind one of Hoodrich's doors -- is offered the same way the motel's are.
+            if (Acts(me, now)) return;
 
             for (var i = 0; i < _places.Count; i++)
             {

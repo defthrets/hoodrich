@@ -480,6 +480,9 @@ namespace Hoodrich.Locations
 
         public bool IsInside => _inside;
 
+        /// <summary>A door he rents rather than walks through. Being inside one means it is his.</summary>
+        public bool IsLet => _spec.Rent > 0;
+
 
         public void Update()
         {
