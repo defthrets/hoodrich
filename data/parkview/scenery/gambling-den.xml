@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <SpoonerPlacements>
-	<Note>The gambling den, in the two-car garage under Pillbox Hill: Michael's Menyoo save gambleden of 2026-09-26. The roulette, the poker table and the three slots were swapped from the Casino Heist ch_ models to the Diamond's vw_ ones the casino's animations are made for, and the two Families men carry compact rifles. | absorbs: gambleden | indoors | stays: 706841, 762119, 693013, 419121 | idles: 706841=WORLD_HUMAN_SMOKING_POT,WORLD_HUMAN_DRINKING,WORLD_HUMAN_PARTYING; 762119=WORLD_HUMAN_GUARD_STAND,WORLD_HUMAN_STAND_IMPATIENT_UPRIGHT</Note>
+	<Note>The gambling den, in the two-car garage under Pillbox Hill: Michael's Menyoo save gambleden of 2026-09-26. The roulette, the poker table and the three slots were swapped from the Casino Heist ch_ models to the Diamond's vw_ ones the casino's animations are made for, and the two Families men carry compact rifles and stand guard. The three neons -- Blarneys, Logger, Baracho -- are from his save neonden, later the same day. | absorbs: gambleden, neonden | indoors | stays: 706841, 762119, 693013, 419121 | guards: 693013, 419121 | idles: 706841=WORLD_HUMAN_SMOKING_POT,WORLD_HUMAN_DRINKING,WORLD_HUMAN_PARTYING; 762119=WORLD_HUMAN_GUARD_STAND,WORLD_HUMAN_STAND_IMPATIENT_UPRIGHT</Note>
 	<AudioFile volume="400" />
 	<ClearDatabase>false</ClearDatabase>
 	<ClearWorld>0</ClearWorld>
@@ -1510,6 +1510,108 @@
 			<Pitch>0</Pitch>
 			<Roll>0</Roll>
 			<Yaw>-27.0718288</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x1ea37333</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>v_ret_neon_blarneys</HashName>
+		<InitialHandle>227141</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>174.27272</X>
+			<Y>-1008.36456</Y>
+			<Z>-97.8504562</Z>
+			<Pitch>0</Pitch>
+			<Roll>-0</Roll>
+			<Yaw>179.866882</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x8d41c8bd</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>v_ret_neon_logger</HashName>
+		<InitialHandle>298316</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>171.162903</X>
+			<Y>-1000.39807</Y>
+			<Z>-97.862175</Z>
+			<Pitch>0</Pitch>
+			<Roll>0</Roll>
+			<Yaw>-1.38947546</Yaw>
+		</PositionRotation>
+		<Attachment isAttached="false" />
+	</Placement>
+	<Placement>
+		<ModelHash>0x00e11661</ModelHash>
+		<Type>3</Type>
+		<Dynamic>false</Dynamic>
+		<FrozenPos>true</FrozenPos>
+		<HashName>v_ret_neon_baracho</HashName>
+		<InitialHandle>606522</InitialHandle>
+		<ObjectProperties>
+			<TextureVariation>0</TextureVariation>
+		</ObjectProperties>
+		<OpacityLevel>255</OpacityLevel>
+		<LodDistance>16960</LodDistance>
+		<IsVisible>true</IsVisible>
+		<MaxHealth>1000</MaxHealth>
+		<Health>1000</Health>
+		<HasGravity>true</HasGravity>
+		<IsOnFire>false</IsOnFire>
+		<IsInvincible>false</IsInvincible>
+		<IsBulletProof>false</IsBulletProof>
+		<IsCollisionProof>false</IsCollisionProof>
+		<IsExplosionProof>false</IsExplosionProof>
+		<IsFireProof>false</IsFireProof>
+		<IsMeleeProof>false</IsMeleeProof>
+		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
+		<PositionRotation>
+			<X>174.636124</X>
+			<Y>-1000.47089</Y>
+			<Z>-98.0832825</Z>
+			<Pitch>-2.54444361e-14</Pitch>
+			<Roll>4.35733028e-07</Roll>
+			<Yaw>3.87798405</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>

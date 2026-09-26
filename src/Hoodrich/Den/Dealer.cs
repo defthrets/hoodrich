@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -10,16 +11,22 @@ namespace Hoodrich.Den
     /// <summary>
     /// The woman behind the table.
     ///
-    /// One of the set -- Michael asked for Families women on the tables, 2026-09-25 -- stood
-    /// where the casino's own animators put a dealer, doing what a dealer does between hands:
-    /// idling, and now and then one of the idle variations so she is not a statue. Asked for an
-    /// action -- spin the wheel, deal a card, rake the chips, a reaction to your luck -- she
-    /// plays it once and goes back to idling on her own. See Scene for why there is no
-    /// coordinate anywhere in here.
+    /// Stood where the casino's own animators put a dealer, doing what a dealer does between
+    /// hands: idling, and now and then one of the idle variations so she is not a statue. Asked
+    /// for something -- spin the wheel, deal the cards, rake the chips -- she does it, and the
+    /// next thing asked of her starts the moment it ends, so a deal of three clips is one
+    /// movement and not three with a shrug between. When there is nothing left to do she goes
+    /// back to idling on her own. See Scene for why there is no coordinate anywhere in here.
     ///
-    /// She is somebody. Stamped for NPC Mind like everybody else the mod puts down, under a
-    /// name that is the table rather than the session, so the same woman deals at the roulette
-    /// every time you walk in.
+    /// NOT SOMEBODY YOU CAN TALK TO, since 2026-09-26. She was stamped for NPC Mind like everybody
+    /// else the mod puts down, and Michael asked for the dealers to be left out of it: they talk
+    /// when you play, and that is all. Unstamped, she is a script's ped, and NPC Mind leaves a
+    /// script's ped alone (its PedState, "owned by another script").
+    ///
+    /// SHE TALKS LIKE A DIAMOND DEALER. Her voice is set to one of the casino croupiers', whose
+    /// lines are the table's own -- "place your bets", "no more bets", the number the ball fell
+    /// in -- and if the game will not give her that voice she keeps her own and says hello and
+    /// goodbye in it.
     /// </summary>
     internal sealed class Dealer
     {
@@ -30,12 +37,25 @@ namespace Hoodrich.Den
         private readonly string _idleDict;
         private readonly string[] _idles;
         private readonly string _who;
+        private readonly string _voice;
 
         private readonly Random _rng;
 
         private int _scene = -1;
         private bool _acting;
         private int _nextVariant;
+        private string _pinned;
+        private bool _voiced;
+
+        /// <summary>What has been asked of her and not started yet, in order.</summary>
+        private readonly Queue<Step> _queue = new Queue<Step>();
+
+        private sealed class Step
+        {
+            public string Dict;
+            public string Clip;
+            public Action<int> With;
+        }
 
         /// <summary>How long one idle runs before she tries another.</summary>
         private const int VariantMinMs = 14000;
@@ -47,9 +67,11 @@ namespace Hoodrich.Den
         /// </summary>
         private readonly string _model;
 
-        public Dealer(Entity table, string idleDict, string[] idles, string who, Random rng, string model = "s_f_y_stripper_01")
+        public Dealer(Entity table, string idleDict, string[] idles, string who, Random rng,
+                      string model = "s_f_y_stripper_01", string voice = "S_F_Y_Casino_01_LATINA_01")
         {
             _model = string.IsNullOrEmpty(model) ? "s_f_y_stripper_01" : model;
+            _voice = voice;
             _table = table;
             _idleDict = idleDict;
             _idles = idles;
@@ -59,8 +81,12 @@ namespace Hoodrich.Den
 
         public bool Exists => Ped != null && Ped.Exists() && Ped.IsAlive;
 
-        /// <summary>She is in the middle of something asked of her; the game waits.</summary>
-        public bool Busy => _acting && !Scene.Done(_scene);
+        /// <summary>She is in the middle of something asked of her, or has more to do; the game waits.</summary>
+        public bool Busy => _acting && !Scene.Done(_scene) || _queue.Count > 0;
+
+        /// <summary>The clip she is on and how far through it, for a game that times something to it.</summary>
+        public string Doing { get; private set; }
+        public float Phase => Scene.Phase(_scene);
 
         /// <summary>
         /// Stands her up beside the table. Only once the clips are in: her first pose is the
@@ -96,7 +122,8 @@ namespace Hoodrich.Den
                 if (gang != null) Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, gang.GroupHash);
 
                 Core.Helmets.Off(ped);
-                Folk.Stamp(ped, "den:dealer:" + _who);
+                Dress(ped);
+                Voice(ped);
 
                 Ped = ped;
                 Idle();
@@ -111,12 +138,119 @@ namespace Hoodrich.Den
             }
         }
 
+        /// <summary>
+        /// HER OWN CLOTHES, EVERY ONE OF THEM THERE. The game dresses a new ped at random, and on
+        /// 2026-09-26 it put one of the den's strippers together without a torso -- a top the
+        /// model does not have, drawn as nothing, so she stood behind the table with her arms and
+        /// her head and air between. So she is put in the model's own default outfit, every
+        /// piece is checked, and what she is wearing goes in the log.
+        /// </summary>
+        private void Dress(Ped ped)
+        {
+            try
+            {
+                Function.Call(Hash.SET_PED_DEFAULT_COMPONENT_VARIATION, ped.Handle);
+
+                var worn = new List<string>();
+
+                for (var c = 0; c < 12; c++)
+                {
+                    var d = Function.Call<int>(Hash.GET_PED_DRAWABLE_VARIATION, ped.Handle, c);
+                    var t = Function.Call<int>(Hash.GET_PED_TEXTURE_VARIATION, ped.Handle, c);
+                    var ok = Function.Call<bool>(Hash.IS_PED_COMPONENT_VARIATION_VALID, ped.Handle, c, d, t);
+
+                    if (!ok && Function.Call<int>(Hash.GET_NUMBER_OF_PED_DRAWABLE_VARIATIONS, ped.Handle, c) > 0)
+                    {
+                        Function.Call(Hash.SET_PED_COMPONENT_VARIATION, ped.Handle, c, 0, 0, 0);
+                        worn.Add(c + ":" + d + "/" + t + "->0/0");
+                    }
+                    else
+                    {
+                        worn.Add(c + ":" + d + "/" + t);
+                    }
+                }
+
+                Log.Info("Den: the " + _who + " dealer (" + _model + ") is dressed " + string.Join(" ", worn) + ".");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Den: could not dress the " + _who + " dealer: " + ex.Message);
+            }
+        }
+
+        /// <summary>SET_PED_VOICE_GROUP, which ScriptHookVDotNet 3.6 has under no name the build can see.</summary>
+        private const ulong SetPedVoiceGroup = 0x7CDC8C3B89F661B3;
+
+        /// <summary>
+        /// A croupier's voice from the Diamond, if the game will give her one. Checked by asking
+        /// whether she now has the casino's greeting at all.
+        /// </summary>
+        private void Voice(Ped ped)
+        {
+            _voiced = false;
+
+            if (string.IsNullOrEmpty(_voice)) return;
+
+            try
+            {
+                Function.Call((Hash)SetPedVoiceGroup, ped.Handle, Game.GenerateHash(_voice));
+                _voiced = Function.Call<bool>(Hash.DOES_CONTEXT_EXIST_FOR_THIS_PED, ped.Handle, "MINIGAME_DEALER_GREET", false);
+
+                if (!_voiced)
+                {
+                    Function.Call(Hash.SET_AMBIENT_VOICE_NAME, ped.Handle, _voice);
+                    _voiced = Function.Call<bool>(Hash.DOES_CONTEXT_EXIST_FOR_THIS_PED, ped.Handle, "MINIGAME_DEALER_GREET", false);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Den: could not give the " + _who + " dealer a voice: " + ex.Message);
+            }
+
+            Log.Info(_voiced
+                ? "Den: the " + _who + " dealer talks like the Diamond's (" + _voice + ")."
+                : "Den: the " + _who + " dealer keeps her own voice; " + _voice + " has no casino lines here.");
+        }
+
+        /// <summary>The lines she has in her own voice, for when the casino's will not come.</summary>
+        private static readonly Dictionary<string, string> Plain = new Dictionary<string, string>
+        {
+            { "MINIGAME_DEALER_GREET", "GENERIC_HI" },
+            { "MINIGAME_DEALER_LEAVE_GOOD_GAME", "GENERIC_BYE" },
+            { "MINIGAME_DEALER_LEAVE_BAD_GAME", "GENERIC_BYE" },
+            { "MINIGAME_DEALER_LEAVE_NEUTRAL_GAME", "GENERIC_BYE" },
+            { "MINIGAME_DEALER_ANOTHER_GO", "GENERIC_HOWS_IT_GOING" }
+        };
+
+        /// <summary>
+        /// One of the table's lines, said out loud. The casino's own if she has its voice, a
+        /// plain one of hers if not, and nothing where she has nothing that fits.
+        /// </summary>
+        public void Say(string line)
+        {
+            if (!Exists || string.IsNullOrEmpty(line)) return;
+
+            var said = line;
+
+            if (!_voiced && !Plain.TryGetValue(line, out said)) return;
+
+            try
+            {
+                Function.Call(Hash.PLAY_PED_AMBIENT_SPEECH_NATIVE, Ped.Handle, said, "SPEECH_PARAMS_FORCE_NORMAL_CLEAR");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Den: the dealer could not say " + said + ": " + ex.Message);
+            }
+        }
+
         /// <summary>Between hands: her idle, looped, in a scene on the table.</summary>
         public void Idle()
         {
             if (!Exists) return;
 
             _acting = false;
+            Doing = null;
             _scene = Scene.At(_table);
 
             var clip = _pinned ?? _idles[_rng.Next(_idles.Length)];
@@ -134,13 +268,15 @@ namespace Hoodrich.Den
             if (_pinned == clip) return;
 
             _pinned = clip;
-            if (!_acting) Idle();
+            if (!_acting && _queue.Count == 0) Idle();
         }
 
-        private string _pinned;
-
-        /// <summary>Something asked of her, once. Idle again when it is done.</summary>
-        public void Act(string dict, string clip, bool holdLast = false)
+        /// <summary>
+        /// Something asked of her, after whatever she is already doing. The props that go with
+        /// it -- the cards in her hand -- are put in her scene by <paramref name="with"/> the
+        /// same frame she starts it, which is the only way they move with her hands.
+        /// </summary>
+        public void Act(string dict, string clip, Action<int> with = null)
         {
             if (!Exists) return;
 
@@ -150,17 +286,43 @@ namespace Hoodrich.Den
                 return;
             }
 
-            _acting = true;
-            _scene = Scene.At(_table);
-            Scene.Ped(_scene, Ped, dict, clip, false, holdLast);
+            _queue.Enqueue(new Step { Dict = dict, Clip = clip, With = with });
+
+            if (!_acting || Scene.Done(_scene)) Next();
         }
 
-        /// <summary>A scene the game wants her in with other things -- the wheel, the ball.</summary>
+        /// <summary>Everything still waiting, forgotten: the game has moved on without it.</summary>
+        public void Drop()
+        {
+            _queue.Clear();
+        }
+
+        private void Next()
+        {
+            if (_queue.Count == 0) { Idle(); return; }
+
+            var act = _queue.Dequeue();
+
+            _acting = true;
+            Doing = act.Clip;
+            _scene = Scene.At(_table);
+            Scene.Ped(_scene, Ped, act.Dict, act.Clip, false);
+
+            if (act.With != null)
+            {
+                try { act.With(_scene); }
+                catch (Exception ex) { Log.Debug("Den: the props for " + act.Clip + " would not join her: " + ex.Message); }
+            }
+        }
+
+        /// <summary>A scene the game wants her in with other things.</summary>
         public int Begin(string dict, string clip)
         {
             if (!Exists) return -1;
 
+            _queue.Clear();
             _acting = true;
+            Doing = clip;
             _scene = Scene.At(_table);
             Scene.Ped(_scene, Ped, dict, clip, false);
             return _scene;
@@ -177,12 +339,14 @@ namespace Hoodrich.Den
         {
             if (!Exists) return;
 
-            // An action that has run its course: back to the table.
+            // An action that has run its course: the next one, or back to the table.
             if (_acting)
             {
-                if (Scene.Done(_scene)) Idle();
+                if (Scene.Done(_scene)) Next();
                 return;
             }
+
+            if (_queue.Count > 0) { Next(); return; }
 
             // Or an idle she has held long enough. A new scene each time -- the old one is let
             // go the moment she is tasked out of it.
@@ -200,6 +364,7 @@ namespace Hoodrich.Den
             Ped = null;
             _scene = -1;
             _acting = false;
+            _queue.Clear();
         }
     }
 }

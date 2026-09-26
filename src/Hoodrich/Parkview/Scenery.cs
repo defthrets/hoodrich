@@ -123,6 +123,9 @@ namespace Hoodrich.Parkview
             /// <summary>The panes of glass that are made solid -- "glass:" in the Note. See Glaze.</summary>
             public HashSet<int> Glass = new HashSet<int>();
 
+            /// <summary>The men on the door -- "guards:" in the Note. See Guard.</summary>
+            public HashSet<int> Guards = new HashSet<int>();
+
             /// <summary>
             /// A room you are put into, not a place you walk up to -- "indoors" in the Note. Its
             /// people are stood straight on their marks when it is built, because walking in from
@@ -884,6 +887,17 @@ namespace Hoodrich.Parkview
 
                 try { scene.Glass = Listed(path, "glass:"); }
                 catch { /* the glass stays a picture of glass */ }
+
+                try
+                {
+                    scene.Guards = Listed(path, "guards:");
+
+                    foreach (var one in items)
+                    {
+                        if (one.What == Spooner.Kind.Ped && scene.Guards.Contains(one.Handle)) one.Guard = true;
+                    }
+                }
+                catch { /* nobody stands guard */ }
 
                 try { scene.Indoors = Clauses(path).Exists(c => c.StartsWith("indoors", StringComparison.OrdinalIgnoreCase)); }
                 catch { /* everybody walks in */ }
@@ -2182,15 +2196,22 @@ namespace Hoodrich.Parkview
                 // NOT THE GUN IN THE FILE. Saved with a rifle, every one of them, because a
                 // rifle is what you reach for in the spooner; what he actually carries is one
                 // of the guard guns, by where he stands, so a block of ten is a mix. See GuardGuns.
-                var gun = GuardGun(item.At);
+                //
+                // EXCEPT A GUARD, whose gun is the point of him: the den's door is two Families
+                // with compact rifles because Michael put compact rifles in their hands. He gets
+                // the file's, and it stays in his hands -- see Guard.
+                var gun = item.Guard ? item.WeaponHash : GuardGun(item.At);
 
                 Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle, gun, 250, false, true);
 
-                var busy = !string.IsNullOrEmpty(item.Scenario) ||
-                           (!string.IsNullOrEmpty(item.AnimDict) && !string.IsNullOrEmpty(item.AnimClip));
+                var busy = !item.Guard &&
+                           (!string.IsNullOrEmpty(item.Scenario) ||
+                            (!string.IsNullOrEmpty(item.AnimDict) && !string.IsNullOrEmpty(item.AnimClip)));
 
                 Function.Call(Hash.SET_CURRENT_PED_WEAPON, ped.Handle,
                               busy ? Spooner.Placed.Unarmed : gun, true);
+
+                if (item.Guard) Function.Call(Hash.SET_PED_CAN_SWITCH_WEAPON, ped.Handle, false);
             }
             catch (Exception ex)
             {
@@ -2316,6 +2337,12 @@ namespace Hoodrich.Parkview
             {
                 Function.Call(Hash.CLEAR_PED_TASKS_IMMEDIATELY, ped.Handle);
 
+                if (item.Guard)
+                {
+                    Guard(ped, item, turn);
+                    return;
+                }
+
                 // A list of his own, first of all: the Note picked it for this man.
                 string[] own;
 
@@ -2370,8 +2397,41 @@ namespace Hoodrich.Parkview
             return true;
         }
 
+        /// <summary>
+        /// A man on a door, with a rifle. The rifle held across him -- the game's own guard waiting
+        /// with one, off the Big Score, the clip another mod uses to put a rifle in a man's hands
+        /// in its gun shop -- and the look-rounds and shifts of weight of the same guard now and
+        /// then. The gun is put back in his hands every time, because a clip that starts on a man
+        /// with his hands empty is a man holding nothing. Michael asked for the den's Families
+        /// to be guards with compact rifles, doing guard animations, on 2026-09-26.
+        /// </summary>
+        private const string GuardDict = "missbigscore1guard_wait_rifle";
+
+        private static readonly string[] GuardClips = { "wait_base", "wait_a", "wait_base", "wait_b", "wait_base", "wait_c" };
+
+        private static void Guard(Ped ped, Spooner.Placed item, int turn)
+        {
+            try
+            {
+                if (item.Armed) Function.Call(Hash.SET_CURRENT_PED_WEAPON, ped.Handle, item.WeaponHash, true);
+
+                var clip = GuardClips[(int)((uint)(Steady(item.At) + turn) % (uint)GuardClips.Length)];
+                Give(ped, GuardDict, clip, 1);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not stand a guard: " + ex.Message);
+            }
+        }
+
         private static void Stand(Ped ped, Spooner.Placed item, int turn = 0)
         {
+            if (item.Guard)
+            {
+                Guard(ped, item, turn);
+                return;
+            }
+
             // A scenario the FILE asked for is still a scenario. Somebody picked it in the
             // spooner and it is not this code's place to substitute something of its own.
             if (!string.IsNullOrEmpty(item.Scenario))
@@ -3562,6 +3622,12 @@ namespace Hoodrich.Parkview
 
             Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
 
+            if (l.Item.Guard)
+            {
+                Guard(ped, l.Item, l.Turn);
+                return;
+            }
+
             if (l.Item.Armed)
             {
                 Give(ped, Armed[0], Armed[1]);
@@ -4480,6 +4546,16 @@ namespace Hoodrich.Parkview
                 return;
             }
 
+            // A GUARD STAYS ON HIS DOOR. No word with anybody, no signs, no stroll: the next of
+            // his guard clips, and back to watching the room.
+            if (l.Item.Guard)
+            {
+                l.Turn++;
+                Doing(l.Scene, l.Who, l.Item, l.Turn);
+                l.NextAt = now + Beat(l);
+                return;
+            }
+
             var roll = Dice.Next(100);
 
             // A CAMP IS HOME. Every beat is something in it: a word with the other one, the
@@ -4645,7 +4721,7 @@ namespace Hoodrich.Parkview
 
                 // Nor one sat down or lying in his camp, or on his way to, or at work: a chat
                 // stands him up, and puts a man at his other job back on his mark after it.
-                if (o.Asleep || o.Seat != null || o.Bed != null || o.Scene.Jobs.ContainsKey(o.Item.Handle)) continue;
+                if (o.Asleep || o.Seat != null || o.Bed != null || o.Scene.Jobs.ContainsKey(o.Item.Handle) || o.Item.Guard) continue;
                 if (o.Who == null || !o.Who.Exists() || !o.Who.IsAlive) continue;
 
                 // ON THE SAME FLOOR. Six metres reaches from a balcony to the ground under it,

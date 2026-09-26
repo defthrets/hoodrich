@@ -36,9 +36,16 @@ namespace Hoodrich.Den
         public const string SlotsMale = "anim_casino_a@amb@casino@games@slots@male";
         public const string SlotsFemale = "anim_casino_a@amb@casino@games@slots@female";
 
+        /// <summary>The player in a casino chair: sitting down, the seated idles, the reactions, getting up.</summary>
+        public const string SharedPlayer = "anim_casino_b@amb@casino@games@shared@player@";
+
+        /// <summary>The player's side of three card poker: the chips down, the cards picked up, played or folded.</summary>
+        public const string PokerPlayer = "anim_casino_b@amb@casino@games@threecardpoker@player";
+
         public static readonly string[] All =
         {
-            RouletteDealer, RouletteTable, BlackjackDealer, SharedDealer, PokerDealer, SlotsMale, SlotsFemale
+            RouletteDealer, RouletteTable, BlackjackDealer, SharedDealer, PokerDealer, SlotsMale, SlotsFemale,
+            SharedPlayer, PokerPlayer
         };
 
         private static readonly HashSet<string> Asked = new HashSet<string>();
@@ -107,6 +114,23 @@ namespace Hoodrich.Den
             }
         }
 
+        /// <summary>
+        /// A scene on a position and a full rotation -- a chair's bone, which is where every clip
+        /// of a player at a casino table is authored from.
+        /// </summary>
+        public static int At(Vector3 at, Vector3 rot)
+        {
+            try
+            {
+                return Function.Call<int>(Hash.CREATE_SYNCHRONIZED_SCENE, at.X, at.Y, at.Z, rot.X, rot.Y, rot.Z, 2);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Den: could not make a scene: " + ex.Message);
+                return -1;
+            }
+        }
+
         /// <summary>The same, on a position and a heading rather than a thing.</summary>
         public static int At(Vector3 at, float heading)
         {
@@ -146,6 +170,77 @@ namespace Hoodrich.Den
             }
         }
 
+        /// <summary>
+        /// The player into a scene. Not the dealer's numbers: he blends in and out over a
+        /// quarter of a second, because a man sitting down in one frame is a man teleported,
+        /// and his flags are the casino's own for a seated player -- physics on, nothing
+        /// interrupts it, and the scene stops if he is pulled out of it.
+        /// </summary>
+        public static bool Player(int scene, GTA.Ped ped, string dict, string clip, bool loop, bool holdLast = false)
+        {
+            if (scene < 0 || ped == null || !ped.Exists()) return false;
+
+            try
+            {
+                Function.Call(Hash.SET_SYNCHRONIZED_SCENE_LOOPED, scene, loop);
+                Function.Call(Hash.SET_SYNCHRONIZED_SCENE_HOLD_LAST_FRAME, scene, holdLast);
+                Function.Call(Hash.TASK_SYNCHRONIZED_SCENE, ped.Handle, scene, dict, clip,
+                              4f, -4f, 13, 16, 1000f, 0);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Den: could not sit the player in " + clip + ": " + ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// A prop playing a clip on its own, not in anybody's scene: the roulette wheel turning
+        /// and the ball going round it, the way the casino drives them. Held on the last frame,
+        /// so the ball stays in its pocket until it is taken away.
+        /// </summary>
+        public static bool Entity(Entity e, string dict, string clip, bool loop)
+        {
+            if (e == null || !e.Exists()) return false;
+
+            try
+            {
+                Function.Call(Hash.PLAY_ENTITY_ANIM, e.Handle, clip, dict, 1000f, loop, true, true, 0f, 136704);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Den: could not play " + clip + " on a prop: " + ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>How far through a clip a prop is, 0 to 1. Past 1 when it is not playing it at all.</summary>
+        public static float EntityPhase(Entity e, string dict, string clip)
+        {
+            if (e == null || !e.Exists()) return 2f;
+
+            try
+            {
+                if (!Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, e.Handle, dict, clip, 3)) return 2f;
+                return Function.Call<float>(Hash.GET_ENTITY_ANIM_CURRENT_TIME, e.Handle, dict, clip);
+            }
+            catch
+            {
+                return 2f;
+            }
+        }
+
+        /// <summary>A prop's own clip stopped, and it back at rest.</summary>
+        public static void StopEntity(Entity e, string dict, string clip)
+        {
+            if (e == null || !e.Exists()) return;
+
+            try { Function.Call(Hash.STOP_ENTITY_ANIM, e.Handle, clip, dict, -1000f); }
+            catch { }
+        }
+
         /// <summary>Whether a scene loops, and whether it holds its last frame when it ends.</summary>
         public static void Set(int scene, bool loop, bool holdLast)
         {
@@ -167,7 +262,7 @@ namespace Hoodrich.Den
             try
             {
                 Function.Call(Hash.PLAY_SYNCHRONIZED_ENTITY_ANIM, prop.Handle, scene, clip, dict,
-                              1000f, -1000f, 0, 0f);
+                              1000f, -1000f, 0, 1000f);
                 return true;
             }
             catch (Exception ex)
@@ -229,6 +324,39 @@ namespace Hoodrich.Den
         public static bool Right => JustPressed(Control.PhoneRight);
         public static bool Select => JustPressed(Control.PhoneSelect);
         public static bool Back => JustPressed(Control.PhoneCancel);
+
+        /// <summary>Space: the spin, the deal. INPUT_JUMP read disabled, so it is Space on a keyboard and A on a pad.</summary>
+        public static bool Space => JustPressed(Control.Jump);
+
+        /// <summary>Q and E, the frontend shoulders, or the mouse wheel: a chip down or up.</summary>
+        public static bool Lower => JustPressed(Control.FrontendLb) || JustPressed(Control.WeaponWheelPrev);
+        public static bool Raise => JustPressed(Control.FrontendRb) || JustPressed(Control.WeaponWheelNext);
+
+        /// <summary>The mouse buttons, for the roulette felt: a chip down, a chip back.</summary>
+        public static bool Click => JustPressed(Control.Attack);
+        public static bool RightClick => JustPressed(Control.Aim);
+
+        /// <summary>An arrow held down, for a cursor that keeps going while the key does.</summary>
+        public static bool HeldUp => Held(Control.PhoneUp);
+        public static bool HeldDown => Held(Control.PhoneDown);
+        public static bool HeldLeft => Held(Control.PhoneLeft);
+        public static bool HeldRight => Held(Control.PhoneRight);
+
+        /// <summary>How far the mouse moved this frame, as the game measures it: the look axes.</summary>
+        public static float MouseX => Normal(Control.LookLeftRight);
+        public static float MouseY => Normal(Control.LookUpDown);
+
+        private static bool Held(Control c)
+        {
+            try { return Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)c); }
+            catch { return false; }
+        }
+
+        private static float Normal(Control c)
+        {
+            try { return Function.Call<float>(Hash.GET_DISABLED_CONTROL_NORMAL, 0, (int)c); }
+            catch { return 0f; }
+        }
 
         private static bool JustPressed(Control c)
         {

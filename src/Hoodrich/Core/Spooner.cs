@@ -120,6 +120,13 @@ namespace Hoodrich.Core
 
             public bool Armed => WeaponHash != 0 && WeaponHash != Unarmed;
 
+            /// <summary>
+            /// Stood guard -- "guards:" in the scene's Note. He carries the gun the file gave him,
+            /// in his hands and never put away, and stands holding it like a man on a door. See
+            /// Parkview's Scenery.Guard.
+            /// </summary>
+            public bool Guard;
+
             /// <summary>WEAPON_UNARMED. Seven of the ten peds in the first real file had a rifle and two had this.</summary>
             public const uint Unarmed = 0xA2719263;
         }
