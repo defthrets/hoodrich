@@ -936,11 +936,27 @@ namespace Hoodrich.Locations
 
             if (left > right) return false;
 
+            // A WALL IS NOT A BACKBOARD. Wider than the whole sweep, or running on down past the
+            // lowest a board hangs, it is the building behind the hoop -- which is what the far
+            // hoop's first reading was, and it put the rim two metres up.
+            if (right - left >= 3.0f)
+            {
+                Log.Info("Hoops: what is down the court is " + (right - left).ToString("0.0") + " m wide -- a wall, not a backboard.");
+                return false;
+            }
+
             var centre = (left + right) * 0.5f;
             var c = o + side * centre;
 
             float low, high;
             if (!Band(c, toward, side, ignore, out low, out high)) return false;
+
+            if (low <= 1.85f || high - low > 1.6f)
+            {
+                Log.Info("Hoops: what is down the court runs from " + low.ToString("0.00") + " to " + high.ToString("0.00") +
+                         " m up -- a wall, not a backboard.");
+                return false;
+            }
 
             rim = c + toward * 0.38f + Vector3.WorldUp * (low + 0.15f);
 
@@ -1018,8 +1034,10 @@ namespace Hoodrich.Locations
 
             try
             {
+                // The map, anything standing, and GLASS: the far hoop's backboard is a glass one,
+                // and without the glass flag the rays went through it to the wall behind.
                 var ray = Function.Call<int>(Hash.START_EXPENSIVE_SYNCHRONOUS_SHAPE_TEST_LOS_PROBE,
-                                             a.X, a.Y, a.Z, b.X, b.Y, b.Z, 1 | 16, ignore, 7);
+                                             a.X, a.Y, a.Z, b.X, b.Y, b.Z, 1 | 16 | 64, ignore, 7);
 
                 var hit = new OutputArgument();
                 var at = new OutputArgument();

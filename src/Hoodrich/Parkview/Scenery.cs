@@ -2086,12 +2086,24 @@ namespace Hoodrich.Parkview
         /// own give way to the far scenery. It is only how far away it is drawn: the model is
         /// already in memory, standing, either way.
         /// </summary>
-        private const int LodBuilding = 1500;
-        private const float BuildingSize = 10f;
+        private const int LodBuilding = 1000;
+
+        /// <summary>
+        /// A building, by its size: at least this wide both ways, and this tall. ONLY A BUILDING.
+        /// The first rule was "ten metres along any side", and it took every arena wall in every
+        /// scene, the trees, a billboard and a strip of weeds with it -- hundreds of things drawn
+        /// in full out to a kilometre and a half -- and the game, out of room to stream, dropped
+        /// the whole vanilla map to its low-detail models round him (2026-09-26).
+        /// </summary>
+        private const float BuildingWide = 12f;
+        private const float BuildingTall = 6f;
+
+        /// <summary>Big things that are never buildings, whatever their size.</summary>
+        private static readonly string[] NotBuildings = { "prop_tree", "prop_bush", "prop_palm", "prop_billboard", "xs_terrain", "xs_prop_arena", "xs_propint" };
 
         private static readonly Dictionary<int, bool> BigModels = new Dictionary<int, bool>();
 
-        /// <summary>Whether a thing is building-sized: ten metres or more along any side. Asked once a model.</summary>
+        /// <summary>Whether a thing is a building: twelve metres or more across both ways and six tall, and not a tree. Asked once a model.</summary>
         private static bool Big(Entity thing)
         {
             var hash = thing.Model.Hash;
@@ -2105,7 +2117,14 @@ namespace Hoodrich.Parkview
                 Function.Call(Hash.GET_MODEL_DIMENSIONS, hash, lo, hi);
                 var size = hi.GetResult<Vector3>() - lo.GetResult<Vector3>();
 
-                big = size.X >= BuildingSize || size.Y >= BuildingSize || size.Z >= BuildingSize;
+                big = size.X >= BuildingWide && size.Y >= BuildingWide && size.Z >= BuildingTall;
+
+                var name = Names.Of(hash);
+
+                foreach (var not in NotBuildings)
+                {
+                    if (name.StartsWith(not, StringComparison.OrdinalIgnoreCase)) big = false;
+                }
 
                 if (big)
                 {
