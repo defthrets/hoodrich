@@ -75,7 +75,9 @@ namespace Hoodrich.Parkview
 
                 _greetAt = Game.GameTime + 4000;
 
-                Log.Info("Parkview loaded. " +
+                // The keys are the builder's, and only named for somebody who has them. See OnKey.
+                if (!_cfg.DevTools) Log.Info("Parkview loaded.");
+                else Log.Info("Parkview loaded. " +
                          Say(_cfg.ParkviewCaptureKey, _cfg.ParkviewCaptureModifier) + " captures everything round you, " +
                          Say(_cfg.ParkviewReloadKey, _cfg.ParkviewReloadModifier) + " reads the scene files again, " +
                          Say(_cfg.ParkviewHideKey, _cfg.ParkviewHideModifier) + " hides the map prop you are looking at, " +
@@ -204,6 +206,11 @@ namespace Hoodrich.Parkview
         private void OnKey(object sender, KeyEventArgs e)
         {
             if (_parked || _cfg == null || !_cfg.Enabled || !_cfg.Parkview) return;
+
+            // CAPTURE, RELOAD, HIDE, SET THE ROOM AND TAKE ARE FOR BUILDING PARKVIEW, not for
+            // playing it: F9 with no developer tools is F9, whatever it does in somebody else's
+            // mod. [Developer] Tools=true. Michael asked for the release to have none of it.
+            if (!_cfg.DevTools) return;
 
             try
             {

@@ -388,10 +388,13 @@ function Deploy-To([string]$gameDir, [string]$label) {
                 Write-Host "         Defaults apply until they are added." -ForegroundColor DarkGray
             }
 
+            # NOT "NOTHING READS THEM". Since 0.9.9 the shipped ini holds only what a player sets,
+            # and the tuning and developer keys are read from an ini that has them and defaulted
+            # when it does not -- so a builder's ini carries a hundred keys the template does not,
+            # and every one of them is read. Counted, not listed: the list was the whole ini.
             if ($stale) {
-                Write-Host "  STALE  Hoodrich.ini has $($stale.Count) setting(s) nothing reads:" -ForegroundColor Yellow
-                Write-Host "         $($stale -join ', ')" -ForegroundColor DarkGray
-                Write-Host "         Left alone -- it is your file. Delete them, or copy Hoodrich.ini over it." -ForegroundColor DarkGray
+                Write-Host "  extra  Hoodrich.ini has $($stale.Count) setting(s) the shipped ini leaves out" -ForegroundColor DarkGray
+                Write-Host "         (tuning and developer keys, and any old ones). Left alone -- it is your file." -ForegroundColor DarkGray
             }
 
             if ($places) {

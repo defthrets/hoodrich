@@ -3275,7 +3275,7 @@ namespace Hoodrich
                 // a session -- which are the ones you would actually want back -- are the ones
                 // that get lost.
                 Social.Inbox.Changed = () => _state.Touch();
-                pages.ShowSettings = () => _settingsScreen.Open(_cfg, pages.ResetOptions());
+                pages.ShowSettings = () => _settingsScreen.Open(_cfg, pages.ResetOptions(_cfg.DevTools));
 
                 // The two settings that are COPIED rather than read live, pushed again whenever
                 // the screen changes anything. Both would otherwise have looked broken: the log

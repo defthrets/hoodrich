@@ -546,6 +546,10 @@ namespace Hoodrich.UI
             var c = _cfg;
 
             // ---- the mod ---------------------------------------------------------
+            //
+            // WHAT A PLAYER SETS, IN VIEW. Michael asked for the release to leave in only what
+            // somebody playing needs (2026-09-26): every tuning slider, the builders' buttons and
+            // the Tools are for the developer tools, [Developer] Tools=true, and nobody else.
             Head("The mod");
             // FIRST, AND LIVE. The table is looked up at draw time, so choosing a language
             // here changes this screen as you look at it -- including this row. The value
@@ -564,13 +568,16 @@ namespace Hoodrich.UI
             Tick("Pause during story missions", "General", "PauseDuringMission",
                  () => c.PauseDuringMission, v => c.PauseDuringMission = v,
                  "Holds everything while a Rockstar mission is running");
-            Slide("Save every", "General", "SaveIntervalSeconds",
-                  () => c.SaveIntervalSeconds, v => c.SaveIntervalSeconds = (int)v,
-                  15f, 600f, 15f, "0", " s");
-            Pick("Log detail", "General", "LogLevel",
-                 new[] { "Error", "Warn", "Info", "Debug" },
-                 () => (int)c.LogLevel, v => c.LogLevel = (LogLevel)v,
-                 "Debug writes a lot. Useful when something is wrong");
+            if (c.DevTools)
+            {
+                Slide("Save every", "General", "SaveIntervalSeconds",
+                      () => c.SaveIntervalSeconds, v => c.SaveIntervalSeconds = (int)v,
+                      15f, 600f, 15f, "0", " s");
+                Pick("Log detail", "General", "LogLevel",
+                     new[] { "Error", "Warn", "Info", "Debug" },
+                     () => (int)c.LogLevel, v => c.LogLevel = (LogLevel)v,
+                     "Debug writes a lot. Useful when something is wrong");
+            }
 
             // ---- the phone -------------------------------------------------------
             Head("The phone");
@@ -589,14 +596,17 @@ namespace Hoodrich.UI
             Slide("Time slows to", "Phone", "TimeScale",
                   () => c.WheelTimeScale, v => c.WheelTimeScale = v, 0.05f, 1f, 0.05f, "0.00", "x",
                   note: "1.00x turns the slowdown off");
-            Slide("His own phone gets the button for", "Phone", "VanillaPhoneSeconds",
-                  () => c.VanillaPhoneSeconds, v => c.VanillaPhoneSeconds = (int)v,
-                  1f, 30f, 1f, "0", " s",
-                  note: "How long the button is the game's after picking Phone on ours");
             Tick("LUber shows the place", "LUber", "Preview",
                  () => c.RidePreview,
                  v => { c.RidePreview = v; RideScreen.Preview = v; },
                  "Looks at where you're going while you're choosing it, live. Off keeps the street");
+            if (c.DevTools)
+            {
+                Slide("His own phone gets the button for", "Phone", "VanillaPhoneSeconds",
+                      () => c.VanillaPhoneSeconds, v => c.VanillaPhoneSeconds = (int)v,
+                      1f, 30f, 1f, "0", " s",
+                      note: "How long the button is the game's after picking Phone on ours");
+            }
 
             // ---- voices ----------------------------------------------------------
             Head("Voices");
@@ -633,84 +643,214 @@ namespace Hoodrich.UI
             Tick("The feed tips you off", "Socials", "BlockTipsEnabled",
                  () => c.BlockTipsEnabled, v => c.BlockTipsEnabled = v,
                  "Somebody posts that a block is busy, and it genuinely is");
-            Slide("They notice every", "Socials", "BlockTipEveryMinutes",
-                  () => c.BlockTipEveryMinutes, v => c.BlockTipEveryMinutes = v,
-                  1f, 120f, 1f, "0", " min");
-            Slide("Chance somebody posts", "Socials", "BlockTipChancePercent",
-                  () => c.BlockTipChancePercent, v => c.BlockTipChancePercent = v,
-                  0f, 100f, 5f, "0", "%");
-            Slide("A tip is worth", "Socials", "BlockTipBoost",
-                  () => c.BlockTipBoost, v => c.BlockTipBoost = v, 1f, 4f, 0.1f, "0.0", "x",
-                  note: "How much more often somebody buys on a block that got named");
-            Slide("A tip lasts", "Socials", "BlockTipMinutes",
-                  () => c.BlockTipMinutes, v => c.BlockTipMinutes = v, 1f, 60f, 1f, "0", " min");
+            if (c.DevTools)
+            {
+                Slide("They notice every", "Socials", "BlockTipEveryMinutes",
+                      () => c.BlockTipEveryMinutes, v => c.BlockTipEveryMinutes = v,
+                      1f, 120f, 1f, "0", " min");
+                Slide("Chance somebody posts", "Socials", "BlockTipChancePercent",
+                      () => c.BlockTipChancePercent, v => c.BlockTipChancePercent = v,
+                      0f, 100f, 5f, "0", "%");
+                Slide("A tip is worth", "Socials", "BlockTipBoost",
+                      () => c.BlockTipBoost, v => c.BlockTipBoost = v, 1f, 4f, 0.1f, "0.0", "x",
+                      note: "How much more often somebody buys on a block that got named");
+                Slide("A tip lasts", "Socials", "BlockTipMinutes",
+                      () => c.BlockTipMinutes, v => c.BlockTipMinutes = v, 1f, 60f, 1f, "0", " min");
+            }
 
             // ---- the block -------------------------------------------------------
             Head("The block");
             Tick("The set rides the block", "Block", "RollersEnabled",
                  () => c.RollersEnabled, v => c.RollersEnabled = v,
                  "Ours out driving and riding while you are on our turf");
-            Slide("Cars at once", "Block", "RollerCars",
-                  () => c.RollerCars, v => c.RollerCars = (int)v, 0f, 6f, 1f, "0");
-            Slide("Riders at once", "Block", "RollerBikes",
-                  () => c.RollerBikes, v => c.RollerBikes = (int)v, 0f, 6f, 1f, "0");
             Tick("Riders pull wheelies", "Block", "RollerWheelies",
                  () => c.RollerWheelies, v => c.RollerWheelies = v,
                  "On the straights, when they have the room for it");
-
-            // THE RIDERS' PATH. The park survey keeps finding a couple of dozen places to ride
-            // among everything Parkview has put down, so the way round is ridden once by hand
-            // and the riders ride that. Michael asked for it on 2026-09-24. See Gangs.BikePath.
-            Tick("Riders ride your path", "Block", "RollerParkPath",
-                 () => c.RollerParkPath, v => c.RollerParkPath = v,
-                 "Once you have recorded one: anybody on a bike who comes by its start takes it. Off, they find their own way");
-
-            var record = new Opt
-            {
-                Kind = OptKind.Action,
-                Label = Gangs.BikePath.Recording ? "Stop recording, and keep the path" : "Record the riders' path",
-                Note = "Ride where they should ride -- a BMX is best -- then stop it here. Finish where you started for a loop"
-            };
-
-            // The row says what pressing it does NEXT, so it is renamed as soon as it is pressed.
-            record.Do = () =>
-            {
-                if (Gangs.BikePath.Recording) Notify.Important(Gangs.BikePath.Stop());
-                else Gangs.BikePath.Start();
-
-                record.Label = Gangs.BikePath.Recording ? "Stop recording, and keep the path" : "Record the riders' path";
-            };
-
-            _rows.Add(record);
-
-            Readout("The riders' path", () => Gangs.BikePath.Describe());
-
-            Tick("Show the riders' path", "", "",
-                 () => Gangs.BikePath.Showing, v => Gangs.BikePath.Showing = v,
-                 "Drawn on the ground while this is ticked. Not saved");
-
-            Slide("How fast they ride it", "Block", "RollerParkSpeed",
-                  () => c.RollerParkSpeed, v => c.RollerParkSpeed = v, 2f, 9f, 0.5f, "0.0", " m/s",
-                  note: "5 is a kid on a BMX. They slow for corners and for people on their own");
-
-            _rows.Add(new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Forget the riders' path",
-                Note = "Deletes it. They go back to finding their own way round the park",
-                Do = () => Notify.Important(Gangs.BikePath.Forget())
-            });
             Tick("The lowriders come out", "Block", "CruiseEnabled",
                  () => c.CruiseEnabled, v => c.CruiseEnabled = v,
                  "Lowriders one night, donks the next: three in a line, slow, after ten");
             Tick("Crews on foot", "Block", "WalkersEnabled",
                  () => c.WalkersEnabled, v => c.WalkersEnabled = v,
                  "Groups of ours walking the back streets, drinking and smoking");
-            Slide("Crews at once", "Block", "WalkerCrews",
-                  () => c.WalkerCrews, v => c.WalkerCrews = (int)v, 0f, 5f, 1f, "0");
-            Slide("Crews with a dog", "Block", "WalkerDogs",
-                  () => c.WalkerDogs, v => c.WalkerDogs = (int)v, 0f, 100f, 5f, "0", "%",
-                  note: "How many of the crews on foot walk a dog");
+            Tick("The people come and go", "Scenery", "PedsLive",
+                 () => c.SceneryLife, v => c.SceneryLife = v,
+                 "They change what they are doing, stretch their legs, walk off and come back");
+            if (c.DevTools)
+            {
+                Slide("Cars at once", "Block", "RollerCars",
+                      () => c.RollerCars, v => c.RollerCars = (int)v, 0f, 6f, 1f, "0");
+                Slide("Riders at once", "Block", "RollerBikes",
+                      () => c.RollerBikes, v => c.RollerBikes = (int)v, 0f, 6f, 1f, "0");
+
+                // THE RIDERS' PATH. The park survey keeps finding a couple of dozen places to ride
+                // among everything Parkview has put down, so the way round is ridden once by hand
+                // and the riders ride that. Michael asked for it on 2026-09-24. See Gangs.BikePath.
+                Tick("Riders ride your path", "Block", "RollerParkPath",
+                     () => c.RollerParkPath, v => c.RollerParkPath = v,
+                     "Once you have recorded one: anybody on a bike who comes by its start takes it. Off, they find their own way");
+
+                var record = new Opt
+                {
+                    Kind = OptKind.Action,
+                    Label = Gangs.BikePath.Recording ? "Stop recording, and keep the path" : "Record the riders' path",
+                    Note = "Ride where they should ride -- a BMX is best -- then stop it here. Finish where you started for a loop"
+                };
+
+                // The row says what pressing it does NEXT, so it is renamed as soon as it is pressed.
+                record.Do = () =>
+                {
+                    if (Gangs.BikePath.Recording) Notify.Important(Gangs.BikePath.Stop());
+                    else Gangs.BikePath.Start();
+
+                    record.Label = Gangs.BikePath.Recording ? "Stop recording, and keep the path" : "Record the riders' path";
+                };
+
+                _rows.Add(record);
+
+                Readout("The riders' path", () => Gangs.BikePath.Describe());
+
+                Tick("Show the riders' path", "", "",
+                     () => Gangs.BikePath.Showing, v => Gangs.BikePath.Showing = v,
+                     "Drawn on the ground while this is ticked. Not saved");
+
+                Slide("How fast they ride it", "Block", "RollerParkSpeed",
+                      () => c.RollerParkSpeed, v => c.RollerParkSpeed = v, 2f, 9f, 0.5f, "0.0", " m/s",
+                      note: "5 is a kid on a BMX. They slow for corners and for people on their own");
+
+                _rows.Add(new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "Forget the riders' path",
+                    Note = "Deletes it. They go back to finding their own way round the park",
+                    Do = () => Notify.Important(Gangs.BikePath.Forget())
+                });
+                Slide("Crews at once", "Block", "WalkerCrews",
+                      () => c.WalkerCrews, v => c.WalkerCrews = (int)v, 0f, 5f, 1f, "0");
+                Slide("Crews with a dog", "Block", "WalkerDogs",
+                      () => c.WalkerDogs, v => c.WalkerDogs = (int)v, 0f, 100f, 5f, "0", "%",
+                      note: "How many of the crews on foot walk a dog");
+            }
+
+            // ---- the takeover ----------------------------------------------------
+            Head("The takeover");
+            Tick("Takeovers happen", "Block", "TakeoverEnabled",
+                 () => c.TakeoverEnabled, v => c.TakeoverEnabled = v,
+                 "The junction on Carson, once a night between nine and four. Nothing is asked of you");
+            Slide("One night in", "Block", "TakeoverEveryNights",
+                  () => c.TakeoverEveryNights, v => c.TakeoverEveryNights = (int)v, 1f, 14f, 1f, "0",
+                  note: "3 is one night in three. 1 is every night");
+            if (c.DevTools)
+            {
+                Slide("The ring of people", "Block", "TakeoverRadius",
+                      () => c.TakeoverRadius, v => c.TakeoverRadius = v, 8f, 40f, 1f, "0", " m",
+                      note: "How far out the crowd stands from the middle");
+            }
+
+            // ---- posting up ------------------------------------------------------
+            Head("Posting up");
+            Tick("Show the corner readout", "PostUp", "ShowDealHud",
+                 () => c.ShowDealHud, v => c.ShowDealHud = v,
+                 "Off hides the wordmark and the bars. The corner still works");
+            Tick("Blips in the bars", "PostUp", "BlipsInBars",
+                 () => c.BlipsInBars, v => c.BlipsInBars = v,
+                 "Map art at the ends of the reputation and heat bars");
+            Tick("Buyers ring you", "Supply", "ColdCallsEnabled",
+                 () => c.ColdCallsEnabled, v => c.ColdCallsEnabled = v,
+                 "Somebody calls wanting something, somewhere, for a while");
+            Tick("Blocks get worked out", "Economy", "BlockSaturationEnabled",
+                 () => c.BlockSaturationEnabled, v => c.BlockSaturationEnabled = v,
+                 "Selling on one corner makes the next customer there slower to turn up");
+            if (c.DevTools)
+            {
+                Slide("Chance each passer-by buys", "PostUp", "PostUpApproachChance",
+                      () => c.PostUpApproachChance, v => c.PostUpApproachChance = v,
+                      0f, 100f, 1f, "0", "%", note: "A busy pavement compounds this");
+                Slide("Grams a street sale moves", "PostUp", "PostUpDealGrams",
+                      () => c.PostUpDealGrams, v => c.PostUpDealGrams = v, 0.1f, 20f, 0.1f, "0.0", " g");
+                Slide("Heat per witness", "PostUp", "PostUpHeatPerWitness",
+                      () => c.PostUpHeatPerWitness, v => c.PostUpHeatPerWitness = v,
+                      0f, 2f, 0.05f, "0.00");
+                Slide("Heat before the law comes", "PostUp", "PostUpHeatBeforePolice",
+                      () => c.PostUpHeatBeforePolice, v => c.PostUpHeatBeforePolice = v,
+                      1f, 100f, 1f, "0");
+                Slide("Seconds before a search", "PostUp", "PostUpSearchSeconds",
+                      () => c.PostUpSearchSeconds, v => c.PostUpSearchSeconds = v, 1f, 60f, 1f, "0", " s",
+                      note: "Your window to walk away");
+                Slide("Fine when they find it", "PostUp", "PostUpFine",
+                      () => c.PostUpFine, v => c.PostUpFine = (int)v, 0f, 50000f, 250f, "N0", "", "$");
+                Slide("They try every", "Supply", "ColdCallEveryMinutes",
+                      () => c.ColdCallEveryMinutes, v => c.ColdCallEveryMinutes = v,
+                      1f, 120f, 1f, "0", " min");
+                Slide("Chance they call", "Supply", "ColdCallChancePercent",
+                      () => c.ColdCallChancePercent, v => c.ColdCallChancePercent = v,
+                      0f, 100f, 5f, "0", "%");
+                Slide("Time to get there", "Supply", "ColdCallMinutes",
+                      () => c.ColdCallMinutes, v => c.ColdCallMinutes = v, 1f, 60f, 1f, "0", " min",
+                      note: "Before they go elsewhere");
+                Slide("Grams to dry a block", "Economy", "BlockSaturationGrams",
+                      () => c.BlockSaturationGrams, v => c.BlockSaturationGrams = v,
+                      10f, 2000f, 10f, "0", " g");
+                Slide("It recovers over", "Economy", "BlockRecoveryMinutes",
+                      () => c.BlockRecoveryMinutes, v => c.BlockRecoveryMinutes = v,
+                      1f, 240f, 1f, "0", " min", note: "While you are somewhere else");
+                Slide("A dead block still does", "Economy", "BlockDemandFloor",
+                      () => c.BlockDemandFloor, v => c.BlockDemandFloor = v, 0f, 1f, 0.05f, "0.00", "x",
+                      note: "It never goes to nothing. 0.25x is a quarter of normal");
+            }
+
+            // ---- risk ------------------------------------------------------------
+            Head("Risk");
+            Slide("Lost when you die", "Risk", "LoseOnDeathPercent",
+                  () => c.LoseOnDeathPercent, v => c.LoseOnDeathPercent = v, 0f, 100f, 5f, "0", "%");
+            Slide("Lost when you are nicked", "Risk", "LoseOnArrestPercent",
+                  () => c.LoseOnArrestPercent, v => c.LoseOnArrestPercent = v, 0f, 100f, 5f, "0", "%");
+            Tick("The house gets turned over", "Hideouts", "StashRaidsEnabled",
+                 () => c.StashRaidsEnabled, v => c.StashRaidsEnabled = v,
+                 "Hold enough, get loud enough, and somebody comes while you are out");
+            if (c.DevTools)
+            {
+                Slide("Police bust chance", "Risk", "PoliceBustChancePercent",
+                      () => c.PoliceBustChancePercent, v => c.PoliceBustChancePercent = v,
+                      0f, 100f, 1f, "0", "%");
+                Slide("Undercover call", "Risk", "UndercoverCallSeconds",
+                      () => c.UndercoverCallSeconds, v => c.UndercoverCallSeconds = v,
+                      1f, 60f, 1f, "0", " s");
+                Slide("Escape distance", "Risk", "UndercoverEscapeDistance",
+                      () => c.UndercoverEscapeDistance, v => c.UndercoverEscapeDistance = v,
+                      5f, 300f, 5f, "0", " m");
+                Slide("Stars on a bust", "Risk", "BustWantedStars",
+                      () => c.BustWantedStars, v => c.BustWantedStars = (int)v, 1f, 5f, 1f, "0");
+                Slide("Chance of a raid", "Hideouts", "StashRaidChancePercent",
+                      () => c.StashRaidChancePercent, v => c.StashRaidChancePercent = v,
+                      0f, 100f, 5f, "0", "%");
+                Slide("They take of the stash", "Hideouts", "StashRaidTakePercent",
+                      () => c.StashRaidTakePercent, v => c.StashRaidTakePercent = v,
+                      0f, 100f, 5f, "0", "%");
+                Slide("You are warned", "Hideouts", "StashRaidWarningMinutes",
+                      () => c.StashRaidWarningMinutes, v => c.StashRaidWarningMinutes = v,
+                      0f, 15f, 0.5f, "0.0", " min", note: "Be at the house when they come and it is off");
+            }
+
+            // ---- getting high ----------------------------------------------------
+            Head("Getting high");
+            Tick("Cinematic camera", "Highs", "DrugCamera",
+                 () => c.DrugCamera,
+                 v => { c.DrugCamera = v; Economy.Ritual.Cinematic = v; },
+                 "Swings round the front while you take something, then hands the camera back");
+            Slide("How long it takes", "Highs", "AnimLength",
+                  () => c.DrugAnimLength,
+                  v => { c.DrugAnimLength = v; Economy.Ritual.Length = v; },
+                  0.5f, 3f, 0.1f, "0.0", "x",
+                  note: "Scales every drug animation. The camera follows it");
+
+            // ---- the court -------------------------------------------------------
+            Head("The court");
+            Tick("Show the hoops' rings", "Hoops", "ShowRings",
+                 () => c.HoopRings, v => c.HoopRings = v,
+                 "A ring on each hoop where the ball has to go through. From the next game");
+
+            // ---- performance -----------------------------------------------------
+            Head("Performance");
 
             // THE CRASH PROTECTION, ON THE MENU. These are the two lines the war, the takeover
             // and the crews hold off at, and lowering them is the first thing to try on an
@@ -723,54 +863,69 @@ namespace Hoodrich.UI
                   () => c.CarsBusy, v => c.CarsBusy = (int)v, 60f, 600f, 10f, "0",
                   note: "Ours hold off past this many cars in the world");
 
-            // ---- the takeover ----------------------------------------------------
-            Head("The takeover");
-            Tick("Takeovers happen", "Block", "TakeoverEnabled",
-                 () => c.TakeoverEnabled, v => c.TakeoverEnabled = v,
-                 "The junction on Carson, once a night between nine and four. Nothing is asked of you");
-            Slide("One night in", "Block", "TakeoverEveryNights",
-                  () => c.TakeoverEveryNights, v => c.TakeoverEveryNights = (int)v, 1f, 14f, 1f, "0",
-                  note: "3 is one night in three. 1 is every night");
-            Slide("The ring of people", "Block", "TakeoverRadius",
-                  () => c.TakeoverRadius, v => c.TakeoverRadius = v, 8f, 40f, 1f, "0", " m",
-                  note: "How far out the crowd stands from the middle");
+            // ---- fixes -----------------------------------------------------------
+            //
+            // For when something has gone wrong in a save, not for playing with.
+            Head("Fixes");
 
-            // ---- posting up ------------------------------------------------------
-            Head("Posting up");
-            Tick("Show the corner readout", "PostUp", "ShowDealHud",
-                 () => c.ShowDealHud, v => c.ShowDealHud = v,
-                 "Off hides the wordmark and the bars. The corner still works");
-            Tick("Blips in the bars", "PostUp", "BlipsInBars",
-                 () => c.BlipsInBars, v => c.BlipsInBars = v,
-                 "Map art at the ends of the reputation and heat bars");
-            Slide("Chance each passer-by buys", "PostUp", "PostUpApproachChance",
-                  () => c.PostUpApproachChance, v => c.PostUpApproachChance = v,
-                  0f, 100f, 1f, "0", "%", note: "A busy pavement compounds this");
-            Slide("Grams a street sale moves", "PostUp", "PostUpDealGrams",
-                  () => c.PostUpDealGrams, v => c.PostUpDealGrams = v, 0.1f, 20f, 0.1f, "0.0", " g");
-            Slide("Heat per witness", "PostUp", "PostUpHeatPerWitness",
-                  () => c.PostUpHeatPerWitness, v => c.PostUpHeatPerWitness = v,
-                  0f, 2f, 0.05f, "0.00");
-            Slide("Heat before the law comes", "PostUp", "PostUpHeatBeforePolice",
-                  () => c.PostUpHeatBeforePolice, v => c.PostUpHeatBeforePolice = v,
-                  1f, 100f, 1f, "0");
-            Slide("Seconds before a search", "PostUp", "PostUpSearchSeconds",
-                  () => c.PostUpSearchSeconds, v => c.PostUpSearchSeconds = v, 1f, 60f, 1f, "0", " s",
-                  note: "Your window to walk away");
-            Slide("Fine when they find it", "PostUp", "PostUpFine",
-                  () => c.PostUpFine, v => c.PostUpFine = (int)v, 0f, 50000f, 250f, "N0", "", "$");
-            Tick("Buyers ring you", "Supply", "ColdCallsEnabled",
-                 () => c.ColdCallsEnabled, v => c.ColdCallsEnabled = v,
-                 "Somebody calls wanting something, somewhere, for a while");
-            Slide("They try every", "Supply", "ColdCallEveryMinutes",
-                  () => c.ColdCallEveryMinutes, v => c.ColdCallEveryMinutes = v,
-                  1f, 120f, 1f, "0", " min");
-            Slide("Chance they call", "Supply", "ColdCallChancePercent",
-                  () => c.ColdCallChancePercent, v => c.ColdCallChancePercent = v,
-                  0f, 100f, 5f, "0", "%");
-            Slide("Time to get there", "Supply", "ColdCallMinutes",
-                  () => c.ColdCallMinutes, v => c.ColdCallMinutes = v, 1f, 60f, 1f, "0", " min",
-                  note: "Before they go elsewhere");
+            // THE BAG, BROUGHT BACK. For one that went somewhere it cannot be reached -- off a
+            // cliff, into a hillside, under the map on an old save. A repair, not a shortcut:
+            // the walk back to a bag you dropped is the game, and this is for when the walk
+            // cannot end.
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Action,
+                Label = "Bring my bag here",
+                Note = "Moves a dropped bag to your feet, with everything still in it",
+                Do = () =>
+                {
+                    if (RecallBag == null) return;
+
+                    var no = RecallBag();
+
+                    if (no != null) Notify.Problem(no);
+                    else Notify.Ticker("~g~Bag's here.~s~  at your feet, with what was in it");
+                }
+            });
+
+            _rows.Add(new Opt
+            {
+                Kind = OptKind.Action,
+                Label = "Put him back in Franklin's body",
+                Note = "For anybody left as somebody else. Does nothing when he is already himself",
+                Do = () =>
+                {
+                    var me = Game.Player.Character;
+
+                    if (me != null && me.Exists() && (uint)me.Model.Hash == (uint)PedHash.Franklin)
+                    {
+                        Notify.Important("He is already himself.");
+                        return;
+                    }
+
+                    var model = new GTA.Model(PedHash.Franklin);
+                    model.Request(3000);
+
+                    if (!model.IsLoaded)
+                    {
+                        Notify.Problem("Franklin would not load. Try again in a moment.");
+                        return;
+                    }
+
+                    Function.Call(Hash.SET_PLAYER_MODEL, Game.Player.Handle, model.Hash);
+                    model.MarkAsNoLongerNeeded();
+
+                    Log.Info("Put the player back in Franklin's body from the settings screen.");
+                    Notify.Important("Back in his own body.");
+                }
+            });
+
+            // ======================================================================
+            // EVERYTHING BELOW IS FOR BUILDING THE MOD: the numbers it is tuned with, the
+            // builders' buttons and the Tools. Nobody playing sees any of it -- [Developer]
+            // Tools=true in Hoodrich.ini brings it back.
+            // ======================================================================
+            if (!c.DevTools) return;
 
             // ---- the market ------------------------------------------------------
             Head("The market");
@@ -780,18 +935,6 @@ namespace Hoodrich.UI
             Slide("Most a price can swing", "Economy", "MarketMaxSwingPercent",
                   () => c.MarketMaxSwingPercent, v => c.MarketMaxSwingPercent = v,
                   0f, 80f, 5f, "0", "%");
-            Tick("Blocks get worked out", "Economy", "BlockSaturationEnabled",
-                 () => c.BlockSaturationEnabled, v => c.BlockSaturationEnabled = v,
-                 "Selling on one corner makes the next customer there slower to turn up");
-            Slide("Grams to dry a block", "Economy", "BlockSaturationGrams",
-                  () => c.BlockSaturationGrams, v => c.BlockSaturationGrams = v,
-                  10f, 2000f, 10f, "0", " g");
-            Slide("It recovers over", "Economy", "BlockRecoveryMinutes",
-                  () => c.BlockRecoveryMinutes, v => c.BlockRecoveryMinutes = v,
-                  1f, 240f, 1f, "0", " min", note: "While you are somewhere else");
-            Slide("A dead block still does", "Economy", "BlockDemandFloor",
-                  () => c.BlockDemandFloor, v => c.BlockDemandFloor = v, 0f, 1f, 0.05f, "0.00", "x",
-                  note: "It never goes to nothing. 0.25x is a quarter of normal");
 
             // ---- supply ----------------------------------------------------------
             Head("Supply");
@@ -815,54 +958,6 @@ namespace Hoodrich.UI
             Slide("The house holds", "Hideouts", "HideoutStashCapacity",
                   () => c.HideoutStashCapacity, v => c.HideoutStashCapacity = v,
                   1000f, 500000f, 5000f, "N0", " g");
-
-            // ---- risk ------------------------------------------------------------
-            Head("Risk");
-            Slide("Police bust chance", "Risk", "PoliceBustChancePercent",
-                  () => c.PoliceBustChancePercent, v => c.PoliceBustChancePercent = v,
-                  0f, 100f, 1f, "0", "%");
-            Slide("Undercover call", "Risk", "UndercoverCallSeconds",
-                  () => c.UndercoverCallSeconds, v => c.UndercoverCallSeconds = v,
-                  1f, 60f, 1f, "0", " s");
-            Slide("Escape distance", "Risk", "UndercoverEscapeDistance",
-                  () => c.UndercoverEscapeDistance, v => c.UndercoverEscapeDistance = v,
-                  5f, 300f, 5f, "0", " m");
-            Slide("Stars on a bust", "Risk", "BustWantedStars",
-                  () => c.BustWantedStars, v => c.BustWantedStars = (int)v, 1f, 5f, 1f, "0");
-            Slide("Lost when you die", "Risk", "LoseOnDeathPercent",
-                  () => c.LoseOnDeathPercent, v => c.LoseOnDeathPercent = v, 0f, 100f, 5f, "0", "%");
-            Slide("Lost when you are nicked", "Risk", "LoseOnArrestPercent",
-                  () => c.LoseOnArrestPercent, v => c.LoseOnArrestPercent = v, 0f, 100f, 5f, "0", "%");
-            Tick("The house gets turned over", "Hideouts", "StashRaidsEnabled",
-                 () => c.StashRaidsEnabled, v => c.StashRaidsEnabled = v,
-                 "Hold enough, get loud enough, and somebody comes while you are out");
-            Slide("Chance of a raid", "Hideouts", "StashRaidChancePercent",
-                  () => c.StashRaidChancePercent, v => c.StashRaidChancePercent = v,
-                  0f, 100f, 5f, "0", "%");
-            Slide("They take of the stash", "Hideouts", "StashRaidTakePercent",
-                  () => c.StashRaidTakePercent, v => c.StashRaidTakePercent = v,
-                  0f, 100f, 5f, "0", "%");
-            Slide("You are warned", "Hideouts", "StashRaidWarningMinutes",
-                  () => c.StashRaidWarningMinutes, v => c.StashRaidWarningMinutes = v,
-                  0f, 15f, 0.5f, "0.0", " min", note: "Be at the house when they come and it is off");
-
-            // ---- getting high ----------------------------------------------------
-            Head("Getting high");
-            Tick("Cinematic camera", "Highs", "DrugCamera",
-                 () => c.DrugCamera,
-                 v => { c.DrugCamera = v; Economy.Ritual.Cinematic = v; },
-                 "Swings round the front while you take something, then hands the camera back");
-            Slide("How long it takes", "Highs", "AnimLength",
-                  () => c.DrugAnimLength,
-                  v => { c.DrugAnimLength = v; Economy.Ritual.Length = v; },
-                  0.5f, 3f, 0.1f, "0.0", "x",
-                  note: "Scales every drug animation. The camera follows it");
-
-            // ---- the court -------------------------------------------------------
-            Head("The court");
-            Tick("Show the hoops' rings", "Hoops", "ShowRings",
-                 () => c.HoopRings, v => c.HoopRings = v,
-                 "A ring on each hoop where the ball has to go through. From the next game");
 
             // ---- lamar and tanya -------------------------------------------------
             Head("Lamar and Tanya");
@@ -895,9 +990,6 @@ namespace Hoodrich.UI
                   v => c.SceneryRange = v,
                   40f, 600f, 10f, "0", " m",
                   note: "A scene is built once you are this close to it and taken out well past it");
-            Tick("The people come and go", "Scenery", "PedsLive",
-                 () => c.SceneryLife, v => c.SceneryLife = v,
-                 "They change what they are doing, stretch their legs, walk off and come back");
             Slide("Nobody about from", "Scenery", "QuietFrom",
                   () => c.SceneryQuietFrom, v => c.SceneryQuietFrom = (int)v, 0f, 23f, 1f, "0", ":00",
                   note: "On the game's clock. They walk off as it strikes");
@@ -1022,57 +1114,6 @@ namespace Hoodrich.UI
                 }
             });
 
-            // THE BAG, BROUGHT BACK. For one that went somewhere it cannot be reached -- off a
-            // cliff, into a hillside, under the map on an old save. A repair, not a shortcut:
-            // the walk back to a bag you dropped is the game, and this is for when the walk
-            // cannot end.
-            _rows.Add(new Opt
-            {
-                Kind = OptKind.Action,
-                Label = "Bring my bag here",
-                Note = "Moves a dropped bag to your feet, with everything still in it",
-                Do = () =>
-                {
-                    if (RecallBag == null) return;
-
-                    var no = RecallBag();
-
-                    if (no != null) Notify.Problem(no);
-                    else Notify.Ticker("~g~Bag's here.~s~  at your feet, with what was in it");
-                }
-            });
-
-            _rows.Add(new Opt
-            {
-                Kind = OptKind.Action,
-                Label = "Put him back in Franklin's body",
-                Note = "For anybody left as somebody else. Does nothing when he is already himself",
-                Do = () =>
-                {
-                    var me = Game.Player.Character;
-
-                    if (me != null && me.Exists() && (uint)me.Model.Hash == (uint)PedHash.Franklin)
-                    {
-                        Notify.Important("He is already himself.");
-                        return;
-                    }
-
-                    var model = new GTA.Model(PedHash.Franklin);
-                    model.Request(3000);
-
-                    if (!model.IsLoaded)
-                    {
-                        Notify.Problem("Franklin would not load. Try again in a moment.");
-                        return;
-                    }
-
-                    Function.Call(Hash.SET_PLAYER_MODEL, Game.Player.Handle, model.Hash);
-                    model.MarkAsNoLongerNeeded();
-
-                    Log.Info("Put the player back in Franklin's body from the settings screen.");
-                    Notify.Important("Back in his own body.");
-                }
-            });
 
             // ======================================================================
             // Tools. For building the mod rather than playing it, and last for that reason.
@@ -1850,6 +1891,8 @@ namespace Hoodrich.UI
                 case "risk": return "warning.png";
                 case "getting high": return "blunt.png";
                 case "the court": return "ball.png";
+                case "performance": return "speed.png";
+                case "fixes": return "tick.png";
                 case "lamar and tanya": return "tow.png";
                 case "spooner scenes": return "box.png";
                 case "shortcuts": return "key.png";

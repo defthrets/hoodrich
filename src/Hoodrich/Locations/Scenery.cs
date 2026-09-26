@@ -537,7 +537,8 @@ namespace Hoodrich.Locations
                 }
             }
 
-            if (_cfg == null || _cfg.SceneryFromMenyoo)
+            // Menyoo's own folder is a builder's: a player's saves are theirs, not scenery.
+            if (_cfg != null && _cfg.DevTools && _cfg.SceneryFromMenyoo)
             {
                 try
                 {

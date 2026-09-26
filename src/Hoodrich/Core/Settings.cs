@@ -15,6 +15,16 @@ namespace Hoodrich.Core
     {
         // ---- general -----------------------------------------------------------
         public bool Enabled = true;
+
+        /// <summary>
+        /// THE TOOLS FOR BUILDING THE MOD, and every setting a player has no use for: Parkview's
+        /// capture and hide keys, reading Menyoo's folder, the mask, door and in-hand tools, the
+        /// finders, the takeover and meet buttons, the unlocks, and every tuning slider. Off for
+        /// everybody who plays it; [Developer] Tools=true brings the lot back. It is not in the
+        /// ini the mod ships -- Michael asked for the release to have only what a player needs,
+        /// on 2026-09-26, and his own ini carries the line.
+        /// </summary>
+        public bool DevTools;
         /// <summary>
         /// What the player reads. English is the code's own; the rest are files in
         /// scripts\Hoodrich\lang, and anything a file does not cover shows in English. See Lang.
@@ -820,6 +830,7 @@ namespace Hoodrich.Core
             var ini = IniFile.Load(Paths.Ini);
 
             s.Enabled = ini.GetBool("General", "Enabled", s.Enabled);
+            s.DevTools = ini.GetBool("Developer", "Tools", s.DevTools);
             s.LogLevel = ini.GetEnum("General", "LogLevel", s.LogLevel);
             s.Language = ini.GetEnum("General", "Language", s.Language);
             // CLAMPED, because Main multiplies this by a thousand into an int.
@@ -907,28 +918,46 @@ namespace Hoodrich.Core
             // somebody standing on them. See the two rows on the settings screen that write
             // them down.
 
-            foreach (var name in ini.GetString("Doors", "More", "").Split(','))
-            {
-                var section = name.Trim();
-                if (section.Length == 0) continue;
+            // THE MOD'S OWN DOORS ARE DATA, in scripts\Hoodrich\doors.ini, not settings: the
+            // den, Apartment E2 and Leroy's are three blocks of coordinates nobody playing needs
+            // to see or could safely change, and the ini that ships is only what a player sets
+            // (2026-09-26). A door in Hoodrich.ini -- one the door tools wrote, or an older
+            // ini's copy of the same three -- is still read, and wins over the data file's.
+            var doorsIni = IniFile.Load(System.IO.Path.Combine(Paths.Data, "doors.ini"));
+            var doorNames = new List<string>();
 
-                var door = ReadDoor(ini, section, section, "", (BlipSprite)40,
+            foreach (var list in new[] { doorsIni.GetString("Doors", "More", ""), ini.GetString("Doors", "More", "") })
+            {
+                foreach (var one in (list ?? "").Split(','))
+                {
+                    var name = one.Trim();
+                    if (name.Length > 0 && !doorNames.Exists(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase)))
+                        doorNames.Add(name);
+                }
+            }
+
+            foreach (var section in doorNames)
+            {
+                // From whichever file has this door's coordinates -- the ini first.
+                var from = ini.GetString(section, "DoorX", null) != null ? ini : doorsIni;
+
+                var door = ReadDoor(from, section, section, "", (BlipSprite)40,
                                     0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f);
 
                 // The rest of what the picker wrote. Extra is the second and later interior
                 // names; a door with more than one has to ask for all of them or the room
                 // arrives with its walls missing.
-                door.Extra = ini.GetString(section, "Extra", "");
-                door.Sprite = (BlipSprite)ini.GetInt(section, "Sprite", 40);
+                door.Extra = from.GetString(section, "Extra", "");
+                door.Sprite = (BlipSprite)from.GetInt(section, "Sprite", 40);
 
                 // What the room is dressed with once it is up: entity sets, groups separated
                 // by semicolons, alternatives by bars. This was never read for a door listed
                 // here, so a section could name them and nothing happened. See InteriorDoor.Dress.
-                door.Sets = ini.GetString(section, "Sets", "");
+                door.Sets = from.GetString(section, "Sets", "");
 
                 // A week's rent, for a door that is let rather than walked through. Nought is
                 // a door anybody may use. See InteriorDoor, "rented".
-                door.Rent = (int)Clamp(ini.GetInt(section, "RentPerWeek", 0), 0f, 1000000f);
+                door.Rent = (int)Clamp(from.GetInt(section, "RentPerWeek", 0), 0f, 1000000f);
 
                 // A door with nothing on either end of it is a section somebody started and
                 // did not finish. Better ignored than put at the middle of the map.

@@ -80,6 +80,10 @@ The one thing nobody works out on their own: WEIGHT YOU BUY WILL NOT SELL until
 it has been cut and bagged at the sink in Denise's kitchen. Anything you are
 GIVEN is already bagged.
 
+Round Chamberlain Hills there is more to find: the block at Parkview with its
+people, a gambling den behind the die on the ground, Apartment E2 to rent by the
+week, and a basketball court where you can shoot hoops.
+
 
 -------------------------------------------------------------------------------
   CONTROLS
@@ -89,14 +93,8 @@ GIVEN is already bagged.
   Arrow keys          move       Enter  choose       Backspace  back
   Right on the d-pad  talk to somebody
 
-  Parkview, the block in Chamberlain Hills:
-  F9                  capture everything placed round you to a scene file
-  Shift+F9            read the scene files again
-  Ctrl+F9             hide the map prop you are looking at, for good
-  Alt+F9              set the rented room to where you stand
-  Numpad *            take over the map prop you are looking at
-
-Every key is rebindable in Hoodrich.ini.
+The phone's own key and the feed key are set on the settings screen: Settings,
+on the phone's wheel.
 
 
 -------------------------------------------------------------------------------
@@ -105,13 +103,15 @@ Every key is rebindable in Hoodrich.ini.
 
   * Works on both GTA V Legacy and GTA V Enhanced, same DLL.
   * Single player only. Do not take this anywhere near GTA Online.
-  * Everything is configurable: Hoodrich.ini for settings and keys,
-    Hoodrich\*.json for drugs, prices, gangs, missions and chatter.
+  * Settings are on the settings screen in the game (Settings, on the phone's
+    wheel) and in Hoodrich.ini, which says what each one does.
+    Hoodrich\*.json holds the drugs, prices, gangs, missions and chatter.
   * Parkview -- the block on the open ground in Chamberlain Hills, its people
-    and its rooms -- is part of this mod. Its files are Hoodrich\parkview; its
-    settings are [Parkview] in the ini. If you had the standalone Parkview,
-    take Parkview.dll out of scripts: this one copies your captures and your
-    rented room across from scripts\Parkview on its first start.
+    and its rooms -- is part of this mod. If you had the standalone Parkview,
+    take Parkview.dll out of scripts: this one copies your rented room across
+    from scripts\Parkview on its first start.
+  * The basketball court is also its own mod, Hoops. You do not need both:
+    with Posted Up installed, Hoops stands down.
   * Problems? Hoodrich\Hoodrich.log says what it did. Set LogLevel=Debug
     in the ini before reporting anything.
   * The Wei Cheng business at the port shows as "Coming soon" on purpose.

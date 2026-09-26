@@ -100,7 +100,8 @@ namespace Hoodrich.Gangs
 
             try
             {
-                var file = Paths.BikePathFile;
+                // Your own recording if there is one, and the one that ships if not.
+                var file = File.Exists(Paths.BikePathFile) ? Paths.BikePathFile : Paths.BikePathShipped;
                 if (!File.Exists(file)) return;
 
                 var pts = new List<Vector3>();

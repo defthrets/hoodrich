@@ -266,6 +266,13 @@ namespace Hoodrich.Core
         public static string BikePathFile => Path.Combine(Writable, "bike-path.txt");
 
         /// <summary>
+        /// The riders' way round Parkview as Michael rode it, shipped for everybody. Read only when
+        /// nobody has recorded their own, and never written: a recording goes to BikePathFile, so a
+        /// deploy of the data folder cannot write over it. See Gangs.BikePath.Load.
+        /// </summary>
+        public static string BikePathShipped => Path.Combine(Data, "bike-path-default.txt");
+
+        /// <summary>
         /// The doors you rent and the day each next week falls due. WRITTEN, so it follows the
         /// writability fallback; plain text, a door a line, so it can be put right by hand.
         /// See Locations.Leases.

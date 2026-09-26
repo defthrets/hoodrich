@@ -2497,27 +2497,34 @@ namespace Hoodrich.Wheel
             return ids;
         }
 
-        public IEnumerable<Opt> ResetOptions()
+        /// <summary>
+        /// START OVER, on the settings screen. A player gets three: the whole mod from nothing,
+        /// their graffiti, and the dog back to the yard. The partial wipes and the unlocks are
+        /// for building it and come with the developer tools, like the rest of the Tools.
+        /// </summary>
+        public IEnumerable<Opt> ResetOptions(bool dev)
         {
             yield return new Opt { Kind = OptKind.Heading, Label = "Start over" };
 
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "The gangs",
-                Note = "Every standing, every body, every dollar you made them, and whoever you " +
-                       "run with. Respect, money and product untouched",
-                Do = () => _crew.ResetEverything()
-            };
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "The gangs",
+                    Note = "Every standing, every body, every dollar you made them, and whoever you " +
+                           "run with. Respect, money and product untouched",
+                    Do = () => _crew.ResetEverything()
+                };
 
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Lamar's work",
-                Note = "He works down his list from the top again. What he already paid you stays paid",
-                Enabled = () => _state.MissionsDone.Count > 0,
-                Do = () => _state.ForgetMissions()
-            };
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "Lamar's work",
+                    Note = "He works down his list from the top again. What he already paid you stays paid",
+                    Enabled = () => _state.MissionsDone.Count > 0,
+                    Do = () => _state.ForgetMissions()
+                };
 
             yield return new Opt
             {
@@ -2529,52 +2536,56 @@ namespace Hoodrich.Wheel
                 Do = () => { if (Jobs != null) Jobs.ForgetPaint(); }
             };
 
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Hot blocks",
-                Note = "Every corner you have made hot forgets it. The city starts cold again",
-                Enabled = () => _postUp != null && _postUp.Ground.WarmBlocks > 0,
-                Do = () => _postUp.Ground.Forget()
-            };
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "Hot blocks",
+                    Note = "Every corner you have made hot forgets it. The city starts cold again",
+                    Enabled = () => _postUp != null && _postUp.Ground.WarmBlocks > 0,
+                    Do = () => _postUp.Ground.Forget()
+                };
 
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Gerald's packages",
-                Note = "Both fronts back on the table and the port shut again, so his whole " +
-                       "sequence runs from the top. What you already sold stays sold",
-                // Always available, deliberately.
-                //
-                // It used to require the sequence to be visibly under way, which meant the one
-                // state you could not reset out of was the one where the count had gone wrong
-                // and everything read as zero -- the escape hatch was locked by the same
-                // reading that made you need it. Resetting something you have not started is a
-                // no-op, and a no-op is a far better failure than a dead end.
-                Do = () => _state.ForgetFronts()
-            };
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "Gerald's packages",
+                    Note = "Both fronts back on the table and the port shut again, so his whole " +
+                           "sequence runs from the top. What you already sold stays sold",
+                    // Always available, deliberately.
+                    //
+                    // It used to require the sequence to be visibly under way, which meant the one
+                    // state you could not reset out of was the one where the count had gone wrong
+                    // and everything read as zero -- the escape hatch was locked by the same
+                    // reading that made you need it. Resetting something you have not started is a
+                    // no-op, and a no-op is a far better failure than a dead end.
+                    Do = () => _state.ForgetFronts()
+                };
 
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Finish Gerald's package",
-                Note = "Counts what he's fronted you as sold without selling it, so he gets in " +
-                       "touch and you can hand it in. Skips the audition, so the set will take " +
-                       "you. Press it again for the second one and the port opens up",
-                Enabled = () => _state.FrontsDone < 2 || _state.HasFrontedWork,
-                Do = () => Notify.Important("~g~" + _state.FinishFront() + "~s~")
-            };
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "Finish Gerald's package",
+                    Note = "Counts what he's fronted you as sold without selling it, so he gets in " +
+                           "touch and you can hand it in. Skips the audition, so the set will take " +
+                           "you. Press it again for the second one and the port opens up",
+                    Enabled = () => _state.FrontsDone < 2 || _state.HasFrontedWork,
+                    Do = () => Notify.Important("~g~" + _state.FinishFront() + "~s~")
+                };
 
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Count Gerald's packages done",
-                Note = "Marks both of his fronts as moved without moving them. For a save that " +
-                       "cleared one and was not credited for it -- he opens up the port instead " +
-                       "of asking again",
-                Enabled = () => _state.FrontsDone < 2,
-                Do = () => _state.CreditFronts()
-            };
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "Count Gerald's packages done",
+                    Note = "Marks both of his fronts as moved without moving them. For a save that " +
+                           "cleared one and was not credited for it -- he opens up the port instead " +
+                           "of asking again",
+                    Enabled = () => _state.FrontsDone < 2,
+                    Do = () => _state.CreditFronts()
+                };
 
             yield return new Opt
             {
@@ -2587,45 +2598,48 @@ namespace Hoodrich.Wheel
                 Do = () => ResetTrigger?.Invoke()
             };
 
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Your socials",
-                Note = "Followers back to nobody and the timeline cleared. The block carries on " +
-                       "talking; it stops knowing who you are",
-                Enabled = () => WipeSocials != null,
-                Do = () => WipeSocials?.Invoke()
-            };
-
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Unlock everything",
-                Note = "Every job marked done, every leader met, the port open, Gerald's " +
-                       "packages cleared and the rank to match. For seeing the far end of the " +
-                       "mod without playing the near end again",
-                Do = () =>
+            if (dev)
+                yield return new Opt
                 {
-                    _state.UnlockEverything(AllMissionIds(), AllGangIds());
-                    Notify.Important("~g~Everything's open.~s~");
-                }
-            };
+                    Kind = OptKind.Danger,
+                    Label = "Your socials",
+                    Note = "Followers back to nobody and the timeline cleared. The block carries on " +
+                           "talking; it stops knowing who you are",
+                    Enabled = () => WipeSocials != null,
+                    Do = () => WipeSocials?.Invoke()
+                };
 
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Unlock Lamar's work",
-                Note = "Every job on his list open at once. He works the list in order, so this " +
-                       "marks them all as done -- and a done job still shows on his list as " +
-                       "one you can run again",
-                Do = () =>
+            if (dev)
+                yield return new Opt
                 {
-                    foreach (var id in AllMissionIds()) _state.MarkDone(id);
+                    Kind = OptKind.Danger,
+                    Label = "Unlock everything",
+                    Note = "Every job marked done, every leader met, the port open, Gerald's " +
+                           "packages cleared and the rank to match. For seeing the far end of the " +
+                           "mod without playing the near end again",
+                    Do = () =>
+                    {
+                        _state.UnlockEverything(AllMissionIds(), AllGangIds());
+                        Notify.Important("~g~Everything's open.~s~");
+                    }
+                };
 
-                    _state.Touch();
-                    Notify.Important("~g~Lamar's list is open.~s~");
-                }
-            };
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "Unlock Lamar's work",
+                    Note = "Every job on his list open at once. He works the list in order, so this " +
+                           "marks them all as done -- and a done job still shows on his list as " +
+                           "one you can run again",
+                    Do = () =>
+                    {
+                        foreach (var id in AllMissionIds()) _state.MarkDone(id);
+
+                        _state.Touch();
+                        Notify.Important("~g~Lamar's list is open.~s~");
+                    }
+                };
 
             yield return new Opt
             {
@@ -2658,72 +2672,78 @@ namespace Hoodrich.Wheel
                 }
             };
 
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Your name",
-                Note = "Respect to nothing, and the rank with it. Deals, grams and earnings forgotten",
-                Do = () => _state.ForgetName()
-            };
-
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Your money",
-                Note = "The cash in hand. Not the bank and not anything you own",
-                Enabled = () => Game.Player.Money > 0,
-                Do = () => Game.Player.Money = 0
-            };
-
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Your guns",
-                Note = "Every weapon and every round. You keep your fists",
-                Do = DropAllGuns
-            };
-
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "What you're carrying",
-                Note = "Everything in your pockets, bagged and raw. The house is a separate row",
-                Enabled = () => Stash.Total > 0.005f,
-                Do = () => Stash.Clear()
-            };
-
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "The stash house",
-                Note = "Everything kept at the house. What is on you stays in your pockets",
-                Enabled = () => _stash != null && _stash.Stash != null && _stash.Stash.Total > 0.005f,
-                Do = () => { if (_stash != null && _stash.Stash != null) _stash.Stash.Clear(); }
-            };
-
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "All of it",
-                Note = "Gangs, jobs, socials, your name, your money, your guns and every gram. " +
-                       "None of it comes back",
-                Do = () =>
+            if (dev)
+                yield return new Opt
                 {
-                    _crew.ResetEverything();
-                    _state.ForgetMissions();
-                    _state.ForgetName();
+                    Kind = OptKind.Danger,
+                    Label = "Your name",
+                    Note = "Respect to nothing, and the rank with it. Deals, grams and earnings forgotten",
+                    Do = () => _state.ForgetName()
+                };
 
-                    WipeSocials?.Invoke();
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "Your money",
+                    Note = "The cash in hand. Not the bank and not anything you own",
+                    Enabled = () => Game.Player.Money > 0,
+                    Do = () => Game.Player.Money = 0
+                };
 
-                    Social.Inbox.Wipe();
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "Your guns",
+                    Note = "Every weapon and every round. You keep your fists",
+                    Do = DropAllGuns
+                };
 
-                    Game.Player.Money = 0;
-                    DropAllGuns();
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "What you're carrying",
+                    Note = "Everything in your pockets, bagged and raw. The house is a separate row",
+                    Enabled = () => Stash.Total > 0.005f,
+                    Do = () => Stash.Clear()
+                };
 
-                    Stash.Clear();
-                    if (_stash != null && _stash.Stash != null) _stash.Stash.Clear();
-                }
-            };
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "The stash house",
+                    Note = "Everything kept at the house. What is on you stays in your pockets",
+                    Enabled = () => _stash != null && _stash.Stash != null && _stash.Stash.Total > 0.005f,
+                    Do = () => { if (_stash != null && _stash.Stash != null) _stash.Stash.Clear(); }
+                };
+
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "All of it",
+                    Note = "Gangs, jobs, socials, your name, your money, your guns and every gram. " +
+                           "None of it comes back",
+                    Do = () =>
+                    {
+                        _crew.ResetEverything();
+                        _state.ForgetMissions();
+                        _state.ForgetName();
+
+                        WipeSocials?.Invoke();
+
+                        Social.Inbox.Wipe();
+
+                        Game.Player.Money = 0;
+                        DropAllGuns();
+
+                        Stash.Clear();
+                        if (_stash != null && _stash.Stash != null) _stash.Stash.Clear();
+                    }
+                };
         }
 
         /// <summary>
