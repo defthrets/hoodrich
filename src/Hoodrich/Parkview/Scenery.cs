@@ -71,6 +71,17 @@ namespace Hoodrich.Parkview
             /// <summary>Whether those holes are currently being held open.</summary>
             public bool Holed;
 
+            /// <summary>
+            /// How far round its middle the scene clears away the map's own props while it is up --
+            /// "bare" in the Note, or "bare: 10". Nought leaves the map as it is. See Bare.
+            /// </summary>
+            public float Bare;
+
+            /// <summary>The map props Bare has hidden, let back when the scene comes down; and the ones it left, by where they are.</summary>
+            public readonly List<Spooner.Hidden> Bared = new List<Spooner.Hidden>();
+            public readonly HashSet<string> BareLeft = new HashSet<string>();
+            public int BareNext;
+
             public Vector3 Centre;
             public float Radius;
 
@@ -940,6 +951,9 @@ namespace Hoodrich.Parkview
                 try { scene.Sits = Pairs(path, "sits:"); }
                 catch { /* nobody sits */ }
 
+                try { scene.Bare = BareReach(path, scene.Radius); }
+                catch { /* the map's own props stay */ }
+
                 try { scene.Indoors = Clauses(path).Exists(c => c.StartsWith("indoors", StringComparison.OrdinalIgnoreCase)); }
                 catch { /* everybody walks in */ }
 
@@ -1096,6 +1110,13 @@ namespace Hoodrich.Parkview
             foreach (var scene in _scenes)
             {
                 if (scene.Waits.Count > 0) Waited(scene, now);
+
+                // The map's own props out of a bare room, as the room makes them. See Bare.
+                if (scene.Bare > 0f && (scene.Built || scene.Working) && now >= scene.BareNext)
+                {
+                    scene.BareNext = now + BareEveryMs;
+                    Bare(scene);
+                }
 
                 if (scene.Working)
                 {
@@ -7546,6 +7567,7 @@ namespace Hoodrich.Parkview
         private static void Drop(Scene scene, bool forGood)
         {
             Vanish(scene, false);
+            Unbare(scene);
 
             scene.Kept.Clear();
             scene.KeptTiles.Clear();
@@ -7881,6 +7903,146 @@ namespace Hoodrich.Parkview
             {
                 Log.Warn("Could not read struck.txt: " + ex.Message);
             }
+        }
+
+        // ==================================================================
+        // Bare
+        // ==================================================================
+
+        /// <summary>How often a bare room is looked over for the map's props: often, because it is made as you walk in.</summary>
+        private const int BareEveryMs = 250;
+
+        /// <summary>How far above or below the scene's middle a prop can be and still be in the room.</summary>
+        private const float BareHigh = 4.5f;
+
+        /// <summary>The sphere each one is hidden with: its own spot, and nothing of the same model a step away.</summary>
+        private const float BareSpot = 0.25f;
+
+        /// <summary>Anything this big one way may be the room itself -- a wall, a floor -- and is left.</summary>
+        private const float BareBiggest = 6f;
+
+        /// <summary>"bare" in a scene's Note, as a reach: the number after it, or a little past the scene's own edge.</summary>
+        private static float BareReach(string path, float radius)
+        {
+            foreach (var line in Clauses(path))
+            {
+                if (!line.StartsWith("bare", StringComparison.OrdinalIgnoreCase)) continue;
+
+                var colon = line.IndexOf(':');
+                float reach;
+
+                if (colon > 0 && float.TryParse(line.Substring(colon + 1).Trim(), System.Globalization.NumberStyles.Float,
+                                                 System.Globalization.CultureInfo.InvariantCulture, out reach) && reach > 0f)
+                {
+                    return reach;
+                }
+
+                return radius + 2f;
+            }
+
+            return 0f;
+        }
+
+        /// <summary>
+        /// EVERYTHING THE MAP PUT IN THE ROOM, OUT, while the scene is up. For a room furnished
+        /// from nothing: the den is the story game's two-car garage, and the garage's own things
+        /// stood in among Michael's tables. He deleted them in Menyoo and they were back every
+        /// time the room was loaded again, because the interior makes them again -- so each one
+        /// is model-hidden on its own spot, which the game holds to, and let back when the scene
+        /// comes down. Michael asked for just ours in the den on 2026-09-26.
+        ///
+        /// Anything a script made is left: ours, the dealers' cards and chips, the reels,
+        /// Menyoo's own. So is anything held -- the joint a scenario puts in a man's hand is the
+        /// game's, and hiding it would hide every one after it on that spot -- any door, so the
+        /// room is never open onto the void behind it, and anything big enough to be the room.
+        /// </summary>
+        private void Bare(Scene scene)
+        {
+            try
+            {
+                var near = World.GetNearbyProps(scene.Centre, scene.Bare);
+                if (near == null) return;
+
+                foreach (var prop in near)
+                {
+                    if (prop == null || !prop.Exists()) continue;
+
+                    var handle = prop.Handle;
+                    if (Function.Call<bool>(Hash.IS_ENTITY_A_MISSION_ENTITY, handle)) continue;
+                    if (Mine(handle)) continue;
+                    if (Function.Call<bool>(Hash.IS_ENTITY_ATTACHED, handle)) continue;
+
+                    var at = prop.Position;
+                    if (Math.Abs(at.Z - scene.Centre.Z) > BareHigh) continue;
+
+                    var hash = unchecked((uint)prop.Model.Hash);
+                    var key = hash.ToString("x8") + "@" + at.X.ToString("0.0") + "," + at.Y.ToString("0.0") + "," + at.Z.ToString("0.0");
+
+                    if (scene.BareLeft.Contains(key)) continue;
+
+                    var already = false;
+
+                    foreach (var one in scene.Bared)
+                    {
+                        if (one.ModelHash == hash && one.At.DistanceTo(at) < 0.3f) { already = true; break; }
+                    }
+
+                    if (already) continue;
+
+                    var name = Names.Say(prop.Model.Hash);
+
+                    if (name.IndexOf("door", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("gate", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        scene.BareLeft.Add(key);
+                        Log.Info("Scenery: \"" + scene.Name + "\" is bare but the map's " + name + " at " + at + " is left -- a door.");
+                        continue;
+                    }
+
+                    var lo = new OutputArgument();
+                    var hi = new OutputArgument();
+                    Function.Call(Hash.GET_MODEL_DIMENSIONS, prop.Model.Hash, lo, hi);
+                    var size = hi.GetResult<Vector3>() - lo.GetResult<Vector3>();
+
+                    if (size.X > BareBiggest || size.Y > BareBiggest || size.Z > BareBiggest)
+                    {
+                        scene.BareLeft.Add(key);
+                        Log.Info("Scenery: \"" + scene.Name + "\" is bare but the map's " + name + " at " + at + " is left -- " +
+                                 size.X.ToString("0.0") + " x " + size.Y.ToString("0.0") + " x " + size.Z.ToString("0.0") +
+                                 " m may be the room itself.");
+                        continue;
+                    }
+
+                    Function.Call(Hash.CREATE_MODEL_HIDE_EXCLUDING_SCRIPT_OBJECTS, at.X, at.Y, at.Z, BareSpot, unchecked((int)hash), false);
+
+                    scene.Bared.Add(new Spooner.Hidden { ModelName = name, ModelHash = hash, At = at, Radius = BareSpot });
+                    Log.Info("Scenery: the map's " + name + " at " + at + " is out of \"" + scene.Name + "\" -- it is bare.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Scenery: could not clear the map's props out of " + scene.Name + ": " + ex.Message);
+            }
+        }
+
+        /// <summary>The map's props let back into a bare room as it comes down.</summary>
+        private static void Unbare(Scene scene)
+        {
+            foreach (var one in scene.Bared)
+            {
+                try
+                {
+                    Function.Call(Hash.REMOVE_MODEL_HIDE, one.At.X, one.At.Y, one.At.Z, one.Radius, unchecked((int)one.ModelHash), false);
+                }
+                catch
+                {
+                    // It is only a hole left open.
+                }
+            }
+
+            scene.Bared.Clear();
+            scene.BareLeft.Clear();
+            scene.BareNext = 0;
         }
 
         /// <summary>Read the folder again and stand it all up fresh. For the settings screen.</summary>
