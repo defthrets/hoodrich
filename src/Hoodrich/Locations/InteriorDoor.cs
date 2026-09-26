@@ -414,6 +414,41 @@ namespace Hoodrich.Locations
         /// <summary>The interior pinned while he is in it, let go on the way out so it can stream away.</summary>
         private int _pinned;
 
+        /// <summary>
+        /// The room as a sentence says it. A name that is already a name -- "Apartment E2",
+        /// "Leroy's Electrical", or one that brings its own "the" -- is said as it is; anything
+        /// else gets a "the". It was "the" every time, which is how the den's door read "go into
+        /// the the gambling den".
+        /// </summary>
+        private string Room
+        {
+            get
+            {
+                var name = _spec.Name ?? "";
+                if (name.StartsWith("the ", StringComparison.OrdinalIgnoreCase)) return name;
+                if (name.Length > 0 && char.IsUpper(name[0])) return name;
+                return "the " + name;
+            }
+        }
+
+        /// <summary>
+        /// A door you rent is white on the map until it is yours and green once it is; every other
+        /// door is green. Michael asked for the apartments that way on 2026-09-26.
+        /// </summary>
+        private BlipColor Tint => _spec.Rent > 0 && !_rented ? BlipColor.White : BlipColor.Green;
+
+        private void Recolour()
+        {
+            try
+            {
+                if (_blip != null && _blip.Exists()) _blip.Color = Tint;
+            }
+            catch
+            {
+                // It takes its colour when it is next made.
+            }
+        }
+
         private Vector3 Door => new Vector3(_spec.DoorX, _spec.DoorY, _spec.DoorZ);
         private Vector3 Inside => new Vector3(_spec.InsideX, _spec.InsideY, _spec.InsideZ);
 
@@ -468,7 +503,7 @@ namespace Hoodrich.Locations
 
                 if (player.Position.DistanceTo(Mark) > ExitRange) return;
 
-                Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to leave the " + _spec.Name + ".");
+                Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to leave " + Room + ".");
 
                 if (Game.IsControlJustPressed(Control.Context)) Leave(player);
                 return;
@@ -492,7 +527,7 @@ namespace Hoodrich.Locations
             if (shut)
             {
                 Help.ShowThisFrame(string.IsNullOrEmpty(ShutWhy)
-                                       ? "The " + _spec.Name + " is locked."
+                                       ? Capital(Room) + " is locked."
                                        : ShutWhy);
                 return;
             }
@@ -507,7 +542,7 @@ namespace Hoodrich.Locations
                 return;
             }
 
-            Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to go into the " + _spec.Name + ".");
+            Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to go into " + Room + ".");
 
             if (Game.IsControlJustPressed(Control.Context)) Enter(player);
         }
@@ -529,7 +564,8 @@ namespace Hoodrich.Locations
             _due = Leases.Today() + Week;
             Leases.Write(_spec.Section, true, _due);
 
-            Log.Info("Rented the " + _spec.Name + " for $" + rent + " a week; next due day " + _due + ".");
+            Log.Info("Rented " + Room + " for $" + rent + " a week; next due day " + _due + ".");
+            Recolour();
             Notify.Important("~g~" + Capital(_spec.Name) + "~s~ is yours. $" + rent.ToString("N0") +
                              " a week, and the week is up in seven days.");
         }
@@ -557,7 +593,7 @@ namespace Hoodrich.Locations
                 _due = today + Week;
                 Leases.Write(_spec.Section, true, _due);
 
-                Notify.Important("Rent on the ~g~" + _spec.Name + "~s~: $" + rent.ToString("N0") + ".");
+                Notify.Important("Rent on ~g~" + Room + "~s~: $" + rent.ToString("N0") + ".");
                 Log.Info("Took $" + rent + " for the " + _spec.Name + "; next due day " + _due + ".");
                 return;
             }
@@ -566,7 +602,8 @@ namespace Hoodrich.Locations
             _due = 0;
             Leases.Write(_spec.Section, false, 0);
 
-            Notify.Problem("The " + _spec.Name + " is not yours any more. The week's rent was $" + rent.ToString("N0") + ".");
+            Notify.Problem(Capital(Room) + " is not yours any more. The week's rent was $" + rent.ToString("N0") + ".");
+            Recolour();
             Log.Info("Could not pay $" + rent + " for the " + _spec.Name + "; it is let go.");
 
             if (_inside) Leave(player);
@@ -1561,7 +1598,7 @@ namespace Hoodrich.Locations
                 if (_blip == null || !_blip.Exists()) return;
 
                 _blip.Sprite = _spec.Sprite;
-                _blip.Color = BlipColor.Green;
+                _blip.Color = Tint;
                 _blip.Scale = 0.8f;
                 _blip.IsShortRange = true;
 

@@ -190,7 +190,8 @@ namespace Hoodrich
                                    || _graffiti.IsOpen || _ridePick.IsOpen || _wardrobeScreen.IsOpen
                                    || (_maskScreen != null && _maskScreen.IsOpen)
                                    || (_boot != null && _boot.IsOpen)
-                                   || (_den != null && _den.IsPlaying);
+                                   || (_den != null && _den.IsPlaying)
+                                   || _hoops.Playing;
         }
         private bool _dressed;
 
@@ -773,6 +774,10 @@ namespace Hoodrich
         /// <summary>The couch in Lamar's courtyard. Furniture, and nothing else.</summary>
         private readonly Fixture _couch;
         private readonly Fixture _stove;
+
+        /// <summary>Shooting hoops on the Chamberlain Hills court. See Locations.Hoops.</summary>
+        private readonly Hoops _hoops = new Hoops();
+
         private readonly Fixture _armourerStockA;
         private readonly Fixture _armourerStockB;
         private readonly List<InteriorDoor> _doors = new List<InteriorDoor>();
@@ -4594,6 +4599,8 @@ namespace Hoodrich
                     _couch.Update();
                     Core.Pace.At("_stove.Update");
                     _stove.Update();
+                    Core.Pace.At("_hoops.Update");
+                    _hoops.Update();
                     Core.Pace.At("_armourerStockA.Update");
                     _armourerStockA.Update();
                     Core.Pace.At("_armourerStockB.Update");
@@ -6060,6 +6067,7 @@ namespace Hoodrich
             try { _yard?.RestoreWorld(); } catch { /* teardown */ }
             try { _couch?.RestoreWorld(); } catch { /* teardown */ }
             try { _stove?.RestoreWorld(); } catch { /* teardown */ }
+            try { _hoops?.RestoreWorld(); } catch { /* teardown */ }
             try { _bags?.RestoreWorld(); } catch { /* teardown */ }
             try { _port?.RestoreWorld(); } catch { /* teardown */ }
             try { _homies?.RestoreWorld(); } catch { /* teardown */ }

@@ -547,6 +547,7 @@ namespace Hoodrich.Parkview
                     mid *= 1f / _doors.Count;
 
                     _houseBlip = Blip(mid, HouseSprite, "Parkview rooms", true);
+                    Tint();
                 }
 
                 foreach (var p in _places)
@@ -557,6 +558,22 @@ namespace Hoodrich.Parkview
             catch (Exception ex)
             {
                 Log.Error("Rooms: could not put the blips up.", ex);
+            }
+        }
+
+        /// <summary>
+        /// The house white on the map until one of its rooms is yours, and green once one is --
+        /// the same as every door you rent. Michael asked for the apartments that way on 2026-09-26.
+        /// </summary>
+        private void Tint()
+        {
+            try
+            {
+                if (_houseBlip != 0) Function.Call(Hash.SET_BLIP_COLOUR, _houseBlip, Mine() > 0 ? 2 : 0);
+            }
+            catch
+            {
+                // A blip is a nicety.
             }
         }
 
@@ -1020,6 +1037,7 @@ namespace Hoodrich.Parkview
             door.Due = Today() + Week;
 
             Write();
+            Tint();
 
             Log.Info("Rooms: rented " + door.Name + " for $" + rent + "; next due day " + door.Due + ".");
             Notify.Important("~g~" + door.Name + "~s~ is yours. $" + rent + " a week, and the week is up in seven days.");
@@ -1070,7 +1088,11 @@ namespace Hoodrich.Parkview
                 }
             }
 
-            if (changed) Write();
+            if (changed)
+            {
+                Write();
+                Tint();
+            }
         }
 
         // ---- in and out -----------------------------------------------------------------
