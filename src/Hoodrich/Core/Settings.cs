@@ -919,6 +919,10 @@ namespace Hoodrich.Core
                 // here, so a section could name them and nothing happened. See InteriorDoor.Dress.
                 door.Sets = ini.GetString(section, "Sets", "");
 
+                // A week's rent, for a door that is let rather than walked through. Nought is
+                // a door anybody may use. See InteriorDoor, "rented".
+                door.Rent = (int)Clamp(ini.GetInt(section, "RentPerWeek", 0), 0f, 1000000f);
+
                 // A door with nothing on either end of it is a section somebody started and
                 // did not finish. Better ignored than put at the middle of the map.
                 if (Math.Abs(door.DoorX) < 0.01f && Math.Abs(door.DoorY) < 0.01f) continue;

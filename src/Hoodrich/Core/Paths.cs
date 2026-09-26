@@ -266,6 +266,13 @@ namespace Hoodrich.Core
         public static string BikePathFile => Path.Combine(Writable, "bike-path.txt");
 
         /// <summary>
+        /// The doors you rent and the day each next week falls due. WRITTEN, so it follows the
+        /// writability fallback; plain text, a door a line, so it can be put right by hand.
+        /// See Locations.Leases.
+        /// </summary>
+        public static string LeasesFile => Path.Combine(Writable, "leases.txt");
+
+        /// <summary>
         /// Recorded dialogue, next to the data rather than in the writable folder.
         ///
         /// It is CONTENT and it ships with the mod, so it belongs beside drugs.json and the
