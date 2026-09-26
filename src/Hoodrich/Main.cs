@@ -782,6 +782,9 @@ namespace Hoodrich
         /// </summary>
         private readonly Court.Shootaround _hoops = new Court.Shootaround();
 
+        /// <summary>The bong and the TV in a place he rents. See Locations.Lounge.</summary>
+        private readonly Lounge _lounge = new Lounge();
+
         private readonly Fixture _armourerStockA;
         private readonly Fixture _armourerStockB;
         private readonly List<InteriorDoor> _doors = new List<InteriorDoor>();
@@ -914,6 +917,11 @@ namespace Hoodrich
                 // And the same cupboard from inside the room Parkview rents, or a place he rents
                 // behind one of the doors -- Apartment E2. See Core.Home.
                 _stash.Elsewhere = () => Core.Home.IsInRoom || _doors.Exists(d => d.IsLet && d.IsInside);
+
+                // The room's bong and TV, in the same rooms the stash is reached from.
+                _lounge.Home = () => Core.Home.IsInRoom || _doors.Exists(d => d.IsLet && d.IsInside);
+                _lounge.Busy = () => AnyScreenUp() || Core.Mind.Busy || InputGuard.Busy;
+                _lounge.Smoke = (drug, what) => _highs.Hit(drug, what);
 
                 // THE HOUSE, EXPLAINED ONCE. First time through the door the readout puts up
                 // the kitchen, the bed, the closet and the stash -- see HouseGuide -- and the
@@ -4624,6 +4632,8 @@ namespace Hoodrich
                     _stove.Update();
                     Core.Pace.At("_hoops.Update");
                     _hoops.Update();
+                    Core.Pace.At("_lounge.Update");
+                    _lounge.Update();
                     Core.Pace.At("_armourerStockA.Update");
                     _armourerStockA.Update();
                     Core.Pace.At("_armourerStockB.Update");
@@ -6091,6 +6101,7 @@ namespace Hoodrich
             try { _couch?.RestoreWorld(); } catch { /* teardown */ }
             try { _stove?.RestoreWorld(); } catch { /* teardown */ }
             try { _hoops?.RestoreWorld(); } catch { /* teardown */ }
+            try { _lounge?.Leave(); } catch { /* teardown */ }
             try { _bags?.RestoreWorld(); } catch { /* teardown */ }
             try { _port?.RestoreWorld(); } catch { /* teardown */ }
             try { _homies?.RestoreWorld(); } catch { /* teardown */ }

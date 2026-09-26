@@ -1168,6 +1168,20 @@ namespace Hoodrich.Economy
             return null;
         }
 
+        /// <summary>
+        /// A hit already taken -- off the bong in a place he rents, with the room's own bong in his
+        /// hand (see Locations.Lounge) -- landed now, with no ritual of its own to play first.
+        /// Returns why not, or null.
+        /// </summary>
+        public string Hit(string drugId, string what)
+        {
+            var no = Refusal(drugId);
+            if (no != null) return no;
+
+            Land(Find(drugId), what);
+            return null;
+        }
+
         /// <summary>Take it. Returns why not, or null once it has landed.</summary>
         public string Take(string drugId, string what)
         {

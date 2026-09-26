@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <SpoonerPlacements>
-	<Note>Apartment E2, the janitor's flat behind the door on the Parkview landing -- the FIB janitor's, out of The Bureau Raid, in a building in West Vinewood: Michael's Menyoo save janitors of 2026-09-26. A weed grow in the corner under red and blue floor lights with the drying racks over it, the bench stocked with bags, scales and packs, his three neons, two pieces of wall art, two walls and a street arcade machine. It only goes up when he is in the flat and comes down when he leaves, so none of it is held in memory while he drives past the building. | absorbs: janitors | indoors | near: 12</Note>
+	<Note>Apartment E2, the low-end apartment behind the door on the Parkview landing: Michael's Menyoo save apartmentlow of 2026-09-26 -- two pieces of wall art, a fridge, and a table set up for cutting: a scale, a spatula, a mix tube and the cut, with packages of weed, coke and pills. It only goes up when he is in the flat and comes down when he leaves. | absorbs: apartmentlow, janitors | indoors | near: 12</Note>
 	<AudioFile volume="400" />
 	<ClearDatabase>false</ClearDatabase>
 	<ClearWorld>0</ClearWorld>
@@ -13,17 +13,17 @@
 	<TimecycleModifier strength="1"></TimecycleModifier>
 	<StartTaskSequencesOnLoad>true</StartTaskSequencesOnLoad>
 	<ReferenceCoords>
-		<X>-110.851974</X>
-		<Y>-9.63762856</Y>
-		<Z>70.1622543</Z>
+		<X>264.222717</X>
+		<Y>-998.263184</Y>
+		<Z>-100.008621</Z>
 	</ReferenceCoords>
 	<Placement>
-		<ModelHash>0xa4d194d1</ModelHash>
+		<ModelHash>0xdbec0b30</ModelHash>
 		<Type>3</Type>
 		<Dynamic>false</Dynamic>
 		<FrozenPos>true</FrozenPos>
-		<HashName>xs_prop_arena_wall_02a</HashName>
-		<InitialHandle>407843</InitialHandle>
+		<HashName>bkr_prop_coke_cut_02</HashName>
+		<InitialHandle>73525</InitialHandle>
 		<ObjectProperties>
 			<TextureVariation>0</TextureVariation>
 		</ObjectProperties>
@@ -42,22 +42,22 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-115.583534</X>
-			<Y>-13.2772551</Y>
-			<Z>69.5973587</Z>
+			<X>264.37793</X>
+			<Y>-994.809448</Y>
+			<Z>-99.0342331</Z>
 			<Pitch>0</Pitch>
 			<Roll>0</Roll>
-			<Yaw>70.0104675</Yaw>
+			<Yaw>1.93165576</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0xa4d194d1</ModelHash>
+		<ModelHash>0x7bbd6cf4</ModelHash>
 		<Type>3</Type>
 		<Dynamic>false</Dynamic>
 		<FrozenPos>true</FrozenPos>
-		<HashName>xs_prop_arena_wall_02a</HashName>
-		<InitialHandle>578086</InitialHandle>
+		<HashName>bkr_prop_coke_mixtube_01</HashName>
+		<InitialHandle>442698</InitialHandle>
 		<ObjectProperties>
 			<TextureVariation>0</TextureVariation>
 		</ObjectProperties>
@@ -76,22 +76,22 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-112.255066</X>
-			<Y>-4.48004007</Y>
-			<Z>69.5490265</Z>
+			<X>263.127228</X>
+			<Y>-995.017883</Y>
+			<Z>-99.0397873</Z>
 			<Pitch>0</Pitch>
 			<Roll>0</Roll>
-			<Yaw>-20.1702919</Yaw>
+			<Yaw>3.84061098</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0x04a2d23c</ModelHash>
+		<ModelHash>0xa988cf47</ModelHash>
 		<Type>3</Type>
 		<Dynamic>false</Dynamic>
 		<FrozenPos>true</FrozenPos>
-		<HashName>vw_prop_vw_wallart_76a</HashName>
-		<InitialHandle>458036</InitialHandle>
+		<HashName>bkr_prop_coke_scale_03</HashName>
+		<InitialHandle>697906</InitialHandle>
 		<ObjectProperties>
 			<TextureVariation>0</TextureVariation>
 		</ObjectProperties>
@@ -110,22 +110,22 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-113.520401</X>
-			<Y>-13.972105</Y>
-			<Z>71.33992</Z>
+			<X>266.316559</X>
+			<Y>-995.283386</Y>
+			<Z>-99.039711</Z>
 			<Pitch>0</Pitch>
 			<Roll>-0</Roll>
-			<Yaw>159.775223</Yaw>
+			<Yaw>-92.1357193</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0x1596c03f</ModelHash>
+		<ModelHash>0x479ce1cc</ModelHash>
 		<Type>3</Type>
 		<Dynamic>false</Dynamic>
 		<FrozenPos>true</FrozenPos>
-		<HashName>vw_prop_vw_wallart_31a</HashName>
-		<InitialHandle>31553</InitialHandle>
+		<HashName>bkr_prop_coke_spatula_01</HashName>
+		<InitialHandle>520004</InitialHandle>
 		<ObjectProperties>
 			<TextureVariation>0</TextureVariation>
 		</ObjectProperties>
@@ -144,590 +144,12 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-114.518623</X>
-			<Y>-10.9266291</Y>
-			<Z>71.1709824</Z>
+			<X>264.079926</X>
+			<Y>-994.812073</Y>
+			<Z>-99.0314255</Z>
 			<Pitch>0</Pitch>
 			<Roll>0</Roll>
-			<Yaw>69.5085144</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0xe1cf91f7</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>bkr_prop_weed_pallet</HashName>
-		<InitialHandle>614725</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-110.433533</X>
-			<Y>-14.0417414</Y>
-			<Z>69.5226135</Z>
-			<Pitch>0</Pitch>
-			<Roll>-0</Roll>
-			<Yaw>159.740173</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0xa8dfc31f</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>bkr_prop_weed_plantpot_stack_01b</HashName>
-		<InitialHandle>265544</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-109.373077</X>
-			<Y>-13.0254402</Y>
-			<Z>69.5207367</Z>
-			<Pitch>0</Pitch>
-			<Roll>-0</Roll>
-			<Yaw>-177.553619</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0x69f24b9a</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>bkr_prop_weed_drying_02a</HashName>
-		<InitialHandle>374337</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-109.568581</X>
-			<Y>-12.8811607</Y>
-			<Z>72.5212555</Z>
-			<Pitch>0</Pitch>
-			<Roll>-0</Roll>
-			<Yaw>-169.917938</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0x69f24b9a</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>bkr_prop_weed_drying_02a</HashName>
-		<InitialHandle>100429</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-110.39637</X>
-			<Y>-12.410718</Y>
-			<Z>72.5589066</Z>
-			<Pitch>0</Pitch>
-			<Roll>-0</Roll>
-			<Yaw>-177.305984</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0x3bbd0ff6</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>bkr_prop_weed_bucket_01a</HashName>
-		<InitialHandle>680752</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-108.817078</X>
-			<Y>-11.2423315</Y>
-			<Z>69.5201035</Z>
-			<Pitch>0</Pitch>
-			<Roll>0</Roll>
-			<Yaw>-62.6799202</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0x4e6b3e85</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>bkr_prop_weed_01_small_01b</HashName>
-		<InitialHandle>545869</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-110.970978</X>
-			<Y>-14.2458057</Y>
-			<Z>69.7718277</Z>
-			<Pitch>0</Pitch>
-			<Roll>-0</Roll>
-			<Yaw>157.43161</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0x4e6b3e85</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>bkr_prop_weed_01_small_01b</HashName>
-		<InitialHandle>605262</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-110.252068</X>
-			<Y>-14.5432472</Y>
-			<Z>69.7718277</Z>
-			<Pitch>0</Pitch>
-			<Roll>-0</Roll>
-			<Yaw>157.411896</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0x5a1455d7</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>bkr_prop_weed_01_small_01c</HashName>
-		<InitialHandle>433234</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-110.693642</X>
-			<Y>-13.5539169</Y>
-			<Z>69.7718277</Z>
-			<Pitch>0</Pitch>
-			<Roll>-0</Roll>
-			<Yaw>150.78392</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0x5a1455d7</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>bkr_prop_weed_01_small_01c</HashName>
-		<InitialHandle>631374</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-109.946259</X>
-			<Y>-13.850111</Y>
-			<Z>69.7718277</Z>
-			<Pitch>0</Pitch>
-			<Roll>-0</Roll>
-			<Yaw>175.067719</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0x070bca95</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>h4_prop_battle_lights_floorred</HashName>
-		<InitialHandle>516195</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-110.882607</X>
-			<Y>-14.8305159</Y>
-			<Z>69.5787125</Z>
-			<Pitch>0</Pitch>
-			<Roll>-0</Roll>
-			<Yaw>163.713089</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0x070bca95</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>h4_prop_battle_lights_floorred</HashName>
-		<InitialHandle>412005</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-110.029747</X>
-			<Y>-15.0756464</Y>
-			<Z>69.5787125</Z>
-			<Pitch>0</Pitch>
-			<Roll>-0</Roll>
-			<Yaw>-118.196037</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0xb23abcd2</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>h4_prop_battle_lights_floorblue</HashName>
-		<InitialHandle>561767</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-110.50798</X>
-			<Y>-14.9465618</Y>
-			<Z>69.5787125</Z>
-			<Pitch>0</Pitch>
-			<Roll>-0</Roll>
-			<Yaw>105.812431</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0xb23abcd2</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>h4_prop_battle_lights_floorblue</HashName>
-		<InitialHandle>766565</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-111.136185</X>
-			<Y>-14.7102585</Y>
-			<Z>69.5787125</Z>
-			<Pitch>0</Pitch>
-			<Roll>0</Roll>
-			<Yaw>67.0317078</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0x8d41c8bd</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>v_ret_neon_logger</HashName>
-		<InitialHandle>668528</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-112.958282</X>
-			<Y>-8.83838272</Y>
-			<Z>70.9035797</Z>
-			<Pitch>0</Pitch>
-			<Roll>0</Roll>
-			<Yaw>-19.9550858</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0x1ea37333</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>v_ret_neon_blarneys</HashName>
-		<InitialHandle>546924</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-112.85907</X>
-			<Y>-8.8744936</Y>
-			<Z>71.8407974</Z>
-			<Pitch>0</Pitch>
-			<Roll>0</Roll>
-			<Yaw>-19.6998692</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0x00e11661</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>v_ret_neon_baracho</HashName>
-		<InitialHandle>539768</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-112.19416</X>
-			<Y>-14.454814</Y>
-			<Z>71.4602585</Z>
-			<Pitch>0</Pitch>
-			<Roll>-0</Roll>
-			<Yaw>160.138428</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0xb7668240</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>bkr_prop_weed_bag_pile_01a</HashName>
-		<InitialHandle>521333</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-112.605263</X>
-			<Y>-7.45125818</Y>
-			<Z>70.3625717</Z>
-			<Pitch>0</Pitch>
-			<Roll>0</Roll>
-			<Yaw>72.1635437</Yaw>
+			<Yaw>41.1194267</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>
@@ -737,7 +159,7 @@
 		<Dynamic>false</Dynamic>
 		<FrozenPos>true</FrozenPos>
 		<HashName>bkr_prop_weed_bigbag_open_01a</HashName>
-		<InitialHandle>199805</InitialHandle>
+		<InitialHandle>764237</InitialHandle>
 		<ObjectProperties>
 			<TextureVariation>0</TextureVariation>
 		</ObjectProperties>
@@ -756,56 +178,22 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-112.994347</X>
-			<Y>-7.79007721</Y>
-			<Z>70.3665009</Z>
-			<Pitch>0</Pitch>
-			<Roll>-0</Roll>
-			<Yaw>160.774567</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0x8e9e5130</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>bkr_prop_weed_scales_01a</HashName>
-		<InitialHandle>646270</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-109.828232</X>
-			<Y>-6.90534687</Y>
-			<Z>70.4553146</Z>
+			<X>264.655396</X>
+			<Y>-994.633667</Y>
+			<Z>-99.033165</Z>
 			<Pitch>0</Pitch>
 			<Roll>0</Roll>
-			<Yaw>40.6226273</Yaw>
+			<Yaw>47.3869476</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0x17827d4b</ModelHash>
+		<ModelHash>0xb7668240</ModelHash>
 		<Type>3</Type>
 		<Dynamic>false</Dynamic>
 		<FrozenPos>true</FrozenPos>
-		<HashName>ex_office_swag_drugbags</HashName>
-		<InitialHandle>573700</InitialHandle>
+		<HashName>bkr_prop_weed_bag_pile_01a</HashName>
+		<InitialHandle>552013</InitialHandle>
 		<ObjectProperties>
 			<TextureVariation>0</TextureVariation>
 		</ObjectProperties>
@@ -824,22 +212,22 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-109.429581</X>
-			<Y>-6.70066404</Y>
-			<Z>70.3930588</Z>
+			<X>263.514526</X>
+			<Y>-994.911133</Y>
+			<Z>-99.0370941</Z>
 			<Pitch>0</Pitch>
 			<Roll>0</Roll>
-			<Yaw>18.1423779</Yaw>
+			<Yaw>19.7036839</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0x1f588a1a</ModelHash>
+		<ModelHash>0x92095e9f</ModelHash>
 		<Type>3</Type>
 		<Dynamic>false</Dynamic>
 		<FrozenPos>true</FrozenPos>
-		<HashName>hei_prop_hei_drug_pack_01a</HashName>
-		<InitialHandle>101384</InitialHandle>
+		<HashName>ex_office_swag_pills2</HashName>
+		<InitialHandle>237401</InitialHandle>
 		<ObjectProperties>
 			<TextureVariation>0</TextureVariation>
 		</ObjectProperties>
@@ -858,22 +246,22 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-112.708794</X>
-			<Y>-7.11861086</Y>
-			<Z>70.5631638</Z>
+			<X>263.923248</X>
+			<Y>-994.983826</Y>
+			<Z>-99.0374451</Z>
 			<Pitch>0</Pitch>
 			<Roll>0</Roll>
-			<Yaw>70.8645782</Yaw>
+			<Yaw>8.98697281</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0x812c92e1</ModelHash>
+		<ModelHash>0x982a10e3</ModelHash>
 		<Type>3</Type>
 		<Dynamic>false</Dynamic>
 		<FrozenPos>true</FrozenPos>
-		<HashName>ng_proc_drug01a002</HashName>
-		<InitialHandle>109836</InitialHandle>
+		<HashName>vw_prop_vw_wallart_94a</HashName>
+		<InitialHandle>770139</InitialHandle>
 		<ObjectProperties>
 			<TextureVariation>0</TextureVariation>
 		</ObjectProperties>
@@ -892,22 +280,22 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-112.926041</X>
-			<Y>-7.40430307</Y>
-			<Z>70.3611984</Z>
+			<X>257.060303</X>
+			<Y>-999.512207</Y>
+			<Z>-98.2523651</Z>
 			<Pitch>0</Pitch>
 			<Roll>-0</Roll>
-			<Yaw>92.4496689</Yaw>
+			<Yaw>-176.603668</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0xad9aec95</ModelHash>
+		<ModelHash>0xac6001b3</ModelHash>
 		<Type>3</Type>
 		<Dynamic>false</Dynamic>
 		<FrozenPos>true</FrozenPos>
-		<HashName>prop_drug_bottle</HashName>
-		<InitialHandle>765197</InitialHandle>
+		<HashName>vw_prop_vw_wallart_41a</HashName>
+		<InitialHandle>153934</InitialHandle>
 		<ObjectProperties>
 			<TextureVariation>0</TextureVariation>
 		</ObjectProperties>
@@ -926,22 +314,22 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-112.536842</X>
-			<Y>-8.1196804</Y>
-			<Z>69.5527725</Z>
-			<Pitch>0</Pitch>
-			<Roll>-0</Roll>
-			<Yaw>128.769684</Yaw>
+			<X>256.10498</X>
+			<Y>-996.889832</Y>
+			<Z>-97.9597702</Z>
+			<Pitch>-6.86009264</Pitch>
+			<Roll>-1.20927666e-07</Roll>
+			<Yaw>88.5075912</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0x6fbd5612</ModelHash>
+		<ModelHash>0x07f70a9c</ModelHash>
 		<Type>3</Type>
 		<Dynamic>false</Dynamic>
 		<FrozenPos>true</FrozenPos>
-		<HashName>hei_heist_sh_bong_01</HashName>
-		<InitialHandle>620043</InitialHandle>
+		<HashName>ba_prop_battle_drug_package_02</HashName>
+		<InitialHandle>123742</InitialHandle>
 		<ObjectProperties>
 			<TextureVariation>0</TextureVariation>
 		</ObjectProperties>
@@ -960,22 +348,22 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-113.015594</X>
-			<Y>-10.7870731</Y>
-			<Z>69.9456329</Z>
+			<X>261.801056</X>
+			<Y>-994.924988</Y>
+			<Z>-99.8721695</Z>
 			<Pitch>0</Pitch>
 			<Roll>0</Roll>
-			<Yaw>-12.5199728</Yaw>
+			<Yaw>24.6932259</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0x176d07ec</ModelHash>
+		<ModelHash>0x8ae084d2</ModelHash>
 		<Type>3</Type>
 		<Dynamic>false</Dynamic>
 		<FrozenPos>true</FrozenPos>
-		<HashName>bkr_prop_weed_dry_02a</HashName>
-		<InitialHandle>707443</InitialHandle>
+		<HashName>prop_drug_package_02</HashName>
+		<InitialHandle>3424</InitialHandle>
 		<ObjectProperties>
 			<TextureVariation>0</TextureVariation>
 		</ObjectProperties>
@@ -994,22 +382,22 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-112.796577</X>
-			<Y>-10.8716993</Y>
-			<Z>69.9524536</Z>
+			<X>262.880371</X>
+			<Y>-997.264709</Y>
+			<Z>-99.0798187</Z>
 			<Pitch>0</Pitch>
 			<Roll>-0</Roll>
-			<Yaw>152.327164</Yaw>
+			<Yaw>93.4123154</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0xa0ac6a83</ModelHash>
+		<ModelHash>0x6fde1cb0</ModelHash>
 		<Type>3</Type>
 		<Dynamic>false</Dynamic>
 		<FrozenPos>true</FrozenPos>
-		<HashName>bkr_prop_weed_spray_01a</HashName>
-		<InitialHandle>214806</InitialHandle>
+		<HashName>prop_fridge_03</HashName>
+		<InitialHandle>538210</InitialHandle>
 		<ObjectProperties>
 			<TextureVariation>0</TextureVariation>
 		</ObjectProperties>
@@ -1028,46 +416,12 @@
 		<IsMeleeProof>false</IsMeleeProof>
 		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
 		<PositionRotation>
-			<X>-110.055275</X>
-			<Y>-13.2731695</Y>
-			<Z>69.7081909</Z>
+			<X>266.536224</X>
+			<Y>-997.655151</Y>
+			<Z>-100.039085</Z>
 			<Pitch>0</Pitch>
-			<Roll>-0</Roll>
-			<Yaw>177.19696</Yaw>
-		</PositionRotation>
-		<Attachment isAttached="false" />
-	</Placement>
-	<Placement>
-		<ModelHash>0xe8722058</ModelHash>
-		<Type>3</Type>
-		<Dynamic>false</Dynamic>
-		<FrozenPos>true</FrozenPos>
-		<HashName>ch_prop_arcade_street_01c</HashName>
-		<InitialHandle>733215</InitialHandle>
-		<ObjectProperties>
-			<TextureVariation>0</TextureVariation>
-		</ObjectProperties>
-		<OpacityLevel>255</OpacityLevel>
-		<LodDistance>16960</LodDistance>
-		<IsVisible>true</IsVisible>
-		<MaxHealth>1000</MaxHealth>
-		<Health>1000</Health>
-		<HasGravity>true</HasGravity>
-		<IsOnFire>false</IsOnFire>
-		<IsInvincible>false</IsInvincible>
-		<IsBulletProof>false</IsBulletProof>
-		<IsCollisionProof>false</IsCollisionProof>
-		<IsExplosionProof>false</IsExplosionProof>
-		<IsFireProof>false</IsFireProof>
-		<IsMeleeProof>false</IsMeleeProof>
-		<IsOnlyDamagedByPlayer>false</IsOnlyDamagedByPlayer>
-		<PositionRotation>
-			<X>-111.041649</X>
-			<Y>-8.88635445</Y>
-			<Z>69.5236282</Z>
-			<Pitch>0</Pitch>
-			<Roll>-0</Roll>
-			<Yaw>160.832336</Yaw>
+			<Roll>0</Roll>
+			<Yaw>-89.787384</Yaw>
 		</PositionRotation>
 		<Attachment isAttached="false" />
 	</Placement>

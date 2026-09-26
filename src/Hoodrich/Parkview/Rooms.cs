@@ -1019,8 +1019,9 @@ namespace Hoodrich.Parkview
         /// <summary>E on the keyboard, the right button on a pad: the game's own context key.</summary>
         private static bool Tapped()
         {
-            // The key is NPC Mind's while it wants it. See Say.
-            if (Mind.Busy) return false;
+            // The key is NPC Mind's while it wants it (see Say), and nobody's for a moment after
+            // something else has answered it -- the bong and the TV share a room with the bench.
+            if (Mind.Busy || Hoodrich.Core.InputGuard.Busy) return false;
 
             try { return Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 0, (int)Control.Context); }
             catch { return false; }
