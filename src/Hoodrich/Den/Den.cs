@@ -217,6 +217,7 @@ namespace Hoodrich.Den
 
         private int MinBet => _cfg == null ? 100 : _cfg.DenMinBet;
         private int MaxBet => _cfg == null ? 10000 : _cfg.DenMaxBet;
+        private int SlotBet => _cfg == null ? 10 : _cfg.DenSlotBet;
 
         public void Update()
         {
@@ -658,11 +659,11 @@ namespace Hoodrich.Den
             Reels reels;
             _reels.TryGetValue(nearest.Handle, out reels);
 
-            Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to play " + Slots.Title(Reels.KindOf(nearest)) + ". $" + MinBet.ToString("N0") + " a spin.");
+            Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to play " + Slots.Title(Reels.KindOf(nearest)) + ". $" + SlotBet.ToString("N0") + " a spin.");
 
             if (Game.IsControlJustPressed(Control.Context))
             {
-                _atSlot = new Slots(nearest, reels, me, MinBet, MaxBet, _rng);
+                _atSlot = new Slots(nearest, reels, me, SlotBet, MaxBet, _rng);
                 InputGuard.Swallow();
             }
         }

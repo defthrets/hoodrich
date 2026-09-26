@@ -359,6 +359,10 @@ namespace Hoodrich.Den
         public static float MouseX => Normal(Control.LookLeftRight);
         public static float MouseY => Normal(Control.LookUpDown);
 
+        /// <summary>A pad's left stick, as far as it is pushed: the roulette chip, so the right stick can look about.</summary>
+        public static float MoveX => Normal(Control.MoveLeftRight);
+        public static float MoveY => Normal(Control.MoveUpDown);
+
         private static bool Held(Control c)
         {
             try { return Function.Call<bool>(Hash.IS_DISABLED_CONTROL_PRESSED, 0, (int)c); }

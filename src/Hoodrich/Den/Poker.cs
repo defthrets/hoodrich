@@ -1022,14 +1022,14 @@ namespace Hoodrich.Den
             if (_sitter == null)
             {
                 var centre = _table.GetOffsetPosition(new Vector3(0f, 0.12f, 0.95f));
-                _cam.Look(Behind(centre, 0.3f, 1.7f), centre, 58f, 900, 0.12f);
+                _cam.LookFree(Behind(centre, 0.3f, 1.7f), centre, 58f, 900, 0.12f);
                 return;
             }
 
             var fwd = SeatForward();
             var from = _sitter.Seat.At + fwd * 0.245f + new Vector3(0f, 0f, 1.415f);
             var at = from + fwd * 0.487f - new Vector3(0f, 0f, 0.873f);
-            _cam.Look(from, at, 55f, 900, 0.12f);
+            _cam.LookFree(from, at, 55f, 900, 0.12f);
         }
 
         /// <summary>Which way the chair faces: whichever of its bone's axes points at the table.</summary>
@@ -1047,7 +1047,7 @@ namespace Hoodrich.Den
         private void DealerCam()
         {
             var look = _table.GetOffsetPosition(new Vector3(0f, 0.12f, 0.95f));
-            _cam.Look(Toward(look, 0.3f, 0.55f), look, 50f, 700, 0.1f);
+            _cam.LookFree(Toward(look, 0.3f, 0.55f), look, 50f, 700, 0.1f);
         }
 
         /// <summary>Down on your three as she turns them over at your seat.</summary>
@@ -1055,7 +1055,7 @@ namespace Hoodrich.Den
         {
             var i = Math.Max(0, Math.Min(3, _chair - 1));
             var look = _table.GetOffsetPosition(AnteSpot[i]);
-            _cam.Look(Toward(look, 0.22f, 0.5f), look, 50f, 700, 0.1f);
+            _cam.LookFree(Toward(look, 0.22f, 0.5f), look, 50f, 700, 0.1f);
         }
 
         /// <summary>Over your shoulder, high enough to clear your head, on the cards in your hand.</summary>
@@ -1066,7 +1066,7 @@ namespace Hoodrich.Den
                 var head = Function.Call<Vector3>(Hash.GET_PED_BONE_COORDS, _me.Handle, 31086, 0f, 0f, 0f);
                 var card = _myCards[1] != null && _myCards[1].Exists() ? _myCards[1].Position : head + Facing() * 0.35f - new Vector3(0f, 0f, 0.3f);
                 var from = head + new Vector3(0f, 0f, 0.5f) - Facing() * 0.05f;
-                _cam.Look(from, card, 45f, 800, 0.1f);
+                _cam.LookFree(from, card, 45f, 800, 0.1f);
             }
             catch
             {

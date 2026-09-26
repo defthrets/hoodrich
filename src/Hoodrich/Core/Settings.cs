@@ -468,6 +468,9 @@ namespace Hoodrich.Core
         public int DenMinBet = 100;
         public int DenMaxBet = 10000;
 
+        /// <summary>One spin of a slot machine, "bet one"; bet max is five of them. Michael asked for $10 spins on 2026-09-26.</summary>
+        public int DenSlotBet = 10;
+
         /// <summary>The static emitters that are the den's jukebox, semicolon-separated. Empty is a quiet room.</summary>
         public string DenJukebox = "";
 
@@ -1031,6 +1034,7 @@ namespace Hoodrich.Core
 
             s.DenMinBet = (int)Clamp(ini.GetInt("GamblingDen", "MinBet", s.DenMinBet), 1f, 1000000f);
             s.DenMaxBet = (int)Clamp(ini.GetInt("GamblingDen", "MaxBet", s.DenMaxBet), s.DenMinBet, 10000000f);
+            s.DenSlotBet = (int)Clamp(ini.GetInt("GamblingDen", "SlotBet", s.DenSlotBet), 1f, 1000000f);
             s.DenJukebox = ini.GetString("GamblingDen", "Jukebox", s.DenJukebox);
 
             // Where each held thing sits in his hand, as set on the settings screen. See Economy.Fit.

@@ -320,7 +320,8 @@ namespace Hoodrich.Den
             try { Function.Call(Hash.DISPLAY_RADAR, false); }
             catch { }
 
-            Log.Info("Den: sat down at " + Title(_kind) + ".");
+            Log.Info("Den: sat down at " + Title(_kind) + ", $" + _minBet.ToString("N0") + " a spin, $" +
+                     Math.Min(_maxBet, _minBet * 5).ToString("N0") + " bet max.");
         }
 
         public bool Finished => _stage == Stage.Done;
@@ -623,7 +624,7 @@ namespace Hoodrich.Den
         {
             var from = _machine.GetOffsetPosition(new Vector3(0.3f, -1.1f, 1.5f));
             var at = _machine.GetOffsetPosition(new Vector3(0f, 0.05f, 1.1f));
-            _cam.Look(from, at, 50f, 900, 0.1f);
+            _cam.LookFree(from, at, 50f, 900, 0.1f);
         }
 
         /// <summary>The casino's slot machine display, set up to draw onto this cabinet's screen.</summary>
@@ -771,7 +772,8 @@ namespace Hoodrich.Den
             {
                 case Stage.Ready:
                 case Stage.Betting:
-                    Help.ShowThisFrame(saying ? _said : Title(_kind) + ". Three of a kind pays; the machine's own symbol pays on its own.");
+                    Help.ShowThisFrame(saying ? _said : Title(_kind) + ". Three of a kind pays; the machine's own symbol pays on its own. " +
+                                       (Game.LastInputMethod == InputMethod.GamePad ? "Right stick to look around." : "Move the mouse to look around."));
 
                     Bars.Draw("CASH", cash, Color.White,
                               "BET", "$" + Stake.ToString("N0"), Color.FromArgb(255, 240, 200, 80));
@@ -779,8 +781,8 @@ namespace Hoodrich.Den
                     Buttons.Show(Control.PhoneCancel, "Leave machine",
                                  Control.Jump, "Spin",
                                  Control.PhoneSelect, "Pull",
-                                 Control.PhoneRight, "Bet max",
-                                 Control.PhoneLeft, "Bet one");
+                                 Control.PhoneRight, "Bet max: $" + Math.Min(_maxBet, _minBet * 5).ToString("N0"),
+                                 Control.PhoneLeft, "Bet one: $" + _minBet.ToString("N0"));
                     break;
 
                 case Stage.Outcome:

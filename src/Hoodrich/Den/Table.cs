@@ -323,6 +323,13 @@ namespace Hoodrich.Den
         /// blackjack on 2026-09-26 -- "not stuck in this view only".
         /// </summary>
         private bool _free;
+
+        /// <summary>
+        /// Whether a mouse turns it too. Not at the roulette while the bets are open: there the
+        /// mouse is the chip in your hand, and a pad's left stick is, so only a pad looks about.
+        /// </summary>
+        private bool _mouse = true;
+
         private float _pitch0;
         private float _yaw0;
         private float _pitch;
@@ -341,7 +348,7 @@ namespace Hoodrich.Den
         public bool Up => _cam != 0;
 
         /// <summary>From one point at another, and free to look about from there. See _free.</summary>
-        public void LookFree(Vector3 from, Vector3 at, float fov, int easeMs = 900, float shake = 0.1f)
+        public void LookFree(Vector3 from, Vector3 at, float fov, int easeMs = 900, float shake = 0.1f, bool mouse = true)
         {
             try
             {
@@ -361,6 +368,7 @@ namespace Hoodrich.Den
 
                 Swap(cam, easeMs);
                 _free = true;
+                _mouse = mouse;
             }
             catch (Exception ex)
             {
@@ -405,6 +413,7 @@ namespace Hoodrich.Den
                 }
                 else
                 {
+                    if (!_mouse) return;
                     rate = 40f;
                 }
 

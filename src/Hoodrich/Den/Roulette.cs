@@ -432,13 +432,14 @@ namespace Hoodrich.Den
 
             if (!up && !down && !left && !right) _repeatAt = 0;
 
-            // The mouse, freely, and the right stick: the look axes as the game measures them.
-            // A MOUSE READS AS HOW FAR IT MOVED THIS FRAME; A STICK AS HOW FAR IT IS PUSHED, every
-            // frame it is held. Read the stick like the mouse and a nudge sends the chip off the
-            // felt in a quarter of a second -- so on a pad it is a speed, with a dead zone.
-            var mx = Keys.MouseX;
-            var my = Keys.MouseY;
+            // The mouse, freely, and on a pad the LEFT stick -- the right one looks about the room
+            // (Michael asked to move the camera sat down, on 2026-09-26). A MOUSE READS AS HOW FAR
+            // IT MOVED THIS FRAME; A STICK AS HOW FAR IT IS PUSHED, every frame it is held. Read
+            // the stick like the mouse and a nudge sends the chip off the felt in a quarter of a
+            // second -- so on a pad it is a speed, with a dead zone.
             var pad = Game.LastInputMethod == InputMethod.GamePad;
+            var mx = pad ? Keys.MoveX : Keys.MouseX;
+            var my = pad ? Keys.MoveY : Keys.MouseY;
 
             if (pad)
             {
@@ -1100,7 +1101,7 @@ namespace Hoodrich.Den
         private void FeltCam()
         {
             var look = FeltCentre();
-            _cam.Look(CamFrom(look), look, 52f, 900, 0.12f);
+            _cam.LookFree(CamFrom(look), look, 52f, 900, 0.12f, false);
         }
 
         private void WheelCam()
@@ -1113,7 +1114,7 @@ namespace Hoodrich.Den
             if (dir.Length() < 0.05f) dir = -_table.RightVector;
             dir.Normalize();
 
-            _cam.Look(look + dir * 0.26f + new Vector3(0f, 0f, 0.78f), look, 58f, 700, 0.08f);
+            _cam.LookFree(look + dir * 0.26f + new Vector3(0f, 0f, 0.78f), look, 58f, 700, 0.08f);
         }
 
         // ---- out ------------------------------------------------------------------------------
@@ -1250,7 +1251,9 @@ namespace Hoodrich.Den
                 case Stage.Betting:
                     Help.ShowThisFrame(_said.Length > 0 && Game.GameTime < _saidUntil ? _said
                                      : _aim != null ? Describe(_aim) + " -- pays " + KindPays[(int)_aim.Kind] + " to 1."
-                                     : "Place your bets.");
+                                     : Game.LastInputMethod == InputMethod.GamePad
+                                         ? "Place your bets. The left stick moves the chip; the right stick looks around."
+                                         : "Place your bets.");
 
                     Bars.Draw("CASH", cash, Color.White,
                               "CHIP", "$" + _chips[_chip].ToString("N0"), Color.White,
@@ -1261,7 +1264,7 @@ namespace Hoodrich.Den
                                  Control.PhoneSelect, "Place chip",
                                  Control.FrontendRb, "Chip up",
                                  Control.FrontendLb, "Chip down",
-                                 Control.PhoneRight, "Move");
+                                 Control.PhoneRight, "Move chip");
                     break;
 
                 case Stage.Settling:
@@ -1281,6 +1284,10 @@ namespace Hoodrich.Den
                         _onWheel = true;
                         WheelCam();
                     }
+
+                    Help.ShowThisFrame(Game.LastInputMethod == InputMethod.GamePad
+                        ? "Right stick to look around."
+                        : "Move the mouse to look around.");
 
                     Bars.Draw("CASH", cash, Color.White, "TOTAL BET", "$" + down.ToString("N0"), Gold);
                     break;
