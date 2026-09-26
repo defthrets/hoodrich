@@ -2719,6 +2719,15 @@ namespace Hoodrich.Parkview
             /// <summary>Stood at the far point, waiting to be unwatched before he goes.</summary>
             public bool Waiting;
 
+            /// <summary>What he is waiting on while he is not up, for the log. See NotUp.</summary>
+            public string Why;
+
+            /// <summary>What he is waiting on while he is not up, for the log. See NotUp.</summary>
+            public string Why;
+
+            /// <summary>What he is waiting on while he is not up, for the log. See NotUp.</summary>
+            public string Why;
+
             /// <summary>Who he is talking to, while he is.</summary>
             public Life With;
 
@@ -3929,7 +3938,46 @@ namespace Hoodrich.Parkview
                     _lives.RemoveAt(i);
                 }
             }
+
+            if (now >= _notUpAt)
+            {
+                _notUpAt = now + NotUpEveryMs;
+                NotUp(now);
+            }
         }
+
+        /// <summary>
+        /// Who is still not up, and why -- once every few minutes, per scene, at a level the
+        /// log actually keeps. A MAN WHO NEVER ARRIVES USED TO BE INVISIBLE: every reason he
+        /// might be waiting was a retry with a Debug line or none, so the two Koreans behind
+        /// the shop counter were missing for days and the log for it read the same as a night
+        /// where they were there. See Life.Why.
+        /// </summary>
+        private void NotUp(int now)
+        {
+            var byScene = new Dictionary<string, List<string>>();
+
+            foreach (var l in _lives)
+            {
+                if (l.State != Stage.Away || l.ForTheNight || l.Since == 0) continue;
+                if (now - l.Since < NotUpAfterMs) continue;
+
+                List<string> names;
+                if (!byScene.TryGetValue(l.Scene.Name, out names)) byScene[l.Scene.Name] = names = new List<string>();
+
+                names.Add(Say(l.Item) + " (" + (string.IsNullOrEmpty(l.Why) ? "waiting" : l.Why) + ")");
+            }
+
+            foreach (var pair in byScene)
+            {
+                Log.Info("Scenery: " + pair.Value.Count + " in \"" + pair.Key + "\" still not up after " +
+                         (NotUpAfterMs / 60000) + " min -- " + string.Join("; ", pair.Value) + ".");
+            }
+        }
+
+        private int _notUpAt;
+        private const int NotUpEveryMs = 180000;
+        private const int NotUpAfterMs = 120000;
 
         /// <summary>One look at one life. False when it is over and should be forgotten.</summary>
         private bool Pulse(Life l, int now, Vector3 here)
@@ -4887,11 +4935,11 @@ namespace Hoodrich.Parkview
             Entity made;
             var verdict = Put(l.Item, out made, from);
 
-            if (verdict == Verdict.NotYet) { l.NextAt = now + 2000; return true; }
+            if (verdict == Verdict.NotYet) { l.Why = "his model is not in yet"; l.NextAt = now + 2000; return true; }
 
             if (verdict == Verdict.No || made == null)
             {
-                Log.Debug(Say(l.Item) + " in " + l.Scene.Name + " would not come back.");
+                Log.Info("Scenery: " + Say(l.Item) + " in \"" + l.Scene.Name + "\" would not come back -- the game would not make him; given up for this build.");
                 return false;
             }
 
@@ -5450,6 +5498,7 @@ namespace Hoodrich.Parkview
             {
                 if (now - l.Since > ElevatedMostMs && GroundReady(l.Scene)) return Appear(l, now, here);
 
+                l.Why = "waiting for the ground and the props round his mark";
                 l.NextAt = now + AlongRetryMs;
                 return true;
             }
@@ -5464,6 +5513,7 @@ namespace Hoodrich.Parkview
 
             if (floor == null)
             {
+                l.Why = "probing his floor";
                 l.NextAt = now + 1000;
                 return true;
             }
@@ -5490,12 +5540,18 @@ namespace Hoodrich.Parkview
 
             if (spent)
             {
+                l.Why = "looking for a start along his floor that is out of sight";
                 l.NextAt = now + 1000;
                 return true;
             }
 
             if (start == null)
             {
+                // THIS IS WHERE A MAN BOXED IN BY FURNITURE STAYS FOREVER, silently, which is
+                // how the two Koreans behind the shop counter went missing on 2026-09-26:
+                // every point along their floor had a shelf or the counter on the line in.
+                // Name him in stays: and he is put on his mark instead. See Appear.
+                l.Why = "no start along his floor that is out of sight, clear of the furniture and five metres from you";
                 l.NextAt = now + AlongRetryMs;
                 return true;
             }
@@ -5509,11 +5565,11 @@ namespace Hoodrich.Parkview
             Entity made;
             var verdict = Put(l.Item, out made, start.At);
 
-            if (verdict == Verdict.NotYet) { l.NextAt = now + 2000; return true; }
+            if (verdict == Verdict.NotYet) { l.Why = "his model is not in yet"; l.NextAt = now + 2000; return true; }
 
             if (verdict == Verdict.No || made == null)
             {
-                Log.Debug(Say(l.Item) + " in " + l.Scene.Name + " would not come back.");
+                Log.Info("Scenery: " + Say(l.Item) + " in \"" + l.Scene.Name + "\" would not come back -- the game would not make him; given up for this build.");
                 return false;
             }
 
@@ -5554,11 +5610,13 @@ namespace Hoodrich.Parkview
         private bool Appear(Life l, int now, Vector3 here)
         {
             if (Rejoin(l, now)) return true;
+            if (l.Since == 0) l.Since = now;
 
             var mark = l.Item.At;
 
             if (mark.DistanceTo(here) < AlongNoNearer || !OutOfSight(l.Scene, mark))
             {
+                l.Why = "his mark is in view, or within five metres of you";
                 l.NextAt = now + AlongRetryMs;
                 return true;
             }
@@ -5574,11 +5632,11 @@ namespace Hoodrich.Parkview
             Entity made;
             var verdict = Put(l.Item, out made, mark);
 
-            if (verdict == Verdict.NotYet) { l.NextAt = now + 2000; return true; }
+            if (verdict == Verdict.NotYet) { l.Why = "his model is not in yet"; l.NextAt = now + 2000; return true; }
 
             if (verdict == Verdict.No || made == null)
             {
-                Log.Debug(Say(l.Item) + " in " + l.Scene.Name + " would not appear.");
+                Log.Info("Scenery: " + Say(l.Item) + " in \"" + l.Scene.Name + "\" would not appear -- the game would not make him; given up for this build.");
                 return false;
             }
 
