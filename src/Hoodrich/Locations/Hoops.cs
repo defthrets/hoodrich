@@ -135,18 +135,13 @@ namespace Hoodrich.Locations
 
         /// <summary>
         /// Where in his hand: centimetres along the hand bone's own three axes, then degrees about
-        /// them. Michael sets it with the positioner (D-pad down, holding the ball, with the
-        /// developer tools on) and it is kept in Hoodrich.ini, [HandFit] prop_bskball_01.
+        /// them. Michael placed it himself on the court on 2026-09-26 and asked for it kept, and
+        /// for the placer to go.
         /// </summary>
-        private float[] _grip = { 12f, 3f, -3f, 0f, 0f, 0f };
+        private static readonly float[] Grip = { -2.5f, 0f, 4.5f, 10f, 0f, 0f };
 
-        private static readonly string[] GripNames = { "Move X", "Move Y", "Move Z", "Turn X", "Turn Y", "Turn Z" };
-
-        /// <summary>The developer tools are on: the positioner is offered. Read as a game starts.</summary>
+        /// <summary>The developer tools are on: the ring placer and the other ways to shoot are offered. Read as a game starts.</summary>
         private bool _dev;
-        private bool _placing;
-        private int _placeRow;
-        private int _placeNext;
 
         /// <summary>Street Golf's meter, slowed for a hoop: up and back down over this long while the button is held.</summary>
         private const float ChargeTime = 2.6f;
@@ -265,8 +260,8 @@ namespace Hoodrich.Locations
         /// <summary>A game is up: the shooting buttons are his, and the rest of the mod's prompts stand down.</summary>
         public bool Playing => _mode != Mode.Off;
 
-        /// <summary>One of the placers is up: the D-pad is theirs, so the phone stays shut.</summary>
-        public bool Placing => _placing || _ringPlacing;
+        /// <summary>The ring placer is up: the D-pad is its, so the phone stays shut.</summary>
+        public bool Placing => _ringPlacing;
 
         public void Update()
         {
@@ -298,8 +293,7 @@ namespace Hoodrich.Locations
             {
                 case Mode.Starting: Starting(me, now); break;
                 case Mode.Holding:
-                    if (_placing) BallPlacing(me, now);
-                    else if (_ringPlacing) RingPlacing(me, dt);
+                    if (_ringPlacing) RingPlacing(me, dt);
                     else Holding(me, now);
                     break;
                 case Mode.Charging: Charging(me, dt); break;
@@ -353,14 +347,11 @@ namespace Hoodrich.Locations
         {
             InputGuard.Swallow();
 
-            // His grip on the ball, and whether the builder's tools are his.
+            // Whether the builder's tools are his.
             _dev = false;
 
             try
             {
-                var packed = Settings.Read("HandFit", BallName, "");
-                if (!string.IsNullOrEmpty(packed)) _grip = Economy.Fit.Unpack(packed);
-
                 _dev = string.Equals(Settings.Read("Developer", "Tools", "false").Trim(), "true", StringComparison.OrdinalIgnoreCase);
             }
             catch { }
@@ -386,7 +377,7 @@ namespace Hoodrich.Locations
 
             _score = _streak = _shots = _made = 0;
             _fine = 0f;
-            _placing = _ringPlacing = false;
+            _ringPlacing = false;
             _hopUntil = 0;
             _banner = "";
             _mode = Mode.Starting;
@@ -470,7 +461,7 @@ namespace Hoodrich.Locations
             }
 
             _mode = Mode.Off;
-            _placing = _ringPlacing = false;
+            _ringPlacing = false;
             _hopUntil = 0;
             InputGuard.Swallow();
         }
@@ -520,7 +511,7 @@ namespace Hoodrich.Locations
             }
         }
 
-        /// <summary>The ball into his left hand, where his grip says.</summary>
+        /// <summary>The ball into his left hand, where Michael put it.</summary>
         private void Attach(Ped me)
         {
             if (_ball == null || !_ball.Exists()) return;
@@ -529,43 +520,10 @@ namespace Hoodrich.Locations
             {
                 var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, me.Handle, LeftHand);
                 Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _ball.Handle, me.Handle, bone,
-                              _grip[0] * 0.01f, _grip[1] * 0.01f, _grip[2] * 0.01f, _grip[3], _grip[4], _grip[5],
+                              Grip[0] * 0.01f, Grip[1] * 0.01f, Grip[2] * 0.01f, Grip[3], Grip[4], Grip[5],
                               false, false, false, false, 2, true);
             }
             catch { }
-        }
-
-        /// <summary>
-        /// THE POSITIONER: the ball in his hand, moved and turned while he watches, a value at a
-        /// time -- D-pad up and down pick which, left and right move it, X for bigger steps, A or B
-        /// when it sits right. Kept in the ini as it goes. Michael asked to place it himself.
-        /// </summary>
-        private void BallPlacing(Ped me, int now)
-        {
-            Hold(me, false);
-
-            if (JustPressed(Control.PhoneCancel) || JustPressed(Control.PhoneSelect))
-            {
-                _placing = false;
-                Settings.Put("HandFit", BallName, Economy.Fit.Pack(_grip));
-                Log.Info("Hoops: the ball sits at " + Economy.Fit.Pack(_grip) + " in his left hand.");
-                Sound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
-                return;
-            }
-
-            if (JustPressed(Control.PhoneUp)) { _placeRow = (_placeRow + GripNames.Length - 1) % GripNames.Length; Sound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET"); }
-            if (JustPressed(Control.PhoneDown)) { _placeRow = (_placeRow + 1) % GripNames.Length; Sound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET"); }
-
-            var way = Down(Control.PhoneRight) ? 1 : Down(Control.PhoneLeft) ? -1 : 0;
-            if (way == 0 || now < _placeNext) return;
-
-            var step = _placeRow < 3 ? 0.5f : 5f;
-            if (Down(Control.Jump)) step *= 4f;
-
-            _grip[_placeRow] = (float)Math.Round((_grip[_placeRow] + way * step) * 100f) / 100f;
-            _placeNext = now + 80;
-
-            Attach(me);
         }
 
         /// <summary>The idle on his arms, put back if something took it off -- not every frame, which T-poses a man.</summary>
@@ -600,17 +558,9 @@ namespace Hoodrich.Locations
             // The hoop he is looking at is the one he is shooting at.
             _hoop = HoopToward(me.Position, Deg360(GameplayCamera.Rotation.Z));
 
-            // The builder's tools: the ball in his hand, the hoop's ring, and the other ways to shoot.
+            // The builder's tools: the hoop's ring, and the other ways to shoot.
             if (_dev)
             {
-                if (JustPressed(Control.PhoneDown))
-                {
-                    _placing = true;
-                    _placeRow = 0;
-                    Sound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
-                    return;
-                }
-
                 if (JustPressed(Control.PhoneRight))
                 {
                     StartRing(me);
@@ -1253,13 +1203,7 @@ namespace Hoodrich.Locations
 
         private void Draw(Ped me, int now)
         {
-            // The placers have the screen to themselves.
-            if (_placing)
-            {
-                PlacingScreen();
-                return;
-            }
-
+            // The ring placer has the screen to itself.
             if (_ringPlacing)
             {
                 RingScreen();
@@ -1291,7 +1235,6 @@ namespace Hoodrich.Locations
                     Den.Buttons.Show(Control.Attack, "Hold to shoot",
                                      Control.PhoneCancel, "Put the ball down",
                                      Control.PhoneRight, "Place the hoop",
-                                     Control.PhoneDown, "Place the ball",
                                      Control.PhoneLeft, "Shot: " + Shot.Name);
                 else
                     Den.Buttons.Show(Control.Attack, "Hold to shoot",
@@ -1463,30 +1406,6 @@ namespace Hoodrich.Locations
             {
                 // It is only remembered for this game.
             }
-        }
-
-        /// <summary>The positioner on screen: the six values, the one being moved in gold, and the buttons.</summary>
-        private void PlacingScreen()
-        {
-            Help.ShowThisFrame("Placing the ball. D-pad up and down picks, left and right moves it, X for bigger steps, A when it sits right.");
-
-            var rows = new object[GripNames.Length * 3];
-
-            for (var i = 0; i < GripNames.Length; i++)
-            {
-                // Bottom up, so the first is at the top.
-                var at = (GripNames.Length - 1 - i) * 3;
-                rows[at] = GripNames[i].ToUpperInvariant();
-                rows[at + 1] = _grip[i].ToString(i < 3 ? "0.0" : "0") + (i < 3 ? " cm" : " deg");
-                rows[at + 2] = i == _placeRow ? Gold : Color.White;
-            }
-
-            Den.Bars.Draw(rows);
-
-            Den.Buttons.Show(Control.PhoneSelect, "Done",
-                             Control.PhoneRight, "Move it",
-                             Control.PhoneDown, "Which",
-                             Control.Jump, "Bigger steps");
         }
 
         /// <summary>The ring placer on screen: the ring, bright, and how high and how wide it is.</summary>
