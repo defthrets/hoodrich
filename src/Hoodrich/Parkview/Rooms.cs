@@ -458,8 +458,6 @@ namespace Hoodrich.Parkview
         {
             if (_acts.Count == 0) return false;
 
-            foreach (var s in _acts) Ring(me, s.At);
-
             foreach (var s in _acts)
             {
                 if (me.Position.DistanceTo(s.At) > s.Reach) continue;
@@ -837,8 +835,6 @@ namespace Hoodrich.Parkview
             {
                 if (me.Position.DistanceTo(_room) <= RoomReach)
                 {
-                    Ring(me, RoomOut);
-
                     // Held down: the game puts another one in as soon as it is allowed to,
                     // and the sweep runs on a beat rather than every frame because deleting
                     // is not free and one every half second is quicker than anybody walks in.
@@ -1184,6 +1180,11 @@ namespace Hoodrich.Parkview
         /// <summary>The box comes down when he is back outside, or nothing spawns out there.</summary>
         private void Unbox()
         {
+            // Every way out of a room or a place comes through here, so this is where the
+            // rest of the mod hears he is back on the street. See Core.Indoors.
+            Hoodrich.Core.Indoors.Exit("Parkview room");
+            Hoodrich.Core.Indoors.Exit("Parkview place");
+
             if (!_boxed) return;
             _boxed = false;
 
@@ -1277,6 +1278,7 @@ namespace Hoodrich.Parkview
             Fade(false);
 
             _inPlace = i;
+            Hoodrich.Core.Indoors.Enter(back, "Parkview place");
             Log.Debug("Rooms: into " + p.Name + ".");
         }
 
@@ -1363,6 +1365,7 @@ namespace Hoodrich.Parkview
             Fade(false);
 
             _inside = i;
+            Hoodrich.Core.Indoors.Enter(back, "Parkview room");
             Log.Debug("Rooms: into " + _doors[i].Name + " at " + Say(to) + ".");
 
             // Said once a session, the first time he is in. The room has three spots and a

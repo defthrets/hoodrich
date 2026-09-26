@@ -64,11 +64,26 @@ namespace Hoodrich.Den
         /// <summary>How often the room is looked over for its furniture while it is missing.</summary>
         private const int LookEveryMs = 1000;
 
-        /// <summary>The station the jukebox is on, and the clubhouse's emitters that are the jukebox.</summary>
-        private static readonly string[] Jukebox =
+        /// <summary>
+        /// The game's static emitters that are the jukebox, from [GamblingDen] Jukebox. The
+        /// clubhouse had three; a story room has whatever somebody finds for it, or none.
+        /// </summary>
+        private string[] Jukebox
         {
-            "SE_bkr_biker_dlc_int_01_BAR", "SE_bkr_biker_dlc_int_01_REC", "SE_bkr_biker_dlc_int_01_GRG"
-        };
+            get
+            {
+                var raw = _cfg == null ? "" : _cfg.DenJukebox;
+                var names = new List<string>();
+
+                foreach (var one in (raw ?? "").Split(';'))
+                {
+                    var name = one.Trim();
+                    if (name.Length > 0) names.Add(name);
+                }
+
+                return names.ToArray();
+            }
+        }
 
         private static readonly int[] RouletteModels =
         {
@@ -227,8 +242,15 @@ namespace Hoodrich.Den
             _tuned = true;
 
             var station = Radio.Blonded;
+            var names = Jukebox;
 
-            foreach (var name in Jukebox)
+            if (names.Length == 0)
+            {
+                Log.Info("Den: no jukebox in this room -- [GamblingDen] Jukebox names none.");
+                return;
+            }
+
+            foreach (var name in names)
             {
                 try
                 {

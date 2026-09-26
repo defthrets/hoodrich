@@ -859,6 +859,9 @@ namespace Hoodrich.Locations
                 }
 
                 _inside = true;
+                Core.Indoors.Enter(Back, _spec.Name);
+                Core.Indoors.Enter(Back, _spec.Name);
+                Core.Indoors.Enter(Back, _spec.Name);
 
                 // Where he ended up, not where the ini said to put him. Everything about
                 // getting out again is measured from here.
@@ -954,6 +957,9 @@ namespace Hoodrich.Locations
 
             _inside = true;
             _standing = player.Position;
+            Core.Indoors.Enter(Back, _spec.Name);
+            Core.Indoors.Enter(Back, _spec.Name);
+            Core.Indoors.Enter(Back, _spec.Name);
             _enteredAt = Game.GameTime;
 
             // The furniture too, in case whatever put him here did not bring it.
@@ -1018,6 +1024,9 @@ namespace Hoodrich.Locations
                          "m from it; something else moved him, so it is forgotten.");
 
                 _inside = false;
+                Core.Indoors.Exit(_spec.Name);
+                Core.Indoors.Exit(_spec.Name);
+                Core.Indoors.Exit(_spec.Name);
                 _standing = Vector3.Zero;
                 return true;
             }
@@ -1124,6 +1133,9 @@ namespace Hoodrich.Locations
                                   : " (the way he came in)"));
 
                 _inside = false;
+                Core.Indoors.Exit(_spec.Name);
+                Core.Indoors.Exit(_spec.Name);
+                Core.Indoors.Exit(_spec.Name);
                 _standing = Vector3.Zero;
 
                 Wait(400);

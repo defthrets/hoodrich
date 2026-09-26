@@ -981,7 +981,13 @@ namespace Hoodrich.Parkview
             }
             catch { /* build on */ }
 
-            var here = me.Position;
+            // HE MAY BE BEHIND A DOOR. Every door in this mod is a teleport, so by distance
+            // he has just left the county, and the block used to come down behind him and go
+            // back up, slowly, when he came out. What is out there is measured from outside
+            // the door he went in by; what is in the room with him -- the den's own furniture
+            // is a scene like any other -- is measured from him. See Core.Indoors.
+            var him = me.Position;
+            var here = Hoodrich.Core.Indoors.From(him);
 
             // A scene part-way up is finished as fast as ticks allow; the ranges themselves are
             // only worth looking at now and then.
@@ -1010,7 +1016,7 @@ namespace Hoodrich.Parkview
 
                 if (!lookNow) continue;
 
-                var gap = here.DistanceTo(scene.Centre) - scene.Radius;
+                var gap = Math.Min(here.DistanceTo(scene.Centre), him.DistanceTo(scene.Centre)) - scene.Radius;
 
                 if (!scene.Built)
                 {

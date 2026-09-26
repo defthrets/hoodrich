@@ -79,7 +79,9 @@ namespace Hoodrich.Locations
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return;
 
-            var away = player.Position.DistanceTo(_where);
+            // From outside the door while he is behind one, or every fixture on the block
+            // comes down the moment he steps into the den. See Core.Indoors.
+            var away = Core.Indoors.From(player.Position).DistanceTo(_where);
 
             if (_prop != null && !_prop.Exists()) _prop = null;
 

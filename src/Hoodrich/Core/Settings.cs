@@ -468,6 +468,9 @@ namespace Hoodrich.Core
         public int DenMinBet = 100;
         public int DenMaxBet = 10000;
 
+        /// <summary>The static emitters that are the den's jukebox, semicolon-separated. Empty is a quiet room.</summary>
+        public string DenJukebox = "";
+
         /// <summary>How much longer or shorter every drug-taking animation runs.</summary>
         public float DrugAnimLength = 1f;
 
@@ -1028,6 +1031,7 @@ namespace Hoodrich.Core
 
             s.DenMinBet = (int)Clamp(ini.GetInt("GamblingDen", "MinBet", s.DenMinBet), 1f, 1000000f);
             s.DenMaxBet = (int)Clamp(ini.GetInt("GamblingDen", "MaxBet", s.DenMaxBet), s.DenMinBet, 10000000f);
+            s.DenJukebox = ini.GetString("GamblingDen", "Jukebox", s.DenJukebox);
 
             // Where each held thing sits in his hand, as set on the settings screen. See Economy.Fit.
             foreach (var prop in Economy.Fit.Names)
