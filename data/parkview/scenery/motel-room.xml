@@ -485,12 +485,12 @@
     <HasGravity>true</HasGravity>
     <IsInvincible>false</IsInvincible>
     <PositionRotation>
-      <X>155.5793</X>
-      <Y>-999.96</Y>
+      <X>155.7792</X>
+      <Y>-1001.8719</Y>
       <Z>-100</Z>
       <Pitch>0.96</Pitch>
       <Roll>-0.07</Roll>
-      <Yaw>-88.5954</Yaw>
+      <Yaw>-90.1048</Yaw>
     </PositionRotation>
     <Attachment isAttached="false" />
   </Placement>

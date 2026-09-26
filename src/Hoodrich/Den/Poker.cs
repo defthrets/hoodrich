@@ -1012,12 +1012,35 @@ namespace Hoodrich.Den
 
         // ---- the cameras ----------------------------------------------------------------
 
-        /// <summary>From over your head down the felt at the dealer: the table as you see it from your chair.</summary>
+        /// <summary>
+        /// The casino's own camera for a seat: a quarter of a metre out from the chair and just
+        /// above your head, looking down sixty degrees at the felt. It was behind and above your
+        /// head until 2026-09-26, and your head filled the middle of the shot.
+        /// </summary>
         private void TableCam()
         {
-            var centre = _table.GetOffsetPosition(new Vector3(0f, 0.12f, 0.95f));
-            var from = Behind(centre, 0.3f, 1.7f);
-            _cam.Look(from, centre, 58f, 900, 0.12f);
+            if (_sitter == null)
+            {
+                var centre = _table.GetOffsetPosition(new Vector3(0f, 0.12f, 0.95f));
+                _cam.Look(Behind(centre, 0.3f, 1.7f), centre, 58f, 900, 0.12f);
+                return;
+            }
+
+            var fwd = SeatForward();
+            var from = _sitter.Seat.At + fwd * 0.245f + new Vector3(0f, 0f, 1.415f);
+            var at = from + fwd * 0.487f - new Vector3(0f, 0f, 0.873f);
+            _cam.Look(from, at, 55f, 900, 0.12f);
+        }
+
+        /// <summary>Which way the chair faces: whichever of its bone's axes points at the table.</summary>
+        private Vector3 SeatForward()
+        {
+            var seat = _sitter.Seat;
+            var h = seat.Rot.Z * (float)Math.PI / 180f;
+            var x = new Vector3((float)Math.Cos(h), (float)Math.Sin(h), 0f);
+            var y = new Vector3(-(float)Math.Sin(h), (float)Math.Cos(h), 0f);
+            var best = Vector3.Dot(x, seat.Facing) >= Vector3.Dot(y, seat.Facing) ? x : y;
+            return Vector3.Dot(best, seat.Facing) < 0.3f ? seat.Facing : best;
         }
 
         /// <summary>Down on her three, from your side of the felt.</summary>

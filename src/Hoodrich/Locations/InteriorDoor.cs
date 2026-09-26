@@ -95,7 +95,7 @@ namespace Hoodrich.Locations
         private const float DoorRange = 1.8f;
 
         /// <summary>How close to the inside mark before it offers to let you out.</summary>
-        private const float ExitRange = 2.4f;
+        private const float ExitRange = 1.2f;
 
         /// <summary>Long enough for the fade, short enough not to feel like a loading screen.</summary>
         private const int FadeMs = 700;

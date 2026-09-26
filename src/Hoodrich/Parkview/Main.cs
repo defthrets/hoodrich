@@ -162,10 +162,12 @@ namespace Hoodrich.Parkview
             {
                 var now = Game.GameTime;
 
+                // THE TALLY IN THE LOG, NOT THE FEED, since 2026-09-26: Michael did not want
+                // Parkview putting a notification up every time the game starts.
                 if (!_greeted && now >= _greetAt)
                 {
                     _greeted = true;
-                    Notify.Important("~g~Parkview~s~ " + _scenes.Tally() + ".");
+                    Log.Info("Parkview: " + _scenes.Tally() + ".");
                 }
 
                 _scenes.Update();

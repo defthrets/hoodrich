@@ -433,16 +433,27 @@ namespace Hoodrich.Den
             if (!up && !down && !left && !right) _repeatAt = 0;
 
             // The mouse, freely, and the right stick: the look axes as the game measures them.
+            // A MOUSE READS AS HOW FAR IT MOVED THIS FRAME; A STICK AS HOW FAR IT IS PUSHED, every
+            // frame it is held. Read the stick like the mouse and a nudge sends the chip off the
+            // felt in a quarter of a second -- so on a pad it is a speed, with a dead zone.
             var mx = Keys.MouseX;
             var my = Keys.MouseY;
+            var pad = Game.LastInputMethod == InputMethod.GamePad;
+
+            if (pad)
+            {
+                if (Math.Abs(mx) < 0.2f) mx = 0f;
+                if (Math.Abs(my) < 0.2f) my = 0f;
+            }
 
             if (Math.Abs(mx) > 0.0001f || Math.Abs(my) > 0.0001f)
             {
                 Vector2 screenUp, screenRight;
                 Axes(out screenUp, out screenRight);
 
-                var dx = (screenRight.X * mx - screenUp.X * my) * 0.35f;
-                var dy = (screenRight.Y * mx - screenUp.Y * my) * 0.35f;
+                var scale = pad ? 0.55f * Game.LastFrameTime : 0.35f;
+                var dx = (screenRight.X * mx - screenUp.X * my) * scale;
+                var dy = (screenRight.Y * mx - screenUp.Y * my) * scale;
 
                 _u = Clamp(_u + dx / CellX, -1.6f, 12.6f);
                 _v = Clamp(_v + dy / CellY, -1.45f, 2.5f);

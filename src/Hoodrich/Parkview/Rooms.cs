@@ -151,6 +151,12 @@ namespace Hoodrich.Parkview
 
         /// <summary>How near a place you have to be, and how big its ring on the ground is.</summary>
         private const float PlaceReach = 1.8f;
+
+        /// <summary>
+        /// How near the way out of the rented room you stand to be offered it. Its own number,
+        /// and small: Michael asked on 2026-09-26 for the leave prompt only when he is at the door.
+        /// </summary>
+        private const float OutReach = 1.0f;
         private const float MarkerSize = 0.9f;
 
         /// <summary>
@@ -847,7 +853,7 @@ namespace Hoodrich.Parkview
                         Alone(_room);
                     }
 
-                    if (me.Position.DistanceTo(RoomOut) <= PlaceReach)
+                    if (me.Position.DistanceTo(RoomOut) <= OutReach)
                     {
                         Say("Press ~INPUT_CONTEXT~ to leave.");
                         if (Tapped()) Leave();

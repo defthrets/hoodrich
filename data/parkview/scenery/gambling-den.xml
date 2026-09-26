@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <SpoonerPlacements>
-	<Note>The gambling den, in the two-car garage under Pillbox Hill: Michael's Menyoo save gambleden of 2026-09-26. The roulette, the poker table and the three slots were swapped from the Casino Heist ch_ models to the Diamond's vw_ ones the casino's animations are made for, and the two Families men carry compact rifles and stand guard. The three neons -- Blarneys, Logger, Baracho -- are from his save neonden, later the same day. | absorbs: gambleden, neonden | indoors | stays: 706841, 762119, 693013, 419121 | guards: 693013, 419121 | idles: 706841=WORLD_HUMAN_SMOKING_POT,WORLD_HUMAN_DRINKING,WORLD_HUMAN_PARTYING; 762119=WORLD_HUMAN_GUARD_STAND,WORLD_HUMAN_STAND_IMPATIENT_UPRIGHT</Note>
+	<Note>The gambling den, in the two-car garage under Pillbox Hill: Michael's Menyoo save gambleden of 2026-09-26. The roulette, the poker table (a blackjack table since the same day, at Michael's asking) and the three slots were swapped from the Casino Heist ch_ models to the Diamond's vw_ ones the casino's animations are made for, and the two Families men carry compact rifles and stand guard. The three neons -- Blarneys, Logger, Baracho -- are from his save neonden, later the same day. | absorbs: gambleden, neonden | indoors | stays: 706841, 762119, 693013, 419121 | guards: 693013, 419121 | idles: 706841=WORLD_HUMAN_SMOKING_POT,WORLD_HUMAN_DRINKING,WORLD_HUMAN_PARTYING; 762119=WORLD_HUMAN_GUARD_STAND,WORLD_HUMAN_STAND_IMPATIENT_UPRIGHT</Note>
 	<AudioFile volume="400" />
 	<ClearDatabase>false</ClearDatabase>
 	<ClearWorld>0</ClearWorld>
@@ -222,11 +222,11 @@
 		<Attachment isAttached="false" />
 	</Placement>
 	<Placement>
-		<ModelHash>0x98ffa2d1</ModelHash>
+		<ModelHash>0x06b32955</ModelHash>
 		<Type>3</Type>
 		<Dynamic>false</Dynamic>
 		<FrozenPos>true</FrozenPos>
-		<HashName>vw_prop_casino_3cardpoker_01</HashName>
+		<HashName>vw_prop_casino_blckjack_01</HashName>
 		<InitialHandle>358990</InitialHandle>
 		<ObjectProperties>
 			<TextureVariation>0</TextureVariation>

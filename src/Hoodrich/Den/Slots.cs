@@ -37,9 +37,15 @@ namespace Hoodrich.Den
 
         public readonly int[] Stops = new int[3];
 
-        private static readonly float[] Across = { -0.115f, 0.005f, 0.125f };
-        private const float In = 0.047f;
-        private const float Up = 0.906f;
+        /// <summary>
+        /// Where the three sit in the window, in the machine's own space. 1.1 up and 0.05 in, as
+        /// NoPixel's, Pulsar's and a RageMP casino's slot scripts all have it. The 0.906 this
+        /// started with came from a fourth script and put every reel a fifth of a metre down
+        /// inside the cabinet, where nothing that turned could be seen (2026-09-26).
+        /// </summary>
+        private static readonly float[] Across = { -0.117f, 0.003f, 0.127f };
+        private const float In = 0.05f;
+        private const float Up = 1.1f;
 
         /// <summary>A symbol a stop, sixteen stops round.</summary>
         public const float StopDegrees = 22.5f;
@@ -99,7 +105,18 @@ namespace Hoodrich.Den
 
                 _sharp[i] = Chips.Make(model, Place(i), Turned(Stops[i] * StopDegrees), true, true);
             }
+
+            if (Built && !_said)
+            {
+                _said = true;
+                var mid = Place(1);
+                Log.Info("Den: " + Slots.Title(Kind) + "'s reels are in its window, " + (mid.Z - Machine.Position.Z).ToString("0.00") +
+                         " m up (" + Sharp + ").");
+            }
         }
+
+        private bool _said;
+        private bool _saidBlur;
 
         private Vector3 Place(int i)
         {
@@ -125,6 +142,12 @@ namespace Hoodrich.Den
 
             // No blurred reel to hand: the sharp one turns instead, which is only less smooth.
             if (_blur[i] != null) Chips.Show(_sharp[i], false);
+
+            if (!_saidBlur)
+            {
+                _saidBlur = true;
+                Log.Info("Den: " + Slots.Title(Kind) + "'s reels spin " + (_blur[i] != null ? "blurred (" + Blurred + ")." : "sharp; the blurred reel is not in yet."));
+            }
 
             _spinning[i] = true;
             _spinFrom = Game.GameTime;
@@ -267,6 +290,8 @@ namespace Hoodrich.Den
         private int _target = -1;
         private string _targetName;
         private bool _themed;
+        private int _screenFrom;
+        private bool _saidSlow;
 
         private const int SpinMs = 3000;
         private const int OutcomeMs = 3200;
@@ -596,8 +621,8 @@ namespace Hoodrich.Den
         /// <summary>Over your right shoulder at the reels and the screen above them.</summary>
         private void Cam()
         {
-            var from = _machine.GetOffsetPosition(new Vector3(0.32f, -1.15f, 1.42f));
-            var at = _machine.GetOffsetPosition(new Vector3(0f, 0.05f, 1.02f));
+            var from = _machine.GetOffsetPosition(new Vector3(0.3f, -1.1f, 1.5f));
+            var at = _machine.GetOffsetPosition(new Vector3(0f, 0.05f, 1.1f));
             _cam.Look(from, at, 50f, 900, 0.1f);
         }
 
@@ -616,10 +641,13 @@ namespace Hoodrich.Den
                     Function.Call(Hash.LINK_NAMED_RENDERTARGET, _machine.Model.Hash);
 
                 _target = Function.Call<int>(Hash.GET_NAMED_RENDERTARGET_RENDER_ID, _targetName);
+                _screenFrom = Game.GameTime;
+
+                Log.Info("Den: " + Title(_kind) + "'s screen: render target " + _targetName + " is " + _target + ", display movie " + _movie + ".");
             }
             catch (Exception ex)
             {
-                Log.Debug("Den: the machine's screen would not set up: " + ex.Message);
+                Log.Info("Den: the machine's screen would not set up: " + ex.Message);
                 _target = -1;
             }
         }
@@ -631,7 +659,16 @@ namespace Hoodrich.Den
 
             try
             {
-                if (!Function.Call<bool>(Hash.HAS_SCALEFORM_MOVIE_LOADED, _movie)) return;
+                if (!Function.Call<bool>(Hash.HAS_SCALEFORM_MOVIE_LOADED, _movie))
+                {
+                    if (!_saidSlow && Game.GameTime - _screenFrom > 6000)
+                    {
+                        _saidSlow = true;
+                        Log.Info("Den: " + Title(_kind) + "'s display movie SLOT_MACHINE has not loaded after six seconds.");
+                    }
+
+                    return;
+                }
 
                 if (!_themed)
                 {
@@ -654,7 +691,7 @@ namespace Hoodrich.Den
             }
             catch (Exception ex)
             {
-                Log.Debug("Den: the machine's screen would not draw: " + ex.Message);
+                Log.Info("Den: the machine's screen would not draw: " + ex.Message);
                 _target = -1;
             }
         }

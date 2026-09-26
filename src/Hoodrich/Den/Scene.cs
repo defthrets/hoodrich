@@ -42,10 +42,20 @@ namespace Hoodrich.Den
         /// <summary>The player's side of three card poker: the chips down, the cards picked up, played or folded.</summary>
         public const string PokerPlayer = "anim_casino_b@amb@casino@games@threecardpoker@player";
 
+        /// <summary>
+        /// The blackjack dealer's full set: the woman's clips are the "female_" ones in here, and
+        /// only this set has the hole card (female_deal_card_self_second_card), which the
+        /// dealer_female set does not. Played where she stands -- see Dealer.
+        /// </summary>
+        public const string BlackjackDealerAll = "anim_casino_b@amb@casino@games@blackjack@dealer";
+
+        /// <summary>The player's side of blackjack: the chips down, a tap for a card, a wave to stand, the double.</summary>
+        public const string BlackjackPlayer = "anim_casino_b@amb@casino@games@blackjack@player";
+
         public static readonly string[] All =
         {
             RouletteDealer, RouletteTable, BlackjackDealer, SharedDealer, PokerDealer, SlotsMale, SlotsFemale,
-            SharedPlayer, PokerPlayer
+            SharedPlayer, PokerPlayer, BlackjackDealerAll, BlackjackPlayer
         };
 
         private static readonly HashSet<string> Asked = new HashSet<string>();

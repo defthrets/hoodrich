@@ -70,12 +70,18 @@ namespace Hoodrich.Den
         /// <summary>How far round the way in the furniture is looked for.</summary>
         private const float Reach = 40f;
 
-        /// <summary>How near a table or a machine you stand to be offered it.</summary>
-        private const float TableReach = 2.6f;
-        private const float SlotReach = 1.6f;
+        /// <summary>
+        /// How near you stand to be offered a game: at one of a table's own chairs, or in front of
+        /// a machine where its stool would be. Close, since 2026-09-26 -- Michael asked for the
+        /// prompts only when he is right at them. A table with no chairs of its own is offered
+        /// from TableReach round its middle.
+        /// </summary>
+        private const float ChairReach = 1.0f;
+        private const float TableReach = 1.6f;
+        private const float SlotReach = 0.8f;
 
-        /// <summary>How near one of a table's chairs you have to be for it to be the one you sit in.</summary>
-        private const float ChairReach = 2.4f;
+        /// <summary>Where the stool is in front of a machine, in its own space.</summary>
+        private static readonly Vector3 SlotStool = new Vector3(0f, -0.75f, 0f);
 
         /// <summary>How often the room is looked over for its furniture while it is missing.</summary>
         private const int LookEveryMs = 1000;
@@ -129,7 +135,9 @@ namespace Hoodrich.Den
 
         private static readonly int[] BlackjackModels =
         {
-            Game.GenerateHash("vw_prop_casino_blckjack_01"), Game.GenerateHash("vw_prop_casino_blckjack_01b")
+            Game.GenerateHash("vw_prop_casino_blckjack_01"), Game.GenerateHash("vw_prop_casino_blckjack_01b"),
+            Game.GenerateHash("ch_prop_casino_blackjack_01a"), Game.GenerateHash("ch_prop_casino_blackjack_01b"),
+            Game.GenerateHash("h4_prop_casino_blckjack_01a"), Game.GenerateHash("h4_prop_casino_blckjack_01b")
         };
 
         private static readonly string[] RouletteIdles =
@@ -137,7 +145,20 @@ namespace Hoodrich.Den
             "idle", "idle_var01", "idle_var02", "idle_var03", "idle_var04", "idle_var05", "idle_var06"
         };
 
-        private static readonly string[] BlackjackIdles = { "idle", "dealer_idle" };
+        /// <summary>The blackjack dealer between hands: the shared dealer idle, played where she stands. See Dealer.</summary>
+        private static readonly string[] BlackjackIdles =
+        {
+            "female_idle", "female_idle", "female_idle_var_01", "female_idle_var_02", "female_idle_var_03",
+            "female_idle_var_04", "female_idle_var_05", "female_idle_var_06", "female_idle_var_07", "female_idle_var_08"
+        };
+
+        /// <summary>
+        /// Her mark at a blackjack table, in the table's own space, and her turn from its heading:
+        /// behind the middle of it and facing across. Where the Diamond stands its blackjack
+        /// dealers, worked back from DiamondBlackjack's four tables -- they agree to a centimetre.
+        /// </summary>
+        private static readonly Vector3 BlackjackMark = new Vector3(0f, 0.79f, 1f);
+        private const float BlackjackTurn = 180.7f;
 
         /// <summary>
         /// The poker dealer between hands: the casino's shared dealer idle, hands on the felt. The
@@ -152,12 +173,12 @@ namespace Hoodrich.Den
         /// <summary>Who deals where: strippers, since 2026-09-26. See Dealer.</summary>
         private const string RouletteDealerModel = "s_f_y_stripper_01";
         private const string PokerDealerModel = "s_f_y_stripper_02";
-        private const string BlackjackDealerModel = "s_f_y_stripperlite";
+        private const string BlackjackDealerModel = "s_f_y_stripper_02";
 
         /// <summary>And whose voice: three of the Diamond's croupiers.</summary>
         private const string RouletteVoice = "S_F_Y_Casino_01_ASIAN_01";
         private const string PokerVoice = "S_F_Y_Casino_01_LATINA_01";
-        private const string BlackjackVoice = "S_F_Y_Casino_01_ASIAN_02";
+        private const string BlackjackVoice = "S_F_Y_Casino_01_LATINA_01";
 
         /// <summary>The emitter the game keeps for a radio a script has put down. See Tune.</summary>
         private const string PropEmitter = "SE_Script_Placed_Prop_Emitter_Boombox";
@@ -330,10 +351,11 @@ namespace Hoodrich.Den
                          _slots.Count + " slot machine(s), " + (Alive(_jukebox) ? "a jukebox." : "no jukebox."));
             }
 
-            if (!_saidChairs && (Alive(_roulette) || Alive(_poker)))
+            if (!_saidChairs && (Alive(_roulette) || Alive(_poker) || Alive(_blackjack)))
             {
                 _saidChairs = true;
                 Log.Info("Den: chairs -- roulette " + (Alive(_roulette) ? (Seat.Has(_roulette) ? "has its own" : "has none") : "absent") +
+                         ", blackjack " + (Alive(_blackjack) ? (Seat.Has(_blackjack) ? "has its own" : "has none") : "absent") +
                          ", poker " + (Alive(_poker) ? (Seat.Has(_poker) ? "has its own" : "has none") : "absent") + ".");
             }
         }
@@ -473,7 +495,8 @@ namespace Hoodrich.Den
             if (Alive(_blackjack))
             {
                 if (_cardDealer == null)
-                    _cardDealer = new Dealer(_blackjack, Scene.BlackjackDealer, BlackjackIdles, "blackjack", _rng, BlackjackDealerModel, BlackjackVoice);
+                    _cardDealer = new Dealer(_blackjack, Scene.SharedDealer, BlackjackIdles, "blackjack", _rng, BlackjackDealerModel, BlackjackVoice,
+                                             BlackjackMark, BlackjackTurn);
                 if (!_cardDealer.Exists) _cardDealer.Spawn(gang);
                 _cardDealer.Update();
             }
@@ -520,13 +543,14 @@ namespace Hoodrich.Den
 
             var at = me.Position;
 
-            if (Alive(_roulette) && Flat(at, _roulette.Position) <= TableReach && _croupier != null && _croupier.Exists)
+            Seat seat;
+
+            if (Alive(_roulette) && _croupier != null && _croupier.Exists && At(_roulette, at, out seat))
             {
                 Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to sit at the roulette. $" + MinBet.ToString("N0") + " a chip.");
 
                 if (Game.IsControlJustPressed(Control.Context))
                 {
-                    var seat = Seat.Nearest(_roulette, at, ChairReach);
                     _atRoulette = new Roulette(_roulette, _croupier, me, seat, MinBet, MaxBet, _rng);
                     InputGuard.Swallow();
                 }
@@ -534,26 +558,25 @@ namespace Hoodrich.Den
                 return;
             }
 
-            if (Alive(_blackjack) && Flat(at, _blackjack.Position) <= TableReach && _cardDealer != null && _cardDealer.Exists)
+            if (Alive(_blackjack) && _cardDealer != null && _cardDealer.Exists && At(_blackjack, at, out seat))
             {
-                Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to play blackjack. $" + MinBet.ToString("N0") + " minimum.");
+                Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to sit at blackjack. $" + MinBet.ToString("N0") + " minimum.");
 
                 if (Game.IsControlJustPressed(Control.Context))
                 {
-                    _atBlackjack = new Blackjack(_cardDealer, MinBet, MaxBet, _rng);
+                    _atBlackjack = new Blackjack(_blackjack, _cardDealer, me, seat, MinBet, MaxBet, _rng);
                     InputGuard.Swallow();
                 }
 
                 return;
             }
 
-            if (Alive(_poker) && Flat(at, _poker.Position) <= TableReach && _pokerDealer != null && _pokerDealer.Exists)
+            if (Alive(_poker) && _pokerDealer != null && _pokerDealer.Exists && At(_poker, at, out seat))
             {
                 Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to sit at three card poker. $" + MinBet.ToString("N0") + " ante.");
 
                 if (Game.IsControlJustPressed(Control.Context))
                 {
-                    var seat = Seat.Nearest(_poker, at, ChairReach);
                     _atPoker = new Poker(_poker, _pokerDealer, me, seat, MinBet, MaxBet, _rng);
                     InputGuard.Swallow();
                 }
@@ -568,7 +591,7 @@ namespace Hoodrich.Den
             {
                 if (!Alive(slot)) continue;
 
-                var d = Flat(at, slot.Position);
+                var d = Flat(at, slot.GetOffsetPosition(SlotStool));
                 if (d > best) continue;
 
                 best = d;
@@ -589,12 +612,30 @@ namespace Hoodrich.Den
             }
         }
 
+        /// <summary>
+        /// Whether you are at a table: by one of its own chairs if it has them, and then that is
+        /// the chair you sit in; round its middle if it has none, and you play stood up.
+        /// </summary>
+        private static bool At(Entity table, Vector3 at, out Seat seat)
+        {
+            seat = null;
+
+            if (Seat.Has(table))
+            {
+                seat = Seat.Nearest(table, at, ChairReach);
+                return seat != null;
+            }
+
+            return Flat(at, table.Position) <= TableReach;
+        }
+
         /// <summary>Whatever is being played, stopped where it is. For leaving and for teardown.</summary>
         private void Quit()
         {
             try
             {
                 if (_atRoulette != null) _atRoulette.Abandon();
+                if (_atBlackjack != null) _atBlackjack.Abandon();
                 if (_atPoker != null) _atPoker.Abandon();
                 if (_atSlot != null) _atSlot.LetGo();
             }
