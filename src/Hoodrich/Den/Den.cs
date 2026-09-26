@@ -13,8 +13,8 @@ namespace Hoodrich.Den
     /// <summary>
     /// The gambling den: the floor behind the [GamblingDen] door.
     ///
-    /// The room is whatever [GamblingDen] in the ini points at -- the ten-car garage under
-    /// Pillbox Hill since 2026-09-26 -- and the furniture is Michael's: the tables, the slots,
+    /// The room is whatever [GamblingDen] in the ini points at -- a garage under Pillbox
+    /// Hill since 2026-09-26 -- and the furniture is Michael's: the tables, the slots,
     /// the counter with the money on it are a Parkview scene he builds in Menyoo, and it stands
     /// up when the door puts you in there. This is what
     /// makes it a den rather than a room with tables in it: a woman of the set behind each
