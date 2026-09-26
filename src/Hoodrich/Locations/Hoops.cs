@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using GTA;
 using GTA.Math;
 using GTA.Native;
@@ -11,28 +12,28 @@ using Control = GTA.Control;
 namespace Hoodrich.Locations
 {
     /// <summary>
-    /// SHOOTING HOOPS on the Chamberlain Hills court, on the court's own hoop. Michael asked for
+    /// SHOOTING HOOPS on the Chamberlain Hills court, on the court's own hoops. Michael asked for
     /// it on 2026-09-26: a basketball, a jump and a throw, and the aim and the shot the way his
     /// Street Golf does them.
     ///
-    /// THE SHOT IS STREET GOLF'S. The aim is where the camera looks. Hold the button and the
-    /// meter runs up and back down; let go, and where it stood is the shot. The meter's sweet
-    /// spot is the power that reaches the rim from where you stand, worked out fresh every
-    /// shot, so the green moves along the bar as you walk back to the three-point line. In
-    /// the green and looking at the hoop, the ball goes in: it is thrown on the exact arc to
-    /// the middle of the rim. Out of the green it is thrown as hard as the meter said, and
-    /// falls short or goes long; looking off the hoop, it goes wide. The game's own physics
-    /// flies it either way, off the court's own backboard and rim.
+    /// THE THROW IS FREE. The aim is where the camera looks. Hold the button and the meter runs
+    /// up and back down, and the line out of his hand stretches with it -- from a lob at his feet
+    /// to a heave forty metres down the street. Let go, and the ball comes down through the ring
+    /// at the end of the line. Nothing works a basket out for him and nothing steers the ball at
+    /// the hoop: Michael asked for it that way, "if you wanted to throw it really far you could,
+    /// dont try and make it swosh".
     ///
-    /// THE JUMP SHOT. The game has no basketball of its own and no shot animation. What it has
-    /// is a jump, and the high overhand throw -- the grenade throw with the arm up -- and the
-    /// throw played on the upper body over the jump is a jump shot. The ball leaves the hand as
-    /// the throw releases it. Held, he carries it in the ball-game idle that goes with it.
+    /// A BASKET IS THE BALL DOWN THROUGH THE HOOP'S RING. Each hoop has a flat ring where its rim
+    /// is, and the ball's middle has to come down through it. The hoops are built into the map,
+    /// so the game will not say where they are, and reading the backboards with rays found
+    /// neither of this court's -- the log of 2026-09-26 -- so the balls went in through a guess.
+    /// The rings are placed by hand on the court instead (the developer tools, D-pad right with
+    /// the ball) and written into RingAt for everybody else.
     ///
-    /// WHERE THE RIM IS is read off the hoop itself, once: a few rays at the backboard from the
-    /// court side find its face and its bottom edge, and the rim is a hand's width above that
-    /// edge and out from the board by the gap and its own radius. Nothing about the hoop is
-    /// typed in, so a hoop on any court works the same.
+    /// THE SHOT is both hands pushing the ball up from the chest -- the up half of Raise the Roof,
+    /// played quick and cut after the one push -- over a little hop straight up. The game has no
+    /// basketball of its own and no clip of anybody shooting one; that is the nearest thing to it.
+    /// Held, he carries the ball in the ball-game idle that goes with it.
     ///
     /// LIGHT ON PURPOSE. Michael's game ran out of memory on 2026-09-26, and this adds one ball
     /// and two small clip sets, asked for when a game starts and let go when it ends. No people,
@@ -61,15 +62,14 @@ namespace Hoodrich.Locations
         private const string HoldDict = "anim@sports@ballgame@handball@";
         private const string HoldClip = "ball_idle";
         /// <summary>
-        /// One way to shoot: the clip, on the upper body; whether the legs jump under it; how far
-        /// through it the ball goes; and how high over him the ball is when it does.
+        /// One way to shoot: the clip, on the upper body; how far through it the ball goes; and how
+        /// high over him the ball is when it does.
         /// </summary>
         private sealed class Style
         {
             public string Name;
             public string Dict;
             public string Clip;
-            public bool Jump;
             public float Release;
             public float Up;
 
@@ -84,22 +84,19 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
-        /// THE WAYS TO SHOOT, picked on the court with D-pad left and remembered. The game has no
-        /// basketball of its own and no clip of anybody shooting one, and the first build's jump
-        /// with the grenade throw on top looked, in Michael's word, jank. So there are four of the
-        /// nearest things the game has, and he keeps the one that looks right: both hands pushing
-        /// the ball up from the chest, with a jump or without -- the up half of Raise the Roof --
-        /// the high throw with a jump, and the medium throw without one.
+        /// THE WAYS TO SHOOT. The set shot is the one Michael kept, and the only one a player gets;
+        /// the other two stay for the developer tools to try, D-pad left on the court. Every one is
+        /// played over the little hop (see Hop), so the two-hand jumper went: it was the set shot
+        /// with a jump.
         /// </summary>
         private static readonly Style[] Styles =
         {
-            new Style { Name = "Set shot", Dict = "anim@mp_player_intupperraise_the_roof", Clip = "enter", Jump = false, Release = 0.30f, Up = 1.2f, Speed = 1.6f, Cut = 0.46f },
-            new Style { Name = "Two-hand jumper", Dict = "anim@mp_player_intupperraise_the_roof", Clip = "enter", Jump = true, Release = 0.30f, Up = 1.5f, Speed = 1.6f, Cut = 0.46f },
-            new Style { Name = "Jump shot", Dict = "weapons@projectile@", Clip = "throw_h_fb_stand", Jump = true, Release = 0.36f, Up = 1.5f, Speed = 1.3f },
-            new Style { Name = "Push shot", Dict = "weapons@projectile@", Clip = "throw_m_fb_stand", Jump = false, Release = 0.34f, Up = 1.2f, Speed = 1.3f }
+            new Style { Name = "Set shot", Dict = "anim@mp_player_intupperraise_the_roof", Clip = "enter", Release = 0.30f, Up = 1.2f, Speed = 1.6f, Cut = 0.46f },
+            new Style { Name = "Jump shot", Dict = "weapons@projectile@", Clip = "throw_h_fb_stand", Release = 0.36f, Up = 1.5f, Speed = 1.3f },
+            new Style { Name = "Push shot", Dict = "weapons@projectile@", Clip = "throw_m_fb_stand", Release = 0.34f, Up = 1.2f, Speed = 1.3f }
         };
 
-        /// <summary>Every clip set a game asks for, and lets go of at the end.</summary>
+        /// <summary>Every clip set a game might ask for, all let go at the end. See Wanted.</summary>
         private static readonly string[] Dicts = { HoldDict, "anim@mp_player_intupperraise_the_roof", "weapons@projectile@" };
 
         private int _style;
@@ -112,34 +109,80 @@ namespace Hoodrich.Locations
         private const float OfferReach = 1.3f;
         private const float RingReach = 30f;
 
-        /// <summary>How far down the court a backboard is looked for, and how far from the rim before the game is put away.</summary>
-        private const float HoopFind = 16f;
+        /// <summary>How far from both hoops before the game is put away.</summary>
         private const float CourtReach = 26f;
 
-        /// <summary>PH_R_Hand: the ball rides in his right hand.</summary>
-        private const int RightHand = 28422;
+        /// <summary>
+        /// THE RINGS: for each hoop, in the order of Spots, the middle of its rim and how far from
+        /// there to the edge of the ring the ball has to come down through. Placed by hand on the
+        /// court (see RingPlacing); Michael's own placings are read from the ini over these, and go
+        /// in here for the release once the ball really goes in through them. Until then they are
+        /// a regulation court's, from each spot: 4.2 m down the court and 3.05 m up.
+        /// </summary>
+        private static readonly Vector3[] RingAt =
+        {
+            new Vector3(-198.515f, -1505.758f, 33.681f),
+            new Vector3(-212.577f, -1521.766f, 33.666f)
+        };
 
-        /// <summary>Street Golf's meter: up and back down over this long while the button is held.</summary>
-        private const float ChargeTime = 1.15f;
+        private static readonly float[] RingWide = { 0.23f, 0.23f };
 
         /// <summary>
-        /// The meter against the throw: nine tenths of it is exactly the rim's distance -- as the
-        /// top of Street Golf's meter is its sweet spot -- and every tenth either side is five per
-        /// cent of pace more or less. So the green is only as wide as the rim, from where he stands:
-        /// wide close in, a sliver from three.
+        /// PH_L_Hand: the ball rides in his LEFT hand. The ball-game idle holds that hand up in
+        /// front of him for it, and the right one hangs; Michael moved it there on 2026-09-26.
         /// </summary>
-        private const float Full = 0.9f;
-        private const float Spread = 0.5f;
+        private const int LeftHand = 60309;
+
+        /// <summary>
+        /// Where in his hand: centimetres along the hand bone's own three axes, then degrees about
+        /// them. Michael sets it with the positioner (D-pad down, holding the ball, with the
+        /// developer tools on) and it is kept in Hoodrich.ini, [HandFit] prop_bskball_01.
+        /// </summary>
+        private float[] _grip = { 12f, 3f, -3f, 0f, 0f, 0f };
+
+        private static readonly string[] GripNames = { "Move X", "Move Y", "Move Z", "Turn X", "Turn Y", "Turn Z" };
+
+        /// <summary>The developer tools are on: the positioner is offered. Read as a game starts.</summary>
+        private bool _dev;
+        private bool _placing;
+        private int _placeRow;
+        private int _placeNext;
+
+        /// <summary>Street Golf's meter, slowed for a hoop: up and back down over this long while the button is held.</summary>
+        private const float ChargeTime = 2.6f;
+
+        /// <summary>
+        /// THE METER AGAINST HOW FAR: the ring at the end of the line comes down this far out from
+        /// the ball -- a metre on an empty meter, ten at MidAt of it, forty at the top. Even and
+        /// slow across a court, where a rim's width is all there is to hit, and quicker past it for
+        /// the heave down the street. It is the distance that is shared out along the meter, not
+        /// Street Golf's pace: pace for power put the whole court in the first sliver of it.
+        /// </summary>
+        private const float ReachNear = 1f;
+        private const float ReachMid = 10f;
+        private const float MidAt = 0.72f;
+        private const float ReachFar = 40f;
 
         /// <summary>Street Golf's fine aim: while the meter runs, the left stick turns the line this fast, and this far either way.</summary>
         private const float FineSpeed = 18f;
         private const float FineMost = 25f;
 
-        /// <summary>The arc a shot leaves the hand on. A good shot drops into the rim from above.</summary>
+        /// <summary>
+        /// The arc a shot leaves the hand on -- steeper close in, so the ball is always coming DOWN
+        /// when it gets to the ring's height, never going up through it. See Launch.
+        /// </summary>
         private const float Arc = 52f;
 
-        /// <summary>The ball's middle has to come down through this much of the rim's middle.</summary>
-        private const float MakeRadius = 0.24f;
+        /// <summary>
+        /// THE LITTLE HOP under every shot: the game's own jump, rising no faster than this -- about
+        /// a foot off the floor -- and going nowhere along the ground, for this long. See Hop.
+        /// </summary>
+        private const float HopUp = 2.4f;
+        private const int HopMs = 900;
+
+        /// <summary>How fast the ring placer slides a ring and grows it, a second; X for four times that.</summary>
+        private const float RingSlide = 0.2f;
+        private const float RingGrow = 0.08f;
 
         /// <summary>The three-point line, from the middle of the rim over the floor.</summary>
         private const float ThreeFrom = 6.75f;
@@ -153,32 +196,34 @@ namespace Hoodrich.Locations
         private int _at;
         private Prop _ball;
 
-        /// <summary>The rim being shot at, and every rim read so far, by where its board is. See RimAhead.</summary>
-        private Vector3 _rim;
-        private bool _haveRim;
-        private readonly Dictionary<string, Vector3> _rims = new Dictionary<string, Vector3>();
+        /// <summary>The two hoops' rings as this game has them, and the hoop he is shooting at: the one he looks at.</summary>
+        private readonly Vector3[] _ring = new Vector3[2];
+        private readonly float[] _ringSize = new float[2];
+        private int _hoop;
+
+        private Vector3 Rim => _ring[_hoop];
 
         private float _charge;
         private float _power;
-        /// <summary>The green on the meter: the powers that come down through the rim from where he stands.</summary>
-        private float _sweetLo = 2f;
-        private float _sweetHi = -1f;
+
+        /// <summary>Where the meter stood for the last shot: the line he lines the next one up with.</summary>
+        private float _lastPower = 0.3f;
         private int _lastTick;
 
-        private bool _good;
         private float _aim;
         private float _fine;
 
-        /// <summary>The throw worked out as he let go: where it leaves from, and how. The ball follows it to the letter.</summary>
+        /// <summary>The throw worked out as he let go: where it left from, and how.</summary>
         private Vector3 _launchFrom;
         private Vector3 _launch;
 
+        /// <summary>Where the line's ring was when he let go: the ball comes down through it. See Release.</summary>
+        private Vector3 _launchTo;
+
         /// <summary>The shot's clip is still on his arms, to be sped up and cut short. See ShotClip.</summary>
         private bool _clipLive;
-        private float _from;
-        private bool _three;
 
-        /// <summary>Where he stood for the shot, for calling a miss short or long.</summary>
+        /// <summary>Where he stood for the shot: a three is from past the line.</summary>
         private Vector3 _shotAt;
 
         private bool _released;
@@ -187,6 +232,17 @@ namespace Hoodrich.Locations
         private bool _crossed;
         private Vector3 _cross;
         private Vector3 _prev;
+
+        /// <summary>The hop is on until then. See Hop.</summary>
+        private int _hopUntil;
+
+        /// <summary>The ring placer: whose ring, how it was before, and the floor it is measured from.</summary>
+        private bool _ringPlacing;
+        private int _ringWho;
+        private Vector3 _ringWas;
+        private float _ringWasSize;
+        private float _ringFloor;
+        private bool _ringWait;
 
         private int _score;
         private int _streak;
@@ -209,6 +265,9 @@ namespace Hoodrich.Locations
         /// <summary>A game is up: the shooting buttons are his, and the rest of the mod's prompts stand down.</summary>
         public bool Playing => _mode != Mode.Off;
 
+        /// <summary>One of the placers is up: the D-pad is theirs, so the phone stays shut.</summary>
+        public bool Placing => _placing || _ringPlacing;
+
         public void Update()
         {
             var me = Game.Player.Character;
@@ -225,19 +284,24 @@ namespace Hoodrich.Locations
             }
 
             // Put away if he is not on the court to play any more.
-            if (!me.IsAlive || me.IsInVehicle() || me.IsRagdoll || !_haveRim || me.Position.DistanceTo(_rim) > CourtReach)
+            if (!me.IsAlive || me.IsInVehicle() || me.IsRagdoll || Nearest(me.Position) > CourtReach)
             {
                 Stop(me.IsAlive && !me.IsInVehicle() ? "Off the court -- the ball stays behind." : null);
                 return;
             }
 
-            HoldTheButtons(_mode == Mode.Charging);
+            HoldTheButtons(_mode == Mode.Charging || _mode == Mode.Shooting || Placing);
             ShotClip(me);
+            Hop(me, now);
 
             switch (_mode)
             {
                 case Mode.Starting: Starting(me, now); break;
-                case Mode.Holding: Holding(me, now); break;
+                case Mode.Holding:
+                    if (_placing) BallPlacing(me, now);
+                    else if (_ringPlacing) RingPlacing(me, dt);
+                    else Holding(me, now);
+                    break;
                 case Mode.Charging: Charging(me, dt); break;
                 case Mode.Shooting: Shooting(me, now); break;
                 case Mode.Flying: Flying(now); break;
@@ -289,33 +353,63 @@ namespace Hoodrich.Locations
         {
             InputGuard.Swallow();
 
-            if (!Aim(me, SpotFacing[spot], Spots[spot]))
+            // His grip on the ball, and whether the builder's tools are his.
+            _dev = false;
+
+            try
             {
-                Notify.Problem("Can't find the hoop from here -- look at it and press again.");
-                return;
+                var packed = Settings.Read("HandFit", BallName, "");
+                if (!string.IsNullOrEmpty(packed)) _grip = Economy.Fit.Unpack(packed);
+
+                _dev = string.Equals(Settings.Read("Developer", "Tools", "false").Trim(), "true", StringComparison.OrdinalIgnoreCase);
+            }
+            catch { }
+
+            LoadRings();
+            _hoop = spot;
+
+            // The other ways to shoot are the builder's; everybody else shoots the set shot.
+            if (!_dev) _style = 0;
+            else if (!_styleRead)
+            {
+                _styleRead = true;
+                _style = ReadStyle();
             }
 
             // Asked for now and let go at the end: the only things this ever loads.
             try
             {
-                foreach (var d in Dicts) Function.Call(Hash.REQUEST_ANIM_DICT, d);
+                foreach (var d in Wanted()) Function.Call(Hash.REQUEST_ANIM_DICT, d);
                 Models.Ready(new Model(BallName));
-
-                if (!_styleRead)
-                {
-                    _styleRead = true;
-                    _style = ReadStyle();
-                }
             }
             catch { /* asked again while it waits */ }
 
             _score = _streak = _shots = _made = 0;
             _fine = 0f;
+            _placing = _ringPlacing = false;
+            _hopUntil = 0;
             _banner = "";
             _mode = Mode.Starting;
             _at = Game.GameTime;
 
-            Log.Info("Hoops: on the court at ring " + (spot + 1) + ", the rim at " + _rim + ".");
+            Log.Info("Hoops: on the court at ring " + (spot + 1) + ", its hoop's ring at " + _ring[spot] + ".");
+        }
+
+        /// <summary>The clip sets this game needs: the idle and the set shot's -- every one, for somebody trying the others.</summary>
+        private IEnumerable<string> Wanted()
+        {
+            yield return HoldDict;
+
+            if (!_dev)
+            {
+                yield return Styles[0].Dict;
+                yield break;
+            }
+
+            foreach (var d in Dicts)
+            {
+                if (d != HoldDict) yield return d;
+            }
         }
 
         private void Starting(Ped me, int now)
@@ -325,7 +419,7 @@ namespace Hoodrich.Locations
             try
             {
                 ready = Models.Ready(new Model(BallName));
-                foreach (var d in Dicts) ready = ready && Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, d);
+                foreach (var d in Wanted()) ready = ready && Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, d);
             }
             catch { }
 
@@ -376,7 +470,8 @@ namespace Hoodrich.Locations
             }
 
             _mode = Mode.Off;
-            _haveRim = false;
+            _placing = _ringPlacing = false;
+            _hopUntil = 0;
             InputGuard.Swallow();
         }
 
@@ -387,7 +482,7 @@ namespace Hoodrich.Locations
 
         // ---- the ball in his hands ------------------------------------------------------------
 
-        /// <summary>The ball in his right hand -- the same ball every time -- and the ball-game idle on his arms.</summary>
+        /// <summary>The ball in his left hand -- the same ball every time -- and the ball-game idle on his arms.</summary>
         private void GiveBall(Ped me)
         {
             try
@@ -412,11 +507,7 @@ namespace Hoodrich.Locations
 
                 Function.Call(Hash.SET_ENTITY_VELOCITY, _ball.Handle, 0f, 0f, 0f);
 
-                var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, me.Handle, RightHand);
-                Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _ball.Handle, me.Handle, bone,
-                              0.14f, 0.02f, -0.03f, 0f, 0f, 0f,
-                              false, false, false, false, 2, true);
-
+                Attach(me);
                 Hold(me, true);
 
                 _mode = Mode.Holding;
@@ -427,6 +518,54 @@ namespace Hoodrich.Locations
                 Log.Debug("Hoops: could not put the ball in his hands: " + ex.Message);
                 Stop("The ball would not load. Try again in a moment.");
             }
+        }
+
+        /// <summary>The ball into his left hand, where his grip says.</summary>
+        private void Attach(Ped me)
+        {
+            if (_ball == null || !_ball.Exists()) return;
+
+            try
+            {
+                var bone = Function.Call<int>(Hash.GET_PED_BONE_INDEX, me.Handle, LeftHand);
+                Function.Call(Hash.ATTACH_ENTITY_TO_ENTITY, _ball.Handle, me.Handle, bone,
+                              _grip[0] * 0.01f, _grip[1] * 0.01f, _grip[2] * 0.01f, _grip[3], _grip[4], _grip[5],
+                              false, false, false, false, 2, true);
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// THE POSITIONER: the ball in his hand, moved and turned while he watches, a value at a
+        /// time -- D-pad up and down pick which, left and right move it, X for bigger steps, A or B
+        /// when it sits right. Kept in the ini as it goes. Michael asked to place it himself.
+        /// </summary>
+        private void BallPlacing(Ped me, int now)
+        {
+            Hold(me, false);
+
+            if (JustPressed(Control.PhoneCancel) || JustPressed(Control.PhoneSelect))
+            {
+                _placing = false;
+                Settings.Put("HandFit", BallName, Economy.Fit.Pack(_grip));
+                Log.Info("Hoops: the ball sits at " + Economy.Fit.Pack(_grip) + " in his left hand.");
+                Sound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                return;
+            }
+
+            if (JustPressed(Control.PhoneUp)) { _placeRow = (_placeRow + GripNames.Length - 1) % GripNames.Length; Sound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET"); }
+            if (JustPressed(Control.PhoneDown)) { _placeRow = (_placeRow + 1) % GripNames.Length; Sound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET"); }
+
+            var way = Down(Control.PhoneRight) ? 1 : Down(Control.PhoneLeft) ? -1 : 0;
+            if (way == 0 || now < _placeNext) return;
+
+            var step = _placeRow < 3 ? 0.5f : 5f;
+            if (Down(Control.Jump)) step *= 4f;
+
+            _grip[_placeRow] = (float)Math.Round((_grip[_placeRow] + way * step) * 100f) / 100f;
+            _placeNext = now + 80;
+
+            Attach(me);
         }
 
         /// <summary>The idle on his arms, put back if something took it off -- not every frame, which T-poses a man.</summary>
@@ -458,20 +597,37 @@ namespace Hoodrich.Locations
                 return;
             }
 
-            // Another way to shoot, kept for next time.
-            if (JustPressed(Control.PhoneLeft))
+            // The hoop he is looking at is the one he is shooting at.
+            _hoop = HoopToward(me.Position, Deg360(GameplayCamera.Rotation.Z));
+
+            // The builder's tools: the ball in his hand, the hoop's ring, and the other ways to shoot.
+            if (_dev)
             {
-                _style = (_style + 1) % Styles.Length;
-                SaveStyle();
-                Sound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
-                Banner(Shot.Name.ToUpperInvariant(), "D-pad left for another.", Color.White);
-                _bannerUntil = Game.GameTime + 1100;
+                if (JustPressed(Control.PhoneDown))
+                {
+                    _placing = true;
+                    _placeRow = 0;
+                    Sound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                    return;
+                }
+
+                if (JustPressed(Control.PhoneRight))
+                {
+                    StartRing(me);
+                    return;
+                }
+
+                if (JustPressed(Control.PhoneLeft))
+                {
+                    _style = (_style + 1) % Styles.Length;
+                    SaveStyle();
+                    Sound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                    Banner(Shot.Name.ToUpperInvariant(), "D-pad left for another.", Color.White);
+                    _bannerUntil = Game.GameTime + 1100;
+                }
             }
 
             if (!Down(Control.Attack) || now - _at < 250) return;
-
-            // The other hoop, if he has turned round to it; the one he had, if nothing else is there.
-            if (Math.Abs(AngleDiff(Deg360(GameplayCamera.Rotation.Z), Toward(GameplayCamera.Position, _rim))) > 60f) Aim(me, -1f, Vector3.Zero);
 
             _charge = 0f;
             _power = 0f;
@@ -501,67 +657,132 @@ namespace Hoodrich.Locations
             _aim = Deg360(GameplayCamera.Rotation.Z + _fine);
             Turn(me, _aim, dt);
 
-            Sweet(me);
+            _hoop = HoopToward(me.Position, _aim);
 
             if (!Down(Control.Attack)) Shoot(me);
         }
 
-        /// <summary>Where the ball leaves his hands: over him at the style's height, a hand in front along the aim.</summary>
-        private Vector3 From(Ped me, float aim) => me.Position + Vector3.WorldUp * Shot.Up + Dir(aim) * 0.25f;
-
         /// <summary>
-        /// The throw for a power, the way Street Golf throws for a swing: along the aim, on the arc
-        /// that carries to the rim, and as hard as the meter says. See Full.
+        /// Where the line starts: THE BALL IN HIS HAND, where it is right now. Michael asked for the
+        /// line to come from Franklin so it shows where the ball really goes; it started over his
+        /// head, where the ball was only going to be. Before there is a ball, over his head.
         /// </summary>
-        private static Vector3 Throw(float aim, float ideal, float arc, float power)
+        private Vector3 From(Ped me, float aim)
         {
-            var s = ideal * (1f + Spread * (power - Full));
-            var th = arc * (float)Math.PI / 180f;
-            return Dir(aim) * (s * (float)Math.Cos(th)) + Vector3.WorldUp * (s * (float)Math.Sin(th));
-        }
-
-        /// <summary>How far out a throw comes down through the rim's height, flat. Below nought if it never gets up to it.</summary>
-        private float Carry(Vector3 from, Vector3 v)
-        {
-            var dz = _rim.Z - from.Z;
-            var disc = v.Z * v.Z - 2f * Gravity * dz;
-            if (disc < 0f) return -1f;
-
-            var t = (v.Z + (float)Math.Sqrt(disc)) / Gravity;
-            return (float)Math.Sqrt(v.X * v.X + v.Y * v.Y) * t;
-        }
-
-        /// <summary>
-        /// The green on the meter: every power whose throw comes down through the rim from where he
-        /// stands, worked out, not guessed -- a sliver from three, a hand's width under the hoop.
-        /// </summary>
-        private void Sweet(Ped me)
-        {
-            _sweetLo = 2f;
-            _sweetHi = -1f;
-
-            var from = From(me, _aim);
-            float ideal, arc;
-            if (!Ideal(from, out ideal, out arc)) return;
-
-            var toward = Toward(from, _rim);
-            var target = Flat(_rim - from);
-
-            for (var p = 0f; p <= 1.0001f; p += 0.005f)
+            try
             {
-                var d = Carry(from, Throw(toward, ideal, arc, p));
-                if (d < 0f || Math.Abs(d - target) > MakeRadius - 0.04f) continue;
-
-                if (p < _sweetLo) _sweetLo = p;
-                if (p > _sweetHi) _sweetHi = p;
+                if (_ball != null && _ball.Exists() && Function.Call<bool>(Hash.IS_ENTITY_ATTACHED, _ball.Handle))
+                    return _ball.Position;
             }
+            catch { }
+
+            return me.Position + Vector3.WorldUp * Shot.Up + Dir(aim) * 0.25f;
         }
 
-        /// <summary>The pace and the arc that carry the ball from a point to the rim. See Solve.</summary>
-        private bool Ideal(Vector3 from, out float speed, out float arc)
+        /// <summary>
+        /// The flight, point by point, and where it ends -- coming down through the rim's height, or
+        /// at the floor. Every point is the flight's own curve at that moment, not a sum of steps:
+        /// the steps drifted, and the line came down 15 to 50 cm past where the ball did (worked
+        /// out on 2026-09-26), which on a rim 46 cm across is the whole shot.
+        /// </summary>
+        private List<Vector3> Fly(Vector3 from, Vector3 v, float floor, out Vector3 end, out bool down)
         {
-            Vector3 v;
-            return Solve(from, _rim, out v, out speed, out arc);
+            var pts = new List<Vector3> { from };
+            var prev = from;
+            end = from;
+            down = false;
+
+            var rim = Rim.Z;
+
+            for (var i = 1; i <= 160; i++)
+            {
+                var t = i * LineStep;
+                var next = At(from, v, t);
+
+                if (prev.Z > rim && next.Z <= rim && v.Z - Gravity * t < 0f)
+                {
+                    // Exactly where it comes down through the rim's height, not the nearest step.
+                    var disc = v.Z * v.Z - 2f * Gravity * (rim - from.Z);
+                    end = disc >= 0f ? At(from, v, (v.Z + (float)Math.Sqrt(disc)) / Gravity) : next;
+                    end.Z = rim;
+                    down = true;
+                    pts.Add(end);
+                    break;
+                }
+
+                if (next.Z < floor)
+                {
+                    end = next;
+                    down = true;
+                    pts.Add(next);
+                    break;
+                }
+
+                pts.Add(next);
+                prev = next;
+                end = next;
+            }
+
+            return pts;
+        }
+
+        /// <summary>Where a throw is, this long after it left.</summary>
+        private static Vector3 At(Vector3 from, Vector3 v, float t)
+        {
+            return from + v * t + Vector3.WorldUp * (-0.5f * Gravity * t * t);
+        }
+
+        /// <summary>How far out the ring comes down for a power. See ReachNear.</summary>
+        private static float Reach(float power)
+        {
+            var p = Clamp(power, 0f, 1f);
+            var slope = (ReachMid - ReachNear) / MidAt;
+
+            if (p <= MidAt) return ReachNear + slope * p;
+
+            // Past the court: on at the same pace, then quicker and quicker to the top.
+            var u = p - MidAt;
+            var top = 1f - MidAt;
+            var bend = (ReachFar - ReachMid - slope * top) / (top * top);
+            return ReachMid + slope * u + bend * u * u;
+        }
+
+        /// <summary>
+        /// The throw for a power along an aim: the ring that far out along it at the height of the
+        /// hoop he is shooting at, and the throw that comes down through it. How high the hoop
+        /// hangs is all of the hoop that goes into it.
+        /// </summary>
+        private bool Aimed(Vector3 from, float aim, float power, out Vector3 to, out Vector3 velocity)
+        {
+            to = from + Dir(aim) * Reach(power);
+            to.Z = Rim.Z;
+            return Launch(from, to, out velocity);
+        }
+
+        /// <summary>The hoop a heading points at: of the two rings, the one nearest that way from where he stands.</summary>
+        private int HoopToward(Vector3 from, float heading)
+        {
+            var best = _hoop;
+            var off = float.MaxValue;
+
+            for (var i = 0; i < _ring.Length; i++)
+            {
+                var d = Math.Abs(AngleDiff(heading, Toward(from, _ring[i])));
+                if (d >= off) continue;
+
+                off = d;
+                best = i;
+            }
+
+            return best;
+        }
+
+        /// <summary>How far, flat, to the nearer hoop's ring.</summary>
+        private float Nearest(Vector3 at)
+        {
+            var near = float.MaxValue;
+            foreach (var r in _ring) near = Math.Min(near, Flat(r - at));
+            return near;
         }
 
         private static void Turn(Ped me, float want, float dt)
@@ -582,14 +803,16 @@ namespace Hoodrich.Locations
 
         private void Shoot(Ped me)
         {
-            _good = _power >= _sweetLo && _power <= _sweetHi;
-            _from = Flat(_rim - me.Position);
-
-            // The throw, fixed now: the line he was looking at is the flight he gets.
+            // The throw, fixed now: where the line's ring was is where the ball comes down.
+            _lastPower = _power;
             _launchFrom = From(me, _aim);
-            float ideal, arc;
-            _launch = Ideal(_launchFrom, out ideal, out arc) ? Throw(_aim, ideal, arc, _power) : Vector3.Zero;
-            _three = _from > ThreeFrom;
+
+            if (!Aimed(_launchFrom, _aim, _power, out _launchTo, out _launch))
+            {
+                _launch = Vector3.Zero;
+                _launchTo = Vector3.Zero;
+            }
+
             _shotAt = me.Position;
 
             _shotStyle = _style;
@@ -597,8 +820,10 @@ namespace Hoodrich.Locations
 
             try
             {
-                // The legs jump, if this way does; the arms shoot, on the upper body over whatever the legs do.
-                if (s.Jump) Function.Call(Hash.TASK_JUMP, me.Handle, true, false, false);
+                // A little hop straight up, and the arms shooting on the upper body over it.
+                Function.Call(Hash.TASK_JUMP, me.Handle, true, false, false);
+                _hopUntil = Game.GameTime + HopMs;
+
                 Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, s.Dict, s.Clip, 8f, -8f, -1, 48, 0f, false, false, false);
                 _clipLive = true;
             }
@@ -607,6 +832,29 @@ namespace Hoodrich.Locations
             _released = false;
             _mode = Mode.Shooting;
             _at = Game.GameTime;
+        }
+
+        /// <summary>
+        /// THE LITTLE HOP. The game's jump carries him forward, and Michael asked for the shot's to
+        /// go "just up a bit": while it is on, nothing moves him along the ground, and he rises no
+        /// faster than HopUp -- a foot or so off the floor, straight up and straight down.
+        /// </summary>
+        private void Hop(Ped me, int now)
+        {
+            if (_hopUntil == 0) return;
+
+            if (now > _hopUntil)
+            {
+                _hopUntil = 0;
+                return;
+            }
+
+            try
+            {
+                var v = me.Velocity;
+                Function.Call(Hash.SET_ENTITY_VELOCITY, me.Handle, 0f, 0f, Math.Min(v.Z, HopUp));
+            }
+            catch { }
         }
 
         private void Shooting(Ped me, int now)
@@ -629,8 +877,9 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
-        /// Out of his hand and on its way, exactly as the line showed: from where the line began,
-        /// along his aim, as hard as the meter stood when he let go. Nothing steers it to the hoop.
+        /// Out of his hand and on its way, down through where the line's ring was when he let go.
+        /// The push has moved his hands since, so the throw is worked out again from where the
+        /// ball really is -- to the same point, never to the hoop.
         /// </summary>
         private void Release(Ped me)
         {
@@ -647,10 +896,11 @@ namespace Hoodrich.Locations
             {
                 Function.Call(Hash.DETACH_ENTITY, _ball.Handle, true, true);
 
-                // From where the line started, so the flight is the line to the letter.
-                var from = _launchFrom;
-                var v = _launch;
-                Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, _ball.Handle, from.X, from.Y, from.Z, false, false, false);
+                // From his hand, where the push has put it, down through the line's ring.
+                var from = _ball.Position;
+                Vector3 v;
+
+                if (_launchTo == Vector3.Zero || !Launch(from, _launchTo, out v)) v = _launch;
 
                 // Flown by the game, with nothing slowing it but the rim -- Street Golf's ball.
                 Function.Call(Hash.FREEZE_ENTITY_POSITION, _ball.Handle, false);
@@ -681,7 +931,10 @@ namespace Hoodrich.Locations
             _at = Game.GameTime;
         }
 
-        /// <summary>The ball in the air: through the rim from above is a basket, and the end of the flight is the verdict.</summary>
+        /// <summary>
+        /// The ball in the air: down through either hoop's ring is a basket -- the ring as placed,
+        /// nothing else -- and the end of the flight is the verdict.
+        /// </summary>
         private void Flying(int now)
         {
             if (_ball == null || !_ball.Exists())
@@ -698,19 +951,35 @@ namespace Hoodrich.Locations
             }
             catch { }
 
-            // Coming down through the rim's height: where, and whether that is inside the rim.
-            if (_prev.Z > _rim.Z && pos.Z <= _rim.Z)
+            for (var i = 0; i < _ring.Length; i++)
             {
-                var t = (_prev.Z - _rim.Z) / Math.Max(0.0001f, _prev.Z - pos.Z);
-                var at = _prev + (pos - _prev) * t;
+                var r = _ring[i];
+                if (!(_prev.Z > r.Z && pos.Z <= r.Z)) continue;
 
-                if (!_crossed)
+                // Where it came down through this ring's height, and whether that is inside the ring.
+                var t = (_prev.Z - r.Z) / Math.Max(0.0001f, _prev.Z - pos.Z);
+                var at = _prev + (pos - _prev) * t;
+                var off = Flat(at - r);
+
+                if (i == _hoop && !_crossed)
                 {
                     _crossed = true;
                     _cross = at;
+
+                    // How far the real flight came down from the line's ring. Nothing should come
+                    // between them but the game's air, so a steady gap here is a thing to put right.
+                    if (_launchTo != Vector3.Zero)
+                    {
+                        var aim = Flat3D(_launchTo - _launchFrom);
+                        aim *= 1f / Math.Max(0.01f, aim.Length());
+                        var gap = Flat3D(at - _launchTo);
+
+                        Log.Info("Hoops: the ball came down " + (Flat(gap) * 100f).ToString("0") + " cm from the line's ring (" +
+                                 (Vector3.Dot(gap, aim) * 100f).ToString("+0;-0;0") + " cm along the throw).");
+                    }
                 }
 
-                if (!_scored && Flat(at - _rim) <= MakeRadius) Made();
+                if (!_scored && off <= _ringSize[i]) Made(i, off);
             }
 
             _prev = pos;
@@ -722,25 +991,29 @@ namespace Hoodrich.Locations
             catch { }
 
             // A basket drops through the net before the next ball; a miss is called when it lands.
-            if (_scored && age > 1200 || !_scored && (still || age > 3200) || age > 4500) Verdict();
+            if (_scored && age > 1200 || !_scored && (still || age > 3600) || age > 5000) Verdict();
         }
 
-        private void Made()
+        private void Made(int hoop, float off)
         {
             _scored = true;
 
-            var points = _three ? 3 : 2;
+            var from = Flat(_ring[hoop] - _shotAt);
+            var three = from > ThreeFrom;
+            var points = three ? 3 : 2;
+
             _score += points;
             _made++;
             _streak++;
             if (_streak > _best) _best = _streak;
 
-            var head = !_touched ? (_three ? "SWISH -- THREE" : "SWISH") : _three ? "THREE" : "BUCKET";
+            var head = !_touched ? (three ? "SWISH -- THREE" : "SWISH") : three ? "THREE" : "BUCKET";
             var sub = "+" + points + (_streak > 1 ? " -- " + _streak + " in a row" : "") + ".  " + _score + " points.";
-            Banner(head, sub, _three ? Gold : Green);
+            Banner(head, sub, three ? Gold : Green);
 
             Sound("CHECKPOINT_PERFECT", "HUD_MINI_GAME_SOUNDSET");
-            Log.Info("Hoops: " + head + " from " + _from.ToString("0.0") + " m" + (_good ? ", in the green" : "") + ".");
+            Log.Info("Hoops: " + head + " through hoop " + (hoop + 1) + " from " + from.ToString("0.0") + " m, " +
+                     (off * 100f).ToString("0") + " cm off the middle of its ring.");
         }
 
         /// <summary>The shot called, and a word on why it missed -- short, long or wide is what the meter needs to know.</summary>
@@ -755,9 +1028,9 @@ namespace Hoodrich.Locations
                 if (!_crossed) why = "Short -- more on the meter.";
                 else
                 {
-                    // Where it came down through the rim's height, against where the rim is: along
-                    // the line from his hands to the rim, and either side of it.
-                    var line = Flat3D(_rim - _launchFrom);
+                    // Where it came down through the ring's height, against where the ring is: along
+                    // the line from his hands to it, and either side of it.
+                    var line = Flat3D(Rim - _launchFrom);
                     var reach = line.Length();
                     line *= 1f / Math.Max(0.01f, reach);
 
@@ -769,6 +1042,9 @@ namespace Hoodrich.Locations
                         : along < -0.25f ? "Short -- more on the meter."
                         : along > 0.25f ? "Long -- less on the meter."
                         : "Off the rim.";
+
+                    Log.Info("Hoops: missed hoop " + (_hoop + 1) + ", down through its height " +
+                             (Flat(_cross - Rim) * 100f).ToString("0") + " cm from the middle of its ring.");
                 }
 
                 Banner("MISS", why, Red);
@@ -779,294 +1055,16 @@ namespace Hoodrich.Locations
             _at = Game.GameTime;
         }
 
-        // ---- the hoops and their rims -----------------------------------------------------------
+        // ---- the rings, and the throw through one ----------------------------------------------
 
         /// <summary>
-        /// The hoop he is looking at -- or, when the camera is off it, the one the ring faces -- and
-        /// its rim. False when nothing like a backboard is down the court from him.
+        /// The throw that comes down through a point: at Arc, or steeper when the point is close and
+        /// high enough that Arc would only reach it on the way up -- a ball going up through a ring
+        /// is no basket. Street Golf's physics flies it without drag, so the sum is the flight.
         /// </summary>
-        private bool Aim(Ped me, float facing, Vector3 ring)
-        {
-            Vector3 rim;
-
-            if (!RimAhead(me, Deg360(GameplayCamera.Rotation.Z), out rim) &&
-                !(facing >= 0f && RimAhead(me, facing, out rim)))
-            {
-                if (facing < 0f) return false;
-
-                // No backboard answered from the ring: the rim where a regulation court has it
-                // from the free-throw line, 4.2 m down the court and 3.05 m up.
-                float ground;
-                var floor = Ground.Probe(ring + Vector3.WorldUp * 0.5f, out ground) ? ground : ring.Z - 1f;
-                rim = new Vector3(ring.X, ring.Y, floor + 3.05f) + Dir(facing) * 4.2f;
-
-                Log.Warn("Hoops: no backboard answered from the ring at " + ring + "; the rim is put where a " +
-                         "regulation court has it, at " + rim + ".");
-            }
-
-            _rim = rim;
-            _haveRim = true;
-            return true;
-        }
-
-        /// <summary>
-        /// THE HOOPS ARE THE MAP'S. The court's poles and backboards are built into the map rather
-        /// than props the game hands a script -- no prop_basketball_net stands on this court, which
-        /// is why the first build said there was no hoop -- so the hoop is found by looking for it.
-        /// Rays straight down the court from him at the heights a backboard hangs: the NEAREST flat
-        /// upright face turned back at him, at one depth over a run of heights, is the board. The
-        /// building behind the far hoop is further off than its board and is passed over.
-        /// </summary>
-        private bool RimAhead(Ped me, float heading, out Vector3 rim)
-        {
-            rim = Vector3.Zero;
-
-            try
-            {
-                var look = Dir(heading);
-                var at = me.Position;
-
-                float ground;
-                var floor = Ground.Probe(at + Vector3.WorldUp * 0.5f, out ground) ? ground : at.Z - 1f;
-
-                var hs = new List<float>();
-                var ds = new List<float>();
-                var ns = new List<Vector3>();
-
-                for (var h = floor + 2.2f; h <= floor + 5.0f; h += 0.1f)
-                {
-                    var from = new Vector3(at.X, at.Y, h);
-                    Vector3 where, normal;
-
-                    if (!Ray(from, from + look * HoopFind, me.Handle, out where, out normal)) continue;
-
-                    var n = Flat3D(normal);
-                    if (n.Length() < 0.85f) continue;
-                    n.Normalize();
-
-                    if (Vector3.Dot(n, -look) < 0.5f) continue;
-
-                    hs.Add(h);
-                    ds.Add(Vector3.Dot(where - from, look));
-                    ns.Add(n);
-                }
-
-                // The nearest group at one depth with a board's worth of height in it.
-                var order = new List<int>();
-                for (var i = 0; i < ds.Count; i++) order.Add(i);
-                order.Sort((a, b) => ds[a].CompareTo(ds[b]));
-
-                List<int> board = null;
-
-                foreach (var first in order)
-                {
-                    var group = new List<int>();
-                    float lo = float.MaxValue, hi = float.MinValue;
-
-                    foreach (var k in order)
-                    {
-                        if (ds[k] < ds[first] || ds[k] > ds[first] + 0.25f) continue;
-                        group.Add(k);
-                        if (hs[k] < lo) lo = hs[k];
-                        if (hs[k] > hi) hi = hs[k];
-                    }
-
-                    if (group.Count >= 4 && hi - lo >= 0.3f)
-                    {
-                        board = group;
-                        break;
-                    }
-                }
-
-                if (board == null) return false;
-
-                float depth = 0f, mid = 0f;
-                var facing = Vector3.Zero;
-
-                foreach (var k in board)
-                {
-                    depth += ds[k];
-                    mid += hs[k];
-                    facing += ns[k];
-                }
-
-                depth /= board.Count;
-                mid = mid / board.Count - floor;
-                facing.Normalize();
-
-                // Where the board is, on the floor under its face: every board is read once.
-                var o = new Vector3(at.X, at.Y, floor) + look * depth;
-                var key = Math.Round(o.X) + "," + Math.Round(o.Y);
-
-                if (_rims.TryGetValue(key, out rim)) return true;
-
-                if (!RimAt(o, facing, mid, me.Handle, out rim)) return false;
-
-                _rims[key] = rim;
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Hoops: could not look for the hoop: " + ex.Message);
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// The rim off its board: across the board at its middle for its edges and so its centre,
-        /// then up it either side of the centre for its bottom edge and its top. The rim is 15 cm
-        /// above the bottom edge and out from the face by the gap and its own radius, as a
-        /// regulation hoop is built.
-        /// </summary>
-        private static bool RimAt(Vector3 o, Vector3 toward, float mid, int ignore, out Vector3 rim)
-        {
-            rim = Vector3.Zero;
-
-            var side = new Vector3(toward.Y, -toward.X, 0f);
-            float left = float.MaxValue, right = float.MinValue;
-
-            for (var s = -1.6f; s <= 1.6f; s += 0.05f)
-            {
-                float along;
-                if (!Board(o, toward, side, s, mid, ignore, out along)) continue;
-
-                if (s < left) left = s;
-                if (s > right) right = s;
-            }
-
-            if (left > right) return false;
-
-            // A WALL IS NOT A BACKBOARD. Wider than the whole sweep, or running on down past the
-            // lowest a board hangs, it is the building behind the hoop -- which is what the far
-            // hoop's first reading was, and it put the rim two metres up.
-            if (right - left >= 3.0f)
-            {
-                Log.Info("Hoops: what is down the court is " + (right - left).ToString("0.0") + " m wide -- a wall, not a backboard.");
-                return false;
-            }
-
-            var centre = (left + right) * 0.5f;
-            var c = o + side * centre;
-
-            float low, high;
-            if (!Band(c, toward, side, ignore, out low, out high)) return false;
-
-            if (low <= 1.85f || high - low > 1.6f)
-            {
-                Log.Info("Hoops: what is down the court runs from " + low.ToString("0.00") + " to " + high.ToString("0.00") +
-                         " m up -- a wall, not a backboard.");
-                return false;
-            }
-
-            rim = c + toward * 0.38f + Vector3.WorldUp * (low + 0.15f);
-
-            Log.Info("Hoops: a backboard " + (right - left).ToString("0.00") + " m wide and " + (high - low).ToString("0.00") +
-                     " m tall, its bottom " + low.ToString("0.00") + " m up; the rim is at " + rim + ".");
-            return true;
-        }
-
-        /// <summary>
-        /// The board's bottom and top: rays two either side of its centre at a slice of heights,
-        /// each pair landing on its face. The longest unbroken run of those is the board.
-        /// </summary>
-        private static bool Band(Vector3 c, Vector3 toward, Vector3 side, int ignore, out float low, out float high)
-        {
-            low = high = 0f;
-
-            var rows = new List<float>();
-
-            for (var dz = 1.8f; dz <= 6.0f; dz += 0.08f)
-            {
-                float a, b;
-                if (!Board(c, toward, side, -0.4f, dz, ignore, out a)) continue;
-                if (!Board(c, toward, side, 0.4f, dz, ignore, out b)) continue;
-
-                rows.Add(dz);
-            }
-
-            int bestStart = -1, bestLen = 0;
-
-            for (var i = 0; i < rows.Count; )
-            {
-                var j = i + 1;
-                while (j < rows.Count && rows[j] - rows[j - 1] <= 0.12f) j++;
-
-                if (j - i > bestLen)
-                {
-                    bestLen = j - i;
-                    bestStart = i;
-                }
-
-                i = j;
-            }
-
-            if (bestLen < 4) return false;
-
-            low = rows[bestStart];
-            high = rows[bestStart + bestLen - 1];
-
-            return high - low >= 0.4f && high - low <= 2.5f;
-        }
-
-        /// <summary>
-        /// One ray at the board, from the court: whether it hit something upright ON the board's
-        /// face -- not the wall behind the far hoop, not the court, not the sky.
-        /// </summary>
-        private static bool Board(Vector3 o, Vector3 toward, Vector3 side, float s, float dz, int ignore, out float along)
-        {
-            along = 0f;
-
-            var a = o + toward * 3.5f + side * s + Vector3.WorldUp * dz;
-            var b = o - toward * 1.5f + side * s + Vector3.WorldUp * dz;
-
-            Vector3 where, normal;
-            if (!Ray(a, b, ignore, out where, out normal)) return false;
-
-            along = Vector3.Dot(where - o, toward);
-            return Math.Abs(along) <= 0.2f && Math.Abs(normal.Z) < 0.5f;
-        }
-
-        /// <summary>A ray into the map and anything standing, and where it hit and what way that faces.</summary>
-        private static bool Ray(Vector3 a, Vector3 b, int ignore, out Vector3 where, out Vector3 normal)
-        {
-            where = Vector3.Zero;
-            normal = Vector3.Zero;
-
-            try
-            {
-                // The map, anything standing, and GLASS: the far hoop's backboard is a glass one,
-                // and without the glass flag the rays went through it to the wall behind.
-                var ray = Function.Call<int>(Hash.START_EXPENSIVE_SYNCHRONOUS_SHAPE_TEST_LOS_PROBE,
-                                             a.X, a.Y, a.Z, b.X, b.Y, b.Z, 1 | 16 | 64, ignore, 7);
-
-                var hit = new OutputArgument();
-                var at = new OutputArgument();
-                var n = new OutputArgument();
-                var thing = new OutputArgument();
-
-                Function.Call<int>(Hash.GET_SHAPE_TEST_RESULT, ray, hit, at, n, thing);
-                if (!hit.GetResult<bool>()) return false;
-
-                where = at.GetResult<Vector3>();
-                normal = n.GetResult<Vector3>();
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// The throw that lands on a point: the speed at Arc degrees that carries the ball from one
-        /// point to the other, and a steeper arc if that one cannot get there. Street Golf's physics
-        /// flies it without drag, so the sum is the flight.
-        /// </summary>
-        private static bool Solve(Vector3 from, Vector3 to, out Vector3 velocity, out float speed, out float used)
+        private static bool Launch(Vector3 from, Vector3 to, out Vector3 velocity)
         {
             velocity = Vector3.Zero;
-            speed = 0f;
-            used = Arc;
 
             var d = to - from;
             var flat = Flat3D(d);
@@ -1074,20 +1072,135 @@ namespace Hoodrich.Locations
             if (dist < 0.05f) return false;
             flat *= 1f / dist;
 
-            foreach (var arc in new[] { Arc, 62f, 72f })
-            {
-                var th = arc * (float)Math.PI / 180f;
-                var c = (float)Math.Cos(th);
-                var denom = 2f * c * c * (dist * (float)Math.Tan(th) - d.Z);
-                if (denom <= 0.01f) continue;
+            // Past the top of the flight by the time it gets there: tan(arc) at least twice the
+            // climb over the distance, and a little over.
+            var need = (float)(Math.Atan2(2.2f * d.Z, dist) * 180.0 / Math.PI);
+            var arc = Math.Min(80f, Math.Max(Arc, need));
 
-                speed = (float)Math.Sqrt(Gravity * dist * dist / denom);
-                velocity = flat * (speed * c) + Vector3.WorldUp * (speed * (float)Math.Sin(th));
-                used = arc;
-                return true;
+            var th = arc * (float)Math.PI / 180f;
+            var c = (float)Math.Cos(th);
+            var denom = 2f * c * c * (dist * (float)Math.Tan(th) - d.Z);
+            if (denom <= 0.01f) return false;
+
+            var speed = (float)Math.Sqrt(Gravity * dist * dist / denom);
+            velocity = flat * (speed * c) + Vector3.WorldUp * (speed * (float)Math.Sin(th));
+            return true;
+        }
+
+        /// <summary>The rings where they were placed: Michael's own from the ini, and RingAt for everybody else.</summary>
+        private void LoadRings()
+        {
+            for (var i = 0; i < _ring.Length; i++)
+            {
+                _ring[i] = RingAt[i];
+                _ringSize[i] = RingWide[i];
+
+                try
+                {
+                    var parts = Settings.Read("Hoops", "Ring" + (i + 1), "").Split(',');
+                    if (parts.Length != 4) continue;
+
+                    var f = new float[4];
+                    var ok = true;
+
+                    for (var k = 0; k < 4 && ok; k++)
+                        ok = float.TryParse(parts[k].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out f[k]);
+
+                    if (!ok) continue;
+
+                    _ring[i] = new Vector3(f[0], f[1], f[2]);
+                    _ringSize[i] = Clamp(f[3], 0.08f, 1.2f);
+                }
+                catch { }
+            }
+        }
+
+        private static string Pack(Vector3 c, float size)
+        {
+            return string.Format(CultureInfo.InvariantCulture, "{0:0.000},{1:0.000},{2:0.000},{3:0.000}", c.X, c.Y, c.Z, size);
+        }
+
+        /// <summary>The ring placer up, on the ring of the hoop he is looking at.</summary>
+        private void StartRing(Ped me)
+        {
+            _ringPlacing = true;
+            _ringWho = _hoop;
+            _ringWas = _ring[_hoop];
+            _ringWasSize = _ringSize[_hoop];
+            _ringWait = true;
+
+            float ground;
+            _ringFloor = Ground.Probe(me.Position + Vector3.WorldUp * 0.5f, out ground) ? ground : me.Position.Z - 1f;
+
+            Sound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        /// <summary>
+        /// THE RING PLACER, for the developer tools: a flat ring on the hoop he is looking at, slid
+        /// about with the left stick the way the camera faces, up and down on the D-pad, and made
+        /// bigger and smaller on D-pad right and left -- X for four times as fast. A keeps it, in
+        /// the ini; B puts it back. Michael asked for a little hoop he could place right where the
+        /// ball needs to pass through, on 2026-09-26.
+        /// </summary>
+        private void RingPlacing(Ped me, float dt)
+        {
+            Hold(me, false);
+
+            var i = _ringWho;
+
+            if (JustPressed(Control.PhoneSelect))
+            {
+                _ringPlacing = false;
+
+                var text = Pack(_ring[i], _ringSize[i]);
+                Settings.Put("Hoops", "Ring" + (i + 1), text);
+                Log.Info("Hoops: hoop " + (i + 1) + "'s ring placed -- [Hoops] Ring" + (i + 1) + "=" + text +
+                         " (x, y, z, and from the middle to the edge).");
+
+                Sound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                return;
             }
 
-            return false;
+            if (JustPressed(Control.PhoneCancel))
+            {
+                _ringPlacing = false;
+                _ring[i] = _ringWas;
+                _ringSize[i] = _ringWasSize;
+                Sound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                return;
+            }
+
+            var step = (Down(Control.Jump) ? 4f : 1f) * dt;
+
+            float lx = 0f, ly = 0f;
+
+            try
+            {
+                lx = Function.Call<float>(Hash.GET_DISABLED_CONTROL_NORMAL, 0, (int)Control.MoveLeftRight);
+                ly = Function.Call<float>(Hash.GET_DISABLED_CONTROL_NORMAL, 0, (int)Control.MoveUpDown);
+            }
+            catch { }
+
+            if (Math.Abs(lx) < 0.12f) lx = 0f;
+            if (Math.Abs(ly) < 0.12f) ly = 0f;
+
+            // Across the court the way the camera faces: up on the stick is away from him.
+            var ahead = Dir(GameplayCamera.Rotation.Z);
+            var right = new Vector3(ahead.Y, -ahead.X, 0f);
+            var c = _ring[i] + (right * lx - ahead * ly) * (RingSlide * step);
+
+            if (Down(Control.PhoneUp)) c.Z += RingSlide * step;
+            if (Down(Control.PhoneDown)) c.Z -= RingSlide * step;
+
+            _ring[i] = c;
+
+            // D-pad right brought the placer up; it grows the ring once it has been let go.
+            if (_ringWait && !Down(Control.PhoneRight)) _ringWait = false;
+
+            var size = _ringSize[i];
+            if (!_ringWait && Down(Control.PhoneRight)) size += RingGrow * step;
+            if (Down(Control.PhoneLeft)) size -= RingGrow * step;
+            _ringSize[i] = Clamp(size, 0.08f, 1.2f);
         }
 
         // ---- the buttons ----------------------------------------------------------------------
@@ -1113,6 +1226,7 @@ namespace Hoodrich.Locations
                 Game.DisableControlThisFrame(Control.Jump);
                 Game.DisableControlThisFrame(Control.Cover);
                 Game.DisableControlThisFrame(Control.Enter);
+                Game.DisableControlThisFrame(Control.CharacterWheel);
 
                 if (!planted) return;
 
@@ -1139,7 +1253,20 @@ namespace Hoodrich.Locations
 
         private void Draw(Ped me, int now)
         {
-            var dist = _rim == Vector3.Zero ? 0f : Flat(_rim - me.Position);
+            // The placers have the screen to themselves.
+            if (_placing)
+            {
+                PlacingScreen();
+                return;
+            }
+
+            if (_ringPlacing)
+            {
+                RingScreen();
+                return;
+            }
+
+            var dist = Flat(Rim - me.Position);
             var three = dist > ThreeFrom;
 
             if (_banner.Length > 0 && now < _bannerUntil)
@@ -1151,7 +1278,7 @@ namespace Hoodrich.Locations
             else if (_mode == Mode.Holding)
             {
                 Help.ShowThisFrame(dist.ToString("0.0") + " m -- " + (three ? "a three" : "a two") +
-                                   ". Look at the hoop, hold ~INPUT_ATTACK~ and let go in the green.");
+                                   ". Hold ~INPUT_ATTACK~, and let go when the ring is on the hoop.");
             }
 
             Den.Bars.Draw("SCORE", _score.ToString(), Gold,
@@ -1160,28 +1287,34 @@ namespace Hoodrich.Locations
 
             if (_mode == Mode.Holding)
             {
-                Den.Buttons.Show(Control.Attack, "Hold to shoot",
-                                 Control.PhoneLeft, "Shot: " + Shot.Name,
-                                 Control.PhoneCancel, "Put the ball down");
+                if (_dev)
+                    Den.Buttons.Show(Control.Attack, "Hold to shoot",
+                                     Control.PhoneCancel, "Put the ball down",
+                                     Control.PhoneRight, "Place the hoop",
+                                     Control.PhoneDown, "Place the ball",
+                                     Control.PhoneLeft, "Shot: " + Shot.Name);
+                else
+                    Den.Buttons.Show(Control.Attack, "Hold to shoot",
+                                     Control.PhoneCancel, "Put the ball down");
             }
+
+            // Where a basket has to go through, for somebody placing them.
+            if (_dev) Rings(-1);
 
             if (_mode == Mode.Holding || _mode == Mode.Charging) Line(me);
             if (_mode == Mode.Charging) Meter();
         }
 
         /// <summary>
-        /// STREET GOLF'S AIM LINE, and only that. The flight worked out the way the shot will go and
-        /// drawn as a thin ribbon turned to the camera: holding the ball, a full shot (the top of
-        /// the meter's green) along where he is aiming; with the meter running, the shot as the
-        /// meter stands, so it stretches and shrinks as the meter plays. It ends in a ring where
-        /// the ball comes down through the rim's height -- over the rim, and it goes in. Nothing
-        /// changes colour for looking at the hoop, and nothing steers the ball to it: Michael asked
-        /// for it just like the golf on 2026-09-26.
+        /// STREET GOLF'S AIM LINE, and only that: the flight worked out the way the shot will go,
+        /// out of the ball in his hand, drawn as a thin ribbon turned to the camera. Holding the
+        /// ball, the last shot's power along where he is looking; with the meter running, the shot
+        /// as the meter stands, so it stretches and shrinks as the meter plays. It ends in a ring
+        /// where the ball comes down through the hoop's height: on the hoop, and it goes in.
+        /// Nothing changes colour for looking at the hoop, and nothing steers the ball to it.
         /// </summary>
         private void Line(Ped me)
         {
-            if (!_haveRim) return;
-
             try
             {
                 var eye = GameplayCamera.Position;
@@ -1189,49 +1322,22 @@ namespace Hoodrich.Locations
                 var aim = charging ? _aim : Deg360(GameplayCamera.Rotation.Z + _fine);
                 var from = From(me, aim);
 
-                float ideal, arc;
-                if (!Ideal(from, out ideal, out arc)) return;
+                Vector3 to, v;
+                if (!Aimed(from, aim, charging ? _power : _lastPower, out to, out v)) return;
 
-                var v = Throw(aim, ideal, arc, charging ? _power : Full);
-
-                var floor = me.Position.Z - 1f;
-                var pos = from;
-                var end = from;
-                var down = false;
-                var pts = new List<Vector3> { from };
-
-                for (var i = 0; i < 120; i++)
-                {
-                    var next = pos + v * LineStep;
-                    v.Z -= Gravity * LineStep;
-
-                    // Coming down through the rim's height: the end of the line.
-                    if (pos.Z > _rim.Z && next.Z <= _rim.Z && v.Z < 0f)
-                    {
-                        var t = (pos.Z - _rim.Z) / Math.Max(0.0001f, pos.Z - next.Z);
-                        end = pos + (next - pos) * t;
-                        down = true;
-                        pts.Add(end);
-                        break;
-                    }
-
-                    if (next.Z < floor)
-                    {
-                        end = next;
-                        down = true;
-                        pts.Add(next);
-                        break;
-                    }
-
-                    pts.Add(next);
-                    pos = next;
-                    end = next;
-                }
+                Vector3 end;
+                bool down;
+                var pts = Fly(from, v, me.Position.Z - 1f, out end, out down);
 
                 // Street Golf's own inks: cool while he lines it up, warm while the meter runs.
                 var ink = charging ? Color.FromArgb(70, 255, 220, 120) : Color.FromArgb(45, 190, 235, 200);
 
-                for (var i = 0; i + 1 < pts.Count; i++) Segment(pts[i], pts[i + 1], 0.03f, ink, eye);
+                // No more than fifty pieces, however far the throw: a heave down the street is a
+                // hundred steps of the sum.
+                var stride = Math.Max(1, (pts.Count + 49) / 50);
+
+                for (var i = 0; i + 1 < pts.Count; i += stride)
+                    Segment(pts[i], pts[Math.Min(i + stride, pts.Count - 1)], 0.03f, ink, eye);
 
                 if (down)
                 {
@@ -1359,9 +1465,83 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>The positioner on screen: the six values, the one being moved in gold, and the buttons.</summary>
+        private void PlacingScreen()
+        {
+            Help.ShowThisFrame("Placing the ball. D-pad up and down picks, left and right moves it, X for bigger steps, A when it sits right.");
+
+            var rows = new object[GripNames.Length * 3];
+
+            for (var i = 0; i < GripNames.Length; i++)
+            {
+                // Bottom up, so the first is at the top.
+                var at = (GripNames.Length - 1 - i) * 3;
+                rows[at] = GripNames[i].ToUpperInvariant();
+                rows[at + 1] = _grip[i].ToString(i < 3 ? "0.0" : "0") + (i < 3 ? " cm" : " deg");
+                rows[at + 2] = i == _placeRow ? Gold : Color.White;
+            }
+
+            Den.Bars.Draw(rows);
+
+            Den.Buttons.Show(Control.PhoneSelect, "Done",
+                             Control.PhoneRight, "Move it",
+                             Control.PhoneDown, "Which",
+                             Control.Jump, "Bigger steps");
+        }
+
+        /// <summary>The ring placer on screen: the ring, bright, and how high and how wide it is.</summary>
+        private void RingScreen()
+        {
+            var i = _ringWho;
+
+            Help.ShowThisFrame("Hoop " + (i + 1) + "'s ring: the ball has to come down through it. Left stick slides it, " +
+                               "D-pad up and down raises it, D-pad left and right sizes it, X for faster.");
+
+            Den.Bars.Draw("HEIGHT", (_ring[i].Z - _ringFloor).ToString("0.00") + " m", Color.White,
+                          "ACROSS", (_ringSize[i] * 200f).ToString("0") + " cm", Color.White,
+                          "HOOP", (i + 1).ToString(), Gold);
+
+            Den.Buttons.Show(Control.PhoneSelect, "Keep it",
+                             Control.PhoneCancel, "Put it back");
+
+            Rings(i);
+        }
+
+        /// <summary>Both rings, for somebody with the developer tools: the one being placed bright, the other faint.</summary>
+        private void Rings(int bright)
+        {
+            for (var i = 0; i < _ring.Length; i++)
+            {
+                var ink = i == bright ? Color.FromArgb(255, 255, 200, 60) : Color.FromArgb(150, 255, 255, 255);
+                Circle(_ring[i], _ringSize[i], ink);
+            }
+        }
+
+        /// <summary>A flat ring of lines, and a short line down its middle where the net hangs.</summary>
+        private static void Circle(Vector3 c, float r, Color ink)
+        {
+            const int sides = 32;
+
+            try
+            {
+                var prev = c + new Vector3(r, 0f, 0f);
+
+                for (var k = 1; k <= sides; k++)
+                {
+                    var a = k * 2.0 * Math.PI / sides;
+                    var next = c + new Vector3((float)Math.Cos(a) * r, (float)Math.Sin(a) * r, 0f);
+                    Function.Call(Hash.DRAW_LINE, prev.X, prev.Y, prev.Z, next.X, next.Y, next.Z, (int)ink.R, (int)ink.G, (int)ink.B, (int)ink.A);
+                    prev = next;
+                }
+
+                Function.Call(Hash.DRAW_LINE, c.X, c.Y, c.Z, c.X, c.Y, c.Z - 0.4f, (int)ink.R, (int)ink.G, (int)ink.B, (int)ink.A);
+            }
+            catch { }
+        }
+
         /// <summary>
-        /// Street Golf's meter: sixteen cells, amber on the way up, green inside the sweet spot,
-        /// red past it, and a white tick where the power is.
+        /// Street Golf's meter: sixteen cells filling amber, a white tick where the power is, and
+        /// under it how far out the ring is. No green on it: where the hoop is, is his to judge.
         /// </summary>
         private void Meter()
         {
@@ -1373,29 +1553,19 @@ namespace Hoodrich.Locations
             const float gap = 0.002f;
 
             var cw = (width - gap * (cells - 1)) / cells;
-            var lo = _sweetHi < 0f ? 2f : _sweetLo;
-            var hi = _sweetHi < 0f ? 2f : _sweetHi;
-            var sweet = _power >= lo && _power <= hi;
 
             UI.Draw.Rect(left + width * 0.5f, y, width + 0.012f, h + 0.012f, Color.FromArgb(150, 0, 0, 0));
 
             for (var c = 0; c < cells; c++)
             {
                 var f0 = c / (float)cells;
-                var f1 = (c + 1) / (float)cells;
                 var x = left + c * (cw + gap) + cw * 0.5f;
-                var zone = f1 > lo && f0 < hi;
 
-                var fill = _power >= f1 ? 1f : _power > f0 ? (_power - f0) / (f1 - f0) : 0f;
-                Color ink;
-
-                if (fill > 0f) ink = sweet ? Green : f0 >= hi ? Red : Gold;
-                else ink = zone ? Color.FromArgb(150, 114, 204, 114) : Track;
-
-                UI.Draw.Rect(x, y, cw, h, ink);
+                UI.Draw.Rect(x, y, cw, h, _power > f0 ? Gold : Track);
             }
 
             UI.Draw.Rect(left + width * Clamp(_power, 0f, 1f), y, 0.002f, h + 0.012f, Color.White);
+            UI.Draw.Text(Reach(_power).ToString("0.0") + " m", 0.5f, y + 0.014f, 0.35f, Color.White, UI.Draw.FontBody, true, true, false);
         }
 
         private void Banner(string big, string small, Color ink)

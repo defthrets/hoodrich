@@ -3640,7 +3640,8 @@ namespace Hoodrich
                 // this side that has to ask. See Core.Larder and Core.Mind.
                 _phone.Busy = () => _talk.IsOpen || Aiming()
                                     || Core.Larder.TheirMenuIsUp
-                                    || Core.Mind.IsBusy;
+                                    || Core.Mind.IsBusy
+                                    || _hoops.Placing;
 
                 pages.ShowVanillaPhone = () => _phone.ShowVanillaPhone();
 
