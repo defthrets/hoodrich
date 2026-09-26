@@ -77,6 +77,15 @@ namespace Hoodrich.Parkview
             /// </summary>
             public float Bare;
 
+            /// <summary>
+            /// How near he has to be for the scene to go up at all -- "near: 12" in the Note -- in
+            /// place of the scenery range, and it comes down as soon as he is that far off again.
+            /// For a room inside a real building on the street: Apartment E2 is a flat in West
+            /// Vinewood, and its things built from two hundred metres off would be standing in
+            /// memory every time he drove past. 0 is the ordinary range.
+            /// </summary>
+            public float Near;
+
             /// <summary>The map props Bare has hidden, let back when the scene comes down; and the ones it left, by where they are.</summary>
             public readonly List<Spooner.Hidden> Bared = new List<Spooner.Hidden>();
             public readonly HashSet<string> BareLeft = new HashSet<string>();
@@ -951,6 +960,9 @@ namespace Hoodrich.Parkview
                 try { scene.Sits = Pairs(path, "sits:"); }
                 catch { /* nobody sits */ }
 
+                try { scene.Near = NearReach(path); }
+                catch { /* the ordinary range */ }
+
                 try { scene.Bare = BareReach(path, scene.Radius); }
                 catch { /* the map's own props stay */ }
 
@@ -1128,13 +1140,17 @@ namespace Hoodrich.Parkview
 
                 var gap = Math.Min(here.DistanceTo(scene.Centre), him.DistanceTo(scene.Centre)) - scene.Radius;
 
+                // Near: only when he is at it, and down again the moment he is not. See Near.
+                var reach = scene.Near > 0f ? Math.Min(range, scene.Near) : range;
+                var slack = scene.Near > 0f ? Math.Min(DropSlack, scene.Near) : DropSlack;
+
                 if (!scene.Built)
                 {
-                    if (gap <= range) Begin(scene);
+                    if (gap <= reach) Begin(scene);
                     continue;
                 }
 
-                if (gap > range + DropSlack) Drop(scene, false);
+                if (gap > reach + slack) Drop(scene, false);
             }
         }
 
@@ -7920,6 +7936,24 @@ namespace Hoodrich.Parkview
 
         /// <summary>Anything this big one way may be the room itself -- a wall, a floor -- and is left.</summary>
         private const float BareBiggest = 6f;
+
+        /// <summary>"near: 12" in a scene's Note: how near he has to be for it to go up. 0 when it says nothing.</summary>
+        private static float NearReach(string path)
+        {
+            foreach (var line in Clauses(path))
+            {
+                if (!line.StartsWith("near:", StringComparison.OrdinalIgnoreCase)) continue;
+
+                float reach;
+                if (float.TryParse(line.Substring(5).Trim(), System.Globalization.NumberStyles.Float,
+                                   System.Globalization.CultureInfo.InvariantCulture, out reach) && reach > 0f)
+                {
+                    return reach;
+                }
+            }
+
+            return 0f;
+        }
 
         /// <summary>"bare" in a scene's Note, as a reach: the number after it, or a little past the scene's own edge.</summary>
         private static float BareReach(string path, float radius)
