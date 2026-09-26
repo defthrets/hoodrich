@@ -313,6 +313,156 @@ namespace Hoodrich.Supply
         /// </summary>
         private float _owedPurity = 1f;
 
+        // ---- where he comes to ---------------------------------------------------
+
+        /// <summary>
+        /// Somewhere he brings it: where the car stops and which way it points, where he is aimed
+        /// first so he comes in facing that way, where he stands to deal, where the box is carried
+        /// (and on through a door, where there is one), where he drives off to, and what the
+        /// notice says it is in once it lands.
+        /// </summary>
+        private sealed class Site
+        {
+            public string Name;
+            public Vector3 Park;
+            public float Heading;
+            public Vector3 Approach;
+            public Vector3 Meet;
+            public float MeetHeading;
+            public bool MeetBySide;
+            public Vector3 Door;
+            public bool HasInside;
+            public Vector3 Inside;
+            public Vector3 LeaveFor;
+            public string Landed;
+        }
+
+        /// <summary>
+        /// PARKVIEW, as well as the house. Michael stood where a car pulls in along the block on
+        /// 2026-09-26 -- "lets also make it we can order drugs from the phone whilst at parkview
+        /// as well and the dealer will pull up at any of these locations, the same as they would
+        /// at Denise's" -- and read each off the HUD facing the way the car should point. He comes
+        /// to whichever is nearest you. There is no house beside them -- the room you rent is a
+        /// long walk from every one -- so he takes the box out of the boot, carries it a couple of
+        /// metres onto the pavement and puts it down, and it is in the stash: one pile of product,
+        /// two places to stand next to it. See Core.Home.
+        /// </summary>
+        private static readonly float[][] ParkviewKerbs =
+        {
+            new[] { -244.699f, -1700.141f, 33.444f, 352.619f },
+            new[] { -242.516f, -1605.347f, 33.630f, 345.410f },
+            new[] { -236.582f, -1572.666f, 33.785f, 313.967f },
+            new[] { -212.379f, -1494.955f, 31.275f, 128.691f }
+        };
+
+        /// <summary>How near one of them counts as being at Parkview.</summary>
+        private const float ParkviewReach = 75f;
+
+        /// <summary>At a kerb nobody measured a meeting spot on: how far behind the car's middle he stands, how far out to the side, and how far on the box is carried.</summary>
+        private const float MeetBehind = 2.0f;
+        private const float MeetBeside = 2.2f;
+        private const float CarryOff = 1.6f;
+
+        /// <summary>Where this run is going. Set when the text is sent; the house if nothing has been.</summary>
+        private Site _site;
+
+        private Site Here => _site ?? (_site = Denises());
+
+        /// <summary>The house, from the numbers above -- its door as Main set it.</summary>
+        private Site Denises()
+        {
+            var west = ParkSpot;
+            west.X -= ApproachWest;
+
+            return new Site
+            {
+                Name = "the house",
+                Park = ParkSpot,
+                Heading = ParkHeading,
+                Approach = west,
+                Meet = MeetSpot,
+                MeetHeading = MeetHeading,
+                Door = HouseDoor,
+                HasInside = true,
+                Inside = DropInside,
+                LeaveFor = LeaveFor,
+                Landed = "in the house"
+            };
+        }
+
+        /// <summary>The Parkview kerb nearest a spot, or null when none is within reach of it.</summary>
+        private static Site Parkview(Vector3 at)
+        {
+            float[] best = null;
+            var bestD = ParkviewReach;
+
+            foreach (var k in ParkviewKerbs)
+            {
+                var gap = at.DistanceTo(new Vector3(k[0], k[1], k[2]));
+                if (gap >= bestD) continue;
+
+                bestD = gap;
+                best = k;
+            }
+
+            if (best == null) return null;
+
+            var heading = best[3];
+            var ahead = Forward(heading);
+
+            // The HUD reads where a man stands; a car sits half a metre lower, and the mark is
+            // put on the ground properly anyway. See ParkOnTheMark.
+            var park = new Vector3(best[0], best[1], best[2] - 0.5f);
+
+            return new Site
+            {
+                Name = "Parkview",
+                Park = park,
+                Heading = heading,
+                Approach = park - ahead * ApproachWest,
+                Meet = park,
+                MeetHeading = heading,
+                MeetBySide = true,
+                Door = park,
+                HasInside = false,
+                LeaveFor = park + ahead * 150f,
+                Landed = "in the stash"
+            };
+        }
+
+        /// <summary>The way a heading points, on the ground.</summary>
+        private static Vector3 Forward(float heading)
+        {
+            var r = heading * (float)(Math.PI / 180.0);
+            return new Vector3(-(float)Math.Sin(r), (float)Math.Cos(r), 0f);
+        }
+
+        /// <summary>
+        /// Where he stands at a kerb nobody measured a spot on: beside the boot, on whichever side
+        /// of the car you are, facing you -- and where the box goes down, a couple of metres further
+        /// out on that side. At the house the spot was read off the HUD and this leaves it alone.
+        /// Worked out once, when he gets out, so he does not circle the car after you.
+        /// </summary>
+        private void MeetFor(Site site)
+        {
+            if (site == null || !site.MeetBySide || _car == null || !_car.Exists()) return;
+
+            var player = Game.Player.Character;
+            var you = player != null && player.Exists() ? player.Position : _car.Position;
+
+            var ahead = Forward(_car.Heading);
+            var right = new Vector3(ahead.Y, -ahead.X, 0f);
+            var toYou = you - _car.Position;
+            var side = toYou.X * right.X + toYou.Y * right.Y >= 0f ? 1f : -1f;
+
+            var meet = _car.Position - ahead * MeetBehind + right * (side * MeetBeside);
+            meet.Z = site.Park.Z + 0.5f;
+
+            site.Meet = meet;
+            site.MeetHeading = Function.Call<float>(Hash.GET_HEADING_FROM_VECTOR_2D, you.X - meet.X, you.Y - meet.Y);
+            site.Door = meet + right * (side * CarryOff);
+        }
+
         /// <summary>Set by Main: the house, its door, and what is kept there.</summary>
         public Func<bool> AtHome;
         public Vector3 HouseDoor;
@@ -557,11 +707,17 @@ namespace Hoodrich.Supply
         /// <summary>Returns a player-facing refusal, or null once the call is placed.</summary>
         public string Call(DealerDef def)
         {
-            // Only from the house. He is bringing a box to a door, so there has to be a door --
-            // and it stops the plug being a vending machine you carry around with you.
-            if (AtHome != null && !AtHome())
+            // FROM THE HOUSE, OR FROM PARKVIEW. He brings a box somewhere he knows -- Denise's
+            // kerb, or the nearest of the four on the block -- and it stops the plug being a
+            // vending machine you carry around with you.
+            var me = Game.Player.Character;
+            var site = AtHome == null || AtHome()
+                ? Denises()
+                : me != null && me.Exists() ? Parkview(me.Position) : null;
+
+            if (site == null)
             {
-                return "Text him from the house. He ain't meeting you on a corner.";
+                return "Text him from the house or from Parkview. He ain't meeting you on a corner.";
             }
 
             if (def == null) return "No such contact.";
@@ -571,6 +727,7 @@ namespace Hoodrich.Supply
             if (player == null || !player.Exists() || !player.IsAlive) return "Not right now.";
             if (player.IsInVehicle()) return "Get out of the car to text him.";
 
+            _site = site;
             _def = def;
             State = DeliveryState.Texting;
             _stateSince = Game.GameTime;
@@ -586,7 +743,7 @@ namespace Hoodrich.Supply
             PlayPhoneAnimation(player);
 
             Notify.Ticker("~y~Texting " + def.Name + "...~s~");
-            Log.Info("Texted " + def.Id + " for a delivery.");
+            Log.Info("Texted " + def.Id + " for a delivery to " + _site.Name + ".");
             return null;
         }
 
@@ -1184,7 +1341,7 @@ namespace Hoodrich.Supply
             // that would have given him his second leg only fired if the PLAYER moved, which
             // standing at your own front door you never do.
             var toSpot = _car != null && _car.Exists()
-                ? _car.Position.DistanceTo(ParkSpot)
+                ? _car.Position.DistanceTo(Here.Park)
                 : float.MaxValue;
 
             if (toSpot > ArriveDistance)
@@ -1312,8 +1469,7 @@ namespace Hoodrich.Supply
                     return;
                 }
 
-                var west = ParkSpot;
-                west.X -= ApproachWest;
+                var west = Here.Approach;
 
                 var road = World.GetNextPositionOnStreet(west);
                 if (road == Vector3.Zero || road.DistanceTo(west) > 25f) road = west;
@@ -1324,7 +1480,7 @@ namespace Hoodrich.Supply
                 _stillSince = 0;
                 _lastRetask = 0;
     
-                DriveTo(ParkSpot);
+                DriveTo(Here.Park);
 
                 Log.Warn("Delivery: he was wedged, so he has been put back on the road.");
             }
@@ -1362,7 +1518,7 @@ namespace Hoodrich.Supply
                 // The same distance arrival is judged on. These used to disagree -- arrival at
                 // nine metres, tidy-up only within six -- so a car that stopped in between was
                 // announced as parked and then deliberately left where it was.
-                var near = _car.Position.DistanceTo(ParkSpot) < ArriveDistance;
+                var near = _car.Position.DistanceTo(Here.Park) < ArriveDistance;
 
                 if (watched && near)
                 {
@@ -1377,8 +1533,8 @@ namespace Hoodrich.Supply
 
                 if (watched) return;
 
-                _car.Position = ParkSpot;
-                _car.Heading = ParkHeading;
+                _car.Position = Here.Park;
+                _car.Heading = Here.Heading;
 
                 Function.Call(Hash.SET_VEHICLE_ON_GROUND_PROPERLY, _car.Handle);
 
@@ -1435,14 +1591,13 @@ namespace Hoodrich.Supply
         {
             var here = Game.Player.Character != null && Game.Player.Character.Exists()
                 ? Game.Player.Character.Position
-                : ParkSpot;
+                : Here.Park;
 
             var carAt = _car != null && _car.Exists() ? _car.Position : here;
 
-            if (carAt.DistanceTo(ParkSpot) > ApproachWest * 1.4f)
+            if (carAt.DistanceTo(Here.Park) > ApproachWest * 1.4f)
             {
-                var west = ParkSpot;
-                west.X -= ApproachWest;
+                var west = Here.Approach;
 
                 try
                 {
@@ -1464,7 +1619,7 @@ namespace Hoodrich.Supply
                 return west;
             }
 
-            return ParkSpot;
+            return Here.Park;
         }
 
         /// <summary>
@@ -1483,7 +1638,7 @@ namespace Hoodrich.Supply
             _owedGrams = grams;
             _owedPurity = _def == null ? 1f : _def.Purity;
 
-            _dropSpot = HouseDoor;
+            _dropSpot = Here.Door;
             _wentIn = false;
             _carryingSince = Game.GameTime;
             _carrying = false;
@@ -1520,7 +1675,7 @@ namespace Hoodrich.Supply
             }
 
             Speak(Mine(_def == null ? null : _def.CarryLines, PortCarry, CornerCarry), TakingLines);
-            Notify.Ticker("~g~He's bringing it in.~s~");
+            Notify.Ticker(Here.HasInside ? "~g~He's bringing it in.~s~" : "~g~He's getting it out the boot.~s~");
         }
 
         /// <summary>
@@ -1720,10 +1875,10 @@ namespace Hoodrich.Supply
             // arriving at it sends him on through the house to the store room. Everything
             // below this only runs once he is at the far spot or has run out of time getting
             // there, so the drop, the payment and the line he says are all unchanged.
-            if (!_wentIn)
+            if (!_wentIn && Here.HasInside)
             {
                 _wentIn = true;
-                _dropSpot = DropInside;
+                _dropSpot = Here.Inside;
                 _carryingSince = Game.GameTime - (CarryTimeoutMs - WalkInMs);
                 _nextNudge = 0;
 
@@ -1744,7 +1899,7 @@ namespace Hoodrich.Supply
             // package still belongs in the store room -- so the box goes to the spot rather
             // than to wherever he happens to be stood. It is the one thing here that has to
             // work whatever the door does.
-            _dropSpot = DropInside;
+            if (Here.HasInside) _dropSpot = Here.Inside;
 
             PutDown();
             Land();
@@ -1908,8 +2063,8 @@ namespace Hoodrich.Supply
                         // than a point measured off the kerb he is stood on. Same reason as
                         // before -- a car that wanders the moment the door shuts turns round in
                         // somebody's driveway -- but now it is somewhere rather than "that way".
-                        var away = World.GetNextPositionOnStreet(LeaveFor);
-                        if (away == Vector3.Zero) away = LeaveFor;
+                        var away = World.GetNextPositionOnStreet(Here.LeaveFor);
+                        if (away == Vector3.Zero) away = Here.LeaveFor;
 
                         // He is PARKED ON A STREET, so the nearest street node to a point up the
                         // road is very often a node he is nearly on top of already -- and the
@@ -1971,7 +2126,7 @@ namespace Hoodrich.Supply
                 : taken.ToString("0.#") + "g";
 
             Notify.Important("~g~Delivered.~s~ " + landed +
-                             " in the house" +
+                             " " + Here.Landed +
                              (_owedPurity < 0.999f
                                  ? ", ~y~" + Economy.Stash.Percent(_owedPurity) + "%~s~."
                                  : "."));
@@ -2518,6 +2673,7 @@ namespace Hoodrich.Supply
                 Speak(Mine(_def == null ? null : _def.ArrivalLines, PortArrival, CornerArrival), TakingLines);
 
                 OpenTheBoot();
+                MeetFor(Here);
                 WalkToMeet();
             }
 
@@ -2597,8 +2753,8 @@ namespace Hoodrich.Supply
                 Stagger(true);
 
                 Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, _driver.Handle,
-                              MeetSpot.X, MeetSpot.Y, MeetSpot.Z,
-                              1.2f, 20000, 0.5f, 0, MeetHeading);
+                              Here.Meet.X, Here.Meet.Y, Here.Meet.Z,
+                              1.2f, 20000, 0.5f, 0, Here.MeetHeading);
             }
             catch
             {
@@ -2616,7 +2772,7 @@ namespace Hoodrich.Supply
 
             try
             {
-                if (_driver.Position.DistanceTo(MeetSpot) <= MeetDrift) return;
+                if (_driver.Position.DistanceTo(Here.Meet) <= MeetDrift) return;
                 if (Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, _driver.Handle, WalkTask)) return;
 
                 WalkToMeet();
@@ -2718,7 +2874,7 @@ namespace Hoodrich.Supply
                     // to get to first: he drives to the departure point, which is out on a
                     // through road, and wanders from THERE where wandering works.
                     Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, 0, _car.Handle,
-                                  LeaveFor.X, LeaveFor.Y, LeaveFor.Z,
+                                  Here.LeaveFor.X, Here.LeaveFor.Y, Here.LeaveFor.Z,
                                   CruiseSpeed, 0, _car.Model.Hash, DriveStyle, 12f, StraightLineAt);
 
                     Function.Call(Hash.TASK_VEHICLE_DRIVE_WANDER, 0, _car.Handle,
