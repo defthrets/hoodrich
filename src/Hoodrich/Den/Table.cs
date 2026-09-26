@@ -621,7 +621,9 @@ namespace Hoodrich.Den
                 if (_movie == 0) _movie = Function.Call<int>(Hash.REQUEST_SCALEFORM_MOVIE, "instructional_buttons");
                 if (_movie == 0 || !Function.Call<bool>(Hash.HAS_SCALEFORM_MOVIE_LOADED, _movie)) return;
 
-                var key = string.Join("|", pairs);
+                // Drawn again when he changes device, not only when the labels change: picking up a
+                // pad left the keyboard's arrows in the row until something else changed it.
+                var key = (UI.Draw.OnPad ? "pad|" : "keys|") + string.Join("|", pairs);
 
                 if (key != _shown)
                 {

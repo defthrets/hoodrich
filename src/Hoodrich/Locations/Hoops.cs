@@ -18,10 +18,10 @@ namespace Hoodrich.Locations
     ///
     /// THE THROW IS FREE. The aim is where the camera looks. Hold the button and the meter runs
     /// up and back down, and the line out of his hand stretches with it -- from a lob at his feet
-    /// to a heave forty metres down the street. Let go, and the ball comes down through the ring
-    /// at the end of the line. Nothing works a basket out for him and nothing steers the ball at
-    /// the hoop: Michael asked for it that way, "if you wanted to throw it really far you could,
-    /// dont try and make it swosh".
+    /// to a heave forty metres down the street. The line fades out before it comes down, so it
+    /// gives the idea and never the spot. Nothing works a basket out for him and nothing steers
+    /// the ball at the hoop: Michael asked for it that way, "if you wanted to throw it really far
+    /// you could, dont try and make it swosh".
     ///
     /// A BASKET IS THE BALL DOWN THROUGH THE HOOP'S RING. Each hoop has a flat ring where its rim
     /// is, and the ball's middle has to come down through it. The hoops are built into the map,
@@ -31,7 +31,7 @@ namespace Hoodrich.Locations
     /// the ball) and written into RingAt for everybody else.
     ///
     /// THE SHOT is both hands pushing the ball up from the chest -- the up half of Raise the Roof,
-    /// played quick and cut after the one push -- over a little hop straight up. The game has no
+    /// played quick and cut after the one push, on the arms only: no jump. The game has no
     /// basketball of its own and no clip of anybody shooting one; that is the nearest thing to it.
     /// Held, he carries the ball in the ball-game idle that goes with it.
     ///
@@ -85,9 +85,8 @@ namespace Hoodrich.Locations
 
         /// <summary>
         /// THE WAYS TO SHOOT. The set shot is the one Michael kept, and the only one a player gets;
-        /// the other two stay for the developer tools to try, D-pad left on the court. Every one is
-        /// played over the little hop (see Hop), so the two-hand jumper went: it was the set shot
-        /// with a jump.
+        /// the other two stay for the developer tools to try, D-pad left on the court. All of them
+        /// are the arms only: the two-hand jumper went with the jump, which Michael had taken off.
         /// </summary>
         private static readonly Style[] Styles =
         {
@@ -150,8 +149,8 @@ namespace Hoodrich.Locations
         private const float ChargeTime = 2.6f;
 
         /// <summary>
-        /// THE METER AGAINST HOW FAR: the ring at the end of the line comes down this far out from
-        /// the ball -- a metre on an empty meter, ten at MidAt of it, forty at the top. Even and
+        /// THE METER AGAINST HOW FAR: the throw comes down through the hoop's height this far out
+        /// from the ball -- a metre on an empty meter, ten at MidAt of it, forty at the top. Even and
         /// slow across a court, where a rim's width is all there is to hit, and quicker past it for
         /// the heave down the street. It is the distance that is shared out along the meter, not
         /// Street Golf's pace: pace for power put the whole court in the first sliver of it.
@@ -170,13 +169,6 @@ namespace Hoodrich.Locations
         /// when it gets to the ring's height, never going up through it. See Launch.
         /// </summary>
         private const float Arc = 52f;
-
-        /// <summary>
-        /// THE LITTLE HOP under every shot: the game's own jump, rising no faster than this -- about
-        /// a foot off the floor -- and going nowhere along the ground, for this long. See Hop.
-        /// </summary>
-        private const float HopUp = 2.4f;
-        private const int HopMs = 900;
 
         /// <summary>How fast the ring placer slides a ring and grows it, a second; X for four times that.</summary>
         private const float RingSlide = 0.2f;
@@ -215,7 +207,7 @@ namespace Hoodrich.Locations
         private Vector3 _launchFrom;
         private Vector3 _launch;
 
-        /// <summary>Where the line's ring was when he let go: the ball comes down through it. See Release.</summary>
+        /// <summary>Where the line was going when he let go -- down through the hoop's height. See Release.</summary>
         private Vector3 _launchTo;
 
         /// <summary>The shot's clip is still on his arms, to be sped up and cut short. See ShotClip.</summary>
@@ -230,9 +222,6 @@ namespace Hoodrich.Locations
         private bool _crossed;
         private Vector3 _cross;
         private Vector3 _prev;
-
-        /// <summary>The hop is on until then. See Hop.</summary>
-        private int _hopUntil;
 
         /// <summary>The ring placer: whose ring, how it was before, and the floor it is measured from.</summary>
         private bool _ringPlacing;
@@ -290,7 +279,6 @@ namespace Hoodrich.Locations
 
             HoldTheButtons(_mode == Mode.Charging || _mode == Mode.Shooting || Placing);
             ShotClip(me);
-            Hop(me, now);
 
             switch (_mode)
             {
@@ -381,7 +369,6 @@ namespace Hoodrich.Locations
             _score = _streak = _shots = _made = 0;
             _fine = 0f;
             _ringPlacing = false;
-            _hopUntil = 0;
             _banner = "";
             _mode = Mode.Starting;
             _at = Game.GameTime;
@@ -465,7 +452,6 @@ namespace Hoodrich.Locations
 
             _mode = Mode.Off;
             _ringPlacing = false;
-            _hopUntil = 0;
             InputGuard.Swallow();
         }
 
@@ -685,7 +671,7 @@ namespace Hoodrich.Locations
             return from + v * t + Vector3.WorldUp * (-0.5f * Gravity * t * t);
         }
 
-        /// <summary>How far out the ring comes down for a power. See ReachNear.</summary>
+        /// <summary>How far out the throw comes down for a power. See ReachNear.</summary>
         private static float Reach(float power)
         {
             var p = Clamp(power, 0f, 1f);
@@ -701,7 +687,7 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
-        /// The throw for a power along an aim: the ring that far out along it at the height of the
+        /// The throw for a power along an aim: the point that far out along it at the height of the
         /// hoop he is shooting at, and the throw that comes down through it. How high the hoop
         /// hangs is all of the hoop that goes into it.
         /// </summary>
@@ -738,6 +724,19 @@ namespace Hoodrich.Locations
             return near;
         }
 
+        /// <summary>The hoop whose ring is nearest, flat.</summary>
+        private int NearestHoop(Vector3 at)
+        {
+            var best = 0;
+
+            for (var i = 1; i < _ring.Length; i++)
+            {
+                if (Flat(_ring[i] - at) < Flat(_ring[best] - at)) best = i;
+            }
+
+            return best;
+        }
+
         private static void Turn(Ped me, float want, float dt)
         {
             try
@@ -756,7 +755,7 @@ namespace Hoodrich.Locations
 
         private void Shoot(Ped me)
         {
-            // The throw, fixed now: where the line's ring was is where the ball comes down.
+            // The throw, fixed now: where the line was going is where the ball comes down.
             _lastPower = _power;
             _launchFrom = From(me, _aim);
 
@@ -773,10 +772,8 @@ namespace Hoodrich.Locations
 
             try
             {
-                // A little hop straight up, and the arms shooting on the upper body over it.
-                Function.Call(Hash.TASK_JUMP, me.Handle, true, false, false);
-                _hopUntil = Game.GameTime + HopMs;
-
+                // The arms only, on the upper body: no jump under them. Michael had the hop in and
+                // out again on 2026-09-26 -- "no jump on the animation just do the hands".
                 Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, s.Dict, s.Clip, 8f, -8f, -1, 48, 0f, false, false, false);
                 _clipLive = true;
             }
@@ -785,29 +782,6 @@ namespace Hoodrich.Locations
             _released = false;
             _mode = Mode.Shooting;
             _at = Game.GameTime;
-        }
-
-        /// <summary>
-        /// THE LITTLE HOP. The game's jump carries him forward, and Michael asked for the shot's to
-        /// go "just up a bit": while it is on, nothing moves him along the ground, and he rises no
-        /// faster than HopUp -- a foot or so off the floor, straight up and straight down.
-        /// </summary>
-        private void Hop(Ped me, int now)
-        {
-            if (_hopUntil == 0) return;
-
-            if (now > _hopUntil)
-            {
-                _hopUntil = 0;
-                return;
-            }
-
-            try
-            {
-                var v = me.Velocity;
-                Function.Call(Hash.SET_ENTITY_VELOCITY, me.Handle, 0f, 0f, Math.Min(v.Z, HopUp));
-            }
-            catch { }
         }
 
         private void Shooting(Ped me, int now)
@@ -830,7 +804,7 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
-        /// Out of his hand and on its way, down through where the line's ring was when he let go.
+        /// Out of his hand and on its way, down through where the line was going when he let go.
         /// The push has moved his hands since, so the throw is worked out again from where the
         /// ball really is -- to the same point, never to the hoop.
         /// </summary>
@@ -849,7 +823,7 @@ namespace Hoodrich.Locations
             {
                 Function.Call(Hash.DETACH_ENTITY, _ball.Handle, true, true);
 
-                // From his hand, where the push has put it, down through the line's ring.
+                // From his hand, where the push has put it, down through where the line was going.
                 var from = _ball.Position;
                 Vector3 v;
 
@@ -857,7 +831,7 @@ namespace Hoodrich.Locations
 
                 // Flown by the game with nothing slowing it, so it flies the line to the letter.
                 // Street Golf's ball had a touch of drag, and with it every shot came down 30 to
-                // 55 cm short of the line's ring (the log, 2026-09-26). Nought now.
+                // 55 cm short of where the line was going (the log, 2026-09-26). Nought now.
                 Function.Call(Hash.FREEZE_ENTITY_POSITION, _ball.Handle, false);
                 Function.Call(Hash.SET_ENTITY_COLLISION, _ball.Handle, true, true);
                 Function.Call(Hash.ACTIVATE_PHYSICS, _ball.Handle);
@@ -921,7 +895,7 @@ namespace Hoodrich.Locations
                     _crossed = true;
                     _cross = at;
 
-                    // How far the real flight came down from the line's ring. Nothing should come
+                    // How far the real flight came down from where the line was going. Nothing should come
                     // between them but the game's air, so a steady gap here is a thing to put right.
                     if (_launchTo != Vector3.Zero)
                     {
@@ -929,7 +903,7 @@ namespace Hoodrich.Locations
                         aim *= 1f / Math.Max(0.01f, aim.Length());
                         var gap = Flat3D(at - _launchTo);
 
-                        Log.Info("Hoops: the ball came down " + (Flat(gap) * 100f).ToString("0") + " cm from the line's ring (" +
+                        Log.Info("Hoops: the ball came down " + (Flat(gap) * 100f).ToString("0") + " cm from where the line was going (" +
                                  (Vector3.Dot(gap, aim) * 100f).ToString("+0;-0;0") + " cm along the throw).");
                     }
                 }
@@ -1075,13 +1049,17 @@ namespace Hoodrich.Locations
             return string.Format(CultureInfo.InvariantCulture, "{0:0.000},{1:0.000},{2:0.000},{3:0.000}", c.X, c.Y, c.Z, size);
         }
 
-        /// <summary>The ring placer up, on the ring of the hoop he is looking at.</summary>
+        /// <summary>
+        /// The ring placer up, on the ring of the hoop NEAREST him. It took the one he was looking
+        /// at, and under hoop 1 looking up the court that was hoop 2, twenty metres off: the ring
+        /// he was moving was out of sight, and the one beside him never moved (2026-09-26).
+        /// </summary>
         private void StartRing(Ped me)
         {
             _ringPlacing = true;
-            _ringWho = _hoop;
-            _ringWas = _ring[_hoop];
-            _ringWasSize = _ringSize[_hoop];
+            _ringWho = NearestHoop(me.Position);
+            _ringWas = _ring[_ringWho];
+            _ringWasSize = _ringSize[_ringWho];
             _ringWait = true;
 
             float ground;
@@ -1091,7 +1069,7 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
-        /// THE RING PLACER, for the developer tools: a flat ring on the hoop he is looking at, slid
+        /// THE RING PLACER, for the developer tools: a flat ring on the hoop nearest him, slid
         /// about with the left stick the way the camera faces, up and down on the D-pad, and made
         /// bigger and smaller on D-pad right and left -- X for four times as fast. A keeps it, in
         /// the ini; B puts it back. Michael asked for a little hoop he could place right where the
@@ -1227,7 +1205,7 @@ namespace Hoodrich.Locations
             else if (_mode == Mode.Holding)
             {
                 Help.ShowThisFrame(dist.ToString("0.0") + " m -- " + (three ? "a three" : "a two") +
-                                   ". Hold ~INPUT_ATTACK~, and let go when the ring is on the hoop.");
+                                   ". Hold ~INPUT_ATTACK~, and let go when the arc looks right.");
             }
 
             Den.Bars.Draw("SCORE", _score.ToString(), Gold,
@@ -1239,7 +1217,7 @@ namespace Hoodrich.Locations
                 if (_dev)
                     Den.Buttons.Show(Control.Attack, "Hold to shoot",
                                      Control.PhoneCancel, "Put the ball down",
-                                     Control.PhoneRight, "Place the hoop",
+                                     Control.PhoneRight, "Place the near hoop",
                                      Control.PhoneLeft, "Shot: " + Shot.Name);
                 else
                     Den.Buttons.Show(Control.Attack, "Hold to shoot",
@@ -1254,11 +1232,12 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
-        /// STREET GOLF'S AIM LINE, and only that: the flight worked out the way the shot will go,
-        /// out of the ball in his hand, drawn as a thin ribbon turned to the camera. Holding the
-        /// ball, the last shot's power along where he is looking; with the meter running, the shot
-        /// as the meter stands, so it stretches and shrinks as the meter plays. It ends in a ring
-        /// where the ball comes down through the hoop's height: on the hoop, and it goes in.
+        /// STREET GOLF'S AIM LINE, faded: the flight worked out the way the shot will go, out of the
+        /// ball in his hand, drawn as a thin ribbon turned to the camera -- and gone to nothing by
+        /// the top of the throw. Holding the ball, the last shot's power along where he is looking;
+        /// with the meter running, the shot as the meter stands, so it rises and stretches as the
+        /// meter plays. Michael asked for the idea of where the ball goes and not the spot, on
+        /// 2026-09-26: the ring it used to end in sat exactly where the ball would come down.
         /// Nothing changes colour for looking at the hoop, and nothing steers the ball to it.
         /// </summary>
         private void Line(Ped me)
@@ -1273,25 +1252,23 @@ namespace Hoodrich.Locations
                 Vector3 to, v;
                 if (!Aimed(from, aim, charging ? _power : _lastPower, out to, out v)) return;
 
-                Vector3 end;
-                bool down;
-                var pts = Fly(from, v, me.Position.Z - 1f, out end, out down);
+                var pts = Fly(from, v, me.Position.Z - 1f, out _, out _);
 
                 // Street Golf's own inks: cool while he lines it up, warm while the meter runs.
                 var ink = charging ? Color.FromArgb(70, 255, 220, 120) : Color.FromArgb(45, 190, 235, 200);
 
-                // No more than fifty pieces, however far the throw: a heave down the street is a
-                // hundred steps of the sum.
-                var stride = Math.Max(1, (pts.Count + 49) / 50);
+                // The first part of the flight only, fading as it goes, and never more than thirty
+                // pieces however far the throw.
+                var shown = Math.Max(2, (int)(pts.Count * LineShown));
+                var stride = Math.Max(1, (shown + 29) / 30);
 
-                for (var i = 0; i + 1 < pts.Count; i += stride)
-                    Segment(pts[i], pts[Math.Min(i + stride, pts.Count - 1)], 0.03f, ink, eye);
-
-                if (down)
+                for (var i = 0; i + 1 < shown; i += stride)
                 {
-                    Function.Call(Hash.DRAW_MARKER, 25, end.X, end.Y, end.Z + 0.02f,
-                                  0f, 0f, 0f, 0f, 0f, 0f, 0.45f, 0.45f, 0.45f,
-                                  255, 225, 140, 90, false, false, 2, false, 0, 0, false);
+                    var left = 1f - i / (float)shown;
+                    var a = (int)(ink.A * left);
+                    if (a < 2) break;
+
+                    Segment(pts[i], pts[Math.Min(i + stride, pts.Count - 1)], 0.03f, Color.FromArgb(a, ink.R, ink.G, ink.B), eye);
                 }
             }
             catch
@@ -1335,6 +1312,9 @@ namespace Hoodrich.Locations
 
         /// <summary>How far apart in time the line's points are worked out.</summary>
         private const float LineStep = 0.03f;
+
+        /// <summary>How much of the flight the line shows before it has faded to nothing: the rise and the top of it.</summary>
+        private const float LineShown = 0.55f;
 
         /// <summary>
         /// One piece of the line: a thin quad turned to face the camera, the way Street Golf draws
@@ -1418,8 +1398,8 @@ namespace Hoodrich.Locations
         {
             var i = _ringWho;
 
-            Help.ShowThisFrame("Hoop " + (i + 1) + "'s ring: the ball has to come down through it. Left stick slides it, " +
-                               "D-pad up and down raises it, D-pad left and right sizes it, X for faster.");
+            Help.ShowThisFrame("Hoop " + (i + 1) + "'s ring, the one nearest you: the ball has to come down through it. " +
+                               "Left stick slides it, D-pad up and down raises it, D-pad left and right sizes it, X for faster.");
 
             Den.Bars.Draw("HEIGHT", (_ring[i].Z - _ringFloor).ToString("0.00") + " m", Color.White,
                           "ACROSS", (_ringSize[i] * 200f).ToString("0") + " cm", Color.White,
@@ -1464,8 +1444,8 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
-        /// Street Golf's meter: sixteen cells filling amber, a white tick where the power is, and
-        /// under it how far out the ring is. No green on it: where the hoop is, is his to judge.
+        /// Street Golf's meter: sixteen cells filling amber, and a white tick where the power is. No
+        /// green on it and no distance under it: where the ball goes is his to judge.
         /// </summary>
         private void Meter()
         {
@@ -1489,7 +1469,6 @@ namespace Hoodrich.Locations
             }
 
             UI.Draw.Rect(left + width * Clamp(_power, 0f, 1f), y, 0.002f, h + 0.012f, Color.White);
-            UI.Draw.Text(Reach(_power).ToString("0.0") + " m", 0.5f, y + 0.014f, 0.35f, Color.White, UI.Draw.FontBody, true, true, false);
         }
 
         private void Banner(string big, string small, Color ink)
