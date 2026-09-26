@@ -60,8 +60,44 @@ namespace Hoodrich.Locations
 
         private const string HoldDict = "anim@sports@ballgame@handball@";
         private const string HoldClip = "ball_idle";
-        private const string ShotDict = "weapons@projectile@";
-        private const string ShotClip = "throw_h_fb_stand";
+        /// <summary>
+        /// One way to shoot: the clip, on the upper body; whether the legs jump under it; how far
+        /// through it the ball goes; and how high over him the ball is when it does.
+        /// </summary>
+        private sealed class Style
+        {
+            public string Name;
+            public string Dict;
+            public string Clip;
+            public bool Jump;
+            public float Release;
+            public float Up;
+        }
+
+        /// <summary>
+        /// THE WAYS TO SHOOT, picked on the court with D-pad left and remembered. The game has no
+        /// basketball of its own and no clip of anybody shooting one, and the first build's jump
+        /// with the grenade throw on top looked, in Michael's word, jank. So there are four of the
+        /// nearest things the game has, and he keeps the one that looks right: both hands pushing
+        /// the ball up from the chest, with a jump or without -- the up half of Raise the Roof --
+        /// the high throw with a jump, and the medium throw without one.
+        /// </summary>
+        private static readonly Style[] Styles =
+        {
+            new Style { Name = "Set shot", Dict = "anim@mp_player_intupperraise_the_roof", Clip = "enter", Jump = false, Release = 0.55f, Up = 1.2f },
+            new Style { Name = "Two-hand jumper", Dict = "anim@mp_player_intupperraise_the_roof", Clip = "enter", Jump = true, Release = 0.5f, Up = 1.5f },
+            new Style { Name = "Jump shot", Dict = "weapons@projectile@", Clip = "throw_h_fb_stand", Jump = true, Release = 0.36f, Up = 1.5f },
+            new Style { Name = "Push shot", Dict = "weapons@projectile@", Clip = "throw_m_fb_stand", Jump = false, Release = 0.34f, Up = 1.2f }
+        };
+
+        /// <summary>Every clip set a game asks for, and lets go of at the end.</summary>
+        private static readonly string[] Dicts = { HoldDict, "anim@mp_player_intupperraise_the_roof", "weapons@projectile@" };
+
+        private int _style;
+        private int _shotStyle;
+        private bool _styleRead;
+
+        private Style Shot => Styles[_style];
 
         /// <summary>How near the spot to be offered a game, and how far the ring is drawn from.</summary>
         private const float OfferReach = 1.3f;
@@ -93,12 +129,8 @@ namespace Hoodrich.Locations
         /// <summary>The three-point line, from the middle of the rim over the floor.</summary>
         private const float ThreeFrom = 6.75f;
 
-        /// <summary>How high above him the ball leaves the hand, at the top of the jump.</summary>
-        private const float ReleaseUp = 1.5f;
-
-        /// <summary>The ball goes when the throw is this far through, or this long after it began.</summary>
-        private const float ReleasePhase = 0.36f;
-        private const int ReleaseMs = 480;
+        /// <summary>The ball goes when the clip is its style's way through, or this long after it began.</summary>
+        private const int ReleaseMs = 520;
 
         private const float Gravity = 9.8f;
 
@@ -242,9 +274,14 @@ namespace Hoodrich.Locations
             // Asked for now and let go at the end: the only things this ever loads.
             try
             {
-                Function.Call(Hash.REQUEST_ANIM_DICT, HoldDict);
-                Function.Call(Hash.REQUEST_ANIM_DICT, ShotDict);
+                foreach (var d in Dicts) Function.Call(Hash.REQUEST_ANIM_DICT, d);
                 Models.Ready(new Model(BallName));
+
+                if (!_styleRead)
+                {
+                    _styleRead = true;
+                    _style = ReadStyle();
+                }
             }
             catch { /* asked again while it waits */ }
 
@@ -262,9 +299,8 @@ namespace Hoodrich.Locations
 
             try
             {
-                ready = Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, HoldDict) &&
-                        Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, ShotDict) &&
-                        Models.Ready(new Model(BallName));
+                ready = Models.Ready(new Model(BallName));
+                foreach (var d in Dicts) ready = ready && Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, d);
             }
             catch { }
 
@@ -298,8 +334,7 @@ namespace Hoodrich.Locations
             {
                 if (me != null && me.Exists()) Function.Call(Hash.CLEAR_PED_SECONDARY_TASK, me.Handle);
                 Den.Buttons.Drop();
-                Function.Call(Hash.REMOVE_ANIM_DICT, HoldDict);
-                Function.Call(Hash.REMOVE_ANIM_DICT, ShotDict);
+                foreach (var d in Dicts) Function.Call(Hash.REMOVE_ANIM_DICT, d);
                 new Model(BallName).MarkAsNoLongerNeeded();
             }
             catch { }
@@ -398,6 +433,16 @@ namespace Hoodrich.Locations
                 return;
             }
 
+            // Another way to shoot, kept for next time.
+            if (JustPressed(Control.PhoneLeft))
+            {
+                _style = (_style + 1) % Styles.Length;
+                SaveStyle();
+                Sound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+                Banner(Shot.Name.ToUpperInvariant(), "D-pad left for another.", Color.White);
+                _bannerUntil = Game.GameTime + 1100;
+            }
+
             if (!Down(Control.Attack) || now - _at < 250) return;
 
             // The other hoop, if he has turned round to it; the one he had, if nothing else is there.
@@ -431,7 +476,7 @@ namespace Hoodrich.Locations
         /// <summary>Where the green is on the meter from where he stands: the power that reaches the rim.</summary>
         private void Sweet(Ped me)
         {
-            var from = me.Position + Vector3.WorldUp * ReleaseUp;
+            var from = me.Position + Vector3.WorldUp * Shot.Up;
             var flat = Flat(_rim - me.Position);
 
             Vector3 v;
@@ -474,11 +519,14 @@ namespace Hoodrich.Locations
             _three = _from > ThreeFrom;
             _shotAt = me.Position;
 
+            _shotStyle = _style;
+            var s = Styles[_shotStyle];
+
             try
             {
-                // The legs jump; the arms throw, over the jump.
-                Function.Call(Hash.TASK_JUMP, me.Handle, true, false, false);
-                Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, ShotDict, ShotClip, 8f, -8f, -1, 48, 0f, false, false, false);
+                // The legs jump, if this way does; the arms shoot, on the upper body over whatever the legs do.
+                if (s.Jump) Function.Call(Hash.TASK_JUMP, me.Handle, true, false, false);
+                Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, s.Dict, s.Clip, 8f, -8f, -1, 48, 0f, false, false, false);
             }
             catch { }
 
@@ -495,12 +543,13 @@ namespace Hoodrich.Locations
 
             try
             {
-                if (Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, me.Handle, ShotDict, ShotClip, 3))
-                    phase = Function.Call<float>(Hash.GET_ENTITY_ANIM_CURRENT_TIME, me.Handle, ShotDict, ShotClip);
+                var s = Styles[_shotStyle];
+                if (Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, me.Handle, s.Dict, s.Clip, 3))
+                    phase = Function.Call<float>(Hash.GET_ENTITY_ANIM_CURRENT_TIME, me.Handle, s.Dict, s.Clip);
             }
             catch { }
 
-            if (phase < ReleasePhase && now - _at < ReleaseMs) return;
+            if (phase < Styles[_shotStyle].Release && now - _at < ReleaseMs) return;
 
             Release(me);
         }
@@ -1019,10 +1068,171 @@ namespace Hoodrich.Locations
             if (_mode == Mode.Holding)
             {
                 Den.Buttons.Show(Control.Attack, "Hold to shoot",
+                                 Control.PhoneLeft, "Shot: " + Shot.Name,
                                  Control.PhoneCancel, "Put the ball down");
             }
 
+            if (_mode == Mode.Holding || _mode == Mode.Charging) Line(me);
             if (_mode == Mode.Charging) Meter();
+        }
+
+        /// <summary>
+        /// STREET GOLF'S AIM LINE: the flight worked out the way the shot will be, and drawn as a
+        /// thin ribbon turned to the camera. Holding the ball, it is the shot in the green along
+        /// where he is looking; with the meter running, it is the shot as the meter stands now.
+        /// It ends where it comes down through the rim's height, and it is green when that is
+        /// through the rim. Michael asked for the golf line on the basketball on 2026-09-26.
+        /// </summary>
+        private void Line(Ped me)
+        {
+            if (!_haveRim) return;
+
+            try
+            {
+                var eye = GameplayCamera.Position;
+                var aim = Deg360(GameplayCamera.Rotation.Z);
+                var from = me.Position + Vector3.WorldUp * Shot.Up + Dir(aim) * 0.25f;
+                var onLine = Math.Abs(AngleDiff(aim, Toward(eye, _rim))) <= OnLine;
+                var charging = _mode == Mode.Charging;
+                var good = charging && _sweet >= 0f && Math.Abs(_power - _sweet) <= _half;
+
+                Vector3 v;
+                float speed;
+
+                if (!((!charging || good) && onLine && Solve(from, _rim, out v, out speed)))
+                {
+                    var p = charging ? _power : (_sweet >= 0f ? _sweet : 0.5f);
+                    var th = Arc * (float)Math.PI / 180f;
+                    speed = SpeedLow + (SpeedHigh - SpeedLow) * p;
+                    v = Dir(onLine ? Toward(from, _rim) : aim) * (speed * (float)Math.Cos(th)) +
+                        Vector3.WorldUp * (speed * (float)Math.Sin(th));
+                }
+
+                var floor = me.Position.Z - 1f;
+                var pos = from;
+                var end = from;
+                var through = false;
+                var pts = new List<Vector3> { from };
+
+                for (var i = 0; i < 90; i++)
+                {
+                    var next = pos + v * LineStep;
+                    v.Z -= Gravity * LineStep;
+
+                    // Coming down through the rim's height: the end of the line, in or out.
+                    if (pos.Z > _rim.Z && next.Z <= _rim.Z && v.Z < 0f)
+                    {
+                        var t = (pos.Z - _rim.Z) / Math.Max(0.0001f, pos.Z - next.Z);
+                        end = pos + (next - pos) * t;
+                        through = Flat(end - _rim) <= MakeRadius;
+                        pts.Add(end);
+                        break;
+                    }
+
+                    if (next.Z < floor) break;
+
+                    pts.Add(next);
+                    pos = next;
+                    end = next;
+                }
+
+                var ink = through ? Color.FromArgb(150, 114, 204, 114)
+                        : charging ? Color.FromArgb(120, 240, 200, 80)
+                        : Color.FromArgb(80, 255, 255, 255);
+
+                for (var i = 0; i + 1 < pts.Count; i++) Segment(pts[i], pts[i + 1], 0.025f, ink, eye);
+
+                if (through)
+                {
+                    Function.Call(Hash.DRAW_MARKER, 25, _rim.X, _rim.Y, _rim.Z + 0.02f,
+                                  0f, 0f, 0f, 0f, 0f, 0f, 0.5f, 0.5f, 0.5f,
+                                  114, 204, 114, 140, false, false, 2, false, 0, 0, false);
+                }
+            }
+            catch
+            {
+                // No line this frame.
+            }
+        }
+
+        /// <summary>How far apart in time the line's points are worked out.</summary>
+        private const float LineStep = 0.03f;
+
+        /// <summary>
+        /// One piece of the line: a thin quad turned to face the camera, the way Street Golf draws
+        /// its own, and a little wider further off so it does not thin to nothing and shimmer.
+        /// </summary>
+        private static void Segment(Vector3 a, Vector3 b, float width, Color ink, Vector3 eye)
+        {
+            var d = b - a;
+            var dl = d.Length();
+            if (dl < 0.01f) return;
+            d *= 1f / dl;
+
+            var to = eye - a;
+            var tl = to.Length();
+            if (tl < 0.05f) return;
+            to *= 1f / tl;
+
+            var side = Vector3.Cross(d, to);
+            var sl = side.Length();
+            if (sl < 0.001f) return;
+
+            var grow = Math.Min(3f, 1f + tl / 40f);
+            side *= width * grow / sl;
+
+            Poly(a - side, a + side, b + side, ink);
+            Poly(a - side, b + side, b - side, ink);
+        }
+
+        private static void Poly(Vector3 p, Vector3 q, Vector3 r, Color c)
+        {
+            Function.Call(Hash.DRAW_POLY, p.X, p.Y, p.Z, q.X, q.Y, q.Z, r.X, r.Y, r.Z, (int)c.R, (int)c.G, (int)c.B, (int)c.A);
+        }
+
+        // ---- the remembered shot ---------------------------------------------------------------
+
+        private static string StylePath => System.IO.Path.Combine(Paths.Writable, "hoops.txt");
+
+        private static int ReadStyle()
+        {
+            try
+            {
+                if (!System.IO.File.Exists(StylePath)) return 0;
+
+                foreach (var raw in System.IO.File.ReadAllLines(StylePath))
+                {
+                    var line = raw.Trim();
+                    if (!line.StartsWith("shot=", StringComparison.OrdinalIgnoreCase)) continue;
+
+                    var name = line.Substring(5).Trim();
+
+                    for (var i = 0; i < Styles.Length; i++)
+                    {
+                        if (string.Equals(Styles[i].Name, name, StringComparison.OrdinalIgnoreCase)) return i;
+                    }
+                }
+            }
+            catch
+            {
+                // The first one, then.
+            }
+
+            return 0;
+        }
+
+        private void SaveStyle()
+        {
+            try
+            {
+                System.IO.File.WriteAllText(StylePath, "# The way he shoots on the court. Written by the mod." + Environment.NewLine +
+                                                       "shot=" + Shot.Name + Environment.NewLine);
+                Log.Info("Hoops: shooting the " + Shot.Name + " now.");
+            }
+            catch
+            {
+                // It is only remembered for this game.
+            }
         }
 
         /// <summary>
