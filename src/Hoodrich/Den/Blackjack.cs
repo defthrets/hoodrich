@@ -158,6 +158,19 @@ namespace Hoodrich.Den
 
         private const int ResultMs = 4200;
 
+        /// <summary>
+        /// The result across the middle of the screen for a few seconds -- BUST, BLACKJACK, YOU
+        /// WIN -- in the game's own WASTED face, because the line in the corner is not where
+        /// anybody looks while the cards are going down. Michael asked on 2026-09-26 to be told
+        /// what each button does and when he has bust.
+        /// </summary>
+        private string _banner = "";
+        private string _bannerSub = "";
+        private Color _bannerInk = Color.White;
+        private int _bannerUntil;
+
+        private const int BannerMs = 3500;
+
         public Blackjack(Entity table, Dealer dealer, Ped me, Seat seat, int minBet, int maxBet, Random rng)
         {
             _table = table;
@@ -249,10 +262,12 @@ namespace Hoodrich.Den
                     break;
 
                 case Stage.Result:
+                    if (Keys.Back) { Stand(); break; }
                     if (Game.GameTime >= _at && !_dealer.Busy && (_sitter == null || !_sitter.Busy)) Collect();
                     break;
 
                 case Stage.Collecting:
+                    if (Keys.Back) { Stand(); break; }
                     if (!_dealer.Busy) Reset();
                     break;
 
@@ -286,7 +301,9 @@ namespace Hoodrich.Den
                 Sfx.Front(step > 0 ? "DLC_VW_BET_UP" : "DLC_VW_BET_DOWN");
             }
 
-            if (!Keys.Select && !Keys.Space) return;
+            // A ALONE DEALS. X dealt as well, and X is the double: Michael dealt with it, pressed
+            // it again on twenty to carry on, and doubled into a bust.
+            if (!Keys.Select) return;
 
             if (Game.Player.Money < _bet)
             {
@@ -508,6 +525,35 @@ namespace Hoodrich.Den
 
         private bool CanDouble => _mine.Count == 2 && !_doubled && Game.Player.Money >= _bet;
 
+        /// <summary>Your first say on your first two cards: the one moment a surrender is half your stake back.</summary>
+        private bool CanSurrender => _mine.Count == 2 && _hits == 0 && !_doubled;
+
+        /// <summary>
+        /// Up from a hand you are still in. On your first two cards it is a surrender and half
+        /// the stake comes back, as the house rules go; once you have taken a card it is the
+        /// lot.
+        /// </summary>
+        private void Walk()
+        {
+            var early = CanSurrender;
+            var back = early ? _stake / 2 : 0;
+
+            if (back > 0) Game.Player.Money += back;
+
+            _net = back - _stake;
+            _session += _net;
+            _inPlay = false;
+
+            Banner(early ? "SURRENDER" : "FOLDED",
+                   early ? "Half your bet back: $" + back.ToString("N0") : "The house keeps your $" + _stake.ToString("N0"),
+                   Color.White);
+
+            Log.Info("Den: blackjack " + (early ? "surrendered" : "walked out on") + ", you " + Hand(_mine) + " (" + Total(_mine) +
+                     "); $" + _stake.ToString("N0") + (early ? ", half back." : ", lost."));
+
+            Stand();
+        }
+
         private void Deciding()
         {
             // Her eyes on your seat once she has turned to it, until you make your mind up.
@@ -537,6 +583,11 @@ namespace Hoodrich.Den
                 _doubled = true;
                 if (_sitter != null) _sitter.Once(P, "place_bet_double_down");
                 Sfx.Front("DLC_VW_BET_DOWN");
+            }
+            else if (Keys.Leave)
+            {
+                Walk();
+                return;
             }
             else
             {
@@ -687,6 +738,16 @@ namespace Hoodrich.Den
 
             if (her > 21 && me <= 21) _dealer.Say("MINIGAME_DEALER_BUSTS");
             else if (_net < 0) _dealer.Say("MINIGAME_DEALER_WINS");
+
+            var won = "$" + Math.Abs(_net).ToString("N0");
+
+            if (me > 21) Banner("BUST", "Over 21 -- the house takes " + won, Red);
+            else if (natural && !herNatural) Banner("BLACKJACK", "Pays 3 to 2 -- you win " + won, Gold);
+            else if (natural && herNatural) Banner("PUSH", "Blackjack each -- your bet back", Gold);
+            else if (her > 21) Banner("DEALER BUSTS", "She went over 21 -- you win " + won, Green);
+            else if (me > her) Banner("YOU WIN", me + " beats " + her + " -- you win " + won, Green);
+            else if (me == her) Banner("PUSH", me + " each -- your bet back", Gold);
+            else Banner("DEALER WINS", her + " beats " + me + " -- the house takes " + won, Red);
 
             if (_net > 0)
             {
@@ -958,7 +1019,7 @@ namespace Hoodrich.Den
             var fwd = Forward();
             var from = _sitter.Seat.At + fwd * 0.245f + V(0f, 0f, 1.415f);
             var at = from + fwd * 0.487f - V(0f, 0f, 0.873f);
-            _cam.Look(from, at, 55f, 900, 0.12f);
+            _cam.LookFree(from, at, 55f, 900, 0.12f);
         }
 
         /// <summary>The casino's camera on her side of the table, over the middle of the felt.</summary>
@@ -970,7 +1031,7 @@ namespace Hoodrich.Den
 
             var from = _table.GetOffsetPosition(V(-0.0094f, -0.0611f, 1.5098f));
             var at = from + fwd * 0.513f - V(0f, 0f, 0.858f);
-            _cam.Look(from, at, 55f, 800, 0.1f);
+            _cam.LookFree(from, at, 55f, 800, 0.1f);
         }
 
         /// <summary>Which way the chair faces: whichever of its bone's axes points at the table.</summary>
@@ -1071,38 +1132,69 @@ namespace Hoodrich.Den
             return soft ? "SOFT " + t : t.ToString();
         }
 
+        private void Banner(string big, string small, Color ink)
+        {
+            _banner = big;
+            _bannerSub = small;
+            _bannerInk = ink;
+            _bannerUntil = Game.GameTime + BannerMs;
+        }
+
+        /// <summary>Right stick or mouse, whichever he last touched: the free camera's hint.</summary>
+        private static string LookHint => Game.LastInputMethod == InputMethod.GamePad
+            ? "Right stick to look around."
+            : "Move the mouse to look around.";
+
         private void Draw()
         {
             var cash = "$" + Game.Player.Money.ToString("N0");
             var saying = _said.Length > 0 && Game.GameTime < _saidUntil;
             var hers = _hers.Count == 0 ? "--" : Showing().ToString();
 
+            if (_banner.Length > 0 && Game.GameTime < _bannerUntil)
+            {
+                UI.Draw.Rect(0.5f, 0.335f, 1f, 0.15f, Color.FromArgb(140, 0, 0, 0));
+                UI.Draw.Text(_banner, 0.5f, 0.262f, 1.25f, _bannerInk, UI.Draw.FontPricedown, true, true, true);
+                UI.Draw.Text(_bannerSub, 0.5f, 0.362f, 0.5f, Color.White, UI.Draw.FontBody, true, true, false);
+            }
+
             switch (_stage)
             {
                 case Stage.Betting:
-                    Help.ShowThisFrame(saying ? _said : "Place your bet. The dealer stands on 17; a blackjack pays 3 to 2.");
+                    Help.ShowThisFrame(saying ? _said
+                        : "Bet, then deal. Get closer to 21 than the dealer without going over -- she stands on 17, " +
+                          "and a blackjack pays 3 to 2. " + LookHint);
 
                     Bars.Draw("CASH", cash, Color.White,
                               "BET", "$" + _bet.ToString("N0"), Gold);
 
-                    Buttons.Show(Control.PhoneCancel, "Stand up",
-                                 Control.PhoneSelect, "Deal",
-                                 Control.PhoneRight, "Raise",
-                                 Control.PhoneLeft, "Lower");
+                    Buttons.Show(Control.PhoneSelect, "Deal $" + _bet.ToString("N0"),
+                                 Control.PhoneRight, "Raise bet",
+                                 Control.PhoneLeft, "Lower bet",
+                                 Control.PhoneCancel, "Leave table");
                     break;
 
                 case Stage.Deciding:
-                    Help.ShowThisFrame(saying ? _said : "You have " + Count(_mine) + ". The dealer shows " + hers + ".");
+                    Help.ShowThisFrame(saying ? _said
+                        : "You have " + Count(_mine) + ", the dealer shows " + hers + ". Hit for another card, or stand on " +
+                          Total(_mine) + ". Over 21 is bust. " + LookHint);
 
                     Bars.Draw("CASH", cash, Color.White,
                               "DEALER", hers, Color.White,
                               "YOUR HAND", Count(_mine), Gold,
                               "BET", "$" + _stake.ToString("N0"), Color.White);
 
+                    var leave = CanSurrender ? "Surrender, half back" : "Leave, lose the bet";
+
                     if (CanDouble)
-                        Buttons.Show(Control.Jump, "Double", Control.PhoneCancel, "Stand", Control.PhoneSelect, "Hit");
+                        Buttons.Show(Control.PhoneSelect, "Hit: another card",
+                                     Control.PhoneCancel, "Stand: keep " + Total(_mine),
+                                     Control.Jump, "Double down: 2x bet, one card",
+                                     Control.Enter, leave);
                     else
-                        Buttons.Show(Control.PhoneCancel, "Stand", Control.PhoneSelect, "Hit");
+                        Buttons.Show(Control.PhoneSelect, "Hit: another card",
+                                     Control.PhoneCancel, "Stand: keep " + Total(_mine),
+                                     Control.Enter, leave);
                     break;
 
                 case Stage.Result:
@@ -1114,6 +1206,8 @@ namespace Hoodrich.Den
                               "YOUR HAND", Count(_mine), Color.White,
                               _net > 0 ? "WON" : _net == 0 ? "PUSH" : "LOST", "$" + Math.Abs(_net).ToString("N0"),
                               _net > 0 ? Green : _net == 0 ? Gold : Red);
+
+                    Buttons.Show(Control.PhoneCancel, "Leave table");
                     break;
 
                 case Stage.Sitting:

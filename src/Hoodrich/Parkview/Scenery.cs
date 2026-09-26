@@ -127,6 +127,14 @@ namespace Hoodrich.Parkview
             public HashSet<int> Guards = new HashSet<int>();
 
             /// <summary>
+            /// Who is sat down, and on what -- "sits: 811001=209448" in the Note: a ped's saved
+            /// handle and the saved handle of a couch or a chair in the same file. She is put on
+            /// its cushion by the seat scenario itself rather than stood on a mark. Michael asked
+            /// for two Families women on the den's couches on 2026-09-26. See Sat.
+            /// </summary>
+            public Dictionary<int, int> Sits = new Dictionary<int, int>();
+
+            /// <summary>
             /// A room you are put into, not a place you walk up to -- "indoors" in the Note. Its
             /// people are stood straight on their marks when it is built, because walking in from
             /// somewhere out of sight means nothing in a garage you have just been put inside,
@@ -586,6 +594,33 @@ namespace Hoodrich.Parkview
 
         private static HashSet<int> Stays(string path) => Listed(path, "stays:");
 
+        /// <summary>Saved handle to saved handle after one key of the Note -- "sits: 811001=209448, 811002=741659".</summary>
+        private static Dictionary<int, int> Pairs(string path, string key)
+        {
+            var pairs = new Dictionary<int, int>();
+
+            foreach (var line in Clauses(path))
+            {
+                if (!line.StartsWith(key, StringComparison.OrdinalIgnoreCase)) continue;
+
+                foreach (var raw in line.Substring(key.Length).Split(',', ';'))
+                {
+                    var eq = raw.IndexOf('=');
+                    if (eq < 0) continue;
+
+                    int who, what;
+
+                    if (int.TryParse(raw.Substring(0, eq).Trim(), out who) &&
+                        int.TryParse(raw.Substring(eq + 1).Trim(), out what))
+                    {
+                        pairs[who] = what;
+                    }
+                }
+            }
+
+            return pairs;
+        }
+
         private static HashSet<int> Straight(string path) => Listed(path, "straight:");
 
         /// <summary>
@@ -841,6 +876,9 @@ namespace Hoodrich.Parkview
                 var items = Spooner.Read(path);
                 var gone = Spooner.Gone(path);
 
+                // What the hide key has taken out of it, before anything else looks at it. See Strike.
+                Unstruck(name, items);
+
                 // A FILE MAY BE NOTHING BUT REMOVALS. That is what hidden.xml is -- the one
                 // the settings screen writes when you take a map prop out by hand -- and
                 // refusing a file with no placements in it would have thrown it away.
@@ -898,6 +936,9 @@ namespace Hoodrich.Parkview
                     }
                 }
                 catch { /* nobody stands guard */ }
+
+                try { scene.Sits = Pairs(path, "sits:"); }
+                catch { /* nobody sits */ }
 
                 try { scene.Indoors = Clauses(path).Exists(c => c.StartsWith("indoors", StringComparison.OrdinalIgnoreCase)); }
                 catch { /* everybody walks in */ }
@@ -1709,8 +1750,14 @@ namespace Hoodrich.Parkview
                         }
                     }
 
-                    cold.Who.PositionNoOffset = cold.Item.At;
-                    cold.Who.Heading = cold.Item.Yaw;
+                    // Sat down, she is on the cushion the scenario put her on, not on her mark;
+                    // put back on the mark she would be sat on the air.
+                    if (!scene.Sits.ContainsKey(cold.Item.Handle))
+                    {
+                        cold.Who.PositionNoOffset = cold.Item.At;
+                        cold.Who.Heading = cold.Item.Yaw;
+                    }
+
                     cold.Who.IsPositionFrozen = cold.Item.Frozen;
 
                     scene.Frozen.RemoveAt(i);
@@ -2343,6 +2390,9 @@ namespace Hoodrich.Parkview
                     return;
                 }
 
+                // Sat on the seat the file gave her. See Sat.
+                if (Sat(scene, ped, item)) return;
+
                 // A list of his own, first of all: the Note picked it for this man.
                 string[] own;
 
@@ -2385,6 +2435,54 @@ namespace Hoodrich.Parkview
             {
                 Log.Debug("Could not give a placement something to do: " + ex.Message);
             }
+        }
+
+        /// <summary>
+        /// What a woman sat on a couch does, and a man: the plain sit first, the rest by the seat.
+        /// Every one of them plays for both.
+        /// </summary>
+        private static readonly string[] SatDoing = { "PROP_HUMAN_SEAT_ARMCHAIR", "PROP_HUMAN_SEAT_BENCH", "PROP_HUMAN_SEAT_CHAIR" };
+
+        /// <summary>
+        /// Somebody the file sits down, on the cushion of the seat it names -- a scenario started
+        /// on the cushion itself, the way Rest sits a man at his camp, because one told to sit
+        /// where he stands sits on the air a foot short of it. False when the file gave him no
+        /// seat, or the seat is not in the file.
+        /// </summary>
+        private static bool Sat(Scene scene, Ped ped, Spooner.Placed item)
+        {
+            if (scene == null || scene.Sits.Count == 0) return false;
+
+            int on;
+            if (!scene.Sits.TryGetValue(item.Handle, out on)) return false;
+
+            Spooner.Placed seat = null;
+
+            foreach (var one in scene.Items)
+            {
+                if (one.Handle != on || one.What != Spooner.Kind.Prop) continue;
+                seat = one;
+                break;
+            }
+
+            if (seat == null) return false;
+
+            Vector3 cushion;
+            float facing;
+            CampSeat(scene, seat, out cushion, out facing);
+
+            var doing = SatDoing[(int)((uint)Steady(item.At) % (uint)SatDoing.Length)];
+
+            // Onto the cushion first. She is stood up frozen until the floor under her has loaded
+            // (see Thawing), and a frozen woman the scenario could not move would sit on the air
+            // at her mark.
+            Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, ped.Handle, cushion.X, cushion.Y, cushion.Z, false, false, false);
+            ped.Heading = facing;
+
+            Function.Call(Hash.TASK_START_SCENARIO_AT_POSITION, ped.Handle, doing,
+                          cushion.X, cushion.Y, cushion.Z, facing, 0, true, true);
+            Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
+            return true;
         }
 
         private static bool Play(Ped ped, Spooner.Placed item)
@@ -4556,6 +4654,15 @@ namespace Hoodrich.Parkview
                 return;
             }
 
+            // SAT, SHE STAYS SAT. Sat down again only if something has had her up: sitting her
+            // down every beat would be a woman up and down off the couch every few seconds.
+            if (l.Scene.Sits.ContainsKey(l.Item.Handle))
+            {
+                if (!Function.Call<bool>(Hash.IS_PED_USING_ANY_SCENARIO, l.Who.Handle)) Doing(l.Scene, l.Who, l.Item, l.Turn);
+                l.NextAt = now + Beat(l);
+                return;
+            }
+
             var roll = Dice.Next(100);
 
             // A CAMP IS HOME. Every beat is something in it: a word with the other one, the
@@ -4722,6 +4829,7 @@ namespace Hoodrich.Parkview
                 // Nor one sat down or lying in his camp, or on his way to, or at work: a chat
                 // stands him up, and puts a man at his other job back on his mark after it.
                 if (o.Asleep || o.Seat != null || o.Bed != null || o.Scene.Jobs.ContainsKey(o.Item.Handle) || o.Item.Guard) continue;
+                if (o.Scene.Sits.ContainsKey(o.Item.Handle)) continue;
                 if (o.Who == null || !o.Who.Exists() || !o.Who.IsAlive) continue;
 
                 // ON THE SAME FLOOR. Six metres reaches from a balcony to the ground under it,
@@ -7557,6 +7665,222 @@ namespace Hoodrich.Parkview
         public void RestoreWorld()
         {
             Clear();
+        }
+
+        // ==================================================================
+        // Struck
+        // ==================================================================
+
+        /// <summary>The list of what the hide key has taken out of our scenes. See Strike.</summary>
+        private static string StruckPath => Path.Combine(Paths.ParkviewScenery, "struck.txt");
+
+        /// <summary>How close to where it was struck a placement has to be to be the one struck.</summary>
+        private const float StruckSame = 0.3f;
+
+        /// <summary>How near the line you are looking along one of ours has to be to be the one you mean.</summary>
+        private const float AimWidth = 0.35f;
+
+        /// <summary>
+        /// ONE OF OURS, OUT FOR GOOD, with the hide key: the thing itself, its placement, and a
+        /// line in struck.txt so it is never built again -- not after a restart, and not after a
+        /// deploy writes the scene file over, because struck.txt is not a file anything ships.
+        ///
+        /// Menyoo can delete one of ours from in front of you, but only until the scene is next
+        /// built, and nothing it does reaches the scene file. Michael deleted things in the den
+        /// on 2026-09-26 and they were all stood there again the next time he walked in.
+        /// </summary>
+        public bool Strike(int handle, out string what)
+        {
+            what = "";
+            if (handle == 0) return false;
+
+            foreach (var scene in _scenes)
+            {
+                Spooner.Placed item;
+                if (!scene.Was.TryGetValue(handle, out item) || item == null) continue;
+
+                if (item.What != Spooner.Kind.Prop) return false;
+
+                what = Say(item);
+
+                // Off the books first, so nothing tidies it, adopts it or builds it again.
+                scene.Was.Remove(handle);
+                scene.Solid.Remove(handle);
+
+                for (var i = scene.Up.Count - 1; i >= 0; i--)
+                {
+                    if (scene.Up[i] != null && scene.Up[i].Handle == handle) scene.Up.RemoveAt(i);
+                }
+
+                Entity by;
+                if (item.Handle != 0 && scene.ByHandle.TryGetValue(item.Handle, out by) && by != null && by.Handle == handle)
+                {
+                    scene.ByHandle.Remove(item.Handle);
+                }
+
+                // Out of the list the builder walks. The builder's place in it moves back with it,
+                // so a scene part-way up does not skip the next one along.
+                var at = scene.Items.IndexOf(item);
+
+                if (at >= 0)
+                {
+                    scene.Items.RemoveAt(at);
+                    if (at < scene.Cursor) scene.Cursor--;
+                }
+
+                try
+                {
+                    var e = Entity.FromHandle(handle);
+                    if (e != null && e.Exists()) e.Delete();
+                }
+                catch
+                {
+                    // Already gone.
+                }
+
+                try
+                {
+                    var fresh = !File.Exists(StruckPath);
+
+                    using (var w = new StreamWriter(StruckPath, true))
+                    {
+                        if (fresh)
+                        {
+                            w.WriteLine("# What the hide key has taken out of Parkview's own scenes, never built again.");
+                            w.WriteLine("# scene | saved handle | model | model hash | x | y | z");
+                            w.WriteLine("# Delete a line to have that one back.");
+                        }
+
+                        var c = System.Globalization.CultureInfo.InvariantCulture;
+
+                        w.WriteLine(scene.Name + " | " + item.Handle + " | " + what + " | 0x" +
+                                    unchecked((uint)item.ModelHash).ToString("x8") + " | " +
+                                    item.At.X.ToString("0.000", c) + " | " + item.At.Y.ToString("0.000", c) + " | " +
+                                    item.At.Z.ToString("0.000", c));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn("Could not write struck.txt: " + ex.Message + ". " + what + " is gone until the scene is built again.");
+                }
+
+                Log.Info("Struck from \"" + scene.Name + "\" for good: " + what + " (saved handle " + item.Handle +
+                         ") at " + item.At + ". In struck.txt; take the line out to have it back.");
+
+                what = what + " in " + scene.Name;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>What one of ours is called, for asking before it goes. Null for anything not placed by a scene.</summary>
+        public string Named(int handle)
+        {
+            foreach (var scene in _scenes)
+            {
+                Spooner.Placed item;
+                if (scene.Was.TryGetValue(handle, out item) && item != null && item.What == Spooner.Kind.Prop) return Say(item);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// The one of ours nearest the line you are looking along, within a hand of it and no
+        /// further off than the ray got. For what has no collision to be hit -- a neon, a line of
+        /// powder, litter -- which a ray goes straight through. 0 when there is none.
+        /// </summary>
+        public int Aimed(Vector3 eye, Vector3 dir, float reach)
+        {
+            var best = 0;
+            var bestOff = AimWidth;
+
+            foreach (var scene in _scenes)
+            {
+                foreach (var pair in scene.Was)
+                {
+                    if (pair.Value == null || pair.Value.What != Spooner.Kind.Prop) continue;
+
+                    Vector3 middle;
+
+                    try
+                    {
+                        var e = Entity.FromHandle(pair.Key);
+                        if (e == null || !e.Exists()) continue;
+
+                        var lo = new OutputArgument();
+                        var hi = new OutputArgument();
+                        Function.Call(Hash.GET_MODEL_DIMENSIONS, e.Model.Hash, lo, hi);
+                        middle = e.GetOffsetPosition((lo.GetResult<Vector3>() + hi.GetResult<Vector3>()) * 0.5f);
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+
+                    var to = middle - eye;
+                    var t = Vector3.Dot(to, dir);
+                    if (t < 0.3f || t > reach) continue;
+
+                    var off = (to - dir * t).Length();
+                    if (off >= bestOff) continue;
+
+                    bestOff = off;
+                    best = pair.Key;
+                }
+            }
+
+            return best;
+        }
+
+        /// <summary>A scene's placements with what struck.txt names taken out. See Strike.</summary>
+        private static void Unstruck(string scene, List<Spooner.Placed> items)
+        {
+            try
+            {
+                if (!File.Exists(StruckPath)) return;
+
+                var c = System.Globalization.CultureInfo.InvariantCulture;
+                var taken = 0;
+
+                foreach (var raw in File.ReadAllLines(StruckPath))
+                {
+                    var line = raw.Trim();
+                    if (line.Length == 0 || line.StartsWith("#")) continue;
+
+                    var part = line.Split('|');
+                    if (part.Length < 7) continue;
+                    if (!string.Equals(part[0].Trim(), scene, StringComparison.OrdinalIgnoreCase)) continue;
+
+                    uint hash;
+                    var hex = part[3].Trim();
+                    if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) hex = hex.Substring(2);
+                    if (!uint.TryParse(hex, System.Globalization.NumberStyles.HexNumber, c, out hash)) continue;
+
+                    float x, y, z;
+                    if (!float.TryParse(part[4].Trim(), System.Globalization.NumberStyles.Float, c, out x) ||
+                        !float.TryParse(part[5].Trim(), System.Globalization.NumberStyles.Float, c, out y) ||
+                        !float.TryParse(part[6].Trim(), System.Globalization.NumberStyles.Float, c, out z)) continue;
+
+                    var at = new Vector3(x, y, z);
+
+                    for (var i = items.Count - 1; i >= 0; i--)
+                    {
+                        var one = items[i];
+                        if (unchecked((uint)one.ModelHash) != hash || one.At.DistanceTo(at) > StruckSame) continue;
+
+                        items.RemoveAt(i);
+                        taken++;
+                    }
+                }
+
+                if (taken > 0) Log.Info("Scenery: " + taken + " of \"" + scene + "\" struck with the hide key and left out. See struck.txt.");
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not read struck.txt: " + ex.Message);
+            }
         }
 
         /// <summary>Read the folder again and stand it all up fresh. For the settings screen.</summary>

@@ -57,7 +57,8 @@ namespace Hoodrich.Den
         /// <summary>Flat, from the chair to the middle of its table: the way a man sat in it looks.</summary>
         public Vector3 Facing;
 
-        public static Seat Nearest(Entity table, Vector3 from, float reach)
+        /// <summary>The nearest of a table's chairs within reach, leaving out one somebody is already sat in (0 leaves out none).</summary>
+        public static Seat Nearest(Entity table, Vector3 from, float reach, int taken = 0)
         {
             if (table == null || !table.Exists()) return null;
 
@@ -66,6 +67,8 @@ namespace Hoodrich.Den
 
             for (var i = 0; i < Bones.Length; i++)
             {
+                if (i + 1 == taken) continue;
+
                 var bone = Bone.Index(table, Bones[i]);
                 if (bone < 0) continue;
 
@@ -78,6 +81,39 @@ namespace Hoodrich.Den
                 var dy = at.Y - from.Y;
                 var d = (float)Math.Sqrt(dx * dx + dy * dy);
                 if (d > bestD) continue;
+
+                bestD = d;
+
+                var centre = table.Position - at;
+                centre.Z = 0f;
+                if (centre.Length() > 0.01f) centre.Normalize();
+
+                best = new Seat { Number = i + 1, At = at, Rot = Bone.Rotation(table, bone), Facing = centre };
+            }
+
+            return best;
+        }
+
+        /// <summary>The one of a table's chairs furthest from a point: the far end, from the way in.</summary>
+        public static Seat Furthest(Entity table, Vector3 from)
+        {
+            if (table == null || !table.Exists()) return null;
+
+            Seat best = null;
+            var bestD = -1f;
+
+            for (var i = 0; i < Bones.Length; i++)
+            {
+                var bone = Bone.Index(table, Bones[i]);
+                if (bone < 0) continue;
+
+                Vector3 at;
+
+                try { at = Bone.Position(table, bone); }
+                catch { continue; }
+
+                var d = at.DistanceTo(from);
+                if (d <= bestD) continue;
 
                 bestD = d;
 
@@ -281,7 +317,111 @@ namespace Hoodrich.Den
         private readonly List<int> _old = new List<int>();
         private readonly List<int> _oldUntil = new List<int>();
 
+        /// <summary>
+        /// A camera you can look about with: the right stick or the mouse turns it from where it
+        /// was put, as far as a man sat in a chair can turn his head. Michael asked for it at the
+        /// blackjack on 2026-09-26 -- "not stuck in this view only".
+        /// </summary>
+        private bool _free;
+        private float _pitch0;
+        private float _yaw0;
+        private float _pitch;
+        private float _yaw;
+
+        /// <summary>
+        /// How far round a man sat at a table turns his head, and how far up and down he looks --
+        /// as angles the camera ends at, not as how far it moves, because the seat's own camera
+        /// already starts sixty degrees down at the felt and "thirty-five up" from there never
+        /// reached the dealer's face.
+        /// </summary>
+        private const float YawMost = 90f;
+        private const float PitchLowest = -80f;
+        private const float PitchHighest = 25f;
+
         public bool Up => _cam != 0;
+
+        /// <summary>From one point at another, and free to look about from there. See _free.</summary>
+        public void LookFree(Vector3 from, Vector3 at, float fov, int easeMs = 900, float shake = 0.1f)
+        {
+            try
+            {
+                var d = at - from;
+                var flat = (float)Math.Sqrt(d.X * d.X + d.Y * d.Y);
+
+                _pitch0 = (float)(Math.Atan2(d.Z, flat) * 180.0 / Math.PI);
+                _yaw0 = (float)(Math.Atan2(-d.X, d.Y) * 180.0 / Math.PI);
+                _pitch = 0f;
+                _yaw = 0f;
+
+                var cam = Function.Call<int>(Hash.CREATE_CAM_WITH_PARAMS, "DEFAULT_SCRIPTED_CAMERA",
+                                             from.X, from.Y, from.Z, _pitch0, 0f, _yaw0, fov, false, 2);
+                if (cam == 0) return;
+
+                if (shake > 0f) Function.Call((Hash)ShakeCam, cam, "HAND_SHAKE", shake);
+
+                Swap(cam, easeMs);
+                _free = true;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Den: the table camera would not go up: " + ex.Message);
+            }
+        }
+
+        private void Swap(int cam, int easeMs)
+        {
+            if (_cam == 0)
+            {
+                Function.Call(Hash.SET_CAM_ACTIVE, cam, true);
+                Function.Call(Hash.RENDER_SCRIPT_CAMS, true, easeMs > 0, easeMs, true, false);
+            }
+            else
+            {
+                Function.Call(Hash.SET_CAM_ACTIVE_WITH_INTERP, cam, _cam, easeMs, 1, 1);
+                _old.Add(_cam);
+                _oldUntil.Add(Game.GameTime + easeMs + 250);
+            }
+
+            _cam = cam;
+        }
+
+        /// <summary>The look about, a frame at a time: a stick is a speed, a mouse a distance.</summary>
+        private void Turn()
+        {
+            if (!_free || _cam == 0) return;
+
+            try
+            {
+                var lx = Keys.MouseX;
+                var ly = Keys.MouseY;
+
+                float rate;
+
+                if (Game.LastInputMethod == InputMethod.GamePad)
+                {
+                    if (Math.Abs(lx) < 0.15f) lx = 0f;
+                    if (Math.Abs(ly) < 0.15f) ly = 0f;
+                    rate = 110f * Game.LastFrameTime;
+                }
+                else
+                {
+                    rate = 40f;
+                }
+
+                if (lx == 0f && ly == 0f) return;
+
+                _yaw = Clamp(_yaw - lx * rate, -YawMost, YawMost);
+                _pitch = Clamp(_pitch - ly * rate, PitchLowest - _pitch0, PitchHighest - _pitch0);
+
+                Function.Call(Hash.SET_CAM_ROT, _cam, _pitch0 + _pitch, 0f, _yaw0 + _yaw, 2);
+            }
+            catch { }
+        }
+
+        private static float Clamp(float x, float lo, float hi)
+        {
+            return x < lo ? lo : x > hi ? hi : x;
+        }
 
         /// <summary>From one point at another, eased over from wherever it was.</summary>
         public void Look(Vector3 from, Vector3 at, float fov, int easeMs = 900, float shake = 0.15f)
@@ -297,19 +437,8 @@ namespace Hoodrich.Den
                 // The casino's own cameras breathe; a dead-still one is a security feed.
                 if (shake > 0f) Function.Call((Hash)ShakeCam, cam, "HAND_SHAKE", shake);
 
-                if (_cam == 0)
-                {
-                    Function.Call(Hash.SET_CAM_ACTIVE, cam, true);
-                    Function.Call(Hash.RENDER_SCRIPT_CAMS, true, easeMs > 0, easeMs, true, false);
-                }
-                else
-                {
-                    Function.Call(Hash.SET_CAM_ACTIVE_WITH_INTERP, cam, _cam, easeMs, 1, 1);
-                    _old.Add(_cam);
-                    _oldUntil.Add(Game.GameTime + easeMs + 250);
-                }
-
-                _cam = cam;
+                Swap(cam, easeMs);
+                _free = false;
             }
             catch (Exception ex)
             {
@@ -317,9 +446,11 @@ namespace Hoodrich.Den
             }
         }
 
-        /// <summary>Lets go of the cameras it has eased away from.</summary>
+        /// <summary>Lets go of the cameras it has eased away from, and turns a free one.</summary>
         public void Update()
         {
+            Turn();
+
             var now = Game.GameTime;
 
             for (var i = _old.Count - 1; i >= 0; i--)
@@ -361,6 +492,7 @@ namespace Hoodrich.Den
             _old.Clear();
             _oldUntil.Clear();
             _cam = 0;
+            _free = false;
         }
     }
 

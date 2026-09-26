@@ -1207,7 +1207,7 @@ namespace Hoodrich.Den
                               "PAIR PLUS", _plus > 0 ? "$" + _plus.ToString("N0") : "OFF", _field == 1 ? Gold : Color.White,
                               "ANTE", "$" + _ante.ToString("N0"), _field == 0 ? Gold : Color.White);
 
-                    Buttons.Show(Control.PhoneCancel, "Stand up",
+                    Buttons.Show(Control.PhoneCancel, "Leave table",
                                  Control.PhoneSelect, "Deal",
                                  Control.PhoneRight, "Raise",
                                  Control.PhoneLeft, "Lower",

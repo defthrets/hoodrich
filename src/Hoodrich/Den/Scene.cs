@@ -335,8 +335,11 @@ namespace Hoodrich.Den
         public static bool Select => JustPressed(Control.PhoneSelect);
         public static bool Back => JustPressed(Control.PhoneCancel);
 
-        /// <summary>Space: the spin, the deal. INPUT_JUMP read disabled, so it is Space on a keyboard and A on a pad.</summary>
+        /// <summary>Space: the spin, the deal. INPUT_JUMP read disabled, so it is Space on a keyboard and X on a pad.</summary>
         public static bool Space => JustPressed(Control.Jump);
+
+        /// <summary>Out of a hand you are still in: INPUT_ENTER, F on a keyboard and Y on a pad -- the way out of a car.</summary>
+        public static bool Leave => JustPressed(Control.Enter);
 
         /// <summary>Q and E, the frontend shoulders, or the mouse wheel: a chip down or up.</summary>
         public static bool Lower => JustPressed(Control.FrontendLb) || JustPressed(Control.WeaponWheelPrev);

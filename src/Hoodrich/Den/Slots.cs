@@ -776,7 +776,7 @@ namespace Hoodrich.Den
                     Bars.Draw("CASH", cash, Color.White,
                               "BET", "$" + Stake.ToString("N0"), Color.FromArgb(255, 240, 200, 80));
 
-                    Buttons.Show(Control.PhoneCancel, "Stand up",
+                    Buttons.Show(Control.PhoneCancel, "Leave machine",
                                  Control.Jump, "Spin",
                                  Control.PhoneSelect, "Pull",
                                  Control.PhoneRight, "Bet max",

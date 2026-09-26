@@ -59,6 +59,10 @@ namespace Hoodrich.Den
         private Dealer _cardDealer;
         private Dealer _pokerDealer;
 
+        /// <summary>A street punk at the far end of the roulette and of the card table. See Punter.</summary>
+        private Punter _rouletteRegular;
+        private Punter _blackjackRegular;
+
         private Roulette _atRoulette;
         private Blackjack _atBlackjack;
         private Poker _atPoker;
@@ -183,6 +187,24 @@ namespace Hoodrich.Den
         /// <summary>The emitter the game keeps for a radio a script has put down. See Tune.</summary>
         private const string PropEmitter = "SE_Script_Placed_Prop_Emitter_Boombox";
 
+        /// <summary>Who sits at the far end of each table, and how he fidgets there. See Punter.</summary>
+        private const string RouletteRegularModel = "g_m_y_strpunk_01";
+        private const string BlackjackRegularModel = "g_m_y_strpunk_02";
+
+        private static readonly string[] RouletteRegularFidgets =
+        {
+            "idle_var_01", "idle_var_02", "idle_var_03", "idle_var_04", "idle_var_05", "idle_var_06", "idle_var_07",
+            "idle_var_08", "idle_var_09", "idle_var_10", "idle_var_11", "idle_var_12", "idle_var_13", "idle_b", "idle_c", "idle_d"
+        };
+
+        private static readonly string[] CardRegularFidgets =
+        {
+            "idle_cardgames_var_01", "idle_cardgames_var_02", "idle_cardgames_var_03", "idle_cardgames_var_04",
+            "idle_cardgames_var_05", "idle_cardgames_var_06", "idle_cardgames_var_07", "idle_cardgames_var_08",
+            "idle_cardgames_var_09", "idle_cardgames_var_10", "idle_cardgames_var_11", "idle_cardgames_var_12",
+            "idle_cardgames_var_13"
+        };
+
         public Floor(Settings cfg, GangRegistry gangs, InteriorDoor door)
         {
             _cfg = cfg;
@@ -215,6 +237,7 @@ namespace Hoodrich.Den
             Sfx.Banks();
             Furniture();
             Dealers();
+            Regulars();
 
             foreach (var r in _reels.Values) r.Update();
 
@@ -256,6 +279,11 @@ namespace Hoodrich.Den
             _croupier = null;
             _cardDealer = null;
             _pokerDealer = null;
+
+            if (_rouletteRegular != null) _rouletteRegular.Remove();
+            if (_blackjackRegular != null) _blackjackRegular.Remove();
+            _rouletteRegular = null;
+            _blackjackRegular = null;
 
             foreach (var r in _reels.Values) r.Remove();
             _reels.Clear();
@@ -510,6 +538,33 @@ namespace Hoodrich.Den
             }
         }
 
+        /// <summary>
+        /// The punks at the far ends, sat down once each table and its dealer are up. Never
+        /// while you are playing: one sat down again then could be put in your chair.
+        /// </summary>
+        private void Regulars()
+        {
+            var gang = _gangs == null ? null : _gangs.Get("families");
+
+            if (Alive(_roulette) && _croupier != null && _croupier.Exists)
+            {
+                if (_rouletteRegular == null)
+                    _rouletteRegular = new Punter(_roulette, RouletteRegularModel, "idle_a", RouletteRegularFidgets, "roulette", _rng);
+                if (!_rouletteRegular.Exists && !IsPlaying) _rouletteRegular.Spawn(_door.Landing, gang);
+                _rouletteRegular.Update();
+            }
+
+            if (Alive(_blackjack) && _cardDealer != null && _cardDealer.Exists)
+            {
+                if (_blackjackRegular == null)
+                    _blackjackRegular = new Punter(_blackjack, BlackjackRegularModel, "idle_cardgames", CardRegularFidgets, "blackjack", _rng);
+                if (!_blackjackRegular.Exists && !IsPlaying) _blackjackRegular.Spawn(_door.Landing, gang);
+                _blackjackRegular.Update();
+            }
+        }
+
+        private static int Taken(Punter p) => p == null ? 0 : p.Chair;
+
         // ---- the games ----------------------------------------------------------------
 
         private void Play()
@@ -545,7 +600,7 @@ namespace Hoodrich.Den
 
             Seat seat;
 
-            if (Alive(_roulette) && _croupier != null && _croupier.Exists && At(_roulette, at, out seat))
+            if (Alive(_roulette) && _croupier != null && _croupier.Exists && At(_roulette, at, Taken(_rouletteRegular), out seat))
             {
                 Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to sit at the roulette. $" + MinBet.ToString("N0") + " a chip.");
 
@@ -558,7 +613,7 @@ namespace Hoodrich.Den
                 return;
             }
 
-            if (Alive(_blackjack) && _cardDealer != null && _cardDealer.Exists && At(_blackjack, at, out seat))
+            if (Alive(_blackjack) && _cardDealer != null && _cardDealer.Exists && At(_blackjack, at, Taken(_blackjackRegular), out seat))
             {
                 Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to sit at blackjack. $" + MinBet.ToString("N0") + " minimum.");
 
@@ -571,7 +626,7 @@ namespace Hoodrich.Den
                 return;
             }
 
-            if (Alive(_poker) && _pokerDealer != null && _pokerDealer.Exists && At(_poker, at, out seat))
+            if (Alive(_poker) && _pokerDealer != null && _pokerDealer.Exists && At(_poker, at, 0, out seat))
             {
                 Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to sit at three card poker. $" + MinBet.ToString("N0") + " ante.");
 
@@ -614,15 +669,16 @@ namespace Hoodrich.Den
 
         /// <summary>
         /// Whether you are at a table: by one of its own chairs if it has them, and then that is
-        /// the chair you sit in; round its middle if it has none, and you play stood up.
+        /// the chair you sit in -- not the one a punter has; round its middle if it has none, and
+        /// you play stood up.
         /// </summary>
-        private static bool At(Entity table, Vector3 at, out Seat seat)
+        private static bool At(Entity table, Vector3 at, int taken, out Seat seat)
         {
             seat = null;
 
             if (Seat.Has(table))
             {
-                seat = Seat.Nearest(table, at, ChairReach);
+                seat = Seat.Nearest(table, at, ChairReach, taken);
                 return seat != null;
             }
 

@@ -1256,7 +1256,7 @@ namespace Hoodrich.Den
                               "CHIP", "$" + _chips[_chip].ToString("N0"), Color.White,
                               "TOTAL BET", "$" + down.ToString("N0"), Gold);
 
-                    Buttons.Show(Control.PhoneCancel, _bets.Count == 0 ? "Stand up" : "Take back",
+                    Buttons.Show(Control.PhoneCancel, _bets.Count == 0 ? "Leave table" : "Take back chip",
                                  Control.Jump, "Spin",
                                  Control.PhoneSelect, "Place chip",
                                  Control.FrontendRb, "Chip up",

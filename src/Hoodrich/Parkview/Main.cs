@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Windows.Forms;
 using GTA;
+using GTA.Math;
 using GTA.Native;
 using Hoodrich.Core;
 using Hoodrich.UI;
@@ -425,10 +426,21 @@ namespace Hoodrich.Parkview
         /// <summary>How far ahead the hide looks for a prop.</summary>
         private const float HideReach = 12f;
 
+        /// <summary>One of ours the hide key has named, and until when a second press takes it. See Hide.</summary>
+        private int _strikeAim;
+        private int _strikeUntil;
+
+        private const int StrikeAskMs = 6000;
+
         /// <summary>
         /// Takes the map prop you are looking at out for good, and writes it into
         /// scenery\hidden.xml so it stays out. The half of a spooner scene the spooner cannot
         /// do: Menyoo records what you put somewhere and has no tag for what you took away.
+        ///
+        /// ONE OF OURS GOES TOO, the same way -- struck from its scene and written in
+        /// struck.txt. Michael deleted things in the den with Menyoo and they were back the next
+        /// time it was built; this used to say "take it out of the scene file instead", which
+        /// is a thing only somebody with the repo open can do. See Scenery.Strike.
         /// </summary>
         private void Hide()
         {
@@ -436,10 +448,11 @@ namespace Hoodrich.Parkview
             if (me == null || !me.Exists()) return;
 
             var eye = GameplayCamera.Position;
-            var to = eye + GameplayCamera.Direction * HideReach;
+            var dir = GameplayCamera.Direction;
+            var to = eye + dir * HideReach;
 
             var ray = Function.Call<int>(Hash.START_EXPENSIVE_SYNCHRONOUS_SHAPE_TEST_LOS_PROBE,
-                                         eye.X, eye.Y, eye.Z, to.X, to.Y, to.Z, 16, me.Handle, 7);
+                                         eye.X, eye.Y, eye.Z, to.X, to.Y, to.Z, 16 | 1, me.Handle, 7);
 
             var hit = new OutputArgument();
             var where = new OutputArgument();
@@ -448,9 +461,49 @@ namespace Hoodrich.Parkview
 
             Function.Call<int>(Hash.GET_SHAPE_TEST_RESULT, ray, hit, where, normal, thing);
 
-            var handle = thing.GetResult<int>();
+            var struck = hit.GetResult<bool>();
+            var handle = struck ? thing.GetResult<int>() : 0;
+            var reach = struck ? where.GetResult<Vector3>().DistanceTo(eye) + 0.25f : HideReach;
 
-            if (!hit.GetResult<bool>() || handle == 0)
+            // Ours with no collision first -- a neon on the wall, powder on the table -- which the
+            // ray goes through to whatever is behind it. Then ours that it hit.
+            var ours = _scenes.Aimed(eye, dir, reach);
+            if (ours == 0 && _scenes.Mine(handle)) ours = handle;
+
+            if (ours != 0)
+            {
+                var name = _scenes.Named(ours);
+
+                if (name == null)
+                {
+                    Notify.Important("That is part of a scene but not a thing placed in it -- a floor under something.");
+                    return;
+                }
+
+                // ASKED ONCE FIRST. Struck is for good, and the thing the line of sight lands on
+                // is not always the thing you meant -- a neon beside the lamp, the powder on the
+                // table rather than the table. The first press says which; a second on the same
+                // one takes it.
+                if (ours != _strikeAim || Game.GameTime > _strikeUntil)
+                {
+                    _strikeAim = ours;
+                    _strikeUntil = Game.GameTime + StrikeAskMs;
+                    Notify.Important("~y~" + name + "~s~ -- " + Say(_cfg.ParkviewHideKey, _cfg.ParkviewHideModifier) +
+                                     " again to take it out for good.");
+                    return;
+                }
+
+                _strikeAim = 0;
+
+                string what;
+
+                if (_scenes.Strike(ours, out what)) Notify.Important("~g~" + what + "~s~ is gone, and stays gone.");
+                else Notify.Important("Could not take " + name + " out. See the log.");
+
+                return;
+            }
+
+            if (handle == 0)
             {
                 Notify.Important("Nothing in front of you. Look straight at it and try again.");
                 return;
@@ -461,12 +514,6 @@ namespace Hoodrich.Parkview
             if (found == null || !found.Exists() || !(found is Prop))
             {
                 Notify.Important("That is not a prop.");
-                return;
-            }
-
-            if (_scenes.Mine(handle))
-            {
-                Notify.Important("That one is ours -- take it out of the scene file instead.");
                 return;
             }
 
