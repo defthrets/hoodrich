@@ -23,6 +23,9 @@ namespace Hoodrich.Supply
         /// <summary>He has pulled up outside the house and is waiting on you.</summary>
         Waiting,
 
+        /// <summary>At a kerb with no house: the box in his hand, about to go down at your feet. See Toss.</summary>
+        Tossing,
+
         /// <summary>Box out of the boot, walking it to the door.</summary>
         Carrying,
 
@@ -329,7 +332,7 @@ namespace Hoodrich.Supply
             public Vector3 Approach;
             public Vector3 Meet;
             public float MeetHeading;
-            public bool MeetBySide;
+            public bool ToYou;
             public Vector3 Door;
             public bool HasInside;
             public Vector3 Inside;
@@ -342,10 +345,9 @@ namespace Hoodrich.Supply
         /// 2026-09-26 -- "lets also make it we can order drugs from the phone whilst at parkview
         /// as well and the dealer will pull up at any of these locations, the same as they would
         /// at Denise's" -- and read each off the HUD facing the way the car should point. He comes
-        /// to whichever is nearest you. There is no house beside them -- the room you rent is a
-        /// long walk from every one -- so he takes the box out of the boot, carries it a couple of
-        /// metres onto the pavement and puts it down, and it is in the stash: one pile of product,
-        /// two places to stand next to it. See Core.Home.
+        /// to whichever is nearest you. There is no house beside them, so he comes to wherever you are
+        /// stood, you do business, and he throws it at your feet; once you pick it up it is in the
+        /// stash -- one pile of product, every stash house onto it. See Toss, Parcels and Core.Home.
         /// </summary>
         private static readonly float[][] ParkviewKerbs =
         {
@@ -358,10 +360,6 @@ namespace Hoodrich.Supply
         /// <summary>How near one of them counts as being at Parkview.</summary>
         private const float ParkviewReach = 75f;
 
-        /// <summary>At a kerb nobody measured a meeting spot on: how far behind the car's middle he stands, how far out to the side, and how far on the box is carried.</summary>
-        private const float MeetBehind = 2.0f;
-        private const float MeetBeside = 2.2f;
-        private const float CarryOff = 1.6f;
 
         /// <summary>Where this run is going. Set when the text is sent; the house if nothing has been.</summary>
         private Site _site;
@@ -422,7 +420,7 @@ namespace Hoodrich.Supply
                 Approach = park - ahead * ApproachWest,
                 Meet = park,
                 MeetHeading = heading,
-                MeetBySide = true,
+                ToYou = true,
                 Door = park,
                 HasInside = false,
                 LeaveFor = park + ahead * 150f,
@@ -437,30 +435,349 @@ namespace Hoodrich.Supply
             return new Vector3(-(float)Math.Sin(r), (float)Math.Cos(r), 0f);
         }
 
+
+        // ---- to wherever you are stood, and at your feet ---------------------------
+
+        /// <summary>Whether this run ends with the box at your feet rather than walked into the house. For the dealer's line.</summary>
+        public bool ToYou => IsActive && Here.ToYou;
+
         /// <summary>
-        /// Where he stands at a kerb nobody measured a spot on: beside the boot, on whichever side
-        /// of the car you are, facing you -- and where the box goes down, a couple of metres further
-        /// out on that side. At the house the spot was read off the HUD and this leaves it alone.
-        /// Worked out once, when he gets out, so he does not circle the car after you.
+        /// To wherever you are stood, and facing you when he gets there -- at a kerb with no house
+        /// by it. Re-aimed when you have moved or he has stopped walking, not every time it is
+        /// asked, because a walk handed out again every second is a man who keeps stopping.
         /// </summary>
-        private void MeetFor(Site site)
+        private void ComeToYou(Ped player, bool now)
         {
-            if (site == null || !site.MeetBySide || _car == null || !_car.Exists()) return;
+            if (_driver == null || !_driver.Exists() || !_driver.IsAlive) return;
+            if (player == null || !player.Exists()) return;
+            if (!now && Game.GameTime < _nextHold) return;
+
+            _nextHold = Game.GameTime + 700;
+
+            try
+            {
+                if (now)
+                {
+                    Function.Call(Hash.REQUEST_ANIM_DICT, TossDict);
+                    Function.Call(Hash.REQUEST_ANIM_DICT, PickDict);
+                }
+
+                var you = player.Position;
+
+                if (_driver.Position.DistanceTo(you) <= ComeWithin)
+                {
+                    if (!_faced)
+                    {
+                        _faced = true;
+                        Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, _driver.Handle, player.Handle, 1500);
+                    }
+
+                    return;
+                }
+
+                _faced = false;
+
+                var walking = Function.Call<bool>(Hash.GET_IS_TASK_ACTIVE, _driver.Handle, WalkTask);
+                if (!now && walking && _comeTo.DistanceTo(you) < ComeRetarget) return;
+
+                // A step short of you, on the side he is coming from.
+                var back = _driver.Position - you;
+                back.Z = 0f;
+                if (back.Length() < 0.1f) back = player.ForwardVector;
+                back.Normalize();
+
+                var stand = you + back * ComeStop;
+                var face = Function.Call<float>(Hash.GET_HEADING_FROM_VECTOR_2D, you.X - stand.X, you.Y - stand.Y);
+
+                Stagger(true);
+                Function.Call(Hash.TASK_FOLLOW_NAV_MESH_TO_COORD, _driver.Handle,
+                              stand.X, stand.Y, stand.Z, 1.2f, 30000, 0.5f, 0, face);
+
+                _comeTo = you;
+            }
+            catch
+            {
+                // He stands where he is, and you come to him.
+            }
+        }
+
+        private Vector3 _comeTo;
+        private bool _faced;
+
+        /// <summary>Near enough to do business, how far short of you he stops, and how far you move before he re-aims.</summary>
+        private const float ComeWithin = 2.0f;
+        private const float ComeStop = 1.2f;
+        private const float ComeRetarget = 1.5f;
+
+        /// <summary>
+        /// Out of his jacket and down at your feet, then back to the car -- at a kerb with no house.
+        /// Michael, 2026-09-26: "make him come and hand it you where ever you are standing, throws
+        /// it at your feet, says goodbye and drives off; once you pick it up it gets delivered to
+        /// your stash house". The give-over, arm out, and the box let go of part way through it
+        /// and thrown the rest of the way. His goodbye is said at his car door, where every
+        /// delivery says it (see Nearly). From the moment it lands the box is a parcel on the
+        /// ground until you pick it up. See Parcels.
+        /// </summary>
+        private void Toss()
+        {
+            var player = Game.Player.Character;
+
+            try
+            {
+                _driver.Task.ClearAll();
+                GiveBox();
+
+                if (player != null && player.Exists())
+                {
+                    Function.Call(Hash.TASK_TURN_PED_TO_FACE_ENTITY, _driver.Handle, player.Handle, 800);
+                }
+
+                Function.Call(Hash.REQUEST_ANIM_DICT, TossDict);
+
+                if (Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, TossDict))
+                {
+                    Function.Call(Hash.TASK_PLAY_ANIM, _driver.Handle, TossDict, TossClip,
+                                  8f, -8f, -1, TossFlag, 0f, false, false, false);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not start the toss: " + ex.Message);
+            }
+
+            _tossAt = Game.GameTime + TossReleaseMs;
+            State = DeliveryState.Tossing;
+            _stateSince = Game.GameTime;
+        }
+
+        private void TickTossing(Ped player)
+        {
+            if (_driver == null || !_driver.Exists() || !_driver.IsAlive)
+            {
+                // He is gone, and you have paid: it is in the stash regardless.
+                Land();
+                DropTheBox();
+                State = DeliveryState.Leaving;
+                _stateSince = Game.GameTime;
+                return;
+            }
+
+            if (Game.GameTime < _tossAt) return;
+
+            Throw(player);
+
+            Speak(Mine(_def == null ? null : _def.DropLines, PortDrop, CornerDrop), DroppedLines);
+
+            // The goodbye, at his car door on the way. See Nearly.
+            _owedBye = true;
+
+            State = DeliveryState.Leaving;
+            _stateSince = Game.GameTime;
+
+            try
+            {
+                if (_car != null && _car.Exists() && !_driver.IsInVehicle(_car))
+                {
+                    // Walking, no clock: see the note on the same call in TickCarrying.
+                    Function.Call(Hash.TASK_ENTER_VEHICLE, _driver.Handle, _car.Handle, -1, -1, 1f, 1, 0);
+                    Stagger(true);
+                }
+            }
+            catch { /* he finds his own way back */ }
+        }
+
+        /// <summary>The box out of his hand and down at your feet, thrown far enough to get there, and yours from where it lands.</summary>
+        private void Throw(Ped player)
+        {
+            if (_box == null || !_box.Exists() || player == null || !player.Exists())
+            {
+                // Nothing in his hand -- the prop never came -- or nobody to throw it at: the
+                // goods go in the stash as they would have.
+                Land();
+                DropTheBox();
+                return;
+            }
+
+            try
+            {
+                var start = _box.Position;
+
+                Function.Call(Hash.DETACH_ENTITY, _box.Handle, true, true);
+
+                // Your feet, on his side of you.
+                var toHim = _driver.Position - player.Position;
+                toHim.Z = 0f;
+                if (toHim.Length() < 0.1f) toHim = player.ForwardVector;
+                toHim.Normalize();
+
+                var feet = player.Position + toHim * TossShort;
+                feet.Z -= 0.9f;
+
+                _box.IsPersistent = true;
+                Function.Call(Hash.FREEZE_ENTITY_POSITION, _box.Handle, false);
+                Function.Call(Hash.SET_ENTITY_DYNAMIC, _box.Handle, true);
+                Function.Call(Hash.SET_ENTITY_COLLISION, _box.Handle, true, true);
+                Function.Call(Hash.ACTIVATE_PHYSICS, _box.Handle);
+
+                var v = (feet - start) * (1f / TossFlight);
+                v.Z += 0.5f * 9.81f * TossFlight;
+                Function.Call(Hash.SET_ENTITY_VELOCITY, _box.Handle, v.X, v.Y, v.Z);
+
+                _parcels.Add(new Parcel { Box = _box, Drug = _owedDrug, Grams = _owedGrams, Purity = _owedPurity });
+                _box = null;
+
+                _owedDrug = "";
+                _owedGrams = 0f;
+                _owedPurity = 1f;
+
+                Notify.Ticker("~g~At your feet.~s~ Pick it up and it's in the stash.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("The toss went wrong: " + ex.Message);
+                Land();
+                DropTheBox();
+            }
+        }
+
+        private int _tossAt;
+
+        /// <summary>The give-over, arm out, upper body only so he can turn to you while he does it.</summary>
+        private const string TossDict = "mp_common";
+        private const string TossClip = "givetake1_a";
+        private const int TossFlag = 48;
+
+        /// <summary>When in the give-over the box leaves his hand, how long it is in the air, and how far short of you it lands.</summary>
+        private const int TossReleaseMs = 650;
+        private const float TossFlight = 0.45f;
+        private const float TossShort = 0.6f;
+
+        /// <summary>Stooping for it.</summary>
+        private const string PickDict = "pickup_object";
+        private const string PickClip = "pickup_low";
+
+        /// <summary>How near one you have to be stood to pick it up.</summary>
+        private const float PickReach = 1.6f;
+
+        // ---- the packages on the ground -----------------------------------------------
+
+        /// <summary>A box at your feet: what is in it, until you pick it up.</summary>
+        private sealed class Parcel
+        {
+            public Prop Box;
+            public string Drug;
+            public float Grams;
+            public float Purity;
+        }
+
+        private readonly List<Parcel> _parcels = new List<Parcel>();
+
+        /// <summary>
+        /// Every frame, and outliving the run that threw them: the prompt when you are stood by
+        /// one, and the stash when you pick it up. A box that has gone from under you -- cleared up,
+        /// streamed out -- is paid for, so its goods go in the stash rather than nowhere.
+        /// </summary>
+        private void Parcels()
+        {
+            if (_parcels.Count == 0) return;
 
             var player = Game.Player.Character;
-            var you = player != null && player.Exists() ? player.Position : _car.Position;
 
-            var ahead = Forward(_car.Heading);
-            var right = new Vector3(ahead.Y, -ahead.X, 0f);
-            var toYou = you - _car.Position;
-            var side = toYou.X * right.X + toYou.Y * right.Y >= 0f ? 1f : -1f;
+            for (var i = _parcels.Count - 1; i >= 0; i--)
+            {
+                var p = _parcels[i];
 
-            var meet = _car.Position - ahead * MeetBehind + right * (side * MeetBeside);
-            meet.Z = site.Park.Z + 0.5f;
+                if (p.Box == null || !p.Box.Exists())
+                {
+                    Stow(p, false);
+                    _parcels.RemoveAt(i);
+                    continue;
+                }
 
-            site.Meet = meet;
-            site.MeetHeading = Function.Call<float>(Hash.GET_HEADING_FROM_VECTOR_2D, you.X - meet.X, you.Y - meet.Y);
-            site.Door = meet + right * (side * CarryOff);
+                if (player == null || !player.Exists() || !player.IsAlive || player.IsInVehicle()) continue;
+                if (Talk != null && Talk.IsOpen) continue;
+                if (player.Position.DistanceTo(p.Box.Position) > PickReach) continue;
+
+                Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to pick up the package.");
+
+                if (!Game.IsControlJustPressed(Control.Context)) continue;
+
+                InputGuard.Swallow();
+                PickUp(player, p);
+                _parcels.RemoveAt(i);
+                return;
+            }
+        }
+
+        private void PickUp(Ped player, Parcel p)
+        {
+            try
+            {
+                Function.Call(Hash.REQUEST_ANIM_DICT, PickDict);
+
+                if (Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, PickDict))
+                {
+                    Function.Call(Hash.TASK_PLAY_ANIM, player.Handle, PickDict, PickClip,
+                                  8f, -8f, -1, 0, 0f, false, false, false);
+                }
+            }
+            catch
+            {
+                // Picked up without the stoop.
+            }
+
+            try
+            {
+                p.Box.IsPersistent = false;
+                p.Box.Delete();
+            }
+            catch
+            {
+                // The streamer takes it.
+            }
+
+            Stow(p, true);
+        }
+
+        /// <summary>A parcel into the stash -- the one pile every stash house opens onto. See Core.Home.</summary>
+        private void Stow(Parcel p, bool picked)
+        {
+            if (string.IsNullOrEmpty(p.Drug) || p.Grams <= 0f) return;
+
+            var taken = House == null ? 0f : House.AddBulk(p.Drug, p.Grams, p.Purity);
+
+            var landed = taken >= 1000f
+                ? (taken / 1000f).ToString("0.#") + " kilos"
+                : taken.ToString("0.#") + "g";
+
+            Notify.Important("~g~" + (picked ? "Picked up." : "Delivered.") + "~s~ " + landed + " in the stash" +
+                             (p.Purity < 0.999f ? ", ~y~" + Economy.Stash.Percent(p.Purity) + "%~s~." : "."));
+
+            Log.Info("Parcel " + (picked ? "picked up" : "put in the stash") + ": " + taken.ToString("0") + "g " + p.Drug + ".");
+
+            p.Drug = "";
+            p.Grams = 0f;
+        }
+
+        /// <summary>Everything still on the ground, into the stash and off the ground. For teardown.</summary>
+        private void Unparcel()
+        {
+            foreach (var p in _parcels)
+            {
+                Stow(p, false);
+
+                try
+                {
+                    if (p.Box != null && p.Box.Exists())
+                    {
+                        p.Box.IsPersistent = false;
+                        p.Box.Delete();
+                    }
+                }
+                catch { /* the streamer takes it */ }
+            }
+
+            _parcels.Clear();
         }
 
         /// <summary>Set by Main: the house, its door, and what is kept there.</summary>
@@ -858,6 +1175,9 @@ namespace Hoodrich.Supply
             // BEFORE THE ACTIVE CHECK, because the stance outlives the run. See Sit.
             Sit();
 
+            // And so do the packages on the ground. See Parcels.
+            Parcels();
+
             if (!IsActive) return;
 
             var player = Game.Player.Character;
@@ -906,6 +1226,10 @@ namespace Hoodrich.Supply
 
                 case DeliveryState.Waiting:
                     TickWaiting(player);
+                    return;
+
+                case DeliveryState.Tossing:
+                    TickTossing(player);
                     return;
             }
         }
@@ -1637,6 +1961,13 @@ namespace Hoodrich.Supply
             _owedDrug = drugId;
             _owedGrams = grams;
             _owedPurity = _def == null ? 1f : _def.Purity;
+
+            // AT YOUR FEET, where there is no house by the kerb. See Toss.
+            if (Here.ToYou)
+            {
+                Toss();
+                return;
+            }
 
             _dropSpot = Here.Door;
             _wentIn = false;
@@ -2672,16 +3003,28 @@ namespace Hoodrich.Supply
 
                 Speak(Mine(_def == null ? null : _def.ArrivalLines, PortArrival, CornerArrival), TakingLines);
 
-                OpenTheBoot();
-                MeetFor(Here);
-                WalkToMeet();
+                // AT THE HOUSE he waits on the pavement by the boot; AT A KERB WITH NO HOUSE he
+                // comes to wherever you are stood. See ComeToYou.
+                if (Here.ToYou)
+                {
+                    ComeToYou(player, true);
+                }
+                else
+                {
+                    OpenTheBoot();
+                    WalkToMeet();
+                }
             }
 
             // And kept there. A man standing in a spot gets nudged out of it by traffic, by you
             // walking into him, and by the game's own idle shuffling, and the prompt follows HIM
             // rather than the car -- so if he drifts, the place you have to stand to talk drifts
             // with him.
-            if (_greeted) HoldTheSpot();
+            if (_greeted)
+            {
+                if (Here.ToYou) ComeToYou(player, false);
+                else HoldTheSpot();
+            }
 
             if (Distance > AbandonDistance) Cancel("You left him standing there.");
         }
@@ -3061,6 +3404,9 @@ namespace Hoodrich.Supply
         public void RestoreWorld()
         {
             Cancel(null);
+
+            // A package nobody picked up is still paid for: into the stash, not lost. See Parcels.
+            Unparcel();
 
             // THE THREAD GOES WITH THE MOD, not with the car -- the same as ParkedCar. A
             // background thread left running after a script reload is a second one next time.
