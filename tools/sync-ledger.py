@@ -22,6 +22,7 @@ MODS = {
     "five0patrol": ("Five0Patrol", "Five0 Patrol"),
     "bloodymess": ("BloodyMess", "Bloody Mess"),
     "overspray": ("Overspray", "Overspray"),
+    "hoops": ("Hoops", "Hoops"),
 }
 
 # Everybody gets these two: the rectangle tally and the tick watchdog are about the machine,

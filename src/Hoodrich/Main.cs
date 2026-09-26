@@ -775,8 +775,12 @@ namespace Hoodrich
         private readonly Fixture _couch;
         private readonly Fixture _stove;
 
-        /// <summary>Shooting hoops on the Chamberlain Hills court. See Locations.Hoops.</summary>
-        private readonly Hoops _hoops = new Hoops();
+        /// <summary>
+        /// Shooting hoops on the Chamberlain Hills court: the court game shared with the Hoops mod.
+        /// Court\ is a copy made by the hoops repo's tools\sync-court.py -- edit it there, never
+        /// here. See Court.CourtHost for what it asks of this mod, filled in as the mod starts.
+        /// </summary>
+        private readonly Court.Shootaround _hoops = new Court.Shootaround();
 
         private readonly Fixture _armourerStockA;
         private readonly Fixture _armourerStockB;
@@ -3644,6 +3648,22 @@ namespace Hoodrich
                                     || _hoops.Placing;
 
                 pages.ShowVanillaPhone = () => _phone.ShowVanillaPhone();
+
+                // THE COURT, shared with the Hoops mod: what it asks of this one. Everything that
+                // differs between the two mods goes through these and nothing else.
+                Court.CourtHost.Info = Log.Info;
+                Court.CourtHost.Warn = Log.Warn;
+                Court.CourtHost.Debug = Log.Debug;
+                Court.CourtHost.Read = Core.Settings.Read;
+                Court.CourtHost.Put = (section, key, value) => Core.Settings.Put(section, key, value);
+                Court.CourtHost.Help = UI.Help.ShowThisFrame;
+                Court.CourtHost.Ticker = UI.Notify.Ticker;
+                Court.CourtHost.Problem = UI.Notify.Problem;
+                Court.CourtHost.Busy = () => Core.Mind.Busy || InputGuard.Busy;
+                Court.CourtHost.Swallow = InputGuard.Swallow;
+                Court.CourtHost.T = Core.Lang.T;
+                Court.CourtHost.Counted = UI.Draw.CountRect;
+                Court.CourtHost.OnPad = () => UI.Draw.OnPad;
 
                 Preflight.Step = "starting the world up";
 

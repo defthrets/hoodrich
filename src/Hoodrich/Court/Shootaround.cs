@@ -1,15 +1,13 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using GTA;
 using GTA.Math;
 using GTA.Native;
-using Hoodrich.Core;
-using Hoodrich.UI;
 using Control = GTA.Control;
 
-namespace Hoodrich.Locations
+namespace Hoodrich.Court
 {
     /// <summary>
     /// SHOOTING HOOPS on the Chamberlain Hills court, on the court's own hoops. Michael asked for
@@ -40,7 +38,7 @@ namespace Hoodrich.Locations
     /// no vehicles, no cameras, nothing streamed. The ball is the same prop all game: it flies,
     /// and it comes back to his hands.
     /// </summary>
-    internal sealed class Hoops
+    internal sealed class Shootaround
     {
         private enum Mode { Off, Starting, Holding, Charging, Shooting, Flying, Result }
 
@@ -290,9 +288,9 @@ namespace Hoodrich.Locations
 
             Ring(_start);
 
-            if (d > OfferReach || me.IsInVehicle() || Mind.Busy || InputGuard.Busy) return;
+            if (d > OfferReach || me.IsInVehicle() || CourtHost.Busy()) return;
 
-            Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to shoot hoops.");
+            CourtHost.Help("Press ~INPUT_CONTEXT~ to shoot hoops.");
 
             if (Game.IsControlJustPressed(Control.Context)) Start(me);
         }
@@ -302,7 +300,7 @@ namespace Hoodrich.Locations
         {
             try
             {
-                var parts = Settings.Read("Hoops", "Start", "").Split(',');
+                var parts = CourtHost.Read("Hoops", "Start", "").Split(',');
 
                 float x, y, z;
                 if (parts.Length == 3 &&
@@ -336,14 +334,14 @@ namespace Hoodrich.Locations
 
         private void Start(Ped me)
         {
-            InputGuard.Swallow();
+            CourtHost.Swallow();
 
             // Whether the builder's tools are his.
             _dev = false;
 
             try
             {
-                _dev = string.Equals(Settings.Read("Developer", "Tools", "false").Trim(), "true", StringComparison.OrdinalIgnoreCase);
+                _dev = string.Equals(CourtHost.Read("Developer", "Tools", "false").Trim(), "true", StringComparison.OrdinalIgnoreCase);
             }
             catch { }
 
@@ -356,7 +354,7 @@ namespace Hoodrich.Locations
             try
             {
                 foreach (var d in Dicts) Function.Call(Hash.REQUEST_ANIM_DICT, d);
-                Models.Ready(new Model(BallName));
+                Ready(new Model(BallName));
             }
             catch { /* asked again while it waits */ }
 
@@ -367,7 +365,7 @@ namespace Hoodrich.Locations
             _mode = Mode.Starting;
             _at = Game.GameTime;
 
-            Log.Info("Hoops: a game on, " + _ring.Count + " hoop(s) on the court.");
+            CourtHost.Info("Hoops: a game on, " + _ring.Count + " hoop(s) on the court.");
         }
 
         private void Starting(Ped me, int now)
@@ -376,7 +374,7 @@ namespace Hoodrich.Locations
 
             try
             {
-                ready = Models.Ready(new Model(BallName));
+                ready = Ready(new Model(BallName));
                 foreach (var d in Dicts) ready = ready && Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, d);
             }
             catch { }
@@ -389,7 +387,7 @@ namespace Hoodrich.Locations
 
             if (now - _at > 4000)
             {
-                Log.Warn("Hoops: the ball or the clips would not load in four seconds.");
+                CourtHost.Warn("Hoops: the ball or the clips would not load in four seconds.");
                 Stop("The ball would not load. Try again in a moment.");
             }
         }
@@ -410,7 +408,8 @@ namespace Hoodrich.Locations
             try
             {
                 if (me != null && me.Exists()) Function.Call(Hash.CLEAR_PED_SECONDARY_TASK, me.Handle);
-                Den.Buttons.Drop();
+                CourtButtons.Drop();
+                CourtDraw.Release();
                 foreach (var d in Dicts) Function.Call(Hash.REMOVE_ANIM_DICT, d);
                 new Model(BallName).MarkAsNoLongerNeeded();
             }
@@ -418,18 +417,18 @@ namespace Hoodrich.Locations
 
             if (_mode != Mode.Starting && _shots > 0)
             {
-                Log.Info("Hoops: " + _score + " point(s), " + _made + " of " + _shots + ", best streak " + _best + ".");
-                Notify.Ticker("~g~Hoops.~s~ " + _score + " points, " + _made + " of " + _shots +
+                CourtHost.Info("Hoops: " + _score + " point(s), " + _made + " of " + _shots + ", best streak " + _best + ".");
+                CourtHost.Ticker("~g~Hoops.~s~ " + _score + " points, " + _made + " of " + _shots +
                               (_best > 1 ? ", " + _best + " in a row." : "."));
             }
             else if (!string.IsNullOrEmpty(why))
             {
-                Notify.Problem(why);
+                CourtHost.Problem(why);
             }
 
             _mode = Mode.Off;
             _ringPlacing = false;
-            InputGuard.Swallow();
+            CourtHost.Swallow();
         }
 
         public void RestoreWorld()
@@ -447,7 +446,7 @@ namespace Hoodrich.Locations
                 if (_ball == null || !_ball.Exists())
                 {
                     var model = new Model(BallName);
-                    if (!Models.Ready(model)) return;
+                    if (!Ready(model)) return;
 
                     var at = me.Position + me.ForwardVector * 0.4f;
                     var handle = Function.Call<int>(Hash.CREATE_OBJECT, model.Hash, at.X, at.Y, at.Z, false, false, true);
@@ -472,7 +471,7 @@ namespace Hoodrich.Locations
             }
             catch (Exception ex)
             {
-                Log.Debug("Hoops: could not put the ball in his hands: " + ex.Message);
+                CourtHost.Debug("Hoops: could not put the ball in his hands: " + ex.Message);
                 Stop("The ball would not load. Try again in a moment.");
             }
         }
@@ -826,7 +825,7 @@ namespace Hoodrich.Locations
             }
             catch (Exception ex)
             {
-                Log.Debug("Hoops: the ball would not fly: " + ex.Message);
+                CourtHost.Debug("Hoops: the ball would not fly: " + ex.Message);
             }
 
             _shots++;
@@ -880,7 +879,7 @@ namespace Hoodrich.Locations
                         aim *= 1f / Math.Max(0.01f, aim.Length());
                         var gap = Flat3D(at - _launchTo);
 
-                        Log.Info("Hoops: the ball came down " + (Flat(gap) * 100f).ToString("0") + " cm from where the line was going (" +
+                        CourtHost.Info("Hoops: the ball came down " + (Flat(gap) * 100f).ToString("0") + " cm from where the line was going (" +
                                  (Vector3.Dot(gap, aim) * 100f).ToString("+0;-0;0") + " cm along the throw).");
                     }
                 }
@@ -918,7 +917,7 @@ namespace Hoodrich.Locations
             Banner(head, sub, three ? Gold : Green);
 
             Sound("CHECKPOINT_PERFECT", "HUD_MINI_GAME_SOUNDSET");
-            Log.Info("Hoops: " + head + " through hoop " + (hoop + 1) + " from " + from.ToString("0.0") + " m, " +
+            CourtHost.Info("Hoops: " + head + " through hoop " + (hoop + 1) + " from " + from.ToString("0.0") + " m, " +
                      (off * 100f).ToString("0") + " cm off the middle of its ring.");
         }
 
@@ -949,7 +948,7 @@ namespace Hoodrich.Locations
                         : along > 0.25f ? "Long -- less on the meter."
                         : "Off the rim.";
 
-                    Log.Info("Hoops: missed hoop " + (_hoop + 1) + ", down through its height " +
+                    CourtHost.Info("Hoops: missed hoop " + (_hoop + 1) + ", down through its height " +
                              (Flat(_cross - Rim) * 100f).ToString("0") + " cm from the middle of its ring.");
                 }
 
@@ -1003,11 +1002,6 @@ namespace Hoodrich.Locations
             _ring.Clear();
             _ringSize.Clear();
 
-            IniFile ini = null;
-
-            try { ini = IniFile.Load(Paths.Ini); }
-            catch { }
-
             for (var i = 0; i < MostRings; i++)
             {
                 var have = i < RingAt.Length;
@@ -1016,7 +1010,7 @@ namespace Hoodrich.Locations
 
                 try
                 {
-                    var parts = (ini == null ? "" : ini.GetString("Hoops", "Ring" + (i + 1), "")).Split(',');
+                    var parts = CourtHost.Read("Hoops", "Ring" + (i + 1), "").Split(',');
 
                     if (parts.Length == 4)
                     {
@@ -1063,7 +1057,7 @@ namespace Hoodrich.Locations
             _ringWait = true;
 
             float ground;
-            _ringFloor = Ground.Probe(me.Position + Vector3.WorldUp * 0.5f, out ground) ? ground : me.Position.Z - 1f;
+            _ringFloor = Floor(me.Position + Vector3.WorldUp * 0.5f, out ground) ? ground : me.Position.Z - 1f;
 
             Sound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
@@ -1082,7 +1076,7 @@ namespace Hoodrich.Locations
             }
 
             float ground;
-            var floor = Ground.Probe(me.Position + Vector3.WorldUp * 0.5f, out ground) ? ground : me.Position.Z - 1f;
+            var floor = Floor(me.Position + Vector3.WorldUp * 0.5f, out ground) ? ground : me.Position.Z - 1f;
             var at = me.Position + Dir(Deg360(GameplayCamera.Rotation.Z)) * 1.5f;
 
             _ring.Add(new Vector3(at.X, at.Y, floor + 3.05f));
@@ -1098,8 +1092,8 @@ namespace Hoodrich.Locations
             _startRead = true;
 
             var text = string.Format(CultureInfo.InvariantCulture, "{0:0.000},{1:0.000},{2:0.000}", _start.X, _start.Y, _start.Z);
-            Settings.Put("Hoops", "Start", text);
-            Log.Info("Hoops: a game starts here now -- [Hoops] Start=" + text + ".");
+            CourtHost.Put("Hoops", "Start", text);
+            CourtHost.Info("Hoops: a game starts here now -- [Hoops] Start=" + text + ".");
 
             Banner("THE GAME STARTS HERE", "Put the ball down and the ring is here.", Green);
             Sound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
@@ -1123,8 +1117,8 @@ namespace Hoodrich.Locations
                 _ringPlacing = false;
 
                 var text = Pack(_ring[i], _ringSize[i]);
-                Settings.Put("Hoops", "Ring" + (i + 1), text);
-                Log.Info("Hoops: hoop " + (i + 1) + "'s ring placed -- [Hoops] Ring" + (i + 1) + "=" + text +
+                CourtHost.Put("Hoops", "Ring" + (i + 1), text);
+                CourtHost.Info("Hoops: hoop " + (i + 1) + "'s ring placed -- [Hoops] Ring" + (i + 1) + "=" + text +
                          " (x, y, z, and from the middle to the edge).");
 
                 _ringNew = false;
@@ -1249,30 +1243,30 @@ namespace Hoodrich.Locations
 
             if (_banner.Length > 0 && now < _bannerUntil)
             {
-                UI.Draw.Rect(0.5f, 0.235f, 1f, 0.13f, Color.FromArgb(120, 0, 0, 0));
-                UI.Draw.Text(_banner, 0.5f, 0.17f, 1.1f, _bannerInk, UI.Draw.FontPricedown, true, true, true);
-                UI.Draw.Text(_bannerSub, 0.5f, 0.262f, 0.45f, Color.White, UI.Draw.FontBody, true, true, false);
+                CourtDraw.Rect(0.5f, 0.235f, 1f, 0.13f, Color.FromArgb(120, 0, 0, 0));
+                CourtDraw.Text(_banner, 0.5f, 0.17f, 1.1f, _bannerInk, CourtDraw.FontPricedown, true, true, true);
+                CourtDraw.Text(_bannerSub, 0.5f, 0.262f, 0.45f, Color.White, CourtDraw.FontBody, true, true, false);
             }
             else if (_mode == Mode.Holding)
             {
-                Help.ShowThisFrame(dist.ToString("0.0") + " m -- " + (three ? "a three" : "a two") +
+                CourtHost.Help(dist.ToString("0.0") + " m -- " + (three ? "a three" : "a two") +
                                    ". Hold ~INPUT_ATTACK~, and let go when the arc looks right.");
             }
 
-            Den.Bars.Draw("SCORE", _score.ToString(), Gold,
+            CourtBars.Draw("SCORE", _score.ToString(), Gold,
                           "STREAK", _streak.ToString(), _streak > 1 ? Green : Color.White,
                           "MADE", _made + " / " + _shots, Color.White);
 
             if (_mode == Mode.Holding)
             {
                 if (_dev)
-                    Den.Buttons.Show(Control.Attack, "Hold to shoot",
+                    CourtButtons.Show(Control.Attack, "Hold to shoot",
                                      Control.PhoneCancel, "Put the ball down",
                                      Control.PhoneRight, "Place the near hoop",
                                      Control.PhoneLeft, "Add a hoop",
                                      Control.PhoneDown, "Start the game here");
                 else
-                    Den.Buttons.Show(Control.Attack, "Hold to shoot",
+                    CourtButtons.Show(Control.Attack, "Hold to shoot",
                                      Control.PhoneCancel, "Put the ball down");
             }
 
@@ -1403,14 +1397,14 @@ namespace Hoodrich.Locations
         {
             var i = _ringWho;
 
-            Help.ShowThisFrame("Hoop " + (i + 1) + "'s ring, the one nearest you: the ball has to come down through it. " +
+            CourtHost.Help("Hoop " + (i + 1) + "'s ring, the one nearest you: the ball has to come down through it. " +
                                "Left stick slides it, D-pad up and down raises it, D-pad left and right sizes it, X for faster.");
 
-            Den.Bars.Draw("HEIGHT", (_ring[i].Z - _ringFloor).ToString("0.00") + " m", Color.White,
+            CourtBars.Draw("HEIGHT", (_ring[i].Z - _ringFloor).ToString("0.00") + " m", Color.White,
                           "ACROSS", (_ringSize[i] * 200f).ToString("0") + " cm", Color.White,
                           "HOOP", (i + 1).ToString(), Gold);
 
-            Den.Buttons.Show(Control.PhoneSelect, "Keep it",
+            CourtButtons.Show(Control.PhoneSelect, "Keep it",
                              Control.PhoneCancel, "Put it back");
 
             Rings(i);
@@ -1463,17 +1457,17 @@ namespace Hoodrich.Locations
 
             var cw = (width - gap * (cells - 1)) / cells;
 
-            UI.Draw.Rect(left + width * 0.5f, y, width + 0.012f, h + 0.012f, Color.FromArgb(150, 0, 0, 0));
+            CourtDraw.Rect(left + width * 0.5f, y, width + 0.012f, h + 0.012f, Color.FromArgb(150, 0, 0, 0));
 
             for (var c = 0; c < cells; c++)
             {
                 var f0 = c / (float)cells;
                 var x = left + c * (cw + gap) + cw * 0.5f;
 
-                UI.Draw.Rect(x, y, cw, h, _power > f0 ? Gold : Track);
+                CourtDraw.Rect(x, y, cw, h, _power > f0 ? Gold : Track);
             }
 
-            UI.Draw.Rect(left + width * Clamp(_power, 0f, 1f), y, 0.002f, h + 0.012f, Color.White);
+            CourtDraw.Rect(left + width * Clamp(_power, 0f, 1f), y, 0.002f, h + 0.012f, Color.White);
         }
 
         private void Banner(string big, string small, Color ink)
@@ -1488,6 +1482,46 @@ namespace Hoodrich.Locations
         {
             try { Function.Call(Hash.PLAY_SOUND_FRONTEND, -1, name, set, true); }
             catch { }
+        }
+
+        // ---- what the court used to borrow from its host ----------------------------------------
+
+        /// <summary>
+        /// True once the model is loaded and ready to spawn from. Asked for without waiting: called
+        /// again next tick it is usually there, so the cost of "no" is one frame, not one second.
+        /// </summary>
+        private static bool Ready(Model model)
+        {
+            try
+            {
+                if (!model.IsValid || !model.IsInCdImage) return false;
+                if (model.IsLoaded) return true;
+
+                model.Request();
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>The floor under a point, if the game has one there.</summary>
+        private static bool Floor(Vector3 from, out float z)
+        {
+            try
+            {
+                var arg = new OutputArgument();
+                var hit = Function.Call<bool>(Hash.GET_GROUND_Z_FOR_3D_COORD, from.X, from.Y, from.Z, arg, false, false);
+
+                z = hit ? arg.GetResult<float>() : 0f;
+                return hit;
+            }
+            catch
+            {
+                z = 0f;
+                return false;
+            }
         }
 
         // ---- sums -----------------------------------------------------------------------------
