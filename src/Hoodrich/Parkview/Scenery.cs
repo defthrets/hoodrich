@@ -111,6 +111,13 @@ namespace Hoodrich.Parkview
             public bool RoamAll;
 
             /// <summary>
+            /// The peds the file says live in a camp -- "camp:" in the Note. They never walk off,
+            /// never go up the road and never leave for the small hours; everything they do is in
+            /// the camp round their mark, and at night they sleep in it. See Camp.
+            /// </summary>
+            public HashSet<int> Camp = new HashSet<int>();
+
+            /// <summary>
             /// Whether this one lives here rather than stands in it. ASKED IN ONE PLACE,
             /// because it is asked in three -- the life, the drunk walk and the unlocking --
             /// and three copies of a rule is two chances to get it wrong.
@@ -854,6 +861,9 @@ namespace Hoodrich.Parkview
                 try { scene.Idles = Idles(path); }
                 catch { /* everybody idles off the lists */ }
 
+                try { scene.Camp = Listed(path, "camp:"); }
+                catch { /* nobody lives in a camp */ }
+
                 int peds = 0, props = 0, cars = 0;
 
                 foreach (var one in items)
@@ -1187,7 +1197,10 @@ namespace Hoodrich.Parkview
                 if (item.What == Spooner.Kind.Ped && LifeOn)
                 {
                     var stays = scene.Stays.Contains(item.Handle);
-                    var night = _quiet && !stays;
+                    var camp = scene.Camp.Contains(item.Handle);
+
+                    // A CAMP IS HOME AT NIGHT TOO: he comes in, and goes to bed in it. See TurnIn.
+                    var night = _quiet && !stays && !camp;
                     var roams = scene.Roaming(item.Handle);
                     var straight = scene.Straight.Contains(item.Handle);
 
@@ -1200,6 +1213,7 @@ namespace Hoodrich.Parkview
                         ForTheNight = night,
                         Scripted = Scripted(item),
                         Stays = stays,
+                        Camp = camp,
                         Straight = straight,
                         Roams = roams,
                         Drunk = roams && Steady(item.At) % 5 == 0,
@@ -1352,6 +1366,7 @@ namespace Hoodrich.Parkview
                 State = Stage.Marked,
                 Scripted = Scripted(item),
                 Stays = scene.Stays.Contains(item.Handle),
+                Camp = scene.Camp.Contains(item.Handle),
                 Roams = scene.Roaming(item.Handle),
 
                 // ONE IN FIVE, and the same one in five every session -- off the mark rather
@@ -2219,7 +2234,8 @@ namespace Hoodrich.Parkview
         private static readonly string[] HoboModels =
         {
             "a_m_m_tramp_01", "a_m_o_tramp_01", "a_f_m_tramp_01", "a_m_m_trampbeac_01", "a_f_m_trampbeac_01",
-            "a_m_m_skidrow_01", "a_m_y_hippy_01", "a_m_y_acult_01", "a_m_o_acult_01", "a_m_m_acult_01"
+            "a_m_m_skidrow_01", "a_m_y_hippy_01", "a_m_y_acult_01", "a_m_o_acult_01", "a_m_m_acult_01",
+            "a_m_o_acult_02", "a_m_y_acult_02", "u_m_y_militarybum"
         };
 
         private static bool IsHobo(Spooner.Placed item)
@@ -2721,6 +2737,12 @@ namespace Hoodrich.Parkview
 
             /// <summary>What he is waiting on while he is not up, for the log. See NotUp.</summary>
             public string Why;
+
+            /// <summary>He lives in a camp, and what he is on or walking to there: a seat, a bed. See Camp.</summary>
+            public bool Camp;
+            public Spooner.Placed Seat;
+            public Spooner.Placed Bed;
+            public bool Asleep;
 
             /// <summary>Who he is talking to, while he is.</summary>
             public Life With;
@@ -3646,10 +3668,13 @@ namespace Hoodrich.Parkview
             l.Chore = null;
             l.Held = false;
             l.Waiting = false;
+            l.Seat = null;
+            l.Bed = null;
+            l.Asleep = false;
 
             // The small hours came round while he was busy: he goes, the way everybody went
             // -- and with nowhere to go from where he stands, he goes home first.
-            if (_quiet && !l.Stays && Leave(l, now, true)) return;
+            if (_quiet && !l.Stays && !l.Camp && Leave(l, now, true)) return;
 
             if ((l.State == Stage.Partying || l.State == Stage.Outbound) && ped.Position.DistanceTo(l.Going) <= PartyStay)
             {
@@ -3748,6 +3773,9 @@ namespace Hoodrich.Parkview
                 l.ForTheNight = false;
                 l.NextAt = now + Dice.Next(StaggerMs);
             }
+
+            // AND A CAMP WAKES UP, at a stagger of its own. See TurnIn.
+            if (l.Camp && l.Asleep) l.NextAt = now + Dice.Next(StaggerMs);
         }
 
         /// <summary>
@@ -3984,7 +4012,7 @@ namespace Hoodrich.Parkview
             if (l.State == Stage.Away)
             {
                 // Caught by the hour while away on a whim: he stays away until it passes.
-                if (_quiet && !l.Stays) { l.ForTheNight = true; return true; }
+                if (_quiet && !l.Stays && !l.Camp) { l.ForTheNight = true; return true; }
                 if (now < l.NextAt) return true;
 
                 // THREE WAYS TO ARRIVE: a man in bed is put on his mark while nobody can see
@@ -4008,6 +4036,13 @@ namespace Hoodrich.Parkview
 
                     if (_quiet && !l.Stays)
                     {
+                        // A CAMP GOES TO BED rather than off. See TurnIn.
+                        if (l.Camp)
+                        {
+                            if (now >= l.NextAt) TurnIn(l, now);
+                            return true;
+                        }
+
                         if (now >= l.NextAt) Leave(l, now, true);
                         return true;
                     }
@@ -4021,6 +4056,13 @@ namespace Hoodrich.Parkview
                     if (Arrived(ped, l.Going) || now >= l.NextAt)
                     {
                         l.State = Stage.Loitering;
+
+                        // A CAMP SEAT OR A CAMP BED: sat on or lain on, now he is at it. See Rest.
+                        if (l.Seat != null || l.Bed != null)
+                        {
+                            Rest(l, ped, now);
+                            return true;
+                        }
 
                         if (l.Chore != null)
                         {
@@ -4068,14 +4110,24 @@ namespace Hoodrich.Parkview
 
                 case Stage.Loitering:
                     // Stood talking to the one he strolled out with, or to nobody in particular.
+                    // Not a word out of a man asleep.
                     if (l.With != null) Talk(l, now, here, ped);
-                    else Chatter(l, ped, now, here);
+                    else if (!l.Asleep) Chatter(l, ped, now, here);
 
                     // THE SMALL HOURS, at the stagger Nudge gave him rather than at once -- and
                     // a man on his own floor goes home first, because he leaves from his mark.
                     // Firing Leave every beat at a man who cannot leave was the old way.
                     if (_quiet && !l.Stays)
                     {
+                        // A CAMP SLEEPS WHERE IT LIVES: on a bed already, he is asleep on it;
+                        // otherwise, at the stagger Nudge gave him, he turns in. See TurnIn.
+                        if (l.Camp)
+                        {
+                            if (!l.Asleep && l.Bed != null) { l.Asleep = true; return true; }
+                            if (!l.Asleep && now >= l.NextAt) TurnIn(l, now);
+                            return true;
+                        }
+
                         if (now < l.NextAt) return true;
                         if (!l.Straight && Leave(l, now, true)) return true;
 
@@ -4085,6 +4137,16 @@ namespace Hoodrich.Parkview
                     }
 
                     if (now < l.NextAt) return true;
+
+                    // A CAMP GETS UP AND DOES THE NEXT THING, or goes back to his spot by the
+                    // stove for a while. See Camp.
+                    if (l.Camp)
+                    {
+                        GetUp(l);
+                        if (Dice.Next(100) < CampOnwardChance && Camp(l, now)) return true;
+                        GoHome(l, now);
+                        return true;
+                    }
 
                     // A ROAMER DOES NOT REPORT BACK. He picks the next thing from where he is
                     // stood, which is what makes him read as somebody who lives here instead
@@ -4337,6 +4399,21 @@ namespace Hoodrich.Parkview
 
             var roll = Dice.Next(100);
 
+            // A CAMP IS HOME. Every beat is something in it: a word with the other one, the
+            // stove, a seat, a bed, the bins, or a smoke or a drink where he stands. Never a walk
+            // off and never up the road. Michael asked for two living at the stove on the lot on
+            // 2026-09-26 -- "do hobo things around that small area". See Camp.
+            if (l.Camp)
+            {
+                if (roll < 22 && Chat(l, now)) return;
+                if (roll < 85 && Camp(l, now)) return;
+
+                l.Turn++;
+                Doing(l.Scene, l.Who, l.Item, l.Turn);
+                l.NextAt = now + Beat(l);
+                return;
+            }
+
             // A ROAMER IS ON HIS FEET. He lives here rather than stands in it: he walks, he
             // stops for a word or a smoke or a turn with the bins, and he walks again --
             // better than half of his beats are a walk, and a beat is seconds long. Now and
@@ -4474,6 +4551,9 @@ namespace Hoodrich.Parkview
 
                 // Not a man NPC Mind has: turning him to somebody else would take him off it.
                 if (o.TakenAt != 0) continue;
+
+                // Nor one sat down or lying in his camp, or on his way to: a chat stands him up.
+                if (o.Asleep || o.Seat != null || o.Bed != null) continue;
                 if (o.Who == null || !o.Who.Exists() || !o.Who.IsAlive) continue;
 
                 // ON THE SAME FLOOR. Six metres reaches from a balcony to the ground under it,
@@ -4624,6 +4704,479 @@ namespace Hoodrich.Parkview
 
             return "WORLD_HUMAN_BUM_STANDING";
         }
+
+        // ==================================================================
+        // A camp
+        // ==================================================================
+
+        /// <summary>What a thing at a camp is for, from what it is called. See Camp.</summary>
+        private enum CampUse
+        {
+            None,
+            Fire,
+            Seat,
+            Bed,
+            Bin,
+            Pile
+        }
+
+        private static CampUse UseOf(Spooner.Placed thing)
+        {
+            var n = (thing.ModelName ?? "").ToLowerInvariant();
+
+            if (n.Contains("stove") || n.Contains("fire") || n.Contains("barrel")) return CampUse.Fire;
+
+            if (n.Contains("couch") || n.Contains("sofa") || n.Contains("seat") || n.Contains("chair") ||
+                n.Contains("stool") || n.Contains("bench")) return CampUse.Seat;
+
+            if (n.Contains("sleepbag") || n.Contains("matress") || n.Contains("mattress") || n.Contains("shelter") ||
+                n.Contains("tent") || n.Contains("bed")) return CampUse.Bed;
+
+            if ((n.Contains("bin") && !n.Contains("binbag")) || n.Contains("trolley") || n.Contains("cart")) return CampUse.Bin;
+
+            if (n.Contains("binbag") || n.Contains("pile") || n.Contains("litter") || n.Contains("scrap")) return CampUse.Pile;
+
+            return CampUse.None;
+        }
+
+        /// <summary>How much of a camp's day each kind of thing gets. A seat and the stove, most of it.</summary>
+        private static int WeightOf(CampUse use)
+        {
+            switch (use)
+            {
+                case CampUse.Fire: return 26;
+                case CampUse.Seat: return 30;
+                case CampUse.Bed: return 16;
+                case CampUse.Bin: return 10;
+                case CampUse.Pile: return 18;
+                default: return 0;
+            }
+        }
+
+        /// <summary>
+        /// Something to do in the camp. The things round his mark are sorted by what they are
+        /// for -- the stove, a seat, a bed, the bins, a pile of rubbish -- one kind is picked by
+        /// how much of a camp's day it gets, and one thing of that kind: he warms his hands at
+        /// the stove, sits on a seat or the couch facing the fire, lies down on a bed or at the
+        /// mouth of a shelter, goes through a bin, picks through a pile. The kind first, or the
+        /// twenty bits of litter round a camp outvote its one stove. A seat or a bed somebody
+        /// else is on, or walking to, is not his. False when there is nothing at all.
+        /// </summary>
+        private bool Camp(Life l, int now)
+        {
+            var ped = l.Who;
+            if (ped == null || !ped.Exists()) return false;
+
+            var kinds = new Dictionary<CampUse, List<Spooner.Placed>>();
+
+            foreach (var one in l.Scene.Items)
+            {
+                var use = CampThing(l, one);
+                if (use == CampUse.None) continue;
+
+                List<Spooner.Placed> list;
+                if (!kinds.TryGetValue(use, out list)) kinds[use] = list = new List<Spooner.Placed>();
+                list.Add(one);
+            }
+
+            if (kinds.Count == 0) return false;
+
+            var total = 0;
+            foreach (var pair in kinds) total += WeightOf(pair.Key);
+
+            var roll = Dice.Next(total);
+            var pick = CampUse.None;
+
+            foreach (var pair in kinds)
+            {
+                roll -= WeightOf(pair.Key);
+                if (roll >= 0) continue;
+
+                pick = pair.Key;
+                break;
+            }
+
+            if (pick == CampUse.None) return false;
+
+            var pool = kinds[pick];
+            GoTo(l, pool[Dice.Next(pool.Count)], pick, now);
+            return true;
+        }
+
+        /// <summary>
+        /// What a placement is to a man at this camp, or None: a prop of the scene, on the
+        /// ground, within reach of his mark, and -- a seat or a bed -- nobody else's just now.
+        /// </summary>
+        private CampUse CampThing(Life l, Spooner.Placed one)
+        {
+            if (one == l.Item || one.What != Spooner.Kind.Prop || one.Attached) return CampUse.None;
+            if (l.Scene.Floors.ContainsKey(one.Handle)) return CampUse.None;
+
+            var use = UseOf(one);
+            if (use == CampUse.None) return use;
+
+            var d = one.At - l.Item.At;
+            d.Z = 0f;
+            if (d.Length() > CampReach) return CampUse.None;
+
+            // On the ground, not up a wall: the trainers slung over the wire are not a chore.
+            if (one.At.Z > l.Item.At.Z + CampAbove) return CampUse.None;
+
+            if ((use == CampUse.Seat || use == CampUse.Bed) && SpokenFor(l, one)) return CampUse.None;
+
+            return use;
+        }
+
+        /// <summary>Whether somebody else is on that seat or bed, or on his way to it.</summary>
+        private bool SpokenFor(Life l, Spooner.Placed thing)
+        {
+            foreach (var o in _lives)
+            {
+                if (ReferenceEquals(o, l)) continue;
+                if (ReferenceEquals(o.Seat, thing) || ReferenceEquals(o.Bed, thing)) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Off to a thing at the camp, walked to where he does it. See Rest for a seat and a bed.</summary>
+        private void GoTo(Life l, Spooner.Placed thing, CampUse use, int now)
+        {
+            var ped = l.Who;
+            var mark = l.Item.At;
+
+            // From the side he comes at it, turned a little either way, so the two of them at
+            // the stove do not stand in the same boots.
+            var away = ped.Position - thing.At;
+            away.Z = 0f;
+            if (away.Length() < 0.1f) away = new Vector3(1f, 0f, 0f);
+            away.Normalize();
+            away = Turned(away, (float)(Dice.NextDouble() * 70.0 - 35.0));
+
+            Vector3 spot;
+
+            if (use == CampUse.Seat)
+            {
+                Vector3 cushion;
+                float facing;
+                CampSeat(l.Scene, thing, out cushion, out facing);
+
+                // Stood in front of it, and sat when he gets there.
+                var front = Forward(facing);
+                spot = new Vector3(cushion.X + front.X * SeatFront, cushion.Y + front.Y * SeatFront, mark.Z);
+                l.Seat = thing;
+                l.Chore = null;
+            }
+            else if (use == CampUse.Bed)
+            {
+                // Onto a bed that lies flat; to the mouth of one with a roof on it.
+                spot = LiesFlat(thing)
+                    ? new Vector3(thing.At.X, thing.At.Y, mark.Z)
+                    : new Vector3(thing.At.X + away.X * BedMouth, thing.At.Y + away.Y * BedMouth, mark.Z);
+                l.Bed = thing;
+                l.Chore = null;
+            }
+            else
+            {
+                spot = thing.At + away * ChoreStandOff;
+                spot.Z = mark.Z;
+                l.Chore = use == CampUse.Fire ? "WORLD_HUMAN_STAND_FIRE" : ChoreFor(thing);
+            }
+
+            Loose(l);
+            l.Pal = null;
+            l.With = null;
+            WalkTo(ped, spot, 0f, CampWalkMs);
+
+            l.Going = spot;
+            l.Face = thing.At;
+            l.State = Stage.Strolling;
+            l.NextAt = now + CampWalkMs;
+        }
+
+        /// <summary>
+        /// At his seat or his bed: sat on it facing the fire, or lying on it. A seat is a
+        /// scenario started at the cushion itself, the way Entourage sits people, because a man
+        /// told to sit where he stands sits on the air a foot short of it. A bed is the game's
+        /// own hobo lying down, which is what WORLD_HUMAN_BUM_SLUMPED is -- on his side, on the
+        /// ground. Through the small hours a bed is for the night. See TurnIn.
+        /// </summary>
+        private void Rest(Life l, Ped ped, int now)
+        {
+            try
+            {
+                if (l.Seat != null)
+                {
+                    Vector3 cushion;
+                    float facing;
+                    CampSeat(l.Scene, l.Seat, out cushion, out facing);
+
+                    // NOT FROM ACROSS THE CAMP. The scenario puts him on the cushion from wherever
+                    // he is, and a man who never got there -- somebody in the way -- would be
+                    // pulled onto it from metres off. He goes back to his spot instead.
+                    if (ped.Position.DistanceTo(cushion) > SitReach)
+                    {
+                        GetUp(l);
+                        GoHome(l, now);
+                        return;
+                    }
+
+                    Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+                    Function.Call(Hash.TASK_START_SCENARIO_AT_POSITION, ped.Handle,
+                                  CampSit[Dice.Next(CampSit.Length)],
+                                  cushion.X, cushion.Y, cushion.Z, facing, 0, true, true);
+                    Function.Call(Hash.SET_PED_KEEP_TASK, ped.Handle, true);
+
+                    l.NextAt = now + Between(SitLeastMs, SitMostMs);
+                    return;
+                }
+
+                var bed = l.Bed;
+                var off = ped.Position - bed.At;
+                off.Z = 0f;
+
+                // Never got there: in the day, back to his spot; at night, down where he is.
+                if (!_quiet && off.Length() > BedReach)
+                {
+                    GetUp(l);
+                    GoHome(l, now);
+                    return;
+                }
+
+                var heading = LiesFlat(bed)
+                    ? Deg360(Along(bed) + (Steady(bed.At) % 2 == 0 ? 0f : 180f))
+                    : Function.Call<float>(Hash.GET_HEADING_FROM_VECTOR_2D, off.X, off.Y);
+
+                Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+                Function.Call(Hash.SET_ENTITY_HEADING, ped.Handle, heading);
+                Scenario(ped, "WORLD_HUMAN_BUM_SLUMPED");
+
+                l.Asleep = _quiet;
+                l.NextAt = now + (_quiet ? NightMs : Between(NapLeastMs, NapMostMs));
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Scenery: a camp rest went wrong: " + ex.Message);
+                GetUp(l);
+                l.NextAt = now + 5000;
+            }
+        }
+
+        /// <summary>
+        /// The small hours at the camp: to bed. The nearest bed round his mark that nobody else
+        /// has, and asleep on it until the hours are over -- a man who lives in a camp does not
+        /// walk off for the night, he sleeps in it. No bed free, he lies down where he is.
+        /// </summary>
+        private void TurnIn(Life l, int now)
+        {
+            var ped = l.Who;
+            if (ped == null || !ped.Exists()) return;
+
+            GetUp(l);
+
+            Spooner.Placed best = null;
+            var bestD = CampReach;
+
+            foreach (var one in l.Scene.Items)
+            {
+                if (CampThing(l, one) != CampUse.Bed) continue;
+
+                var d = one.At - l.Item.At;
+                d.Z = 0f;
+                if (d.Length() >= bestD) continue;
+
+                bestD = d.Length();
+                best = one;
+            }
+
+            if (best != null)
+            {
+                GoTo(l, best, CampUse.Bed, now);
+                return;
+            }
+
+            Loose(l);
+            Function.Call(Hash.CLEAR_PED_TASKS, ped.Handle);
+            Scenario(ped, "WORLD_HUMAN_BUM_SLUMPED");
+
+            l.State = Stage.Loitering;
+            l.Asleep = true;
+            l.NextAt = now + NightMs;
+        }
+
+        /// <summary>Off his seat or his bed, and awake: the next task stands him up.</summary>
+        private static void GetUp(Life l)
+        {
+            l.Seat = null;
+            l.Bed = null;
+            l.Asleep = false;
+        }
+
+        /// <summary>
+        /// Where a man sits on a seat, and which way he faces. Measured off the model the way
+        /// Seating measures a couch: a seat with a back is sat on a bit under halfway up it, a
+        /// low one with none -- a crate, a bucket -- is sat on its top. A couch faces out of its
+        /// minus-Y, which Seating learned the hard way; anything else at a camp faces the fire.
+        /// </summary>
+        private static void CampSeat(Scene scene, Spooner.Placed seat, out Vector3 cushion, out float facing)
+        {
+            var min = new Vector3(-0.3f, -0.3f, 0f);
+            var max = new Vector3(0.3f, 0.3f, 0.45f);
+
+            try
+            {
+                var lo = new OutputArgument();
+                var hi = new OutputArgument();
+                Function.Call(Hash.GET_MODEL_DIMENSIONS, seat.ModelHash, lo, hi);
+                min = lo.GetResult<Vector3>();
+                max = hi.GetResult<Vector3>();
+            }
+            catch
+            {
+                // The guess above: a crate.
+            }
+
+            var tall = max.Z - min.Z;
+            var name = (seat.ModelName ?? "").ToLowerInvariant();
+            var couch = name.Contains("couch") || name.Contains("sofa");
+
+            var up = couch || tall >= BacklessUnder ? min.Z + tall * 0.45f : max.Z;
+            var mid = new Vector3((min.X + max.X) * 0.5f, (min.Y + max.Y) * 0.5f, up);
+
+            // A couch's front is its minus-Y, so the cushion is a little toward it.
+            if (couch) mid.Y -= (max.Y - min.Y) * 0.15f;
+
+            cushion = Rotated(seat.At, seat.Yaw, mid);
+
+            if (couch)
+            {
+                facing = Deg360(seat.Yaw + 180f);
+                return;
+            }
+
+            Vector3 fire;
+
+            if (Hearth(scene, seat.At, out fire))
+            {
+                facing = Function.Call<float>(Hash.GET_HEADING_FROM_VECTOR_2D, fire.X - cushion.X, fire.Y - cushion.Y);
+                return;
+            }
+
+            facing = Deg360(seat.Yaw);
+        }
+
+        /// <summary>The nearest stove or fire to a spot, within reach of it.</summary>
+        private static bool Hearth(Scene scene, Vector3 near, out Vector3 fire)
+        {
+            fire = Vector3.Zero;
+            var best = HearthReach;
+            var found = false;
+
+            foreach (var one in scene.Items)
+            {
+                if (one.What != Spooner.Kind.Prop || UseOf(one) != CampUse.Fire) continue;
+
+                var d = one.At - near;
+                d.Z = 0f;
+                if (d.Length() >= best) continue;
+
+                best = d.Length();
+                fire = one.At;
+                found = true;
+            }
+
+            return found;
+        }
+
+        /// <summary>A bed a man lies on rather than in: a bag, a mattress. A shelter or a tent has a roof on it, and he lies at its mouth.</summary>
+        private static bool LiesFlat(Spooner.Placed bed)
+        {
+            var n = (bed.ModelName ?? "").ToLowerInvariant();
+            return !(n.Contains("shelter") || n.Contains("tent"));
+        }
+
+        /// <summary>The heading along a bed's long side, off the model.</summary>
+        private static float Along(Spooner.Placed bed)
+        {
+            try
+            {
+                var lo = new OutputArgument();
+                var hi = new OutputArgument();
+                Function.Call(Hash.GET_MODEL_DIMENSIONS, bed.ModelHash, lo, hi);
+                var min = lo.GetResult<Vector3>();
+                var max = hi.GetResult<Vector3>();
+
+                return max.Y - min.Y >= max.X - min.X ? bed.Yaw : bed.Yaw + 90f;
+            }
+            catch
+            {
+                return bed.Yaw;
+            }
+        }
+
+        /// <summary>A point on a placed model from the model's own axes: its heading turns the offset.</summary>
+        private static Vector3 Rotated(Vector3 at, float yaw, Vector3 local)
+        {
+            var h = yaw * (float)(Math.PI / 180.0);
+            var c = (float)Math.Cos(h);
+            var s = (float)Math.Sin(h);
+            return new Vector3(at.X + local.X * c - local.Y * s, at.Y + local.X * s + local.Y * c, at.Z + local.Z);
+        }
+
+        /// <summary>The way a heading points, on the ground.</summary>
+        private static Vector3 Forward(float heading)
+        {
+            var h = heading * (float)(Math.PI / 180.0);
+            return new Vector3(-(float)Math.Sin(h), (float)Math.Cos(h), 0f);
+        }
+
+        private static Vector3 Turned(Vector3 v, float degrees)
+        {
+            var h = degrees * (float)(Math.PI / 180.0);
+            var c = (float)Math.Cos(h);
+            var s = (float)Math.Sin(h);
+            return new Vector3(v.X * c - v.Y * s, v.X * s + v.Y * c, v.Z);
+        }
+
+        private static float Deg360(float deg)
+        {
+            deg %= 360f;
+            return deg < 0f ? deg + 360f : deg;
+        }
+
+        /// <summary>How far round his mark a camp's things are his, how far above his feet one may be, and how far a fire warms a seat.</summary>
+        private const float CampReach = 9f;
+        private const float CampAbove = 0.6f;
+        private const float HearthReach = 6f;
+
+        /// <summary>After a sit or a nap: on to the next thing this often in a hundred, back to his spot the rest.</summary>
+        private const int CampOnwardChance = 55;
+        private const int CampWalkMs = 20000;
+
+        /// <summary>Where he stands before he sits, how near the cushion that must be, and a roofed bed's mouth.</summary>
+        private const float SeatFront = 0.8f;
+        private const float SitReach = 2.6f;
+        private const float BedMouth = 1.0f;
+        private const float BedReach = 2.6f;
+
+        /// <summary>Lower than this and a seat has no back: he sits on its top.</summary>
+        private const float BacklessUnder = 0.75f;
+
+        private const int SitLeastMs = 45000;
+        private const int SitMostMs = 120000;
+        private const int NapLeastMs = 60000;
+        private const int NapMostMs = 150000;
+
+        /// <summary>Asleep for the night; the small hours ending is what wakes him. See Nudge.</summary>
+        private const int NightMs = 600000;
+
+        /// <summary>How a man at a camp sits: with a can, or just sat.</summary>
+        private static readonly string[] CampSit =
+        {
+            "PROP_HUMAN_SEAT_CHAIR_DRINK_BEER",
+            "PROP_HUMAN_SEAT_CHAIR",
+            "PROP_HUMAN_SEAT_BENCH_DRINK"
+        };
 
         /// <summary>A gang sign, thrown up over whatever he is doing, and the idle back after it.</summary>
         private void Sign(Life l, int now)
