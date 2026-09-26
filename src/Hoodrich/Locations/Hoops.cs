@@ -115,17 +115,20 @@ namespace Hoodrich.Locations
         /// <summary>
         /// THE RINGS: for each hoop, in the order of Spots, the middle of its rim and how far from
         /// there to the edge of the ring the ball has to come down through. Placed by hand on the
-        /// court (see RingPlacing); Michael's own placings are read from the ini over these, and go
-        /// in here for the release once the ball really goes in through them. Until then they are
-        /// a regulation court's, from each spot: 4.2 m down the court and 3.05 m up.
+        /// court (see RingPlacing); a placing in the ini is read over these.
+        ///
+        /// Hoop 2's is Michael's own, placed on 2026-09-26: 51 cm across, 3.09 m up, and 5.2 m
+        /// from the spot -- a metre further out than a regulation court puts it, which is where the
+        /// first guess had it. Hoop 1's is hoop 2's turned end for end about the middle of the court
+        /// until he places it too.
         /// </summary>
         private static readonly Vector3[] RingAt =
         {
-            new Vector3(-198.515f, -1505.758f, 33.681f),
-            new Vector3(-212.577f, -1521.766f, 33.666f)
+            new Vector3(-197.998f, -1504.840f, 33.707f),
+            new Vector3(-213.102f, -1522.676f, 33.692f)
         };
 
-        private static readonly float[] RingWide = { 0.23f, 0.23f };
+        private static readonly float[] RingWide = { 0.254f, 0.254f };
 
         /// <summary>
         /// PH_L_Hand: the ball rides in his LEFT hand. The ball-game idle holds that hand up in
@@ -852,11 +855,13 @@ namespace Hoodrich.Locations
 
                 if (_launchTo == Vector3.Zero || !Launch(from, _launchTo, out v)) v = _launch;
 
-                // Flown by the game, with nothing slowing it but the rim -- Street Golf's ball.
+                // Flown by the game with nothing slowing it, so it flies the line to the letter.
+                // Street Golf's ball had a touch of drag, and with it every shot came down 30 to
+                // 55 cm short of the line's ring (the log, 2026-09-26). Nought now.
                 Function.Call(Hash.FREEZE_ENTITY_POSITION, _ball.Handle, false);
                 Function.Call(Hash.SET_ENTITY_COLLISION, _ball.Handle, true, true);
                 Function.Call(Hash.ACTIVATE_PHYSICS, _ball.Handle);
-                Function.Call(Hash.SET_OBJECT_PHYSICS_PARAMS, _ball.Handle, -1f, -1f, 0f, 0f, 0.01f, -1f, -1f, -1f, -1f, -1f, -1f);
+                Function.Call(Hash.SET_OBJECT_PHYSICS_PARAMS, _ball.Handle, -1f, -1f, 0f, 0f, 0f, -1f, -1f, -1f, -1f, -1f, -1f);
                 Function.Call(Hash.APPLY_FORCE_TO_ENTITY, _ball.Handle, 1, 0.001f, 0.001f, 0f, 0f, 0f, 0f, 0, false, false, true, false, true);
                 Function.Call(Hash.SET_ENTITY_MAX_SPEED, _ball.Handle, 60f);
                 Function.Call(Hash.SET_ENTITY_VELOCITY, _ball.Handle, v.X, v.Y, v.Z);
