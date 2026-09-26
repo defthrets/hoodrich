@@ -213,7 +213,7 @@ namespace Hoodrich.Locations
         /// properly, short enough that one which cannot is available for its turn rather than
         /// grinding at a kerb for the whole night while the middle stands empty.
         /// </summary>
-        private const int StageGiveUpMs = 40000;
+        private const int StageGiveUpMs = 70000;
 
         private Spot[] Spots => _here.Spots;
 
@@ -987,6 +987,7 @@ namespace Hoodrich.Locations
 
         }
 
+        /// <summary>What the rig is doing with a performer. See Rigs.</summary>
         private sealed class Runner
         {
             public Vehicle Car;
@@ -1044,14 +1045,14 @@ namespace Hoodrich.Locations
             /// <summary>Driving back to the middle after sliding wide.</summary>
             public bool Returning;
 
-            /// <summary>
-            /// When he stops holding it on the spot and lets it run, and whether he has.
-            ///
-            /// A DONUT AND THEN A BIG ONE. See Wider -- the same lock and the same throttle,
-            /// with nothing holding him near his mark any more.
-            /// </summary>
-            public int WideAt;
-            public bool Wide;
+            /// <summary>Stood on his mark smoking, between the brake and the lock. See Smoke and Show.</summary>
+            public bool Smoking;
+
+            /// <summary>He has had his standing burnout, so a return to the mark goes straight to the lock. See Keep.</summary>
+            public bool Smoked;
+
+            /// <summary>How many times in a row he has been sent back to his mark and not got there. See Keep.</summary>
+            public int Hauls;
 
             /// <summary>Driving back to the middle mid-show, and when he set off. See Home.</summary>
             public bool Going;
@@ -1618,6 +1619,20 @@ namespace Hoodrich.Locations
 
             Cars();
 
+            // THE PERFORMERS ARE SENT FOR FIRST, NOT LAST. They used to be fetched only once
+            // half the kerbs were taken, and by then the world round Chamberlain Hills is past
+            // its ped line -- Parkview's eighty people are two hundred metres from Carson --
+            // so the crowd got in and the show did not: the button gave a car park. They go
+            // now, while there is room, drive in over the minute the street takes to park, and
+            // wait at the ring until it has. See Keep.
+            _emptySaid = 0;
+            _inSaid = 0;
+
+            while (Queued() < Stages.Length)
+            {
+                if (!In()) break;
+            }
+
             // THE WORD GOES OUT, AND ONLY THE WORD.
             //
             // One post naming the junction, so somebody reading the feed can decide to come --
@@ -1627,7 +1642,7 @@ namespace Hoodrich.Locations
             // something once it has been loud for a while.
             if (Social != null) Social.On(SocialEvent.TakeoverOn);
 
-            Log.Info("Takeover: on. " + _toCome + " on their way.");
+            Log.Info("Takeover: on. " + _toCome + " on their way, " + Queued() + " performer(s) sent for.");
         }
 
         /// <summary>People set off in small lots rather than all at once.</summary>
@@ -4402,6 +4417,16 @@ namespace Hoodrich.Locations
                     continue;
                 }
 
+                // HIS CAR IS DONE. A normal car takes normal damage, and one that has popped a
+                // tyre or cooked its engine is not a performer any more. See Broken and Retire.
+                string why;
+
+                if (!r.Leaving && Broken(r, out why))
+                {
+                    if (Retire(r, why, now)) _running.RemoveAt(i);
+                    continue;
+                }
+
                 // HIS GO IS OVER AND HE IS GOING BACK TO HIS MARKER.
                 //
                 // Not off the map any more. He parks up where he was waiting, somebody else is
@@ -4414,7 +4439,8 @@ namespace Hoodrich.Locations
                     {
                         // Spawned straight into the pit with no marker of his own. Off the map
                         // as before -- there is nowhere to send him.
-                        if (r.Car.Position.DistanceTo(Middle) < Ring + 14f) continue;
+                        if (r.Car.Position.DistanceTo(Middle) < Ring + 14f &&
+                            (r.GoneAt == 0 || now - r.GoneAt < LeaveGiveUpMs)) continue;
 
                         Out(r);
                         _running.RemoveAt(i);
@@ -4454,6 +4480,16 @@ namespace Hoodrich.Locations
 
                     if (!r.AtStage)
                     {
+                        // THE STREET IS NOT PARKED YET. Nobody skids until half the kerbs are
+                        // taken, see Ringed, so he waits at the edge -- and the clock that gives
+                        // up on arriving waits with him.
+                        if (!_ringed && r.Car.Position.DistanceTo(Circle) < HoldOff)
+                        {
+                            Wait(r);
+                            r.Sent += TickMs;
+                            continue;
+                        }
+
                         if (r.Car.Position.DistanceTo(bay) > StageArrived)
                         {
                             // HE WAITS WHERE HE IS RATHER THAN NOT AT ALL, and this is why the
@@ -4517,7 +4553,23 @@ namespace Hoodrich.Locations
                             // the lock starts from nothing after that.
                             r.Way = _rng.Next(2) == 0 ? 1 : -1;
                             Reckless(r, true);
-                            Settle(r, now);
+
+                            // NOT FROM OUT THERE. A car that gave up on its mark twenty metres
+                            // out and started its show where it stopped was over the leash the
+                            // moment the lock came on, and spent its night being hauled in and
+                            // starting again -- "they keep stopping after a few seconds". Too
+                            // far from the middle to start, he drives to his mark first and has
+                            // his smoke there. See Home and the way back in.
+                            if (r.Car.Position.DistanceTo(Circle) > Roam - 2f)
+                            {
+                                Log.Info("Takeover: a performer stopped " + (int)r.Car.Position.DistanceTo(Circle) +
+                                         " m from the middle -- too far to start there. Driving in first.");
+                                Home(r, now);
+                            }
+                            else
+                            {
+                                Settle(r, now);
+                            }
                         }
                         catch
                         {
@@ -4526,20 +4578,50 @@ namespace Hoodrich.Locations
                     }
                     else if (r.Going)
                     {
-                        // ON HIS WAY BACK IN. Nothing else happens to him until he is either
-                        // there or has been trying long enough that here is as good as there.
-                        if (r.Car.Position.DistanceTo(Circle) < BackWhen ||
-                            now - r.GoneAt > BackGiveUpMs)
+                        // ON HIS WAY BACK IN. Back on the lock the moment he is near enough the
+                        // middle -- crossing the inner ring still moving, so the skid starts
+                        // pointed in -- or when he has stopped anywhere near his mark, which is
+                        // as near as the crowd is going to let him get. The test before this
+                        // wanted him within three metres of a mark the drive task itself stops
+                        // three short of, so he sat there twelve seconds a time and then did it
+                        // again: "they keep stopping". On Davis one did that four times and left.
+                        var d = r.Car.Position.DistanceTo(Circle);
+                        var near = d < Roam - 4f;
+
+                        if (!near)
+                        {
+                            try { near = r.Car.Speed < 1f && r.Car.Position.DistanceTo(HomePoint(r)) < BackNear; }
+                            catch { }
+                        }
+
+                        if (near || now - r.GoneAt > BackGiveUpMs)
                         {
                             r.Going = false;
                             r.Still = 0;
 
-                            // STRAIGHT BACK INTO THE LOCK, NOT BACK TO THE BRAKE. He is already
-                            // moving and already sideways; standing him up to do the five
-                            // seconds of smoke again is the stop-start this whole branch exists
-                            // to get rid of. The brake and the burnout are an ARRIVAL, and he
-                            // arrived a minute ago.
-                            Show(r, now);
+                            // A CAR THAT NEVER GETS IN IS LET GO OF. Four returns in a row that
+                            // ran out of time still outside the leash is a middle he cannot
+                            // reach -- a wreck on it, a crowd that will not part.
+                            if (near || d <= Roam) r.Hauls = 0;
+                            else r.Hauls++;
+
+                            if (r.Hauls >= HaulsMost)
+                            {
+                                Log.Info("Takeover: a performer cannot get back to his mark. He leaves, and somebody else is sent for.");
+                                r.Stage = -1;
+                                r.GoneAt = now;
+                                Leave(r);
+                                continue;
+                            }
+
+                            // STRAIGHT BACK INTO THE LOCK, NOT BACK TO THE BRAKE -- if he has
+                            // had his smoke. He is already moving and already sideways;
+                            // standing him up to do the five seconds again is the stop-start
+                            // this branch exists to get rid of. A car that drove in to its mark
+                            // rather than starting where it stopped has not had it yet, and
+                            // gets it here: the brake, the smoke, then the lock.
+                            if (r.Smoked) Show(r, now);
+                            else Settle(r, now);
                         }
                     }
                     else if (r.Burn != 0)
@@ -4548,24 +4630,39 @@ namespace Hoodrich.Locations
                         // may start; being stopped says whether he does. See Braking.
                         Braking(r, now);
                     }
-                    else if (r.Car.Position.DistanceTo(Circle) > (r.Wide ? WideRoam : Roam))
+                    else if (r.Smoking)
                     {
-                        // TOO FAR OUT. Back to the middle -- see Home.
-                        Home(r, now);
+                        // STOOD ON HIS MARK SMOKING, on purpose. Not too far out, not stuck:
+                        // asking either of those of a car that is meant to be standing still cut
+                        // every standing burnout off at three and a half seconds of the five.
+                        if (now >= r.NextAction) Show(r, now);
                     }
-                    else if (Wedged(r, now))
+                    else if (OffCourse(r))
                     {
-                        // OR HE CANNOT MOVE. Same answer: a route to the middle is also the
-                        // thing that gets a car off whatever it is caught on.
+                        // OFF COURSE. Back to his mark -- see Home. THIS IS THE WHOLE LEASH: the
+                        // physics does the skidding, and only when it has carried him too far
+                        // from the middle -- still moving, so a car sat spinning its tyres
+                        // anywhere inside the ring is left to it -- does he drive back and let
+                        // it go again. "They need to keep going until they are off course."
                         Home(r, now);
                     }
                     else
                     {
-                        // A MINUTE ON THE SPOT AND THEN HE LETS IT RUN. See Wider.
-                        if (!r.Wide && r.WideAt != 0 && now >= r.WideAt) Wider(r);
+                        // EVERY SO OFTEN, THE OTHER WAY. Not on one clock: each car draws its
+                        // own, so no two of them are turning the same way for long.
+                        if (r.SwapAt == 0) r.SwapAt = now + SwapMinMs + _rng.Next(SwapMaxMs - SwapMinMs);
 
-                        // A temp action expires; the show is topped up before it does.
-                        if (now >= r.NextAction) Show(r, now);
+                        if (now >= r.SwapAt)
+                        {
+                            r.Way = -r.Way;
+                            r.SwapAt = now + SwapMinMs + _rng.Next(SwapMaxMs - SwapMinMs);
+                            Show(r, now);
+                        }
+                        else if (now >= r.NextAction)
+                        {
+                            // A temp action expires; the show is topped up before it does.
+                            Show(r, now);
+                        }
                     }
 
                     continue;
@@ -4650,8 +4747,39 @@ namespace Hoodrich.Locations
             // Counted separately from the round-the-outside cars all the same: the middle is a
             // PLACE, and letting the two come out of one pool means the mark stands empty
             // whenever the circle happens to be busy.
+            // KEEP THE MARKERS OCCUPIED, FROM THE START. Begin asks once and the first ask can
+            // fail on nothing more than a driver model not loaded yet -- it did, on Davis, and
+            // the next ask used to wait for the street to park. Asked every tick until the list
+            // is full; they wait at the ring until it is parked. See Keep above.
+            while (Queued() < Stages.Length)
+            {
+                if (!In()) break;
+            }
+
             // NOBODY SKIDS UNTIL THE STREET IS PARKED. See Ringed.
             if (!Ringed()) return;
+
+            // AND IF NOBODY IS, THE LOG SAYS SO, with the numbers that name the link: nobody on
+            // the list is In failing (its own line says why), people on the list but nobody at
+            // a spot is them not getting there, and somebody at a spot but nobody spinning is
+            // the arrival chain.
+            if (Spinning() == 0 && now - _emptySaid >= EmptyEveryMs)
+            {
+                _emptySaid = now;
+
+                var listed = 0;
+                var there = 0;
+
+                foreach (var r in _running)
+                {
+                    if (r.Car == null || !r.Car.Exists()) continue;
+                    listed++;
+                    if (r.AtStage) there++;
+                }
+
+                Log.Info("Takeover: nothing in the middle yet -- " + listed + " performer(s) on the list, " +
+                         there + " at a spot, " + (listed - there) + " on the way. " + Core.Crowded.Line() + ".");
+            }
 
             var round = 0;
 
@@ -4664,15 +4792,6 @@ namespace Hoodrich.Locations
                 if (r.Stage >= 0) continue;
 
                 round++;
-            }
-
-            // KEEP THE MARKERS OCCUPIED. Somebody should always be sat ready, so the next turn
-            // starts with a car that is already there rather than one that has to be fetched
-            // from a kerb first -- which was the old gap between one car finishing and the
-            // next arriving.
-            while (Queued() < Stages.Length)
-            {
-                if (!In()) break;
             }
 
             // AN EMPTY PIT IS THE ONE FAILURE THIS FILE CANNOT SEE.
@@ -5321,28 +5440,30 @@ namespace Hoodrich.Locations
             // "intense FPS drop and makes my game crash" and kocabac's ERR_MEM_EMBEDDEDALLOC
             // are both the shape of a world with nothing left in its pools, and a takeover is
             // the one thing here capable of emptying them on its own.
-            if (Core.Crowded.Busy)
+            // THE HARD LINE, NOT THE SOFT ONE. See Crowded.Full: four performers are the whole
+            // point of the thirty cars and sixty people spawned round them.
+            if (Core.Crowded.Full)
             {
-                Core.Crowded.HeldOff("Takeover");
+                Core.Crowded.HeldOff("Takeover performers");
                 return false;
             }
 
             try
             {
                 var from = OnRoad(DriveFromMin + (float)_rng.NextDouble() * (DriveFromMax - DriveFromMin));
-                if (from == Vector3.Zero) return false;
+                if (from == Vector3.Zero) return Refused("no road point to start from");
 
                 // NOT A SHOW CAR. It keeps the paint, the rims, the bodywork and the neon;
                 // it loses the coloured tyre smoke and the coloured headlights. See Dress.
                 var car = Contender(from);
-                if (car == null) return false;
+                if (car == null) return Refused("no car (model not ready, or the pool is full)");
 
                 var driver = Behind(car);
 
                 if (driver == null)
                 {
                     car.Delete();
-                    return false;
+                    return Refused("no driver (model not ready, or the pool is full)");
                 }
 
                 var r = new Runner
@@ -5371,14 +5492,38 @@ namespace Hoodrich.Locations
                 r.Sent = Game.GameTime;
 
                 _running.Add(r);
+
+                Log.Info("Takeover: a performer sent for stage " + stage + " from " +
+                         (int)from.DistanceTo(Circle) + " m out.");
                 return true;
             }
             catch (Exception ex)
             {
-                Log.Debug("Takeover could not send one in: " + ex.Message);
-                return false;
+                return Refused(ex.Message);
             }
         }
+
+        /// <summary>
+        /// A performer could not be sent, and why -- in the log, once every fifteen seconds
+        /// while it keeps happening. AN EMPTY PIT WAS THE ONE FAILURE THIS FILE COULD NOT SEE:
+        /// every way this could fail was a quiet false, so a night where the middle stayed
+        /// empty produced a log identical to one where it did not.
+        /// </summary>
+        private bool Refused(string why)
+        {
+            var now = Game.GameTime;
+
+            if (now - _inSaid >= EmptyEveryMs)
+            {
+                _inSaid = now;
+                Log.Info("Takeover: could not send a performer -- " + why + ". " + Core.Crowded.Line() + ".");
+            }
+
+            return false;
+        }
+
+        private int _inSaid;
+        private int _emptySaid;
 
         /// <summary>Their go is over. Grip back, smoke off, and out the way they came.</summary>
         private void Leave(Runner r)
@@ -5661,16 +5806,13 @@ namespace Hoodrich.Locations
             r.Burn = now + SettleMs;
             r.NextAction = now + SettleMs + BurnMs;
 
-            // AND THE MINUTE STARTS AGAIN, wherever he has come from. Settle is the one door
-            // every arrival goes through -- a fresh car, one hauled back off a wide lap, one
-            // that went home and came back for another turn -- so this is the only place that
-            // has to say it. A runner who kept his old clock would open straight out into the
-            // wide one on arrival and skip the brake and the smoke, which are the two parts
-            // everybody is stood there to watch.
-            r.WideAt = 0;
-            r.Wide = false;
+            // Settle is the one door every arrival goes through, so this is the one place to
+            // say what an arrival is not: not on his way back, not stuck, not smoking yet, and
+            // the swap clock starts again at the lock.
             r.Going = false;
             r.Still = 0;
+            r.Smoking = false;
+            r.SwapAt = 0;
 
             try
             {
@@ -5765,6 +5907,8 @@ namespace Hoodrich.Locations
         private void Smoke(Runner r, int now)
         {
             r.Burn = 0;
+            r.Smoking = true;
+            r.Smoked = true;
             r.NextAction = now + BurnMs;
 
             try
@@ -5831,9 +5975,9 @@ namespace Hoodrich.Locations
         /// pivot on. It is where the smoke comes from too -- a wheel spinning on reduced grip
         /// smokes on its own, which is why the burnout native was never needed for the look.
         ///
-        /// IT TRAVELS A LITTLE AND THAT IS THE PRICE. Nothing is holding it, so a donut wanders
-        /// across the tarmac over a minute or two. Roam brings it back to the middle. Being
-        /// and then is a cheaper thing to watch than a car that never turned.
+        /// IT USED TO TRAVEL, AND NOW IT DOES NOT. Nothing held it, so a donut wandered across
+        /// the tarmac and slid off course, and a leash hauled it back. The rig holds it now --
+        /// the car goes where the line goes and this rig is only the smoke. See Rigs.
         ///
         /// One method rather than three copies, because Show, Lock and the return from a
         /// correction all have to agree about this or the car changes character mid-spin.
@@ -5855,9 +5999,8 @@ namespace Hoodrich.Locations
                 //
                 // The rig that turns a car is the one this file had before: the rears loose and
                 // the fronts free. Reduced grip lets the back step out, drift tyres loosen it
-                // further, and the steering lock then has something to pivot about. Nothing
-                // holds it, so it does travel a little -- which is what Roam is for, and
-                // hauling one back every so often is a cheaper price than not going round.
+                // further, and the wheels spinning on it are the smoke. Where the car goes is
+                // the rig's, not the tyres' -- see Rigs.
                 Function.Call(Hash.SET_VEHICLE_BURNOUT, car.Handle, false);
 
                 Slick(car, true);
@@ -5899,11 +6042,9 @@ namespace Hoodrich.Locations
             r.NextAction = now + LockMs - TopUpLead;
             r.Burn = 0;
 
-            // The minute starts at the first lock and not before, so the five seconds of
-            // standing smoke are not counted as part of it. Set once: Show is called again
-            // every twelve seconds to top the lock up, and a clock that restarted each time
-            // would never come round.
-            if (r.WideAt == 0) r.WideAt = now + DonutMs;
+            // The smoke is over; from here the wheel and the throttle are the whole show, and
+            // where the car goes is the physics. See Roam for the one thing that reins it in.
+            r.Smoking = false;
 
             try
             {
@@ -5942,14 +6083,18 @@ namespace Hoodrich.Locations
             r.GoneAt = now;
             r.Still = 0;
 
+            // TO HIS OWN MARK, NOT THE MIDDLE. The middle is where the others' marks are round,
+            // and a car driven into it at twelve metres a second arrives in somebody's donut.
+            var to = HomePoint(r);
+
             try
             {
                 Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
                 Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
 
                 Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, r.Driver.Handle,
-                              r.Car.Handle, Circle.X, Circle.Y, Circle.Z,
-                              12f, 0, r.Car.Model.Hash, RushStyle, 3f, true);
+                              r.Car.Handle, to.X, to.Y, to.Z,
+                              HomeSpeed, 0, r.Car.Model.Hash, RushStyle, 3f, true);
             }
             catch
             {
@@ -5957,111 +6102,221 @@ namespace Hoodrich.Locations
             }
         }
 
+        /// <summary>Stopped within this of his mark on the way back counts as back: as near as the crowd lets him. See Keep.</summary>
+        private const float BackNear = 8f;
+
+        /// <summary>The most a return is given before he starts again where he is.</summary>
+        private const int BackGiveUpMs = 9000;
+
         /// <summary>
-        /// Whether he has stopped being able to move.
-        ///
-        /// A CAR GOING ROUND IS NEVER STILL. A donut is nothing but movement, so a performer
-        /// reading nearly zero for several seconds is caught on something -- a kerb, a bollard,
-        /// another car, the wall of people. Waiting a few seconds rather than acting on one
-        /// reading is what stops the moment between two temp actions being mistaken for it.
+        /// Past the leash and still doing more than this, metres a second, is a car sliding
+        /// away. Slower is a car spinning its tyres, and it is left to it: there is no stuck
+        /// test any more. A performer wedged on something with the rears going is still the
+        /// show, and the old test -- stopped for a few seconds means send him home -- was
+        /// the other half of "they keep stopping".
         /// </summary>
-        private static bool Wedged(Runner r, int now)
+        private const float LeashSpeed = 2f;
+
+        /// <summary>Where a performer belongs: his own mark, or the middle if he has none.</summary>
+        private Vector3 HomePoint(Runner r)
+        {
+            return r.Stage >= 0 ? Pitch(r.Stage) : Circle;
+        }
+
+        // ==================================================================
+        // The leash
+        // ==================================================================
+
+        /// <summary>
+        /// How far from the MIDDLE a performer may get before he is brought back to his mark.
+        ///
+        /// THIS IS THE WHOLE OF IT, AND THAT IS THE POINT. The car is on full lock and the
+        /// throttle with its grip cut and drift tyres on, and where it goes from there is the
+        /// physics: the back steps out, it catches, it slides wide, it comes round, and none
+        /// of it is the same twice. For a month it was held on a line by hand every frame
+        /// instead -- donuts that were circles, loops that were arcs, then a routine per car
+        /// with kicks and slips and spin-outs written into it -- and every version of that
+        /// looked like what it was. Michael asked for the skids back: "real random skids but
+        /// just trying to stay near the centre". The hand-held rig is in the history at
+        /// 24401da if anybody ever wants it.
+        ///
+        /// Measured from the circle, not from his mark, and tighter than it was: the ini's
+        /// TakeoverSpinRadius is the circle they try to hold, so a couple of metres past it is
+        /// where a car stops being near the middle. The ring of people stands at nineteen, and
+        /// nobody is given more than seven short of that.
+        /// </summary>
+        private float Roam
+        {
+            get
+            {
+                // FIVE PAST THE CIRCLE THEY HOLD, and never nearer the crowd than five. It was
+                // two past, and two past an eight-metre circle is ten from the middle -- while
+                // a car counted as back at his mark anywhere within six metres of a mark that
+                // is itself seven out. Back on the lock at thirteen from the middle, hauled in
+                // again at ten: "they keep stopping after a few seconds". The lock now comes
+                // back on within four of the mark, eleven from the middle at the worst, and the
+                // leash is two metres further out than that.
+                var r = SpinRadius + 5f;
+                var most = Ring - 5f;
+
+                // Never under ten, whatever the ini says -- Michael runs a 3 -- because a car
+                // is back on the lock four metres inside this, and four metres inside anything
+                // less is on top of the middle.
+                if (r < 10f) r = 10f;
+                if (r > most) r = most;
+                return r;
+            }
+        }
+
+        /// <summary>
+        /// Off course: sliding away past the leash, or into the crowd whatever he is doing.
+        /// A car past the leash but doing walking pace is not sliding anywhere; it is spinning
+        /// its tyres where it stopped, and that is the show.
+        /// </summary>
+        private bool OffCourse(Runner r)
+        {
+            var d = r.Car.Position.DistanceTo(Circle);
+
+            if (d > Ring - 3f) return true;
+            if (d <= Roam) return false;
+
+            try { return r.Car.Speed > LeashSpeed; }
+            catch { return true; }
+        }
+
+        /// <summary>How many returns in a row may run out of time before he is let go of. See Keep.</summary>
+        private const int HaulsMost = 4;
+
+        /// <summary>
+        /// How fast he drives back to his mark. Nine, not the five of the ease-in: the run home
+        /// is the one moment the show stops, and a car that comes back with some pace on and
+        /// hooks straight into the lock reads as a slide that went wide and came back, where
+        /// one that trundles home reads as a car that stopped.
+        /// </summary>
+        private const float HomeSpeed = 9f;
+
+        /// <summary>Near enough the middle that a car on its way in waits for the street to park. See Keep.</summary>
+        private float HoldOff => Ring + 4f;
+
+        /// <summary>How long a car goes round one way before the wheel goes the other, drawn per car.</summary>
+        private const int SwapMinMs = 20000;
+        private const int SwapMaxMs = 45000;
+
+        /// <summary>A car on its way in, waiting at the edge until the street is parked. See Keep.</summary>
+        private static void Wait(Runner r)
         {
             try
             {
-                if (r.Car.Speed > SpinningSpeed) { r.Still = 0; return false; }
+                Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, r.Driver.Handle, r.Car.Handle, 1, 1500);
             }
             catch
             {
+                // He rolls a bit further.
+            }
+        }
+
+        /// <summary>
+        /// Whether his car can go on: on fire, not driveable, the engine failing, or a tyre
+        /// gone. Looked at on the tick, because a normal car takes normal damage now.
+        /// </summary>
+        private static bool Broken(Runner r, out string why)
+        {
+            why = null;
+
+            try
+            {
+                var car = r.Car;
+
+                if (car.IsOnFire) { why = "on fire"; return true; }
+                if (!car.IsDriveable) { why = "not driveable any more"; return true; }
+                if (car.EngineHealth < EngineDone) { why = "cooked"; return true; }
+
+                for (var i = 0; i < 6; i++)
+                {
+                    if (Function.Call<bool>(Hash.IS_VEHICLE_TYRE_BURST, car.Handle, i, false))
+                    {
+                        why = "down to a rim";
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+                // Then it is not broken as far as anybody can tell.
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// His car is done, so he is. If it still moves he drives it off the junction -- his
+        /// mark is free the moment his stage is, and somebody else is sent for. If it does not,
+        /// he gets out and walks, the wreck stays where it died for the crowd to shift (see
+        /// Shove), and the game tidies it once nobody is looking. True when he is off the list
+        /// now rather than on his way off it.
+        /// </summary>
+        private bool Retire(Runner r, string why, int now)
+        {
+            Log.Info("Takeover: a performer's car is " + why + ". He is out of it, and somebody else is sent for.");
+
+            var moves = false;
+
+            try { moves = r.Car.IsDriveable && r.Car.EngineHealth > 0f && !r.Car.IsOnFire; }
+            catch { }
+
+            if (moves)
+            {
+                r.Stage = -1;
+                r.GoneAt = now;
+                Leave(r);
                 return false;
             }
 
-            if (r.Still == 0) { r.Still = now; return false; }
-
-            if (now - r.Still < WedgedMs) return false;
-
-            r.Still = 0;
-            return true;
-        }
-
-        /// <summary>
-        /// How far from the MIDDLE he may get, before and after he lets it run wide.
-        ///
-        /// BOTH MEASURED FROM THE CIRCLE, not from his marker. The ring of people stands at
-        /// about nineteen metres, so fifteen is the most anybody can be given without a car
-        /// arriving in the front row.
-        /// </summary>
-        private const float Roam = 11f;
-        private const float WideRoam = 15f;
-
-        /// <summary>Near enough to the middle to pick the lock back up, and the most it is given.</summary>
-        private const float BackWhen = 6f;
-        private const int BackGiveUpMs = 12000;
-
-        /// <summary>Below this he is not going round, and this long says he is stuck.</summary>
-        private const float SpinningSpeed = 1.2f;
-        private const int WedgedMs = 3500;
-
-        /// <summary>
-        /// THE BRAKE COMES OFF AND THE SAME DONUT TURNS INTO A BIG ONE.
-        ///
-        /// A minute is a long time to watch one car turning on one spot, and it is also longer
-        /// than anybody actually holds one: a donut tightens until the tyres give up and then
-        /// it opens out, because the driver stops fighting it and lets the car go where the
-        /// throttle is sending it. That is the whole move here -- SAME LOCK, SAME THROTTLE,
-        /// nothing let off except what was keeping him in one place.
-        ///
-        /// TWO THINGS ARE RELEASED AND THEY ARE BOTH BRAKES OF A KIND.
-        ///
-        /// The handbrake, explicitly, because a temp action may have left one on and a car
-        /// with a rear brake dragging cannot travel out of anything. It is a native that costs
-        /// nothing on a car that has none on.
-        ///
-        /// And the room he is allowed. Roam is eleven metres from the middle; past the minute
-        /// it becomes WideRoam at fifteen, which is most of the way to the crowd. A donut that
-        /// is given room travels: the back keeps stepping out, the front washes wide with it,
-        /// and it draws a proper arc across the tarmac instead of a ring round one spot.
-        ///
-        /// HE IS STILL FETCHED HOME, just from further out. A car that gets genuinely away
-        /// from its driver is brought back to the middle rather than driven into the ring of
-        /// people -- and coming back picks the lock straight up again rather than standing him
-        /// up for another five seconds of smoke. See Home.
-        /// </summary>
-        private void Wider(Runner r)
-        {
-            r.Wide = true;
-
             try
             {
-                Function.Call(Hash.SET_VEHICLE_HANDBRAKE, r.Car.Handle, false);
+                Slick(r.Car, false);
+                Function.Call(Hash.SET_VEHICLE_BURNOUT, r.Car.Handle, false);
+                Reckless(r, false);
+
+                Function.Call(Hash.CLEAR_PED_TASKS, r.Driver.Handle);
+                Function.Call(Hash.TASK_LEAVE_VEHICLE, r.Driver.Handle, r.Car.Handle, 0);
+
+                r.Driver.IsPersistent = false;
+                r.Driver.MarkAsNoLongerNeeded();
+                r.Car.IsPersistent = false;
+                r.Car.MarkAsNoLongerNeeded();
+
+                // A car left on the circle, as far as the crowd is concerned. See Pick.
+                _strays.Add(r.Car);
             }
             catch
             {
-                // He had none on, which is the usual answer.
+                // He is off the list either way.
             }
 
-            Log.Info("Takeover: one of them has let it run wide.");
+            return true;
         }
 
-        /// <summary>
-        /// How long he holds it on the spot before letting it out, and how far he may then go.
-        ///
-        /// A MINUTE, WHICH IS ALREADY A LONG TIME TO WATCH ONE CAR. Long enough that the tight
-        /// donut is the thing you remember and the wide one is what it turns into, rather than
-        /// the other way round.
-        ///
-        /// A MINUTE, WHICH IS ALREADY A LONG TIME TO WATCH ONE CAR. Long enough that the tight
-        /// donut is the thing you remember and the wide one is what it turns into, rather than
-        /// the other way round. How far he may then get is Roam and WideRoam, both measured
-        /// from the middle -- see there.
-        /// </summary>
-        private const int DonutMs = 60000;
+        /// <summary>Engine health below this and the car is done; it starts at a thousand.</summary>
+        private const float EngineDone = 150f;
+
+        /// <summary>A retired car that has not got clear of the junction in this long is let go of where it is.</summary>
+        private const int LeaveGiveUpMs = 45000;
 
         /// <summary>
-        /// A performer, performing, does not stop for anybody. The driver's reactions are
-        /// blocked -- a ped clipped, a car nudged, a gunshot -- and the car is made
-        /// collision-proof and strong, so it takes the knocks without losing its show. Only
+        /// A performer, performing, does not stop for anybody: the driver's reactions are
+        /// blocked -- a ped clipped, a car nudged, a gunshot -- so he keeps his foot in. Only
         /// the performers, and only while they perform: taken off again the moment one leaves.
+        ///
+        /// HIS CAR IS A CAR. It used to be made collision-proof, strong and undentable here as
+        /// well, and a car like that does not crash, it goes through -- Michael watched one go
+        /// through everything on the junction and asked for crashes. So it takes the knocks the
+        /// way any car does: it dents, it can be stopped by something solid, wheels can come
+        /// off in a crash, and one that is done is retired. See Broken.
+        ///
+        /// BUT THE TYRES DO NOT POP FROM SPINNING. This game blows a tyre out after half a
+        /// minute of wheelspin, and a performer down to a rim is retired -- which, with the
+        /// tyres left normal, was the show stopping about once a minute.
         /// </summary>
         private static void Reckless(Runner r, bool on)
         {
@@ -6070,21 +6325,11 @@ namespace Hoodrich.Locations
                 if (r.Driver != null && r.Driver.Exists())
                 {
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, r.Driver.Handle, on);
-                    Function.Call(Hash.SET_PED_CAN_RAGDOLL_FROM_PLAYER_IMPACT, r.Driver.Handle, !on);
                 }
 
                 if (r.Car != null && r.Car.Exists())
                 {
-                    Function.Call(Hash.SET_ENTITY_PROOFS, r.Car.Handle, false, false, false, on, false, false, false, false);
-                    Function.Call(Hash.SET_VEHICLE_STRONG, r.Car.Handle, on);
-                    Function.Call(Hash.SET_VEHICLE_CAN_BE_VISIBLY_DAMAGED, r.Car.Handle, !on);
-
-                    // AND THE TYRES DO NOT POP. Spinning on reduced grip for a whole takeover
-                    // is minutes of wheelspin against kerbs, and a performer that blows a rear
-                    // stops being a performer -- it grinds round on a rim and the show has a
-                    // broken car in the middle of it. Rims stay on too, for the same reason.
                     Function.Call(Hash.SET_VEHICLE_TYRES_CAN_BURST, r.Car.Handle, !on);
-                    Function.Call(Hash.SET_VEHICLE_WHEELS_CAN_BREAK, r.Car.Handle, !on);
                 }
             }
             catch
@@ -7323,7 +7568,7 @@ namespace Hoodrich.Locations
 
                     if (!_grip.TryGetValue(key, out g))
                     {
-                        g = new Grip { Max = h.TractionCurveMax, Min = h.TractionCurveMin };
+                        g = new Grip { Max = h.TractionCurveMax, Min = h.TractionCurveMin, Force = h.InitialDriveForce };
                         _grip[key] = g;
                     }
 
@@ -7331,6 +7576,10 @@ namespace Hoodrich.Locations
 
                     h.TractionCurveMax = g.Max * SlickTraction;
                     h.TractionCurveMin = g.Min * SlickTraction;
+
+                    // AND MORE ENGINE, the same way and with the same book-keeping: Michael
+                    // asked for more torque or less grip, and both are the ini's now.
+                    h.InitialDriveForce = g.Force * Power;
                 }
                 else
                 {
@@ -7349,6 +7598,7 @@ namespace Hoodrich.Locations
                         {
                             h.TractionCurveMax = g.Max;
                             h.TractionCurveMin = g.Min;
+                            h.InitialDriveForce = g.Force;
                         }
 
                         _grip.Remove(key);
@@ -7379,6 +7629,7 @@ namespace Hoodrich.Locations
 
                     h.TractionCurveMax = pair.Value.Max;
                     h.TractionCurveMin = pair.Value.Min;
+                    h.InitialDriveForce = pair.Value.Force;
                 }
                 catch
                 {
@@ -7394,6 +7645,7 @@ namespace Hoodrich.Locations
         {
             public float Max;
             public float Min;
+            public float Force;
             public int Count;
         }
 
@@ -7401,13 +7653,15 @@ namespace Hoodrich.Locations
         private readonly HashSet<int> _slick = new HashSet<int>();
 
         /// <summary>
-        /// What share of its grip a car keeps on the circle. Nought is ice; one is a road car.
-        ///
-        /// Two fifths, down from three. The donut comes from the tyres and nowhere else now
-        /// -- the engine is the car's own -- so this is the figure that decides whether full
-        /// lock and the throttle is a loop of wheelspin or a car pulling itself round.
+        /// What share of its grip a car keeps on the circle, and how much engine it gets.
+        /// Nought is ice; one is a road car. Both the ini's ([Block] TakeoverGrip and
+        /// TakeoverPower), because they are the two numbers that decide whether full lock and
+        /// the throttle is a loop of wheelspin or a car pulling itself round, and that can only
+        /// be judged from the pavement. They ship at a third of the grip and one and six tenths
+        /// of the drive force -- "more torque so they burn out better, or less grip".
         /// </summary>
-        private const float SlickTraction = 0.42f;
+        private float SlickTraction => _cfg == null ? 0.35f : _cfg.TakeoverGrip;
+        private float Power => _cfg == null ? 1.6f : _cfg.TakeoverPower;
 
         // ==================================================================
         // The kerb

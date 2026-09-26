@@ -1,0 +1,33 @@
+PARKVIEW SPOTS
+==============
+Things you can do standing somewhere. One per line, four fields separated by | :
+
+    X,Y,Z | radius | action | label
+
+Radius is how near you have to be stood, in metres. Action is one of:
+
+    sleep      sleep until morning -- Parkview's own, works on its own
+    wardrobe   Posted Up's wardrobe
+    cut        Posted Up's cook screen, for cutting and bagging
+
+A line starting with # is ignored, and so is anything without three bars.
+
+THE CLOSET IS DENISE'S CLOSET AND THE TABLE IS HER COUNTER: the same wardrobe
+screen, the same cook screen with "The Table" over it, the same hands on the
+product, and the same cupboard behind both -- what you leave at Denise's is what
+you find here. Since 2026-09-25; see Core.Home. Without Posted Up they say so and
+do nothing -- the room is still a room you can sleep in.
+
+The three below are in the motel room behind B2, read off the coordinate HUD:
+the bed, the closet, and the table with the bong on it.
+
+152.844, -1004.358, -99.000 | 1.6 | sleep    | the bed
+151.799, -1000.879, -99.000 | 1.4 | wardrobe | the closet
+153.782, -1007.047, -99.000 | 1.5 | cut      | the table
+
+The three below are in Apartment E2, the low-end apartment, read off the coordinate
+HUD on 2026-09-26: the kitchen counter, the bed, and the wardrobe.
+
+ 264.066, -995.480,  -99.009 | 1.4 | cut      | the kitchen counter
+ 262.110, -1003.030, -99.009 | 1.5 | sleep    | the bed
+ 259.653, -1003.978, -99.009 | 1.4 | wardrobe | the wardrobe

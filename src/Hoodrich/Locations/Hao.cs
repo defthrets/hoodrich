@@ -597,6 +597,9 @@ namespace Hoodrich.Locations
                     _ped.IsPersistent = true;
                     _ped.BlockPermanentEvents = true;
 
+                    // One man, one shop, the same one every session. See Core.Folk.
+                    Core.Folk.Stamp(_ped, "hao");
+
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
                     Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);

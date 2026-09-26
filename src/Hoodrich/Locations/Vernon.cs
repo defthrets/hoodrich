@@ -412,6 +412,9 @@ namespace Hoodrich.Locations
                     _ped.IsPersistent = true;
                     _ped.BlockPermanentEvents = true;
 
+                    // He is outside that shutter every day of his life. See Core.Folk.
+                    Core.Folk.Stamp(_ped, "vernon");
+
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
                     Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);

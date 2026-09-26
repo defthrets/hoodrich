@@ -104,9 +104,15 @@ namespace Hoodrich.UI
             new Slot { Name = "Walk", Group = "HIM", Style = Kind.Walk },
             new Slot { Name = "Shooting", Group = "HIM", Style = Kind.Shoot },
 
+            // NAMED FOR THE MAN ON THE RAIL, NOT FOR THE ONLINE ONE. The slot numbers are
+            // the game's and the same on every ped; what hangs in them is not. On Franklin,
+            // slot one is his beard and, further along the same rail, the masks from the
+            // stand on the beach -- so a row called "Mask" scrolled him through goatees
+            // first. Slot five is his hands, not a bag. The labels say what actually
+            // changes on him when you press right.
             new Slot { Name = "Face", Group = "HEAD", Index = 0, Look = Frame.Head },
             new Slot { Name = "Hair", Group = "HEAD", Index = 2, Look = Frame.Head },
-            new Slot { Name = "Mask", Group = "HEAD", Index = 1, Look = Frame.Head },
+            new Slot { Name = "Beard & mask", Group = "HEAD", Index = 1, Look = Frame.Head },
             new Slot { Name = "Hat", Group = "HEAD", Prop = true, Index = 0, Look = Frame.Head },
             new Slot { Name = "Glasses", Group = "HEAD", Prop = true, Index = 1, Look = Frame.Head },
             new Slot { Name = "Ears", Group = "HEAD", Prop = true, Index = 2, Look = Frame.Head },
@@ -115,15 +121,63 @@ namespace Hoodrich.UI
             new Slot { Name = "Undershirt", Group = "CLOTHES", Index = 8, Look = Frame.Torso },
             new Slot { Name = "Vest", Group = "CLOTHES", Index = 9, Look = Frame.Torso },
             new Slot { Name = "Arms", Group = "CLOTHES", Index = 3, Look = Frame.Torso },
+            new Slot { Name = "Hands", Group = "CLOTHES", Index = 5, Look = Frame.Hands },
             new Slot { Name = "Legs", Group = "CLOTHES", Index = 4, Look = Frame.Legs },
             new Slot { Name = "Shoes", Group = "CLOTHES", Index = 6, Look = Frame.Feet },
 
             new Slot { Name = "Chain", Group = "EXTRAS", Index = 7, Look = Frame.Torso },
-            new Slot { Name = "Badge", Group = "EXTRAS", Index = 10, Look = Frame.Torso },
-            new Slot { Name = "Bag", Group = "EXTRAS", Index = 5, Look = Frame.Torso },
+            new Slot { Name = "Decal", Group = "EXTRAS", Index = 10, Look = Frame.Torso },
             new Slot { Name = "Watch", Group = "EXTRAS", Prop = true, Index = 6, Look = Frame.Hands },
             new Slot { Name = "Bracelet", Group = "EXTRAS", Prop = true, Index = 7, Look = Frame.Hands }
         };
+
+        /// <summary>One line of the list: a group's heading, or a slot.</summary>
+        private struct Line
+        {
+            public int Slot;
+            public string Header;
+            public bool IsHeader => Header != null;
+            public float Height => IsHeader ? HeaderH : RowH;
+        }
+
+        /// <summary>
+        /// The list as it is drawn: every group announced by a heading of its own, so the
+        /// closet reads as a closet with sections rather than one long column with the
+        /// section's name changing somewhere up in the corner.
+        /// </summary>
+        private static readonly Line[] Lines = BuildLines();
+
+        /// <summary>Which line each slot is on, for the scrolling.</summary>
+        private static readonly int[] LineOf = BuildLineOf();
+
+        private static Line[] BuildLines()
+        {
+            var lines = new System.Collections.Generic.List<Line>();
+
+            for (var i = 0; i < Slots.Length; i++)
+            {
+                if (i == 0 || Slots[i].Group != Slots[i - 1].Group)
+                {
+                    lines.Add(new Line { Slot = -1, Header = Slots[i].Group });
+                }
+
+                lines.Add(new Line { Slot = i });
+            }
+
+            return lines.ToArray();
+        }
+
+        private static int[] BuildLineOf()
+        {
+            var of = new int[Slots.Length];
+
+            for (var l = 0; l < Lines.Length; l++)
+            {
+                if (!Lines[l].IsHeader) of[Lines[l].Slot] = l;
+            }
+
+            return of;
+        }
 
         /// <summary>
         /// The bodies the rail can put him in.
@@ -178,18 +232,25 @@ namespace Hoodrich.UI
         private int _openedAt;
         private int _cam;
 
-        private const float PanelWidthH = 0.44f;
-        private const float RowHeight = 0.034f;
-
-        /// <summary>
-        /// How many rows are on screen at once. Twenty-four at this height was the whole
-        /// height of the screen, which is why the closet felt like a spreadsheet. Twelve fit
-        /// under the title with room for the hint, and the window scrolls.
-        /// </summary>
-        private const int Shown = 12;
-        private int _top;
+        private const float PanelWidthH = 0.46f;
         private const float PadH = 0.024f;
         private const int OpenGraceMs = 220;
+
+        /// <summary>A slot row, a group heading, and how much of the panel the list gets.</summary>
+        private const float RowH = 0.032f;
+        private const float HeaderH = 0.023f;
+        private const float ListH = 0.468f;
+
+        /// <summary>The first line in the window. It scrolls a line at a time; see Scroll.</summary>
+        private int _topLine;
+
+        /// <summary>When the screen went up, for its entrance -- the same rise every screen in the mod makes.</summary>
+        private int _shownAt;
+        private const int EnterMs = 170;
+        private const float EnterRise = 0.014f;
+
+        /// <summary>The cursor frame that glides between rows. See UI.Glide.</summary>
+        private readonly Glide _glide = new Glide();
         /// <summary>
         /// The six shots, as distance out, height above his feet, the bone to look at, how far
         /// above or below that bone, and the lens.
@@ -243,11 +304,14 @@ namespace Hoodrich.UI
         /// </summary>
         private const float FaceHeading = 222.743f;
 
-        public void Open()
+        /// <param name="heading">Which way he stands. Denise's closet has its own; the room Parkview rents says.</param>
+        public void Open(float? heading = null)
         {
             _row = 0;
             _lastRow = -1;
-            _pickedAt = _openedAt = Game.GameTime;
+            _topLine = 0;
+            _pickedAt = _openedAt = _shownAt = Game.GameTime;
+            _glide.Reset();
 
             try
             {
@@ -255,7 +319,7 @@ namespace Hoodrich.UI
 
                 if (me != null && me.Exists())
                 {
-                    me.Heading = FaceHeading;
+                    me.Heading = heading ?? FaceHeading;
                     Function.Call(Hash.CLEAR_PED_TASKS_IMMEDIATELY, me.Handle);
                 }
             }
@@ -751,11 +815,30 @@ namespace Hoodrich.UI
             _pickedAt = Game.GameTime;
             _nudge = 0f;
 
-            // The window follows the row a row at a time, so it scrolls rather than pages.
-            if (_row < _top) _top = _row;
-            if (_row >= _top + Shown) _top = _row - Shown + 1;
-            if (_row == 0) _top = 0;
+            Scroll();
             Hud.PlaySound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        /// <summary>
+        /// The window follows the row a line at a time, so it scrolls rather than pages, and
+        /// the heading over a row comes into view with the row rather than a line later.
+        /// </summary>
+        private void Scroll()
+        {
+            var sel = LineOf[_row];
+            var first = sel > 0 && Lines[sel - 1].IsHeader ? sel - 1 : sel;
+
+            if (first < _topLine) _topLine = first;
+            while (_topLine < sel && Span(_topLine, sel) > ListH) _topLine++;
+            if (_row == 0) _topLine = 0;
+        }
+
+        /// <summary>How tall the lines from one to another are, both included.</summary>
+        private static float Span(int from, int to)
+        {
+            var h = 0f;
+            for (var l = from; l <= to && l < Lines.Length; l++) h += Lines[l].Height;
+            return h;
         }
 
         // ---- what is on him -------------------------------------------------------------
@@ -987,6 +1070,13 @@ namespace Hoodrich.UI
 
         // ---- drawing --------------------------------------------------------------
 
+        /// <summary>
+        /// The closet, drawn the way the kitchen and the pocket are drawn: the mark and the
+        /// room in the house script over a rule, the list in sections with a heading over
+        /// each, the plate and the gliding frame under whatever is chosen, and the keys as
+        /// caps along the foot. It used to be a title, a column and a sentence of key names
+        /// -- the one screen in the mod still wearing the first draft.
+        /// </summary>
         public void Draw()
         {
             if (!IsOpen) return;
@@ -996,131 +1086,209 @@ namespace Hoodrich.UI
 
             var width = Hud.ToX(PanelWidthH);
             var pad = Hud.ToX(PadH);
+            var height = UiKit.HeadH + ListH + UiKit.FootH + 0.004f;
 
-            // Off to the right, so he stays in the middle of the picture.
+            // Off to the right, so he stays in the clear half of the picture.
             var left = 0.96f - width;
-            var height = 0.140f + Shown * RowHeight;
             var top = 0.5f - height * 0.5f + _curtain.Lift;
 
-            Theme.Panel(left, top, width, height);
+            // Up and in, eased out so it slows as it lands.
+            var age = Game.GameTime - _shownAt;
+            var arrive = age >= EnterMs ? 1f : age / (float)EnterMs;
+            arrive = 1f - (1f - arrive) * (1f - arrive);
+
+            top += EnterRise * (1f - arrive);
+
+            Theme.Panel(left, top, width, height, arrive);
 
             var x = left + pad;
             var right = left + width - pad;
-            var y = top + 0.020f;
+            var wide = right - x;
 
-            Hud.Text("WARDROBE", x, y - 0.004f, 0.74f, Palette.Text, Hud.FontCursive, centre: false);
+            // ---- the letterhead ----
+            Hud.BrandCentre(left + width * 0.5f, top + 0.021f, 0.019f,
+                            Palette.Alpha(Palette.Text, (int)(225f * arrive)));
 
-            y += 0.052f;
-            // The section he is in, rather than one caption for all of them.
-            Hud.Text(Slots[_row].Group, x, y, 0.26f, Palette.TextDim, Hud.FontLabel, centre: false);
-            Hud.TextRight((_row + 1) + " / " + Slots.Length, right, y, 0.24f, Palette.TextDim, Hud.FontLabel);
-            y += 0.026f;
-            Theme.Rule(x, y, right - x);
-            y += 0.010f;
+            Hud.Text("Wardrobe", x, top + 0.026f, 0.70f, Palette.Alpha(Palette.Text, (int)(255f * arrive)),
+                     Hud.FontCursive, centre: false);
+
+            Hud.TextRight(BodyNow(me) == 0 ? "FRANKLIN" : "SOMEBODY ELSE", right, top + 0.047f, 0.28f,
+                          Palette.Alpha(Palette.TextDim, (int)(210f * arrive)), Hud.FontLabel);
+
+            Theme.Rule(x, top + UiKit.HeadH - 0.006f, wide, arrive);
+
+            // ---- the list ----
+            var y = top + UiKit.HeadH;
+            var bottom = y + ListH;
 
             var grown = Theme.Grown(_pickedAt);
-            var barWide = (right - x) + pad * 0.7f;
+            var barWide = wide + pad * 0.7f;
 
-            for (var i = _top; i < Math.Min(Slots.Length, _top + Shown); i++)
+            _glide.Begin();
+
+            for (var l = _topLine; l < Lines.Length; l++)
             {
-                var s = Slots[i];
-                var here = i == _row;
-                var lit = Theme.Lit(i, _row, _lastRow, grown);
+                var line = Lines[l];
+                if (y + line.Height > bottom + 0.0005f) break;
 
-                Theme.Plate(x - pad * 0.35f, y - 0.004f, barWide, RowHeight, lit);
-                Theme.Sheen(x - pad * 0.35f, y - 0.004f, barWide, RowHeight, lit);
+                if (line.IsHeader) Header(line.Header, x, y, wide, arrive);
+                else Row(me, line.Slot, x, right, pad, barWide, y, grown, arrive);
 
-                var ink = Theme.Ink(here ? Palette.Text : Palette.TextDim, lit);
+                y += line.Height;
+            }
 
-                Hud.Text(s.Name, x, y + 0.006f, 0.30f, ink, Hud.FontBody, centre: false);
+            // ---- the keys ----
+            var footY = top + height - UiKit.FootH + 0.006f;
 
-                string value;
-                try
+            Theme.Rule(x, footY, wide, arrive);
+
+            var ky = footY + 0.011f;
+
+            UiKit.KeyRight(right, ky, UiKit.Back, "DONE", arrive);
+
+            var kx = UiKit.Key(x, ky, null, "arrow_updown.png", "ROW", arrive);
+            kx = UiKit.Key(kx, ky, null, "arrow_leftright.png", "CHANGE", arrive);
+            kx = UiKit.Key(kx, ky, UiKit.Confirm, null, "COLOUR", arrive);
+            UiKit.Key(kx, ky, Hud.OnPad ? "R-STICK" : "MOUSE", null, "LOOK", arrive);
+
+            // Last, so it rides over the rows it is pointing at.
+            _glide.Draw(arrive);
+        }
+
+        /// <summary>A group's name, small and dim, with the hairline running off it. One rectangle.</summary>
+        private static void Header(string words, float x, float y, float wide, float arrive)
+        {
+            var ink = Palette.Alpha(Palette.TextDim, (int)(190f * arrive));
+
+            Hud.Text(words, x, y + 0.004f, 0.22f, ink, Hud.FontLabel, centre: false);
+
+            var w = Hud.MeasureText(words, 0.22f, Hud.FontLabel);
+
+            Hud.RectFrom(x + w + 0.008f, y + 0.0125f, Math.Max(0f, wide - w - 0.008f), 0.0008f,
+                         Palette.Alpha(Theme.Hairline, (int)(Theme.Hairline.A * arrive)));
+        }
+
+        /// <summary>
+        /// One slot: its plate when chosen, its name, and on the right what is in it -- the
+        /// count in words, a tag for the colour or the peg's name, and the arrows on a row
+        /// that scrolls.
+        /// </summary>
+        private void Row(Ped me, int i, float x, float right, float pad, float barWide, float y,
+                         float grown, float arrive)
+        {
+            var s = Slots[i];
+            var here = i == _row;
+            var lit = Theme.Lit(i, _row, _lastRow, grown) * arrive;
+
+            Theme.Plate(x - pad * 0.35f, y, barWide, RowH, lit);
+            Theme.Sheen(x - pad * 0.35f, y, barWide, RowH, lit);
+
+            if (here) _glide.Target(x - pad * 0.35f, y, barWide, RowH);
+
+            var ink = Theme.Ink(Palette.Alpha(here ? Palette.Text : Palette.TextDim, (int)(255f * arrive)), lit);
+            var textY = y + 0.006f;
+
+            Hud.Text(s.Name, x, textY, 0.30f, ink, Hud.FontBody, centre: false);
+
+            string value, tag;
+            bool scrolls;
+            Describe(me, s, out value, out tag, out scrolls);
+
+            // The arrows belong on a row you can scroll. An action row is pressed, not
+            // scrolled, and putting arrows on it says otherwise.
+            var shown = here && scrolls ? "<  " + value + "  >" : value;
+            var valueInk = here ? ink : Palette.Alpha(Palette.TextDim, (int)(255f * arrive));
+
+            Hud.TextRight(shown, right, textY + 0.002f, 0.24f, valueInk, Hud.FontLabel);
+
+            if (string.IsNullOrEmpty(tag)) return;
+
+            var edge = right - Hud.MeasureText(shown, 0.24f, Hud.FontLabel) - 0.010f;
+            var tagW = Hud.MeasureText(tag, 0.19f, Hud.FontLabel) + 0.007f;
+
+            UiKit.Tag(edge - tagW, textY + 0.0035f, tag, Palette.TextDim, arrive * (0.75f + 0.25f * lit));
+        }
+
+        /// <summary>
+        /// What a row says on its right. WORDS, NOT A FRACTION: "4 OF 12" and a colour tag is
+        /// a sentence; "4 / 12 / 2 / 3" is a sum to do. A slot with one thing in it says so,
+        /// because an arrow on a row that cannot change is the closet lying.
+        /// </summary>
+        private void Describe(Ped me, Slot s, out string value, out string tag, out bool scrolls)
+        {
+            value = "";
+            tag = null;
+            scrolls = false;
+
+            try
+            {
+                if (s.Style == Kind.Walk)
                 {
-                    if (s.Style == Kind.Walk)
-                    {
-                        var pick = State == null ? 0 : State.Walk;
-                        var names = Locations.Wardrobe.WalkNames;
+                    var pick = State == null ? 0 : State.Walk;
+                    var names = Locations.Wardrobe.WalkNames;
 
-                        value = pick >= 0 && pick < names.Length ? names[pick] : "HIS OWN";
-                    }
-                    else if (s.Style == Kind.Shoot)
-                    {
-                        var pick = State == null ? 0 : State.Shoot;
-                        var names = Locations.Wardrobe.ShootNames;
+                    value = pick >= 0 && pick < names.Length ? names[pick] : "HIS OWN";
+                    scrolls = true;
+                }
+                else if (s.Style == Kind.Shoot)
+                {
+                    var pick = State == null ? 0 : State.Shoot;
+                    var names = Locations.Wardrobe.ShootNames;
 
-                        value = pick >= 0 && pick < names.Length ? names[pick] : "HIS OWN";
-                    }
-                    else if (s.Peg)
-                    {
-                        var name = State == null ? "" : Locations.Wardrobe.NameOn(State, _peg);
+                    value = pick >= 0 && pick < names.Length ? names[pick] : "HIS OWN";
+                    scrolls = true;
+                }
+                else if (s.Peg)
+                {
+                    var name = State == null ? "" : Locations.Wardrobe.NameOn(State, _peg);
 
-                        value = (_peg + 1) + " / " + Locations.Wardrobe.Pegs + "     " +
-                                (name.Length == 0 ? "EMPTY" : name.ToUpperInvariant());
-                    }
-                    else if (s.Act != Deed.None)
-                    {
-                        var on = State != null && Locations.Wardrobe.Used(State, _peg);
+                    value = "PEG " + (_peg + 1) + " OF " + Locations.Wardrobe.Pegs;
+                    tag = name.Length == 0 ? "EMPTY" : name.ToUpperInvariant();
+                    scrolls = true;
+                }
+                else if (s.Act != Deed.None)
+                {
+                    var on = State != null && Locations.Wardrobe.Used(State, _peg);
 
-                        value = s.Act == Deed.Hang
-                                    ? (on ? "OVER " + (_peg + 1) : "ONTO " + (_peg + 1))
-                                    : on ? "" : "NOTHING ON IT";
-                    }
-                    else if (s.Body)
+                    value = s.Act == Deed.Hang
+                                ? (on ? "OVER PEG " + (_peg + 1) : "ONTO PEG " + (_peg + 1))
+                                : on ? "PEG " + (_peg + 1) : "NOTHING ON IT";
+                }
+                else if (s.Body)
+                {
+                    value = BodyNow(me) == 0 ? "FRANKLIN" : "PRESS TO GO BACK";
+                }
+                else
+                {
+                    var d = Drawable(me, s);
+                    var n = Count(me, s);
+                    var c = Colours(me, s, d);
+                    var t = Texture(me, s);
+
+                    if (n <= 1 && !s.Prop)
                     {
-                        value = BodyNow(me) == 0 ? "FRANKLIN" : "PRESS TO GO BACK";
+                        value = "JUST THE ONE";
+                    }
+                    else if (d < 0)
+                    {
+                        value = "NOTHING ON";
+                        if (n > 0) tag = n + " TO PICK";
+                        scrolls = n > 0;
                     }
                     else
                     {
-                        var d = Drawable(me, s);
-                        var n = Count(me, s);
-                        var c = Colours(me, s, d);
-                        var t = Texture(me, s);
-
-                        // WORDS, NOT A FRACTION. "4 / 12" is a sum to do; "4 of 12, colour 2
-                        // of 3" is a sentence. And a slot with one thing in it says so, because
-                        // an arrow on a row that cannot change is the closet lying.
-                        if (n <= 1 && !s.Prop)
-                        {
-                            value = "JUST THE ONE";
-                        }
-                        else if (d < 0)
-                        {
-                            value = "NOTHING ON" + (n > 0 ? "  ·  " + n + " TO PICK" : "");
-                        }
-                        else
-                        {
-                            value = (d + 1) + " OF " + n
-                                    + (c > 1 ? "  ·  COLOUR " + (t + 1) + " OF " + c : "");
-                        }
+                        value = (d + 1) + " OF " + n;
+                        if (c > 1) tag = "COLOUR " + (t + 1) + " OF " + c;
+                        scrolls = n > 1 || s.Prop;
                     }
                 }
-                catch
-                {
-                    value = "";
-                }
-
-                // The arrows belong on a row you can scroll. An action row is pressed, not
-                // scrolled, and putting arrows on it says otherwise.
-                var scrolls = s.Style != Kind.None || (!s.Peg ? s.Act == Deed.None : true);
-
-                // No arrows on a row with nothing to scroll.
-                if (scrolls && !s.Prop && !s.Body && s.Style == Kind.None && !s.Peg && s.Act == Deed.None)
-                {
-                    try { if (Count(me, s) <= 1) scrolls = false; } catch { }
-                }
-
-                Hud.TextRight((here && scrolls ? "<  " : "") + value + (here && scrolls ? "  >" : ""), right, y + 0.008f, 0.24f,
-                              here ? ink : Palette.TextDim, Hud.FontLabel);
-
-                y += RowHeight;
             }
-
-            Hud.Text(Hud.OnPad
-                         ? "D-PAD  SLOT / CHANGE      A  COLOUR      R-STICK  LOOK      B  DONE"
-                         : "UP/DOWN  SLOT      LEFT/RIGHT  CHANGE      ENTER  COLOUR      MOUSE  LOOK      BACKSPACE  DONE",
-                     x, top + height - 0.030f, 0.24f, Palette.TextDim, Hud.FontLabel, centre: false);
+            catch
+            {
+                value = "";
+            }
         }
+
         private int _keptAt;
         private const int KeepEveryMs = 2000;
 

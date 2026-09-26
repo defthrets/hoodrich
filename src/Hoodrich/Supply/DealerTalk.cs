@@ -721,10 +721,11 @@ namespace Hoodrich.Supply
                              product.Name.ToLowerInvariant());
 
             Log.Info("Bought " + grams.ToString("0") + "g " + product.Id + " off " + Name +
-                     " for $" + cost + "; he is walking it in.");
+                     " for $" + cost + (_delivery.ToYou ? "; he throws it at your feet." : "; he is walking it in."));
 
-            var node = Node(His(Def == null ? "" : Def.WalkItInLine,
-                                "Stand aside. I'll put it inside for you."));
+            var node = _delivery.ToYou
+                ? Node(His(Def == null ? "" : Def.HandOverLine, "There. Pick it up, it ain't gonna walk."))
+                : Node(His(Def == null ? "" : Def.WalkItInLine, "Stand aside. I'll put it inside for you."));
             node.Leave("Go on then.");
             return node;
         }

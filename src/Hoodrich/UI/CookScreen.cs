@@ -72,6 +72,14 @@ namespace Hoodrich.UI
 
         private readonly List<CookRow> _rows = new List<CookRow>();
 
+        /// <summary>
+        /// What the room is called over the letterhead. Denise's counter is the kitchen; the
+        /// table in the room Parkview rents is the same screen and the same work with a
+        /// different word over it, because it is a different piece of furniture in a
+        /// different room and the screen should say the one you are stood at.
+        /// </summary>
+        public string Title = "The Kitchen";
+
         private Stash _stash;
 
         /// <summary>
@@ -557,7 +565,7 @@ namespace Hoodrich.UI
             Hud.BrandCentre(left + panelWidth * 0.5f, top + 0.021f, 0.019f,
                             Palette.Alpha(Palette.Text, (int)(225f * arrive)));
 
-            Hud.Text("The Kitchen", x, top + 0.026f, 0.70f, Palette.Alpha(Palette.Text, (int)(255f * arrive)),
+            Hud.Text(Title, x, top + 0.026f, 0.70f, Palette.Alpha(Palette.Text, (int)(255f * arrive)),
                      Hud.FontCursive, centre: false);
 
             Hud.TextRight("$" + Game.Player.Money.ToString("N0"), right, top + 0.047f, 0.32f,

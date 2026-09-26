@@ -1548,6 +1548,15 @@ namespace Hoodrich.Gangs
                     Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, gang.GroupHash);
                     Function.Call(Hash.SET_CAN_ATTACK_FRIENDLY, ped.Handle, false, false);
 
+                    // AND HE IS SOMEBODY, not a man-shaped thing at a mark.
+                    //
+                    // Keyed on the STATION rather than on where he happens to be standing: a
+                    // member of the crew walks off, sits down, goes to the shop and comes back,
+                    // so his position is meaningless as a name. The mark he belongs to is the
+                    // same one in every session, which is what lets him remember you. See
+                    // Core.Folk.
+                    Core.Folk.Stamp(ped, "crew:" + gang.Id + ":" + Core.Folk.Mark("", mark));
+
                     // AND HE STANDS HIS GROUND. Whatever he is doing, he is one of the set:
                     // he does not run from a fight in front of him, and he fights armed men
                     // with whatever he has. The scenarios and the reactions are unchanged.

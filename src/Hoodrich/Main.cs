@@ -189,7 +189,9 @@ namespace Hoodrich
                                    || _modShop.IsOpen
                                    || _graffiti.IsOpen || _ridePick.IsOpen || _wardrobeScreen.IsOpen
                                    || (_maskScreen != null && _maskScreen.IsOpen)
-                                   || (_boot != null && _boot.IsOpen);
+                                   || (_boot != null && _boot.IsOpen)
+                                   || (_den != null && _den.IsPlaying)
+                                   || _hoops.Playing;
         }
         private bool _dressed;
 
@@ -201,6 +203,109 @@ namespace Hoodrich
         }
         private bool _carrying;
         private int _dressedBody;
+
+        /// <summary>Which ped we last dressed, so a new body for the player is noticed.</summary>
+        private int _dressedPed;
+
+        /// <summary>Whether he was on the floor or in a cell last time we looked.</summary>
+        private bool _wasTakenAway;
+
+        /// <summary>Whether a save was loading last time we looked. See KeepHimDressed.</summary>
+        private bool _wasLoaded;
+
+        /// <summary>Keep putting the outfit back on until this passes. See KeepHimDressed.</summary>
+        private int _redressUntil;
+
+        /// <summary>
+        /// Long enough to win. The game restores his default clothes over several frames after
+        /// a respawn, not on one, so a single re-dress on the frame he stands up gets quietly
+        /// overwritten a moment later and looks exactly like this never having been fixed.
+        /// </summary>
+        private const int RedressForMs = 4000;
+
+        /// <summary>
+        /// The outfit from the closet goes back on him every time the game takes it off.
+        ///
+        /// IT USED TO BE A ONE-SHOT. The old code applied the saved outfit once and latched,
+        /// and only unlatched when the player's MODEL changed -- so it survived a body swap and
+        /// nothing else. Dying does not change his model. Neither does Pillbox, or a cell, or
+        /// loading a save. In every one of those the game dresses him in whatever the story
+        /// last put him in, the latch was still set, and the hour somebody spent at the closet
+        /// was gone until they went back and did it again.
+        ///
+        /// FOUR TRIGGERS, ENUMERATED RATHER THAN SNIFFED. The tempting version of this watches
+        /// the clothes themselves and puts them back whenever they differ from the record --
+        /// one detector, covers every cause, no list to keep up to date. It is the wrong shape
+        /// here for two reasons. Body armour owns component slot 9 and a mask owns whichever
+        /// slot the ini names, so a drift watcher spends its life fighting Strap and Mask over
+        /// slots they are entitled to. And a clothes shop is a legitimate way to change, so it
+        /// would follow the player into Binco and undo what they just paid for.
+        ///
+        /// So the list is the list: a new body, getting up off the floor, coming out of a cell,
+        /// and the player's ped being replaced underneath us, which is what a loaded save looks
+        /// like from in here.
+        /// </summary>
+        private void KeepHimDressed()
+        {
+            try
+            {
+                // ASKED FIRST, BEFORE THE PED. While a save is loading there is no player ped
+                // to ask anything about, so a version of this that checked the ped first would
+                // return early every frame of the load and never notice one happened.
+                if (Game.IsLoading)
+                {
+                    _wasLoaded = true;
+                    return;
+                }
+
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists()) return;
+
+                // Never while the closet is open. He is being dressed by hand in there and the
+                // record is deliberately out of date until the screen closes and writes it.
+                if (_wardrobeScreen != null && _wardrobeScreen.IsOpen) return;
+
+                var body = me.Model.Hash;
+                var down = me.IsDead || Game.Player.IsDead
+                           || Function.Call<bool>(Hash.IS_PLAYER_BEING_ARRESTED, Game.Player, true);
+
+                // On the floor or in the back of a car: nothing to do but notice.
+                if (down)
+                {
+                    _wasTakenAway = true;
+                    return;
+                }
+
+                var reason = body != _dressedBody ? "he is a different body"
+                           : _wasLoaded ? "a save just loaded"
+                           : me.Handle != _dressedPed ? "the game swapped his ped"
+                           : _wasTakenAway ? "he is back on his feet"
+                           : null;
+
+                if (reason != null)
+                {
+                    _dressedBody = body;
+                    _dressedPed = me.Handle;
+                    _wasTakenAway = false;
+                    _wasLoaded = false;
+                    _dressed = false;
+                    _redressUntil = Game.GameTime + RedressForMs;
+                    _carrying = false;      // the walk and the gun hold go with the clothes
+
+                    Log.Info("Dressing him again: " + reason + ".");
+                }
+
+                // Cheap and idempotent -- a dozen natives that set slots to what they are
+                // already set to -- so running it every frame of the window costs nothing and
+                // removes the race with the game's own restore entirely.
+                if (Game.GameTime < _redressUntil) Wardrobe.Apply(_state);
+                else if (!_dressed) _dressed = Wardrobe.Apply(_state);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not put his own clothes back on: " + ex.Message);
+            }
+        }
 
         /// <summary>The inbox. Its store is static; only the screen is an object.</summary>
         private readonly MessagesScreen _messages = new MessagesScreen();
@@ -669,9 +774,27 @@ namespace Hoodrich
         /// <summary>The couch in Lamar's courtyard. Furniture, and nothing else.</summary>
         private readonly Fixture _couch;
         private readonly Fixture _stove;
+
+        /// <summary>
+        /// Shooting hoops on the Chamberlain Hills court: the court game shared with the Hoops mod.
+        /// Court\ is a copy made by the hoops repo's tools\sync-court.py -- edit it there, never
+        /// here. See Court.CourtHost for what it asks of this mod, filled in as the mod starts.
+        /// </summary>
+        private readonly Court.Shootaround _hoops = new Court.Shootaround();
+
+        /// <summary>The bong and the TV in a place he rents. See Locations.Lounge.</summary>
+        private readonly Lounge _lounge = new Lounge();
+
         private readonly Fixture _armourerStockA;
         private readonly Fixture _armourerStockB;
         private readonly List<InteriorDoor> _doors = new List<InteriorDoor>();
+
+        /// <summary>When NPC Mind's table of our people was last swept. See OnTick.</summary>
+        private int _folkTidiedAt;
+
+        /// <summary>The gambling den behind the [GamblingDen] door, and the door itself. See Den.Floor.</summary>
+        private Den.Floor _den;
+        private InteriorDoor _denDoor;
 
         /// <summary>Franklin's and Denise's front doors, held open. See HouseDoors.</summary>
         private readonly HouseDoors _houseDoors = new HouseDoors();
@@ -791,6 +914,14 @@ namespace Hoodrich
                 _stash = new StashHouse(_cfg);
                 _stash.Told = () => _state.SeenHouse;
                 _stash.Tell = () => { _state.SeenHouse = true; _state.Touch(); };
+                // And the same cupboard from inside the room Parkview rents, or a place he rents
+                // behind one of the doors -- Apartment E2. See Core.Home.
+                _stash.Elsewhere = () => Core.Home.IsInRoom || _doors.Exists(d => d.IsLet && d.IsInside);
+
+                // The room's bong and TV, in the same rooms the stash is reached from.
+                _lounge.Home = () => Core.Home.IsInRoom || _doors.Exists(d => d.IsLet && d.IsInside);
+                _lounge.Busy = () => AnyScreenUp() || Core.Mind.Busy || InputGuard.Busy;
+                _lounge.Smoke = (drug, what) => _highs.Hit(drug, what);
 
                 // THE HOUSE, EXPLAINED ONCE. First time through the door the readout puts up
                 // the kitchen, the bed, the closet and the stash -- see HouseGuide -- and the
@@ -1127,6 +1258,23 @@ namespace Hoodrich
                     if (before != string.Join("|", _state.Outfit) && _social != null) _social.On(SocialEvent.Dressed);
                 };
 
+                // THE ROOM PARKVIEW RENTS reaches the same closet, the same counter and the same
+                // cupboard through here: Parkview is a second script in this dll with no hold on
+                // this one, so the screens go on a shelf it can see. See Core.Home.
+                Core.Home.OpenWardrobe = heading =>
+                {
+                    if (_wardrobeScreen == null || _wardrobeScreen.IsOpen || AnyScreenUp()) return;
+                    _wardrobeScreen.Open(heading);
+                };
+                Core.Home.OpenTable = () =>
+                {
+                    if (_cook == null || _cook.IsOpen || AnyScreenUp()) return;
+                    if (_cutting != null && _cutting.IsBusy) return;
+                    _state.SeenKitchen = true;
+                    OpenKitchen("The Table");
+                };
+                Core.Home.Busy = () => AnyScreenUp() || (_cutting != null && _cutting.IsBusy);
+
                 // WITHOUT THIS THE TAG RUNS WOULD BE A STEP BACKWARDS. The old mechanic wrote
                 // its marks into save.json and put them back on the wall next session; the
                 // engine that replaced it had no persistence here at all, so a wall you had
@@ -1236,8 +1384,22 @@ namespace Hoodrich
                     // find out why -- the prompt does not appear, so there is nothing to read.
                     // The rooms are part of the place; the work inside them is where the
                     // progression belongs.
-                    _doors.Add(new InteriorDoor(spec));
-                }                // The lab has people on it.
+                    var door = new InteriorDoor(spec);
+
+                    // THE DEN'S DOOR IS KEPT, because the room behind it has a floor to run:
+                    // dealers, the jukebox, the games. See Den.Floor.
+                    if (string.Equals(spec.Section, "GamblingDen", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _denDoor = door;
+                    }
+
+                    _doors.Add(door);
+                }
+
+                // The floor behind the den's door. Nothing if the ini has no such door.
+                _den = new Den.Floor(_cfg, _gangs, _denDoor);
+
+                // The lab has people on it.
                 _labCrew = new Entourage(_gangs, "families",
                                          new Vector3(-201.384f, -1707.909f, 32.664f),
                                          313.362f, "the lab")
@@ -2337,6 +2499,7 @@ namespace Hoodrich
                 // to a system that can be torn down under it.
                 _social.WhereYouAre = ZoneNameHere;
                 _social.StreetYouAre = StreetNameHere;
+                _social.ZoneCodeYouAre = ZoneCodeHere;
                 _social.YourGang = () => _crew.IsAffiliated ? _crew.Current.Name : "";
                 _social.Changed = () => { _state.Followers = _social.Followers; _state.Touch(); };
 
@@ -3043,8 +3206,10 @@ namespace Hoodrich
 
                 // He delivers to an address, so he needs the address -- and the only place you
                 // can call him from is standing at it.
-                _delivery.AtHome = () => _stash.AtDoor;
-                _dealers.AtHome = () => _stash.AtDoor;
+                // Denise's door and only Denise's: a box is brought to a house, and the room
+                // Parkview rents has no door a plug knows. The cupboard is reached from both.
+                _delivery.AtHome = () => _stash.AtDenise;
+                _dealers.AtHome = () => _stash.AtDenise;
                 _delivery.HouseDoor = _stash.Position;
                 _delivery.House = _stash.Stash;
 
@@ -3118,7 +3283,7 @@ namespace Hoodrich
                 // a session -- which are the ones you would actually want back -- are the ones
                 // that get lost.
                 Social.Inbox.Changed = () => _state.Touch();
-                pages.ShowSettings = () => _settingsScreen.Open(_cfg, pages.ResetOptions());
+                pages.ShowSettings = () => _settingsScreen.Open(_cfg, pages.ResetOptions(_cfg.DevTools));
 
                 // The two settings that are COPIED rather than read live, pushed again whenever
                 // the screen changes anything. Both would otherwise have looked broken: the log
@@ -3487,9 +3652,27 @@ namespace Hoodrich
                 // this side that has to ask. See Core.Larder and Core.Mind.
                 _phone.Busy = () => _talk.IsOpen || Aiming()
                                     || Core.Larder.TheirMenuIsUp
-                                    || Core.Mind.IsBusy;
+                                    || Core.Mind.IsBusy
+                                    || _hoops.Placing;
 
                 pages.ShowVanillaPhone = () => _phone.ShowVanillaPhone();
+
+                // THE COURT, shared with the Hoops mod: what it asks of this one. Everything that
+                // differs between the two mods goes through these and nothing else.
+                Court.CourtHost.Info = Log.Info;
+                Court.CourtHost.Warn = Log.Warn;
+                Court.CourtHost.Debug = Log.Debug;
+                Court.CourtHost.Read = Core.Settings.Read;
+                Court.CourtHost.Put = (section, key, value) => Core.Settings.Put(section, key, value);
+                Court.CourtHost.Help = UI.Help.ShowThisFrame;
+                Court.CourtHost.Ticker = UI.Notify.Ticker;
+                Court.CourtHost.Problem = UI.Notify.Problem;
+                Court.CourtHost.Busy = () => Core.Mind.Busy || InputGuard.Busy;
+                Court.CourtHost.Closed = () => _jobs != null && _jobs.IsRunning;
+                Court.CourtHost.Swallow = InputGuard.Swallow;
+                Court.CourtHost.T = Core.Lang.T;
+                Court.CourtHost.Counted = UI.Draw.CountRect;
+                Court.CourtHost.OnPad = () => UI.Draw.OnPad;
 
                 Preflight.Step = "starting the world up";
 
@@ -3635,6 +3818,24 @@ namespace Hoodrich
 
             if (_parked || _cfg == null || !_cfg.Enabled) return;
 
+            // OUR PEOPLE'S TABLE, TIDIED. Folk lists every ped we vouch for to NPC Mind by
+            // handle, and a handle outlives the ped it was given for. Every couple of seconds
+            // the ones that no longer exist come off. Parkview's script does the same for its
+            // own; the table is one table, so either keeps it tidy for both. See Folk.Prune.
+            if (Game.GameTime - _folkTidiedAt > 2000)
+            {
+                _folkTidiedAt = Game.GameTime;
+                Core.Folk.Prune();
+            }
+
+            // THE RIDERS' PATH RECORDER, ABOVE EVERY SCREEN. Every screen below returns out of
+            // the tick while it is open, and the recorder was in Rollers.Update, underneath all
+            // of them -- so with the settings up, which is where it is stopped, not one point was
+            // taken. Michael rode a whole loop with them open and got "too short". Here it records
+            // whatever is on screen. See Gangs.BikePath.
+            Core.Pace.At("BikePath.Tick");
+            Gangs.BikePath.Tick();
+
             // FRANKLIN'S MOD. Michael and Trevor get none of it.
             //
             // Everything in here is his: his set, his block, his phone, his fifteen-year-old
@@ -3741,6 +3942,14 @@ namespace Hoodrich
 
                 WatchForPillbox();
                 WatchForGunfire();
+
+                // EVERY FRAME, PLAYABLE OR NOT, and for the same reason the bag check below
+                // says so: dying and being cuffed both stand the playable tick down, so this
+                // sat inside the gate it was first written in and never once saw a death --
+                // which is the entire case it exists for. Applying behind the fade is also
+                // when you want it: he is dressed before the screen comes back.
+                Core.Pace.At("KeepHimDressed");
+                KeepHimDressed();
 
                 // And the bag. Dying and being cuffed both stand the playable tick down, so
                 // the drop-on-death check inside it never once saw a death. See DeadDrop.Watch.
@@ -3982,10 +4191,23 @@ namespace Hoodrich
                     }
                 }
 
+                // A game at the den owns the screen and the keys while it is up: the bet is
+                // on the arrows and Enter, and nothing else in the mod should read them. It
+                // ends itself when you get up or walk out. See Den.Floor.
+                if (_den != null && _den.IsPlaying)
+                {
+                    Core.Pace.At("_den.Update");
+                    _den.Update();
+                    SlowTick();
+                    _failures = 0;
+                    return;
+                }
+
                 // Working product owns the screen while the choice is being made.
                 if (_cook.IsOpen)
                 {
-                    if (!available || !_kitchen.InReach) _cook.Close();
+                    // Or at the table in the rented room, which is the same screen. See Core.Home.
+                    if (!available || !(_kitchen.InReach || Core.Home.IsAtTable)) _cook.Close();
                     else
                     {
                         Core.Pace.At("_cook.Update");
@@ -4204,18 +4426,6 @@ namespace Hoodrich
                     Core.Pace.At("Core.Mask.Update");
                     Core.Mask.Update(_cfg);
 
-                    // What he settled on at the closet goes back on him once he is stood in
-                    // the world -- and AGAIN whenever the body changes, because what is saved
-                    // is filed per body and a body swap makes the last lot the wrong lot.
-                    var body = Game.Player.Character == null ? 0 : Game.Player.Character.Model.Hash;
-
-                    if (body != _dressedBody)
-                    {
-                        _dressedBody = body;
-                        _dressed = false;
-                    }
-
-                    if (!_dressed) _dressed = Wardrobe.Apply(_state);
 
                     // AND HOW HE CARRIES HIMSELF, on the same terms: a movement clipset asked
                     // for before it has streamed in is silently ignored, so this keeps asking
@@ -4420,11 +4630,22 @@ namespace Hoodrich
                     _couch.Update();
                     Core.Pace.At("_stove.Update");
                     _stove.Update();
+                    Core.Pace.At("_hoops.Update");
+                    _hoops.Update();
+                    Core.Pace.At("_lounge.Update");
+                    _lounge.Update();
                     Core.Pace.At("_armourerStockA.Update");
                     _armourerStockA.Update();
                     Core.Pace.At("_armourerStockB.Update");
                     _armourerStockB.Update();
                     foreach (var door in _doors) door.Update();
+
+                    // The floor behind the den's door: dealers stood, jukebox on, a game
+                    // offered when you are at a table. Runs while a game is NOT up; a game
+                    // that is up owns the tick higher up.
+                    Core.Pace.At("_den.Update");
+                    if (_den != null) _den.Update();
+
                     Core.Pace.At("_traffic.Update");
                     _traffic.Update();
                     Core.Pace.At("_bag.Update");
@@ -5090,9 +5311,17 @@ namespace Hoodrich
                 var player = Game.Player.Character;
                 if (player == null || !player.Exists()) return;
 
-                // Dead means the hospital took everything, which is the game doing what the
-                // locker is explicitly not meant to undo.
-                if (player.IsDead && _locker != null) _locker.TakenOffHim("wasted");
+                // DYING NO LONGER EMPTIES THE LOCKER, and the old comment here was wrong about
+                // why it did. It said the hospital takes everything and the locker is not meant
+                // to undo the game -- but the game does not take them. Get wasted in story mode
+                // and you wake at Pillbox lighter by a hospital bill and carrying every weapon
+                // you had. The locker was inventing a punishment and then enforcing it, and
+                // enforcing it permanently: the list was CLEARED, so a gun paid for at the
+                // courtyard was gone for the rest of the save the first time anybody died.
+                //
+                // Being searched still empties it -- see PostUp, where it is a deliberate
+                // mechanic of this mod and losing everything is the entire point of the event.
+                // That is a thing we do on purpose, which is exactly what this was not.
 
                 if (player.IsDead)
                 {
@@ -5406,8 +5635,9 @@ namespace Hoodrich
         }
 
         /// <summary>Opens the kitchen screen with everything it needs to start a batch.</summary>
-        private void OpenKitchen()
+        private void OpenKitchen(string title = "The Kitchen")
         {
+            _cook.Title = title;
             // The house stash goes in too: you are standing in the kitchen of the place the
             // weight is kept, and having to walk to the other screen to move a kilo eight feet
             // is not a decision, it is an errand.
@@ -5618,6 +5848,28 @@ namespace Hoodrich
         /// Asked of the game rather than worked out from coordinates, because the game already
         /// knows and its answer is the one the map agrees with.
         /// </summary>
+        /// <summary>
+        /// The zone CODE under the player -- CHAMH, SANDY, VESP -- or empty.
+        ///
+        /// The code and not the name, because the feed's region table is keyed on what the
+        /// game actually answers, and because two different zones are both called La Puerta.
+        /// </summary>
+        private static string ZoneCodeHere()
+        {
+            try
+            {
+                var player = Game.Player.Character;
+                if (player == null || !player.Exists()) return "";
+
+                var pos = player.Position;
+                return Function.Call<string>(Hash.GET_NAME_OF_ZONE, pos.X, pos.Y, pos.Z) ?? "";
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
         private string ZoneNameHere()
         {
             try
@@ -5713,6 +5965,11 @@ namespace Hoodrich
             // is the same answer they get before this mod has started.
             try { Api.Drugs.Unwire(); } catch { /* teardown */ }
             try { Api.Block.Unwire(); } catch { /* teardown */ }
+            try { Core.Home.UnwireHouse(); } catch { /* teardown */ }
+
+            // And nobody of ours is left on NPC Mind's table vouched for by a script that is
+            // gone. See Folk.Prune.
+            try { Core.Folk.Prune(true); } catch { /* teardown */ }
 
             TryRestore();
 
@@ -5843,11 +6100,14 @@ namespace Hoodrich
             try { _yard?.RestoreWorld(); } catch { /* teardown */ }
             try { _couch?.RestoreWorld(); } catch { /* teardown */ }
             try { _stove?.RestoreWorld(); } catch { /* teardown */ }
+            try { _hoops?.RestoreWorld(); } catch { /* teardown */ }
+            try { _lounge?.Leave(); } catch { /* teardown */ }
             try { _bags?.RestoreWorld(); } catch { /* teardown */ }
             try { _port?.RestoreWorld(); } catch { /* teardown */ }
             try { _homies?.RestoreWorld(); } catch { /* teardown */ }
             try { _armourerStockA?.RestoreWorld(); } catch { /* teardown */ }
             try { _armourerStockB?.RestoreWorld(); } catch { /* teardown */ }
+            try { _den?.RestoreWorld(); } catch { /* teardown */ }
             foreach (var door in _doors)
             {
                 try { door.RestoreWorld(); } catch { /* teardown */ }

@@ -368,7 +368,13 @@ namespace Hoodrich.Locations
             if (_ped != null && _ped.Exists())
             {
                 if (away > DespawnRange) Despawn();
-                else if (!_held) Settle();
+                else
+                {
+                    // The one look at what is under him, once the yard has streamed in.
+                    if (!_dropped && _dropAt != 0 && now >= _dropAt) StandHimOnSomething();
+
+                    if (!_held) Settle();
+                }
 
                 return;
             }
@@ -425,6 +431,9 @@ namespace Hoodrich.Locations
                     _ped.IsPersistent = true;
                     _ped.BlockPermanentEvents = true;
 
+                    // The man behind the counter, and only ever the one. See Core.Folk.
+                    Core.Folk.Stamp(_ped, "armourer");
+
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, _ped.Handle, true, true);
                     Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, _ped.Handle, false);
 
@@ -447,7 +456,12 @@ namespace Hoodrich.Locations
 
                     Settle();
 
+                    // NOT NOW. See StandHimOnSomething for why it waits.
+                    _dropped = false;
+                    _dropAt = Game.GameTime + DropAfterMs;
+
                     Log.Info("Stretch is out at " + spot + ".");
+                    SayWhatTakesADrum();
                     return;
                 }
                 catch
@@ -470,6 +484,163 @@ namespace Hoodrich.Locations
         private const float ProbeTrust = 0.5f;
         private const float SunkBy = 0.6f;
 
+        /// <summary>
+        /// How far his feet may be off a surface before he is stood on it, and how far down
+        /// this will look for one.
+        /// </summary>
+        private const float FloatBy = 0.15f;
+        private const float FloorReach = 3.0f;
+
+        /// <summary>
+        /// The height he is actually standing at, which is the surveyed one until a ray finds
+        /// a surface below it.
+        ///
+        /// SETTLE HAD TO BE TOLD, or the two would have fought every frame: the ray stands him
+        /// on the crates a metre down, Settle measures him against the surveyed height, decides
+        /// he has sunk through the floor and teleports him back into the air, and round again.
+        /// </summary>
+        private float _standingZ = float.NaN;
+
+        /// <summary>Whether he has already been put down this spawn. See StandHimOnSomething.</summary>
+        private bool _dropped;
+
+        /// <summary>When to take that one look, or 0 for not scheduled.</summary>
+        private int _dropAt;
+
+        /// <summary>
+        /// Long enough after he is put down for the yard around him to have streamed.
+        ///
+        /// HE IS STOOD AMONG PROPS AND THE PROPS ARE THE POINT. A ray cast on the frame he is
+        /// created finds whatever has loaded, which at that moment is usually the bare map --
+        /// so it would measure him against concrete a metre under his own crates and drop him
+        /// through them. Waiting costs a second of him standing where he was already standing.
+        /// </summary>
+        private const int DropAfterMs = 1500;
+
+        /// <summary>
+        /// The furthest this will ever move him, and it is a backstop rather than a tuning.
+        ///
+        /// He is a metre above his crates when he is wrong. Anything beyond this is not a
+        /// floating man, it is a ray that found the inside of the world, and putting him there
+        /// is worse than leaving him in the air.
+        /// </summary>
+        private const float MaxDrop = 1.5f;
+
+        /// <summary>
+        /// Puts him on whatever is actually under him.
+        ///
+        /// HE WAS STANDING IN THE AIR, a metre over his own crates. His height is a surveyed
+        /// one -- somebody stood on the spot and wrote it down -- and it turns out he was
+        /// standing ON the gun crates when it was written, because the display those crates
+        /// make was built in the same yard afterwards. The props sit at 32.8 and he sits at
+        /// 33.82, which is the top of the stack, and his feet ended up a hand above even that.
+        ///
+        /// THE GROUND PROBE CANNOT FIX THIS AND MUST NOT BE MADE TO. GET_GROUND_Z_FOR_3D_COORD
+        /// answers about the WORLD ground and is blind to props, so at his spot it returns the
+        /// concrete a metre below and the guard above rightly refuses it -- that guard is what
+        /// stopped him being built underneath his own floor, which is the bug this yard had
+        /// before, and widening it would simply trade one metre-shaped bug for the other.
+        ///
+        /// A RAY IS THE THING THAT CAN TELL THEM APART, because unlike the ground probe it
+        /// stops at the first solid thing, prop or map. If there is a floor under his feet the
+        /// ray finds it and he does not move. If there is nothing but air between him and the
+        /// crates, the ray finds the crates and he stands on them. Either way he ends up on
+        /// the first real surface below him and never below it, which is the property the
+        /// probe could never have.
+        /// </summary>
+        private void StandHimOnSomething()
+        {
+            try
+            {
+                if (_ped == null || !_ped.Exists() || _dropped) return;
+
+                _dropped = true;
+                _dropAt = 0;
+
+                var feet = _ped.Position;
+
+                var hit = World.Raycast(new Vector3(feet.X, feet.Y, feet.Z + 0.3f),
+                                        new Vector3(feet.X, feet.Y, feet.Z - FloorReach),
+                                        IntersectFlags.Map | IntersectFlags.Objects, _ped);
+
+                // Nothing under him within reach is not a reason to drop him into the void.
+                if (!hit.DidHit) return;
+
+                var drop = feet.Z - hit.HitPosition.Z;
+                if (drop <= FloatBy || drop > MaxDrop) return;
+
+                // Position AND NOT PositionNoOffset, which is what buried him. The no-offset
+                // setter puts a ped's ORIGIN at the height given; the plain one puts his FEET
+                // there, which is what every other line in this file means by a height and
+                // what Spot itself is. Written the other way he went into the ground by most
+                // of his own height, and because this used to run from Settle it then did it
+                // again from wherever he had landed, over and over.
+                _ped.Position = new Vector3(feet.X, feet.Y, hit.HitPosition.Z);
+                _ped.Heading = Heading;
+                _standingZ = hit.HitPosition.Z;
+
+                Log.Info("Stretch was standing " + drop.ToString("0.00") +
+                         "m above the nearest surface; stood him on it.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not find anything under Stretch: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Which of the things on his shelf the game will actually put a drum on. Once.
+        ///
+        /// WRITTEN DOWN BECAUSE IT IS OTHERWISE UNANSWERABLE FROM OUTSIDE THE GAME. Whether a
+        /// weapon takes a drum magazine lives in weapons.meta inside the archives, there is no
+        /// list of it on this machine, and every wrong answer fails in silence -- so the only
+        /// honest way to know is to ask the running game and write the answer where somebody
+        /// can read it. The shelf and the man both use the same test, so this log IS what the
+        /// shop does, not a report about it.
+        ///
+        /// It also settles the question that prompted it: an ordinary pistol has no drum in
+        /// this game, and no script can give it one -- the part does not exist to be fitted.
+        /// The machine pistols and the SMGs do, and this says which.
+        /// </summary>
+        private static bool _saidDrums;
+
+        private static void SayWhatTakesADrum()
+        {
+            if (_saidDrums) return;
+            _saidDrums = true;
+
+            try
+            {
+                var with = new List<string>();
+                var without = 0;
+
+                foreach (var rack in new[] { Handguns, Smgs, Shotguns, Rifles, Snipers, Heavy })
+                {
+                    foreach (var piece in rack)
+                    {
+                        if (piece == null || piece.IsVest || string.IsNullOrEmpty(piece.Weapon)) continue;
+
+                        var best = Weapons.ExtendedClips.BestFor(piece.Weapon);
+
+                        if (best != null && (best.EndsWith("_CLIP_DRUM", StringComparison.OrdinalIgnoreCase)
+                                             || best.EndsWith("_CLIP_03", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            with.Add(piece.Name);
+                        }
+                        else without++;
+                    }
+                }
+
+                Log.Info("Drum magazines: " + with.Count + " of his stock takes one (" +
+                         string.Join(", ", with.ToArray()) + "); " + without +
+                         " do not and the game has no part for them.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not ask what takes a drum: " + ex.Message);
+            }
+        }
+
         /// <summary>Puts him back on his spot, facing the right way.</summary>
         private void Settle()
         {
@@ -481,9 +652,12 @@ namespace Hoodrich.Locations
                 // exactly where he should be and a metre down. Under his own floor is a metre,
                 // and a metre never reached the threshold -- so nothing ever put him back and
                 // he stayed under there for the session.
-                if (_ped.Position.DistanceTo(Spot) > 2.5f || Spot.Z - _ped.Position.Z > SunkBy)
+                var floor = float.IsNaN(_standingZ) ? Spot.Z : _standingZ;
+                var home = new Vector3(Spot.X, Spot.Y, floor);
+
+                if (_ped.Position.DistanceTo(home) > 2.5f || floor - _ped.Position.Z > SunkBy)
                 {
-                    _ped.Position = Spot;
+                    _ped.Position = home;
                 }
 
                 if (!Function.Call<bool>(Hash.IS_PED_USING_SCENARIO, _ped.Handle, "WORLD_HUMAN_SMOKING"))

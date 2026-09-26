@@ -76,6 +76,83 @@ namespace Hoodrich.Economy
         private const int SProduct = 3;
         private const int SSize = 4;
 
+        /// <summary>
+        /// Where the other mod says it is drawing a real bag on his back. See Wear.
+        ///
+        /// THE SAME APPDOMAIN CHANNEL AS EVERYTHING ELSE ON THIS MACHINE, and one int, for
+        /// the reasons set out on Channel above. Nothing here writes it; this end only reads.
+        /// </summary>
+        private const string ShownChannel = "spitmux.bag.shown";
+
+        /// <summary>
+        /// Which bag the other mod has him carrying, and how it wants that bag laid down.
+        ///
+        /// THE BAG ON THE FLOOR WAS ALWAYS THE DUFFEL, whatever was on his back: Bare Minimum
+        /// draws the chosen model while it is worn, and nothing told this end which one that
+        /// was -- Michael, 2026-09-26. A model name and six numbers now, on top of the
+        /// ground-following Make and Lay already do. Nothing written there, nothing changes.
+        /// </summary>
+        private const string ModelChannel = "spitmux.bag.model";
+        private const string GroundChannel = "spitmux.bag.ground";
+
+        /// <summary>And whether a bag is lying on the ground right now, for the other mod's tuner.</summary>
+        private const string FloorChannel = "spitmux.bag.floor";
+
+        private static string Chosen()
+        {
+            try { return (AppDomain.CurrentDomain.GetData(ModelChannel) as string ?? "").Trim(); }
+            catch { return ""; }
+        }
+
+        private static float[] GroundSix()
+        {
+            try
+            {
+                var six = AppDomain.CurrentDomain.GetData(GroundChannel) as float[];
+                return six != null && six.Length >= 6 ? six : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static void Floor(bool made)
+        {
+            try
+            {
+                var row = AppDomain.CurrentDomain.GetData(FloorChannel) as int[];
+
+                if (row == null || row.Length < 1)
+                {
+                    row = new int[1];
+                    AppDomain.CurrentDomain.SetData(FloorChannel, row);
+                }
+
+                row[0] = made ? 1 : 0;
+            }
+            catch
+            {
+                // Then the other side's tuner cannot see it, which is its loss and not ours.
+            }
+        }
+
+        /// <summary>Whether a real bag model is on his back right now, drawn by somebody else.</summary>
+        private static bool Drawn()
+        {
+            try
+            {
+                var row = AppDomain.CurrentDomain.GetData(ShownChannel) as int[];
+
+                return row != null && row.Length > 0 && row[0] == 1;
+            }
+            catch
+            {
+                // Nobody is drawing anything, then, and the strap is the whole answer.
+                return false;
+            }
+        }
+
         /// <summary>The last drop request answered, so one ask is not answered twice.</summary>
         private int _asked;
 
@@ -113,9 +190,18 @@ namespace Hoodrich.Economy
         /// </summary>
         public Func<string> PropModel;
 
-        /// <summary>The ini's prop first, if there is one, then the built-in list.</summary>
+        /// <summary>
+        /// The bag he chose next door first, then the ini's prop, then the built-in list.
+        ///
+        /// THE CHOSEN ONE LEADS because it is the one on his back -- a man who puts down a
+        /// tactical pack should find a tactical pack on the floor. The ini's own prop is still
+        /// honoured for anybody running this without the mod that chooses.
+        /// </summary>
         private IEnumerable<string> Candidates()
         {
+            var chosen = Chosen();
+            if (chosen.Length > 0) yield return chosen;
+
             string own = null;
 
             try { own = PropModel == null ? null : (PropModel() ?? "").Trim(); }
@@ -392,6 +478,20 @@ namespace Hoodrich.Economy
         {
             try
             {
+                // SOMEBODY ELSE IS DRAWING A REAL ONE, so this does not put a strap on as
+                // well. Bare Minimum hangs an actual bag model off the spine -- a model you
+                // can choose and a position you can dial, neither of which a drawable can be
+                // -- and a man wearing that AND this is wearing two bags.
+                //
+                // IT ONLY SAYS YES WHILE THE PROP ACTUALLY EXISTS, not while the setting is
+                // on, so a build where the model will not load gets the strap back rather
+                // than nothing at all. See Bare Minimum's Food.Strap.
+                if (Drawn())
+                {
+                    Unwear(me);
+                    return;
+                }
+
                 // WHICH STRAP THIS BODY ACTUALLY HAS.
                 //
                 // Drawable seven is the strap on the outfit it was found on, and the number of
@@ -483,9 +583,93 @@ namespace Hoodrich.Economy
                 return;
             }
 
+            // A DIFFERENT BAG CHOSEN WHILE THIS ONE LIES HERE is a different object, so the old
+            // one goes and Make lays the new one. Only for a name this build actually has, or a
+            // bag nobody can make would be taken away every pass for nothing.
+            Swapped();
+
             Make(where);
 
+            // AND WHERE IT LIES, dialled next door and applied on top of the ground-following.
+            Fit();
+
+            Floor(_thing != null && _thing.Exists());
+
             InReach = gap <= Reach && !me.IsInVehicle();
+        }
+
+        /// <summary>Takes the floor bag away if the chosen bag is now a different model. See Down.</summary>
+        private void Swapped()
+        {
+            if (_thing == null || !_thing.Exists()) return;
+
+            var chosen = Chosen();
+            if (chosen.Length == 0) return;
+
+            try
+            {
+                var model = new Model(chosen);
+                if (!model.IsValid || !model.IsInCdImage) return;
+                if (_thing.Model.Hash == model.Hash) return;
+
+                Log.Info("Bag: on the ground as " + chosen + " now, the one chosen next door.");
+                Unmake();
+            }
+            catch
+            {
+                // It stays as it is.
+            }
+        }
+
+        /// <summary>The pose Make and Lay settled on, before anybody's six. See Fit.</summary>
+        private Vector3 _basePos;
+        private Vector3 _baseRot;
+
+        /// <summary>The six last applied, so a pass with nothing new does nothing.</summary>
+        private float[] _applied;
+
+        /// <summary>
+        /// Lays the bag where the other mod's six say, on top of where Make put it.
+        ///
+        /// IN THE BAG'S OWN FRAME ON THE GROUND: across and along from the heading it was put
+        /// down at -- the same two axes Lay reads the slope along -- and up; the three turns
+        /// added to the tilt Lay gave it. Nought is exactly where it always lay, so an install
+        /// without the other mod, or a bag nobody has dialled, is untouched.
+        ///
+        /// LIVE, because the other mod's tuner moves these while the bag is lying here and a
+        /// tuner is only a tuner if the thing moves. Checked every pass and done only on a
+        /// change; moving a frozen prop is two natives.
+        /// </summary>
+        private void Fit()
+        {
+            if (_thing == null || !_thing.Exists()) return;
+
+            var six = GroundSix() ?? new float[6];
+
+            if (_applied != null && Same(six, _applied)) return;
+
+            try
+            {
+                var rad = Bag.DownHeading * (float)(Math.PI / 180.0);
+                var forward = new Vector3(-(float)Math.Sin(rad), (float)Math.Cos(rad), 0f);
+                var right = new Vector3((float)Math.Cos(rad), (float)Math.Sin(rad), 0f);
+
+                _thing.Position = _basePos + right * six[0] + forward * six[1] + Vector3.WorldUp * six[2];
+                _thing.Rotation = new Vector3(_baseRot.X + six[3], _baseRot.Y + six[4], _baseRot.Z + six[5]);
+
+                _applied = (float[])six.Clone();
+            }
+            catch
+            {
+                // Where Make put it, then.
+            }
+        }
+
+        private static bool Same(float[] a, float[] b)
+        {
+            if (a.Length != b.Length) return false;
+            for (var i = 0; i < a.Length; i++) if (a[i] != b[i]) return false;
+            return true;
         }
 
         private void Make(Vector3 where)
@@ -546,6 +730,12 @@ namespace Hoodrich.Economy
                     // end in the concrete and the other in the air, which is the "crooked" in
                     // the screenshot -- crooked against the ground, not against the world.
                     Lay();
+
+                    // THE POSE EVERYTHING ABOVE SETTLED ON, kept as the nought the other mod's
+                    // six are measured from. See Fit, which Down calls straight after this.
+                    _basePos = _thing.Position;
+                    _baseRot = _thing.Rotation;
+                    _applied = null;
 
                     Function.Call(Hash.FREEZE_ENTITY_POSITION, _thing.Handle, true);
 
@@ -665,6 +855,9 @@ namespace Hoodrich.Economy
             catch { /* it streams out */ }
 
             _thing = null;
+            _applied = null;
+
+            Floor(false);
         }
 
         private void Mark(Vector3 where)

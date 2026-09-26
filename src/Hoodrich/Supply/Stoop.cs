@@ -224,6 +224,9 @@ namespace Hoodrich.Supply
                 Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped.Handle, true, true);
                 ped.IsPersistent = true;
 
+                // The stoop is a fixed place and so is whoever is sitting on it. See Core.Folk.
+                Core.Folk.StampAt(ped, "stoop", at);
+
                 var group = Group();
                 if (group != 0) Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, group);
 

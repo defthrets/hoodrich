@@ -446,6 +446,45 @@ namespace Hoodrich.Social
                     var handle = node["handle"].AsString("");
                     if (string.IsNullOrEmpty(handle)) continue;
 
+                    var gender = node["gender"].AsString("male");
+                    var voice = node["voice"].AsString("");
+
+                    // HOW THEY TYPE, which the file may say and mostly does not.
+                    //
+                    // The default is the safe one in both directions. Anybody with written
+                    // lines of their own is left exactly as written -- a cop, a news desk and
+                    // Lamar all had that decision made for them by whoever wrote the line, and
+                    // a second opinion here would only overwrite it. So is every organisation,
+                    // for the same reason plus the obvious one.
+                    //
+                    // Everybody else is somebody with no words of their own, drawing from a
+                    // pool shared with seventy-two other people, and they are the ones this
+                    // was built for.
+                    // HOW OFTEN THEY TALK. Four bands off the handle, so an account is as
+                    // quiet or as loud in every session as it was in the last one, and the
+                    // file can override any of them with a plain number.
+                    var volume = node["volume"].AsInt(0);
+
+                    if (volume <= 0)
+                    {
+                        var roll = Typing.Hash(handle, 13) % 100;
+
+                        volume = roll < 8 ? 100      // the handful who never stop
+                               : roll < 22 ? 28      // regulars
+                               : roll < 62 ? 7       // occasional
+                               : 1;                  // reads everything, posts twice a year
+                    }
+
+                    var band = node["types"].AsString("");
+
+                    if (string.IsNullOrEmpty(band))
+                    {
+                        band = !string.IsNullOrEmpty(voice)
+                            || string.Equals(gender, "none", StringComparison.OrdinalIgnoreCase)
+                            ? "none"
+                            : Typing.Hash(handle, 9) % 100 < 74 ? "street" : "plain";
+                    }
+
                     feed._authors.Add(new Author
                     {
                         Handle = handle.StartsWith("@") ? handle : "@" + handle,
@@ -453,9 +492,11 @@ namespace Hoodrich.Social
                         Gang = node["gang"].AsString(""),
                         Verified = node["verified"].AsBool(false),
                         Bars = node["bars"].AsBool(true),
-                        Gender = node["gender"].AsString("male"),
+                        Gender = gender,
                         Pic = node["pic"].AsString(""),
-                        Voice = node["voice"].AsString(""),
+                        Voice = voice,
+                        Types = Typing.Band(band, handle),
+                        Volume = volume,
                         Tint = TintFor(handle, node["gang"].AsString(""))
                     });
                 }
@@ -533,6 +574,44 @@ namespace Hoodrich.Social
                     if (list.Count > 0) feed._slots[key] = list;
                 }
 
+                // WHICH PART OF THE MAP EACH ZONE IS IN. Optional, like the two below:
+                // without it RegionSet never fires and the ambient mix is what it always was.
+                foreach (var region in doc["regions"].Keys)
+                {
+                    foreach (var code in doc["regions"][region].Items)
+                    {
+                        var text = code.AsString("");
+                        if (!string.IsNullOrEmpty(text)) feed._regionOf[text] = region;
+                    }
+                }
+
+                // WHAT THE HOUR AND THE SKY ALLOW SOMEBODY TO SAY. Both optional: a file
+                // without them falls back to the flat {timeofday} and {weathertalk} lists,
+                // which is what every version before this one did. See Moment.
+                foreach (var part in doc["moments"].Keys)
+                {
+                    var said = new List<string>();
+                    foreach (var line in doc["moments"][part].Items)
+                    {
+                        var text = line.AsString("");
+                        if (!string.IsNullOrEmpty(text)) said.Add(text);
+                    }
+
+                    if (said.Count > 0) feed._moments[part] = said;
+                }
+
+                foreach (var sky in doc["weather"].Keys)
+                {
+                    var said = new List<string>();
+                    foreach (var line in doc["weather"][sky].Items)
+                    {
+                        var text = line.AsString("");
+                        if (!string.IsNullOrEmpty(text)) said.Add(text);
+                    }
+
+                    if (said.Count > 0) feed._skies[sky] = said;
+                }
+
                 // What each set calls itself, so {rival} can never hand a gang its own name.
                 foreach (var gang in doc["selfWords"].Keys)
                 {
@@ -546,10 +625,24 @@ namespace Hoodrich.Social
                     if (words.Count > 0) feed._selfWords[gang] = words;
                 }
 
+                // WHICH WORDS ARE SOMEBODY'S NAME, learned off the finished file so that
+                // lowercasing an opener never takes the capital off Franklin or off Grove.
+                // Done last on purpose: it needs every line the file has, including the ones
+                // written for a single voice, because a name only has to appear mid-sentence
+                // ONCE anywhere to be safe everywhere. See Typing.Learn.
+                foreach (var set in feed._templates.Values) Typing.Learn(set);
+                foreach (var sets in feed._voices.Values)
+                {
+                    foreach (var set in sets.Values) Typing.Learn(set);
+                }
+                foreach (var kind in feed._comments.Values) Typing.Learn(kind);
+                foreach (var list in feed._slots.Values) Typing.Learn(list);
+
                 Log.Info("Socials loaded: " + feed._authors.Count + " people (" +
                          feed._voices.Count + " with their own voice), " +
                          feed._templates.Count + " post sets, " + feed._slots.Count +
-                         " word lists, " + feed._comments.Count + " kinds of reply.");
+                         " word lists, " + feed._comments.Count + " kinds of reply, " +
+                         Typing.NamesKnown + " names that keep their capital.");
             }
             catch (Exception ex)
             {
@@ -799,6 +892,11 @@ namespace Hoodrich.Social
                     Gender = "male",
                     Pic = "CHAR_FRANKLIN",
                     Tint = System.Drawing.Color.FromArgb(255, 60, 180, 75),
+
+                    // He types like everybody else he grew up with. Banded rather than left
+                    // as-written because the You sets are the shared pool too -- they are
+                    // written once and posted under his name, not hand-written for him.
+                    Types = Typing.Band("street", "@franklin_c"),
                 };
 
                 return _me;
@@ -1289,6 +1387,68 @@ namespace Hoodrich.Social
         /// <summary>And how much of it is somebody naming a specific place. See the note in Ambient.</summary>
         private const double LocalChance = 0.28;
 
+        /// <summary>
+        /// And how much of it is about the part of the map you are actually in.
+        ///
+        /// Deliberately a slice rather than the whole thing. People travel, they post about
+        /// where they were yesterday, and a feed where nobody ever mentions anywhere else is
+        /// as wrong as one that never mentions here.
+        /// </summary>
+        private const double RegionChance = 0.16;
+
+        /// <summary>
+        /// And how much of it is about the hour it actually is.
+        ///
+        /// Taken out of the general pool rather than off the other three, because the general
+        /// pool is the one that has no idea what time it is.
+        /// </summary>
+        private const double MomentChance = 0.14;
+
+        /// <summary>
+        /// The ambient set for where the player is standing, or "Ambient" if there is not one.
+        ///
+        /// Three ways to fall back, all of them silent and all of them correct: Main has not
+        /// wired the hook, the zone is not in the region table -- North Yankton and the island
+        /// are deliberately absent -- or nobody has written that region's lines yet. This is
+        /// why the feature can be wired up before a single line of its content exists.
+        /// </summary>
+        /// <summary>
+        /// The ambient set for the hour it is now, or "Ambient" if there is not one.
+        ///
+        /// AmbientLatenight, AmbientEarlymorning, AmbientMorning, AmbientMidday,
+        /// AmbientAfternoon, AmbientEvening, AmbientNight -- named off Moment.Part, so adding
+        /// a time of day to the feed is a data edit and never a code one.
+        /// </summary>
+        private string MomentSet()
+        {
+            var part = Moment.Now();
+            if (string.IsNullOrEmpty(part)) return "Ambient";
+
+            var set = "Ambient" + char.ToUpperInvariant(part[0]) + part.Substring(1);
+
+            List<string> lines;
+            return _templates.TryGetValue(set, out lines) && lines.Count > 0 ? set : "Ambient";
+        }
+
+        private string RegionSet()
+        {
+            if (ZoneCodeYouAre == null || _regionOf.Count == 0) return "Ambient";
+
+            string code;
+            try { code = ZoneCodeYouAre(); }
+            catch { return "Ambient"; }
+
+            if (string.IsNullOrEmpty(code)) return "Ambient";
+
+            string region;
+            if (!_regionOf.TryGetValue(code, out region)) return "Ambient";
+
+            var set = "Ambient" + char.ToUpperInvariant(region[0]) + region.Substring(1);
+
+            List<string> lines;
+            return _templates.TryGetValue(set, out lines) && lines.Count > 0 ? set : "Ambient";
+        }
+
         private void Ambient(bool backdated, bool business = false)
         {
             // Roughly one ambient post in five is two other gangs going at each other.
@@ -1326,6 +1486,8 @@ namespace Hoodrich.Social
 
                 which = pick < HoodChance ? "AmbientHood"
                       : pick < HoodChance + LocalChance ? "Local"
+                      : pick < HoodChance + LocalChance + RegionChance ? RegionSet()
+                      : pick < HoodChance + LocalChance + RegionChance + MomentChance ? MomentSet()
                       : "Ambient";
             }
 
@@ -1883,6 +2045,8 @@ namespace Hoodrich.Social
 
         private Post Build(string set, string subject, int amount = 0)
         {
+            set = Theirs(set);
+
             for (var attempt = 0; attempt < UniqueTries; attempt++)
             {
                 var post = BuildOnce(set, subject, amount);
@@ -2062,7 +2226,7 @@ namespace Hoodrich.Social
 
                 if (!_templates.TryGetValue(set, out templates) || templates.Count == 0) return null;
 
-                by = open[_rng.Next(open.Count)];
+                by = Loudest(open);
             }
 
             var body = Fill(templates[_rng.Next(templates.Count)], subject, amount, by);
@@ -2090,6 +2254,38 @@ namespace Hoodrich.Social
             post.Replies = _rng.Next(0, Math.Max(2, post.Likes / 8));
 
             return post;
+        }
+
+        /// <summary>
+        /// One of them, with the ones who talk more coming up more.
+        ///
+        /// A flat roll over the eligible pool is a rota, not a timeline. Real feeds are
+        /// dominated by a few accounts -- the top quarter of users on a measured platform
+        /// produced 97% of the posts on it -- and the effect of that is not statistical, it is
+        /// that you come to know the regulars by name and a rare account turning up means
+        /// something. Both of those were impossible while everybody posted equally.
+        ///
+        /// Falls back to a flat roll if every weight in the pool is zero, which cannot happen
+        /// from Load but can from a hand-edited file.
+        /// </summary>
+        private Author Loudest(List<Author> pool)
+        {
+            if (pool.Count == 1) return pool[0];
+
+            var total = 0;
+            foreach (var author in pool) total += Math.Max(0, author.Volume);
+
+            if (total <= 0) return pool[_rng.Next(pool.Count)];
+
+            var want = _rng.Next(total);
+
+            foreach (var author in pool)
+            {
+                want -= Math.Max(0, author.Volume);
+                if (want < 0) return author;
+            }
+
+            return pool[pool.Count - 1];
         }
 
         /// <summary>
@@ -2175,6 +2371,10 @@ namespace Hoodrich.Social
             // alone cannot say which -- DissedBack is written six times over, once each, and
             // the author pool has to match the words.
             if (!string.IsNullOrEmpty(_forceGang)) return _forceGang;
+
+            // A rival's own version is spoken by that rival and nobody else. See Theirs.
+            var theirs = TheirsBelongTo(set);
+            if (theirs != null) return theirs;
 
             switch (set)
             {
@@ -2418,6 +2618,14 @@ namespace Hoodrich.Social
             var text = template;
             var guard = 0;
 
+            // WHETHER THERE IS AN OPENING WORD TO LOWERCASE AT ALL.
+            //
+            // Asked before anything is filled, because afterwards there is no way to tell.
+            // A template that starts with {here} or {subject} opens on a place or a set --
+            // Chamberlain Hills, the Ballas -- and those keep their capitals whoever is typing.
+            var opens = !template.TrimStart().StartsWith("{", StringComparison.Ordinal);
+            var first = true;
+
             while (guard++ < 12)
             {
                 var open = text.IndexOf('{');
@@ -2426,13 +2634,59 @@ namespace Hoodrich.Social
                 var close = text.IndexOf('}', open + 1);
                 if (close < 0) break;
 
+                // WHETHER THIS SLOT IS THE FIRST WORD OF THE POST.
+                //
+                // It matters for the word lists, which are written with a capital -- "My
+                // cousin", "The barber" -- and a good third of the templates open on one.
+                // Without this every one of those posts started with a capital letter
+                // whoever was typing, which is the exact thing the styler is for.
+                var atStart = first && open == 0;
+                first = false;
+
                 var key = text.Substring(open + 1, close - open - 1);
                 var value = ValueFor(key, subject, amount, by);
+
+                // A WORD LIST IS SOMEBODY TALKING TOO. {hearsay} and {reaction} hold whole
+                // clauses -- "they say", "I'm not even surprised" -- and leaving them unstyled
+                // put a tidy little fragment with all its apostrophes in the middle of a
+                // sentence that had just lost every one of its own. The built-in slots are
+                // names and numbers and are left alone.
+                if (by != null && !by.Types.Idle && IsWordList(key))
+                {
+                    value = by.Types.Apply(value, atStart);
+                }
 
                 text = text.Substring(0, open) + value + text.Substring(close + 1);
             }
 
-            return text;
+            return by == null ? text : by.Types.Apply(text, opens);
+        }
+
+        /// <summary>
+        /// Whether a slot holds words somebody said, rather than a name or a number.
+        ///
+        /// The built-in ten are filled by ValueFor out of the world -- the zone you are in,
+        /// the set you run with, an amount of money -- and none of them wants styling. Every
+        /// other key is a list out of the file, written in somebody's voice, and does.
+        /// </summary>
+        private bool IsWordList(string key)
+        {
+            switch ((key ?? "").ToLowerInvariant())
+            {
+                case "count":
+                case "here":
+                case "money":
+                case "rival":
+                case "street":
+                case "subject":
+                case "theircolour":
+                case "theirs":
+                case "you":
+                case "yours":
+                    return false;
+                default:
+                    return _slots.ContainsKey(key);
+            }
         }
 
         private string ValueFor(string key, string subject, int amount, Author by = null)
@@ -2527,6 +2781,26 @@ namespace Hoodrich.Social
                 return string.IsNullOrEmpty(colour) ? "them" : colour;
             }
 
+            // WHEN IT ACTUALLY IS, rather than whenever the list fancies.
+            //
+            // This is the most-used slot in the file after the places, and until now it was
+            // ten phrases drawn blind: the feed would report something happening "at like 3am"
+            // while you stood in the afternoon sun, and "last night" before breakfast. Asking
+            // the clock costs one native and turns two hundred and thirty lines from noise
+            // into something that agrees with the window. See Moment.
+            if (string.Equals(key, "timeofday", StringComparison.OrdinalIgnoreCase))
+            {
+                var said = OneOf(_moments, Moment.Now());
+                if (said != null) return said;
+            }
+
+            // And the same for the sky, which used to offer "Rain finally" on a clear day.
+            if (string.Equals(key, "weathertalk", StringComparison.OrdinalIgnoreCase))
+            {
+                var said = OneOf(_skies, Moment.Sky());
+                if (said != null) return said;
+            }
+
             List<string> list;
             if (_slots.TryGetValue(key, out list) && list.Count > 0) return list[_rng.Next(list.Count)];
 
@@ -2554,6 +2828,55 @@ namespace Hoodrich.Social
 
         private readonly Dictionary<string, List<string>> _selfWords =
             new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// What somebody could say about the time RIGHT NOW, by part of the day.
+        ///
+        /// Keyed by Moment.Part -- latenight, earlymorning, morning, midday, afternoon,
+        /// evening, night. Empty means the file has no "moments" block and {timeofday} keeps
+        /// its old behaviour, so an older socials.json still works.
+        /// </summary>
+        private readonly Dictionary<string, List<string>> _moments =
+            new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>What somebody could say about the sky right now, by Moment.SkyFor.</summary>
+        private readonly Dictionary<string, List<string>> _skies =
+            new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Which part of the map each zone belongs to, flattened from the "regions" block.
+        ///
+        /// Stored the other way round from the file -- code to region rather than region to
+        /// codes -- because the question asked at runtime is always "what is CHAMH", ninety
+        /// times a session, and walking six lists to answer it would be silly.
+        /// </summary>
+        private readonly Dictionary<string, string> _regionOf =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// The zone CODE under the player, set by Main. Empty when it cannot be had.
+        ///
+        /// The code rather than the name, because two zones share the name "La Puerta" and
+        /// the region table is keyed the way the game answers GET_NAME_OF_ZONE.
+        /// </summary>
+        public Func<string> ZoneCodeYouAre;
+
+        /// <summary>
+        /// One line out of the bucket the world is currently in, or null to fall back.
+        ///
+        /// Null rather than an empty string on purpose: a bucket that is missing from the data
+        /// has to hand the decision back to the flat list, and "" would print an empty gap in
+        /// the middle of a sentence instead.
+        /// </summary>
+        private string OneOf(Dictionary<string, List<string>> table, string bucket)
+        {
+            if (table.Count == 0 || string.IsNullOrEmpty(bucket)) return null;
+
+            List<string> said;
+            if (!table.TryGetValue(bucket, out said) || said.Count == 0) return null;
+
+            return said[_rng.Next(said.Count)];
+        }
 
         /// <summary>Whether a candidate rival is really the speaker's own lot.</summary>
         private bool IsSelf(string gangId, string candidate)
@@ -2782,6 +3105,68 @@ namespace Hoodrich.Social
         /// since before half of you was born" is a Vagos line; handing it to the Lost MC makes
         /// it a line about nothing.
         /// </summary>
+        /// <summary>
+        /// The sets whose speaker is whoever the live rival is. See GangFor.
+        ///
+        /// Their shared lines have to be sayable by any of eight gangs, so the words are kept
+        /// unmarked. Theirs lets a gang have its own version on top.
+        /// </summary>
+        private static readonly string[] TheirSets =
+        {
+            "RivalMourns", "RivalGloats", "WarLiveRival",
+            "WastedShot", "WastedMelee", "WastedCar", "WastedBlast"
+        };
+
+        /// <summary>How often a gang with its own version uses it rather than the shared pool.</summary>
+        private const double TheirsChance = 0.75;
+
+        /// <summary>
+        /// The rival's own version of a rival-voiced set, when one exists.
+        ///
+        /// THE SAME TRICK THE REPLIES ALREADY USE. DissedBack, FoundYou and GangOnGang have
+        /// always tried "&lt;Set&gt;&lt;Gang&gt;" first. The rival voice never did, so when the Ballas
+        /// killed you they had to gloat in words a Korean crew or a biker chapter could equally
+        /// have posted, and the purple never once sounded purple at the moment it mattered most.
+        ///
+        /// Not every time: a quarter of the posts still come from the shared pool, because a
+        /// set that only ever speaks in its own register reads as a costume.
+        /// </summary>
+        private string Theirs(string set)
+        {
+            if (string.IsNullOrEmpty(set) || !string.IsNullOrEmpty(_forceGang)) return set;
+            if (Array.IndexOf(TheirSets, set) < 0) return set;
+
+            var rival = string.IsNullOrEmpty(_rivalGang) ? "ballas" : _rivalGang;
+            var own = set + Pretty(rival);
+
+            List<string> lines;
+            if (!_templates.TryGetValue(own, out lines) || lines.Count == 0) return set;
+
+            return _rng.NextDouble() < TheirsChance ? own : set;
+        }
+
+        /// <summary>
+        /// Which gang a rival-voiced set's own version belongs to, or null if it is not one.
+        ///
+        /// WITHOUT THIS THE NEW SETS WOULD HAVE LEAKED. GangFor matches set names exactly, so
+        /// "RivalGloatsBallas" fell through its switch to the default, which is "anybody" -- and
+        /// a Families account could have posted the Ballas gloating over a dead Family.
+        /// </summary>
+        private static string TheirsBelongTo(string set)
+        {
+            if (string.IsNullOrEmpty(set)) return null;
+
+            foreach (var root in TheirSets)
+            {
+                if (set.Length > root.Length && set.StartsWith(root, StringComparison.Ordinal))
+                {
+                    return set.Substring(root.Length).ToLowerInvariant();
+                }
+            }
+
+            return null;
+        }
+
         private static string Pretty(string gangId)
         {
             if (string.IsNullOrEmpty(gangId)) return "";

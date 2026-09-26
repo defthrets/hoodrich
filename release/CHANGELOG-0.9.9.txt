@@ -1,0 +1,95 @@
+0.9.9 -- 26 September 2026
+
+
+PARKVIEW IS PART OF POSTED UP. The block on the open ground in Chamberlain
+Hills -- two apartment blocks and a row of houses, a corner shop with its two
+Koreans behind the counter, a camp at the hobo spot, and eighty-odd people on
+the roofs, the floors and the ground -- ships inside Posted Up now rather than
+as a mod of its own. If you had Parkview.dll, take it out of scripts: your
+rented room comes across on the first start. The people there live a little:
+they change what they are doing, walk off and come back, and walk in from off
+screen rather than appearing on their marks. And every person this mod puts
+on a street can be talked to with NPC Mind.
+
+
+THE GAMBLING DEN. Behind the die on the ground at Parkview, in a two-car garage
+under Pillbox Hill: roulette with the ball on the wheel, blackjack dealt card
+by card, and pokies at $10 a spin, the Diamond's own tables and screens, with
+dealers who talk while you play, guards on the door, and the camera free to
+look about while you are sat down. The tables' limits are in Hoodrich.ini
+under [GamblingDen].
+
+
+APARTMENT E2. A second place to rent at Parkview, $500 a week: the door up on
+the landing opens into the low-end apartment from GTA Online, with nothing
+extra to install. Cut and bag at the kitchen counter, sleep in the bed, change
+at the wardrobe, and get at the stash. The bong on the table smokes the way the
+online one does, and the TV comes on with the game's own channels. The
+apartments' icons are white until they are yours and green once they are. The
+room Parkview already rented is a stash house now too, and every stash house
+holds the one stock.
+
+
+THE PLUG COMES TO PARKVIEW. Order on the phone while you are at Parkview and
+the dealer pulls up on the block, walks up to wherever you are standing,
+throws it at your feet and goes. Pick it up and it is in your stash.
+
+
+SHOOTING HOOPS. The basketball court in Chamberlain Hills has a ball on it:
+walk into the ring in the middle of the court and pick it up. Hold to charge
+the throw -- the line out of the ball rises and stretches with the meter, and
+fades before it comes down, so where it lands is yours to judge -- and down
+through either hoop is two, or three from beyond the arc. Nothing aims it for
+you, and you can throw it as far as you like. A setting draws the rings the
+ball has to go through, to practise with. The same court is out as a mod of
+its own, Hoops; with Posted Up installed it stands down.
+
+
+LAMAR'S BIKE RIDE ends on the basketball court now, where the Ballas are
+waiting.
+
+
+THE BLOCK. The set rides round Parkview in crews -- on BMXs, dirt bikes and
+quads, pulling wheelies and burnouts -- along a way round the park that was
+ridden by hand, instead of through everything standing on it, and some crews
+go round it the other way. The takeover's cars skid for real, on the physics,
+and keep their tyres spinning until they are off course, and they crash like
+cars rather than ploughing through everything. The car meet on the lot off
+Davis is gone, the takeover throws fewer flares, and the kickabout from 0.9.8
+is out.
+
+
+THE FEED, REWRITTEN. Every GTA character in it was looked up and written from
+their own story; the gang voices post the way young men on a block actually
+post, swearing included; twenty-four ordinary working people join the city;
+and the chatter knows what time it is, what the weather is doing and which
+part of the map you are in. Each account types like one person rather than
+the same careful writer seventy times over.
+
+
+WHAT HE WEARS STAYS ON HIM. The outfit from the closet holds through death,
+Pillbox, a cell and loading a save.
+
+
+STRETCH stands on the ground in his yard rather than a metre over it, keeps
+what you bought from him, and sells drum magazines as standard.
+
+
+WITH OTHER MODS. Going through a body belongs to Bare Minimum now, and the bag
+on the floor is whichever one it has on your back. Five0 Patrol's search takes
+what it finds, and sees uncut product as well as bagged. Another mod can buy
+off you and hand you what it found, at the corner's own prices.
+
+
+THE SETTINGS ARE WHAT YOU SET. The settings screen and Hoodrich.ini hold only
+what somebody playing would change, each row and line saying what it does; the
+tuning numbers and the tools for building the mod are gone from both. Delete a
+line and it goes back to the default. An ini you already have is left alone.
+The mod's own doors are data now, in Hoodrich\doors.ini.
+
+
+FIXES. Buildings placed as props no longer blink out in the distance, and the
+map no longer drops to its low-detail models round Parkview. People in scenes
+stop falling through floors and off roofs as a save loads. The phone no longer
+flickers while something waits for a model to load. The house stops telling
+you that you are carrying. The man on the ledge behind Innocence sits on it.

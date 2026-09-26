@@ -15,6 +15,16 @@ namespace Hoodrich.Core
     {
         // ---- general -----------------------------------------------------------
         public bool Enabled = true;
+
+        /// <summary>
+        /// THE TOOLS FOR BUILDING THE MOD, and every setting a player has no use for: Parkview's
+        /// capture and hide keys, reading Menyoo's folder, the mask, door and in-hand tools, the
+        /// finders, the takeover and meet buttons, the unlocks, and every tuning slider. Off for
+        /// everybody who plays it; [Developer] Tools=true brings the lot back. It is not in the
+        /// ini the mod ships -- Michael asked for the release to have only what a player needs,
+        /// on 2026-09-26, and his own ini carries the line.
+        /// </summary>
+        public bool DevTools;
         /// <summary>
         /// What the player reads. English is the code's own; the rest are files in
         /// scripts\Hoodrich\lang, and anything a file does not cover shows in English. See Lang.
@@ -420,6 +430,67 @@ namespace Hoodrich.Core
         public int SceneryQuietFrom = 3;
         public int SceneryQuietTo = 7;
 
+        // ---- Parkview ----------------------------------------------------------
+        //
+        // The scene on the open ground in Chamberlain Hills and everything that lives in it:
+        // the blocks, the eighty-odd people, the rooms behind the doors, the voices. It shares
+        // the [Scenery] settings above -- range, the small hours, whether people live a little
+        // -- and has these of its own. See Parkview.Main.
+
+        /// <summary>Whether Parkview runs at all: the scene, its people, its rooms and its keys.</summary>
+        public bool Parkview = true;
+
+        /// <summary>
+        /// A name over everybody near, all the time. OFF: Michael found it wrong on 2026-09-24 --
+        /// names up over people he could not talk to. NPC Mind shows the name over the one man
+        /// you are looking at, with the prompt to talk to him. See Parkview.Scenery.Tags.
+        /// </summary>
+        public bool ParkviewNames = false;
+
+        /// <summary>Whether the doors on the block can be rented. See Parkview.Rooms.</summary>
+        public bool ParkviewRooms = true;
+
+        /// <summary>What a room costs for a week on the game's clock.</summary>
+        public int ParkviewRent = 250;
+
+        /// <summary>
+        /// Parkview's keys. The F9 family: F9 captures everything placed round you to a scene
+        /// file, Shift reads the scene files again, Control hides the map prop you are looking
+        /// at, Alt sets the rented room to where you stand. Taking over the map prop you are
+        /// looking at is NUMPAD *, because the F9 family is full and Multiply is one of the four
+        /// keys the hotkey map lists as bound to nothing at all.
+        /// </summary>
+        public Keys ParkviewCaptureKey = Keys.F9;
+        public Keys ParkviewCaptureModifier = Keys.None;
+        public Keys ParkviewReloadKey = Keys.F9;
+        public Keys ParkviewReloadModifier = Keys.Shift;
+        public Keys ParkviewHideKey = Keys.F9;
+        public Keys ParkviewHideModifier = Keys.Control;
+        public Keys ParkviewRoomKey = Keys.F9;
+        public Keys ParkviewRoomModifier = Keys.Alt;
+        public Keys ParkviewTakeKey = Keys.Multiply;
+        public Keys ParkviewTakeModifier = Keys.None;
+
+        /// <summary>
+        /// The den's table limits: the smallest chip and the most one bet may be. Read from the
+        /// [GamblingDen] door section, because they are about that room. See Den.Floor.
+        /// </summary>
+        public int DenMinBet = 100;
+        public int DenMaxBet = 10000;
+
+        /// <summary>One spin of a slot machine, "bet one"; bet max is five of them. Michael asked for $10 spins on 2026-09-26.</summary>
+        public int DenSlotBet = 10;
+
+        /// <summary>The static emitters that are the den's jukebox, semicolon-separated. Empty is a quiet room.</summary>
+        public string DenJukebox = "";
+
+        /// <summary>
+        /// The hoops' rings drawn on the court -- where the ball has to come down through -- to
+        /// practise with. Off, the court is just the court. The game reads [Hoops] ShowRings itself
+        /// as each game starts; this is for the settings screen. See Court.Shootaround.
+        /// </summary>
+        public bool HoopRings;
+
         /// <summary>How much longer or shorter every drug-taking animation runs.</summary>
         public float DrugAnimLength = 1f;
 
@@ -621,13 +692,20 @@ namespace Hoodrich.Core
 
 
         /// <summary>
-        /// How wide the loops the cars drive are, in metres.
+        /// How wide a circle the drifting cars try to hold, in metres.
         ///
         /// In the ini because it is a number that can only be judged by standing at the
         /// junction and watching, and it has been judged by eye more than once. The cars aim
-        /// at a circle this wide and slide well outside it, which is what it should look like.
+        /// at a circle this wide and slide well outside it, which is what it should look like;
+        /// a couple of metres past it is where the leash brings a car back. See Takeover.Roam.
         /// </summary>
         public float TakeoverSpinRadius = 8f;
+
+        /// <summary>What share of its grip a performer keeps on the circle, nought to one. Less is more smoke and more sideways.</summary>
+        public float TakeoverGrip = 0.35f;
+
+        /// <summary>How much engine a performer gets, times the car's own drive force. One is the car as it came.</summary>
+        public float TakeoverPower = 1.6f;
 
         /// <summary>Whether groups of the set walk the back streets on foot.</summary>
         /// <summary>
@@ -682,6 +760,30 @@ namespace Hoodrich.Core
         /// <summary>How hard. See Rollers.Lift for why this is a setting and not a constant.</summary>
         public float RollerWheelieLift = 1.9f;
 
+        /// <summary>
+        /// Whether a crew that stops rides round the park rather than circling one spot. See
+        /// Gangs.Park for how the park is looked at before anybody is sent into it.
+        /// </summary>
+        public bool RollerParkRide = true;
+
+        /// <summary>
+        /// Whether they ride the path you recorded, when there is one, instead of finding their
+        /// own way round the park. See Gangs.BikePath.
+        /// </summary>
+        public bool RollerParkPath = true;
+
+        /// <summary>
+        /// The middle of the park and how far it reaches. The default sits between the courts
+        /// and the skate ramps placed south-west of them, far enough out to take in all of it.
+        /// </summary>
+        public float RollerParkX = -252f;
+        public float RollerParkY = -1578f;
+        public float RollerParkZ = 31f;
+        public float RollerParkRadius = 70f;
+
+        /// <summary>How fast they ride in the park, in metres a second. Five is a kid on a BMX.</summary>
+        public float RollerParkSpeed = 5f;
+
         // ---- joining -----------------------------------------------------------
 
         /// <summary>Grams a gang leader fronts you when he takes you on.</summary>
@@ -718,12 +820,17 @@ namespace Hoodrich.Core
             }
         }
 
-        public static Settings Load()
+        /// <param name="announce">
+        /// Whether to say so in the log. Parkview reads the same file for its own script and
+        /// says nothing: one "Settings loaded" a session is a fact, two is a puzzle.
+        /// </param>
+        public static Settings Load(bool announce = true)
         {
             var s = new Settings();
             var ini = IniFile.Load(Paths.Ini);
 
             s.Enabled = ini.GetBool("General", "Enabled", s.Enabled);
+            s.DevTools = ini.GetBool("Developer", "Tools", s.DevTools);
             s.LogLevel = ini.GetEnum("General", "LogLevel", s.LogLevel);
             s.Language = ini.GetEnum("General", "Language", s.Language);
             // CLAMPED, because Main multiplies this by a thousand into an int.
@@ -811,19 +918,46 @@ namespace Hoodrich.Core
             // somebody standing on them. See the two rows on the settings screen that write
             // them down.
 
-            foreach (var name in ini.GetString("Doors", "More", "").Split(','))
-            {
-                var section = name.Trim();
-                if (section.Length == 0) continue;
+            // THE MOD'S OWN DOORS ARE DATA, in scripts\Hoodrich\doors.ini, not settings: the
+            // den, Apartment E2 and Leroy's are three blocks of coordinates nobody playing needs
+            // to see or could safely change, and the ini that ships is only what a player sets
+            // (2026-09-26). A door in Hoodrich.ini -- one the door tools wrote, or an older
+            // ini's copy of the same three -- is still read, and wins over the data file's.
+            var doorsIni = IniFile.Load(System.IO.Path.Combine(Paths.Data, "doors.ini"));
+            var doorNames = new List<string>();
 
-                var door = ReadDoor(ini, section, section, "", (BlipSprite)40,
+            foreach (var list in new[] { doorsIni.GetString("Doors", "More", ""), ini.GetString("Doors", "More", "") })
+            {
+                foreach (var one in (list ?? "").Split(','))
+                {
+                    var name = one.Trim();
+                    if (name.Length > 0 && !doorNames.Exists(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase)))
+                        doorNames.Add(name);
+                }
+            }
+
+            foreach (var section in doorNames)
+            {
+                // From whichever file has this door's coordinates -- the ini first.
+                var from = ini.GetString(section, "DoorX", null) != null ? ini : doorsIni;
+
+                var door = ReadDoor(from, section, section, "", (BlipSprite)40,
                                     0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f);
 
                 // The rest of what the picker wrote. Extra is the second and later interior
                 // names; a door with more than one has to ask for all of them or the room
                 // arrives with its walls missing.
-                door.Extra = ini.GetString(section, "Extra", "");
-                door.Sprite = (BlipSprite)ini.GetInt(section, "Sprite", 40);
+                door.Extra = from.GetString(section, "Extra", "");
+                door.Sprite = (BlipSprite)from.GetInt(section, "Sprite", 40);
+
+                // What the room is dressed with once it is up: entity sets, groups separated
+                // by semicolons, alternatives by bars. This was never read for a door listed
+                // here, so a section could name them and nothing happened. See InteriorDoor.Dress.
+                door.Sets = from.GetString(section, "Sets", "");
+
+                // A week's rent, for a door that is let rather than walked through. Nought is
+                // a door anybody may use. See InteriorDoor, "rented".
+                door.Rent = (int)Clamp(from.GetInt(section, "RentPerWeek", 0), 0f, 1000000f);
 
                 // A door with nothing on either end of it is a section somebody started and
                 // did not finish. Better ignored than put at the middle of the map.
@@ -923,6 +1057,27 @@ namespace Hoodrich.Core
             s.SceneryQuietFrom = (int)Clamp(ini.GetInt("Scenery", "QuietFrom", s.SceneryQuietFrom), 0f, 23f);
             s.SceneryQuietTo = (int)Clamp(ini.GetInt("Scenery", "QuietTo", s.SceneryQuietTo), 0f, 23f);
 
+            s.Parkview = ini.GetBool("Parkview", "Enabled", s.Parkview);
+            s.ParkviewNames = ini.GetBool("Parkview", "Names", s.ParkviewNames);
+            s.ParkviewRooms = ini.GetBool("Parkview", "Rooms", s.ParkviewRooms);
+            s.ParkviewRent = (int)Clamp(ini.GetInt("Parkview", "RentPerWeek", s.ParkviewRent), 0f, 100000f);
+            s.ParkviewCaptureKey = ini.GetKey("Parkview", "CaptureKey", s.ParkviewCaptureKey);
+            s.ParkviewCaptureModifier = ini.GetKey("Parkview", "CaptureModifier", s.ParkviewCaptureModifier);
+            s.ParkviewReloadKey = ini.GetKey("Parkview", "ReloadKey", s.ParkviewReloadKey);
+            s.ParkviewReloadModifier = ini.GetKey("Parkview", "ReloadModifier", s.ParkviewReloadModifier);
+            s.ParkviewHideKey = ini.GetKey("Parkview", "HideKey", s.ParkviewHideKey);
+            s.ParkviewHideModifier = ini.GetKey("Parkview", "HideModifier", s.ParkviewHideModifier);
+            s.ParkviewRoomKey = ini.GetKey("Parkview", "SetRoomKey", s.ParkviewRoomKey);
+            s.ParkviewRoomModifier = ini.GetKey("Parkview", "SetRoomModifier", s.ParkviewRoomModifier);
+            s.ParkviewTakeKey = ini.GetKey("Parkview", "TakeKey", s.ParkviewTakeKey);
+            s.ParkviewTakeModifier = ini.GetKey("Parkview", "TakeModifier", s.ParkviewTakeModifier);
+
+            s.DenMinBet = (int)Clamp(ini.GetInt("GamblingDen", "MinBet", s.DenMinBet), 1f, 1000000f);
+            s.DenMaxBet = (int)Clamp(ini.GetInt("GamblingDen", "MaxBet", s.DenMaxBet), s.DenMinBet, 10000000f);
+            s.DenSlotBet = (int)Clamp(ini.GetInt("GamblingDen", "SlotBet", s.DenSlotBet), 1f, 1000000f);
+            s.DenJukebox = ini.GetString("GamblingDen", "Jukebox", s.DenJukebox);
+            s.HoopRings = ini.GetBool("Hoops", "ShowRings", s.HoopRings);
+
             // Where each held thing sits in his hand, as set on the settings screen. See Economy.Fit.
             foreach (var prop in Economy.Fit.Names)
             {
@@ -992,6 +1147,8 @@ namespace Hoodrich.Core
             s.TakeoverEveryNights =
                 (int)Clamp(ini.GetInt("Block", "TakeoverEveryNights", s.TakeoverEveryNights), 1f, 14f);
             s.TakeoverSpinRadius = Clamp(ini.GetFloat("Block", "TakeoverSpinRadius", s.TakeoverSpinRadius), 2f, 18f);
+            s.TakeoverGrip = Clamp(ini.GetFloat("Block", "TakeoverGrip", s.TakeoverGrip), 0.1f, 1f);
+            s.TakeoverPower = Clamp(ini.GetFloat("Block", "TakeoverPower", s.TakeoverPower), 1f, 4f);
             s.TakeoverRadius = Clamp(ini.GetFloat("Block", "TakeoverRadius", s.TakeoverRadius), 0f, 60f);
 
             s.WalkersEnabled = ini.GetBool("Block", "WalkersEnabled", s.WalkersEnabled);
@@ -1012,8 +1169,16 @@ namespace Hoodrich.Core
             s.RollerWheelieLift = Clamp(ini.GetFloat("Block", "RollerWheelieLift",
                                                      s.RollerWheelieLift), 0f, 8f);
 
+            s.RollerParkRide = ini.GetBool("Block", "RollerParkRide", s.RollerParkRide);
+            s.RollerParkPath = ini.GetBool("Block", "RollerParkPath", s.RollerParkPath);
+            s.RollerParkX = ini.GetFloat("Block", "RollerParkX", s.RollerParkX);
+            s.RollerParkY = ini.GetFloat("Block", "RollerParkY", s.RollerParkY);
+            s.RollerParkZ = ini.GetFloat("Block", "RollerParkZ", s.RollerParkZ);
+            s.RollerParkRadius = Clamp(ini.GetFloat("Block", "RollerParkRadius", s.RollerParkRadius), 20f, 120f);
+            s.RollerParkSpeed = Clamp(ini.GetFloat("Block", "RollerParkSpeed", s.RollerParkSpeed), 2f, 9f);
+
             Log.Level = s.LogLevel;
-            Log.Info("Settings loaded: phone key=" + s.PhoneKey +
+            if (announce) Log.Info("Settings loaded: phone key=" + s.PhoneKey +
                      " timescale=" + s.WheelTimeScale + " blur=" + s.BlurBackground);
             return s;
         }

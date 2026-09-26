@@ -42,6 +42,9 @@ namespace Hoodrich.Locations
         /// </summary>
         public string Sets = "";
 
+        /// <summary>A week's rent, for a door that is let rather than walked through. Nought is a door anybody may use.</summary>
+        public int Rent;
+
         public bool Blip = true;
         public BlipSprite Sprite = BlipSprite.Standard;
 
@@ -64,6 +67,87 @@ namespace Hoodrich.Locations
         /// </summary>
         public readonly List<Vector3> Elsewhere = new List<Vector3>();
 
+    }
+
+    /// <summary>
+    /// Which of the rented doors are yours, and the day each next week falls due: leases.txt
+    /// beside the log, one line a door by its ini section -- "JanitorApartment|763912". Delete
+    /// the line and the door is not yours.
+    /// </summary>
+    internal static class Leases
+    {
+        public static bool Read(string section, out int due)
+        {
+            due = 0;
+
+            try
+            {
+                if (!System.IO.File.Exists(Paths.LeasesFile)) return false;
+
+                foreach (var raw in System.IO.File.ReadAllLines(Paths.LeasesFile))
+                {
+                    var bits = raw.Trim().Split('|');
+                    if (bits.Length < 2 || !string.Equals(bits[0].Trim(), section, StringComparison.OrdinalIgnoreCase)) continue;
+
+                    return int.TryParse(bits[1].Trim(), out due);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not read leases.txt: " + ex.Message);
+            }
+
+            return false;
+        }
+
+        public static void Write(string section, bool rented, int due)
+        {
+            try
+            {
+                var lines = new List<string> { "# The doors you rent, and the day the next week falls due. Written by the mod." };
+
+                if (System.IO.File.Exists(Paths.LeasesFile))
+                {
+                    foreach (var raw in System.IO.File.ReadAllLines(Paths.LeasesFile))
+                    {
+                        var line = raw.Trim();
+                        if (line.Length == 0 || line.StartsWith("#")) continue;
+
+                        var bits = line.Split('|');
+                        if (string.Equals(bits[0].Trim(), section, StringComparison.OrdinalIgnoreCase)) continue;
+
+                        lines.Add(line);
+                    }
+                }
+
+                if (rented) lines.Add(section + "|" + due);
+
+                System.IO.File.WriteAllLines(Paths.LeasesFile, lines.ToArray());
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not write leases.txt: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// The game's date as one number, so a week is arithmetic. Months taken as thirty-one,
+        /// the way the Parkview rooms count, so a short month never runs it backwards.
+        /// </summary>
+        public static int Today()
+        {
+            try
+            {
+                var d = Function.Call<int>(Hash.GET_CLOCK_DAY_OF_MONTH);
+                var m = Function.Call<int>(Hash.GET_CLOCK_MONTH);
+                var y = Function.Call<int>(Hash.GET_CLOCK_YEAR);
+                return (y * 12 + m) * 31 + d;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
     }
 
     /// <summary>
@@ -95,7 +179,7 @@ namespace Hoodrich.Locations
         private const float DoorRange = 1.8f;
 
         /// <summary>How close to the inside mark before it offers to let you out.</summary>
-        private const float ExitRange = 2.4f;
+        private const float ExitRange = 1.2f;
 
         /// <summary>Long enough for the fade, short enough not to feel like a loading screen.</summary>
         private const int FadeMs = 700;
@@ -305,6 +389,64 @@ namespace Hoodrich.Locations
         public InteriorDoor(DoorSpec spec)
         {
             _spec = spec;
+
+            if (_spec.Rent > 0)
+            {
+                _rented = Leases.Read(_spec.Section, out _due);
+                Log.Info("The " + _spec.Name + " is let at $" + _spec.Rent + " a week" +
+                         (_rented ? "; it is yours, next due day " + _due + "." : "; not yours yet."));
+            }
+        }
+
+        /// <summary>
+        /// A DOOR YOU RENT: RentPerWeek in its section. Not yours, the door offers it for the
+        /// week; yours, it opens. The week is taken on the game's calendar, and a week you
+        /// cannot cover and it is not yours any more -- the Parkview rooms' rules. Michael asked
+        /// on 2026-09-26 for a second apartment at Parkview, the janitor's, at $500 a week.
+        /// </summary>
+        private bool _rented;
+        private int _due;
+        private int _rentAt;
+
+        private const int Week = 7;
+        private const int RentEveryMs = 4000;
+
+        /// <summary>The interior pinned while he is in it, let go on the way out so it can stream away.</summary>
+        private int _pinned;
+
+        /// <summary>
+        /// The room as a sentence says it. A name that is already a name -- "Apartment E2",
+        /// "Leroy's Electrical", or one that brings its own "the" -- is said as it is; anything
+        /// else gets a "the". It was "the" every time, which is how the den's door read "go into
+        /// the the gambling den".
+        /// </summary>
+        private string Room
+        {
+            get
+            {
+                var name = _spec.Name ?? "";
+                if (name.StartsWith("the ", StringComparison.OrdinalIgnoreCase)) return name;
+                if (name.Length > 0 && char.IsUpper(name[0])) return name;
+                return "the " + name;
+            }
+        }
+
+        /// <summary>
+        /// A door you rent is white on the map until it is yours and green once it is; every other
+        /// door is green. Michael asked for the apartments that way on 2026-09-26.
+        /// </summary>
+        private BlipColor Tint => _spec.Rent > 0 && !_rented ? BlipColor.White : BlipColor.Green;
+
+        private void Recolour()
+        {
+            try
+            {
+                if (_blip != null && _blip.Exists()) _blip.Color = Tint;
+            }
+            catch
+            {
+                // It takes its colour when it is next made.
+            }
         }
 
         private Vector3 Door => new Vector3(_spec.DoorX, _spec.DoorY, _spec.DoorZ);
@@ -338,6 +480,9 @@ namespace Hoodrich.Locations
 
         public bool IsInside => _inside;
 
+        /// <summary>A door he rents rather than walks through. Being inside one means it is his.</summary>
+        public bool IsLet => _spec.Rent > 0;
+
 
         public void Update()
         {
@@ -345,6 +490,8 @@ namespace Hoodrich.Locations
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists() || !player.IsAlive) return;
+
+            if (_spec.Rent > 0) Rent(player);
 
             NoticeHesInThere(player);
 
@@ -359,7 +506,7 @@ namespace Hoodrich.Locations
 
                 if (player.Position.DistanceTo(Mark) > ExitRange) return;
 
-                Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to leave the " + _spec.Name + ".");
+                Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to leave " + Room + ".");
 
                 if (Game.IsControlJustPressed(Control.Context)) Leave(player);
                 return;
@@ -383,14 +530,86 @@ namespace Hoodrich.Locations
             if (shut)
             {
                 Help.ShowThisFrame(string.IsNullOrEmpty(ShutWhy)
-                                       ? "The " + _spec.Name + " is locked."
+                                       ? Capital(Room) + " is locked."
                                        : ShutWhy);
                 return;
             }
 
-            Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to go into the " + _spec.Name + ".");
+            // Not yours yet: offered for the week, not opened.
+            if (_spec.Rent > 0 && !_rented)
+            {
+                Help.ShowThisFrame(Capital(_spec.Name) + " -- press ~INPUT_CONTEXT~ to rent it for $" +
+                                   _spec.Rent.ToString("N0") + " a week.");
+
+                if (Game.IsControlJustPressed(Control.Context)) Take();
+                return;
+            }
+
+            Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to go into " + Room + ".");
 
             if (Game.IsControlJustPressed(Control.Context)) Enter(player);
+        }
+
+        /// <summary>The first week, up front, and the door is yours.</summary>
+        private void Take()
+        {
+            var rent = _spec.Rent;
+
+            if (Game.Player.Money < rent)
+            {
+                Notify.Problem("You cannot cover the first week. $" + rent.ToString("N0") + " up front.");
+                return;
+            }
+
+            Game.Player.Money -= rent;
+
+            _rented = true;
+            _due = Leases.Today() + Week;
+            Leases.Write(_spec.Section, true, _due);
+
+            Log.Info("Rented " + Room + " for $" + rent + " a week; next due day " + _due + ".");
+            Recolour();
+            Notify.Important("~g~" + Capital(_spec.Name) + "~s~ is yours. $" + rent.ToString("N0") +
+                             " a week, and the week is up in seven days.");
+        }
+
+        /// <summary>
+        /// The week's rent, when it falls due. Short of it, the place goes -- and a man stood in
+        /// it is put out on the step, the way the Parkview rooms do it.
+        /// </summary>
+        private void Rent(Ped player)
+        {
+            if (!_rented) return;
+
+            var now = Game.GameTime;
+            if (now - _rentAt < RentEveryMs) return;
+            _rentAt = now;
+
+            var today = Leases.Today();
+            if (today == 0 || today < _due) return;
+
+            var rent = _spec.Rent;
+
+            if (Game.Player.Money >= rent)
+            {
+                Game.Player.Money -= rent;
+                _due = today + Week;
+                Leases.Write(_spec.Section, true, _due);
+
+                Notify.Important("Rent on ~g~" + Room + "~s~: $" + rent.ToString("N0") + ".");
+                Log.Info("Took $" + rent + " for the " + _spec.Name + "; next due day " + _due + ".");
+                return;
+            }
+
+            _rented = false;
+            _due = 0;
+            Leases.Write(_spec.Section, false, 0);
+
+            Notify.Problem(Capital(Room) + " is not yours any more. The week's rent was $" + rent.ToString("N0") + ".");
+            Recolour();
+            Log.Info("Could not pay $" + rent + " for the " + _spec.Name + "; it is let go.");
+
+            if (_inside) Leave(player);
         }
 
         /// <summary>
@@ -590,7 +809,9 @@ namespace Hoodrich.Locations
 
                 if (early != 0)
                 {
+                    Open(early);
                     Function.Call(Hash.PIN_INTERIOR_IN_MEMORY, early);
+                    _pinned = early;
                     Dress(early);
                 }
 
@@ -619,7 +840,9 @@ namespace Hoodrich.Locations
 
                 if (interior != 0)
                 {
+                    Open(interior);
                     Function.Call(Hash.PIN_INTERIOR_IN_MEMORY, interior);
+                    _pinned = interior;
                     Function.Call(Hash.SET_INTERIOR_ACTIVE, interior, true);
                     Dress(interior);
                     Function.Call(Hash.REFRESH_INTERIOR, interior);
@@ -685,7 +908,9 @@ namespace Hoodrich.Locations
 
                         if (interior != 0)
                         {
+                            Open(interior);
                             Function.Call(Hash.PIN_INTERIOR_IN_MEMORY, interior);
+                            _pinned = interior;
                             Function.Call(Hash.SET_INTERIOR_ACTIVE, interior, true);
                             Dress(interior);
                         }
@@ -738,7 +963,9 @@ namespace Hoodrich.Locations
                 // three apart, and without them the next attempt is another guess.
                 Log.Info("Entering " + _spec.Name + ": ipl " + _spec.Ipl + " active=" + iplOn +
                          ", interior=" + interior + ", he is in interior=" + inRoom +
-                         ", waited " + waited + "ms");
+                         ", waited " + waited + "ms" +
+                         (_enabled != 0 ? ", switched on by us" : "") +
+                         (_uncapped != 0 ? ", uncapped by us" : ""));
 
                 if (waited >= StreamCeilingMs)
                 {
@@ -838,6 +1065,9 @@ namespace Hoodrich.Locations
                     player.Position = Back;
                     player.Heading = BackFacing;
 
+                    // The room as the game had it, and let go of: nobody is going in.
+                    Close();
+
                     // Bounced out because the room was not there. He never left the pavement,
                     // so the thing he parked on it is the game's again. See Hold.
                     Release();
@@ -859,6 +1089,9 @@ namespace Hoodrich.Locations
                 }
 
                 _inside = true;
+                Core.Indoors.Enter(Back, _spec.Name);
+                Core.Indoors.Enter(Back, _spec.Name);
+                Core.Indoors.Enter(Back, _spec.Name);
 
                 // Where he ended up, not where the ini said to put him. Everything about
                 // getting out again is measured from here.
@@ -954,9 +1187,13 @@ namespace Hoodrich.Locations
 
             _inside = true;
             _standing = player.Position;
+            Core.Indoors.Enter(Back, _spec.Name);
+            Core.Indoors.Enter(Back, _spec.Name);
+            Core.Indoors.Enter(Back, _spec.Name);
             _enteredAt = Game.GameTime;
 
-            // The furniture too, in case whatever put him here did not bring it.
+            // Switched on, and the furniture too, in case whatever put him here did not bring it.
+            Open(room);
             Dress(room);
 
             // Deliberately NOT cleared. If a reload happened while he was inside, the doorway
@@ -1018,6 +1255,9 @@ namespace Hoodrich.Locations
                          "m from it; something else moved him, so it is forgotten.");
 
                 _inside = false;
+                Core.Indoors.Exit(_spec.Name);
+                Core.Indoors.Exit(_spec.Name);
+                Core.Indoors.Exit(_spec.Name);
                 _standing = Vector3.Zero;
                 return true;
             }
@@ -1115,6 +1355,9 @@ namespace Hoodrich.Locations
                 // map the story happens in.
                 Map(false);
 
+                // And the room as the game had it. See Open.
+                Close();
+
                 Log.Info("Out of the " + _spec.Name + " to " + Back +
                          (_cameFrom == Vector3.Zero
                               ? " (the ini's door -- nothing remembered the way in)"
@@ -1124,6 +1367,9 @@ namespace Hoodrich.Locations
                                   : " (the way he came in)"));
 
                 _inside = false;
+                Core.Indoors.Exit(_spec.Name);
+                Core.Indoors.Exit(_spec.Name);
+                Core.Indoors.Exit(_spec.Name);
                 _standing = Vector3.Zero;
 
                 Wait(400);
@@ -1204,6 +1450,70 @@ namespace Hoodrich.Locations
         /// for a room that was there either way, and the player walked out of a shop into a
         /// city that was not the one he walked into it from.
         /// </summary>
+        /// <summary>
+        /// The room switched on, if the story game has it switched off.
+        ///
+        /// A ROOM CAN BE THERE AND STILL NOT BE THERE. The garages under Pillbox Hill came with
+        /// GTA Online and ship in the story map, and the game finds one at its coordinate -- but
+        /// the story game keeps them switched off, so nothing inside ever streams: no floor, no
+        /// walls, and a man stood in it is in no interior at all. The log said exactly that on
+        /// 2026-09-26 for the six-car garage: "interior=95746, he is in interior=0, waited
+        /// 8000ms", then no floor. The morgue, tried a few minutes before, came up in a second,
+        /// because nothing had it switched off. So a door switches its room on before it goes
+        /// in, says so, and switches it back off on the way out. See Close.
+        /// </summary>
+        private void Open(int interior)
+        {
+            if (interior == 0) return;
+
+            try
+            {
+                if (Function.Call<bool>(Hash.IS_INTERIOR_DISABLED, interior))
+                {
+                    Function.Call(Hash.DISABLE_INTERIOR, interior, false);
+                    _enabled = interior;
+                    Log.Info("The " + _spec.Name + " (interior " + interior + ") was switched off in the story game; switched on.");
+                }
+
+                if (Function.Call<bool>(Hash.IS_INTERIOR_CAPPED, interior))
+                {
+                    Function.Call(Hash.CAP_INTERIOR, interior, false);
+                    _uncapped = interior;
+                    Log.Info("The " + _spec.Name + " (interior " + interior + ") was capped in the story game; uncapped.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not switch on the " + _spec.Name + ": " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Whatever Open switched on, switched off again: the room as the game had it. And the
+        /// pin taken off, so a room nobody is in can stream away rather than sit in memory for
+        /// the rest of the session -- one per door visited, and the game's memory is not large.
+        /// </summary>
+        private void Close()
+        {
+            try
+            {
+                if (_uncapped != 0) Function.Call(Hash.CAP_INTERIOR, _uncapped, true);
+                if (_enabled != 0) Function.Call(Hash.DISABLE_INTERIOR, _enabled, true);
+                if (_pinned != 0) Function.Call(Hash.UNPIN_INTERIOR, _pinned);
+            }
+            catch
+            {
+                // It stays on. It is under the map; nobody walks into it by accident.
+            }
+
+            _uncapped = 0;
+            _enabled = 0;
+            _pinned = 0;
+        }
+
+        private int _enabled;
+        private int _uncapped;
+
         private void Map(bool on)
         {
             if (!Online)
@@ -1291,7 +1601,7 @@ namespace Hoodrich.Locations
                 if (_blip == null || !_blip.Exists()) return;
 
                 _blip.Sprite = _spec.Sprite;
-                _blip.Color = BlipColor.Green;
+                _blip.Color = Tint;
                 _blip.Scale = 0.8f;
                 _blip.IsShortRange = true;
 

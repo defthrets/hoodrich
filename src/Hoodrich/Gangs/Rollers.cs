@@ -91,6 +91,55 @@ namespace Hoodrich.Gangs
         /// <summary>While this is in the future the back wheel is going. And when the next one starts.</summary>
         public int BurnUntil;
         public int BurnAfter;
+
+        // ---- riding the park. See Rollers.Ride and Gangs.Park. ------------------------
+
+        /// <summary>Riding round the park rather than a circle.</summary>
+        public bool InPark;
+
+        /// <summary>His time is up and he is riding to the way out.</summary>
+        public bool Leaving;
+
+        /// <summary>Out of the park and ready to be pointed somewhere else.</summary>
+        public bool ParkDone;
+
+        /// <summary>The route he is on over the park's spots, and the next spot along it.</summary>
+        public List<int> Path;
+        public int PathAt;
+
+        /// <summary>The straight line he is riding now: which spot it ends at, and where that is.</summary>
+        public int LegNode = -1;
+        public Vector3 LegTo;
+
+        /// <summary>When he is next looked at, and how fast he was going the last time.</summary>
+        public int WatchAt;
+        public float LastSpeed;
+
+        /// <summary>Held up -- somebody in front of him, or a brake he was given -- and since when.</summary>
+        public bool Braking;
+        public int BrakeSince;
+
+        /// <summary>Whether he has got anywhere lately.</summary>
+        public int ProgressAt;
+        public Vector3 ProgressFrom;
+        public int Stalls;
+
+        /// <summary>When he last passed each spot, so he rides all of the park and not one corner.</summary>
+        public readonly Dictionary<int, int> Seen = new Dictionary<int, int>();
+
+        // ---- riding the path you recorded. See Rollers.RidePath and Gangs.BikePath. --------
+
+        /// <summary>Which way along the path he is going: 1 with it, -1 back along it.</summary>
+        public int Way = 1;
+
+        /// <summary>The path he joined, by BikePath.Version. Nought: he is not on one.</summary>
+        public int PathVersion;
+
+        /// <summary>His time up and on his way out along the path: by when he is out regardless.</summary>
+        public int LeaveBy;
+
+        /// <summary>Just off the path: not taken back onto it by riding past its start before this.</summary>
+        public int PathAgainAt;
     }
 
     /// <summary>
@@ -158,10 +207,12 @@ namespace Hoodrich.Gangs
 
         /// <summary>How many ride out together when they ride out together.</summary>
         private const int PackMin = 2;
-        private const int PackMax = 3;
 
-        /// <summary>Chance a bike going out brings his crew rather than going alone.</summary>
-        private const int PackChancePercent = 45;
+        /// <summary>Up to four since 2026-09-24: Michael wants them round his path in groups sometimes.</summary>
+        private const int PackMax = 4;
+
+        /// <summary>Chance a bike going out brings his crew rather than going alone. Half, since 2026-09-24.</summary>
+        private const int PackChancePercent = 50;
 
         /// <summary>
         /// How far off the lead's own spot the rest of a crew are aimed.
@@ -367,16 +418,17 @@ namespace Hoodrich.Gangs
         /// </summary>
         private static readonly string[] Engines =
         {
-            // The Manchez first and twice, because it is what was asked for and because a
-            // crew that turns up on three different bikes is three men who happen to be
-            // riding, where three on the same one is a crew.
-            "manchez", "manchez",
+            // SANCHEZ DIRT BIKES AND STREET BLAZER QUADS, two each, because Michael asked for
+            // them by name on 2026-09-24 -- round his path, and they had been one bike in seven
+            // and one in fourteen. A crew rides whatever its lead rides (see the matching in
+            // Pick), so two of each here is a whole crew of them twice as often.
+            "sanchez", "sanchez2",
+            "blazer4", "blazer4",
 
-            // The Street Blazer, then the plain one behind it.
-            "blazer4", "blazer",
-
-            // Dirt bikes, which is the same answer at a different price.
-            "sanchez", "sanchez2"
+            // The Manchez stays, which was asked for before: once now rather than twice. The
+            // plain Blazer went -- it was the quad behind the Street Blazer, and he asked for
+            // the Street Blazer.
+            "manchez"
         };
 
         /// <summary>
@@ -392,11 +444,11 @@ namespace Hoodrich.Gangs
         private static readonly string[] Pedals = { "bmx" };
 
         /// <summary>
-        /// How often a rider is on a pedal bike rather than an engine. The share the old
-        /// mixed list gave them by count -- eight bicycles among fourteen -- kept as a
-        /// number now the two are separate lists, so the street looks the same as it did.
+        /// How often a rider is on a pedal bike rather than an engine. Was 57, the share the
+        /// old mixed list gave BMXes by count; down to 40 on 2026-09-24 so the dirt bikes and
+        /// quads he asked for are most of what comes out, and the BMX is still about.
         /// </summary>
-        private const int PedalChance = 57;
+        private const int PedalChance = 40;
 
         private static readonly string[] SpareBikes = { "bmx" };
 
@@ -454,6 +506,12 @@ namespace Hoodrich.Gangs
             _gangs = gangs;
             _gangId = gangId;
             _turf = turf;
+
+            _parkWorld = new ParkWorld(Ours, Moving);
+            _awayFromBad = AwayFromBad;
+
+            // The path you rode, if there is one. See BikePath.
+            BikePath.Load();
         }
 
         // ---- per-tick ----------------------------------------------------------
@@ -470,6 +528,20 @@ namespace Hoodrich.Gangs
 
             // Read the road, on its own clock. See Pace.
             Pacing(now);
+
+            // THE PARK, ALSO ABOVE THE THROTTLE. It is looked over a few dozen rays a frame,
+            // and the riders in it are looked after five times a second -- nine hundred
+            // milliseconds is four and a half metres at park speed, which is the far side of a
+            // kicker ramp by the time anybody noticed it.
+            try
+            {
+                SurveyPark(now);
+                WatchRiders(now);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Rollers: the park tripped: " + ex.Message);
+            }
 
             // The second tap of a double beep, which has to be its own thing -- a horn is a
             // duration, so two beeps is two calls with a gap, and the gap cannot be a sleep.
@@ -587,6 +659,23 @@ namespace Hoodrich.Gangs
 
             if (roll.Phase == RollPhase.Sitting)
             {
+                // Riding the park. Ride does all of it five times a second; this only notices
+                // when he has come out of the far side, and points him somewhere else.
+                if (roll.InPark)
+                {
+                    if (!roll.ParkDone) return false;
+
+                    LeavePark(roll);
+
+                    // Out past the start of it, very likely: not straight back round.
+                    roll.PathAgainAt = now + PathAgainMs;
+
+                    roll.Phase = RollPhase.Rolling;
+                    roll.Nudges = 0;
+                    Aim(roll, now);
+                    return false;
+                }
+
                 if (now < roll.SitUntil)
                 {
                     Lapping(roll, now);
@@ -635,14 +724,33 @@ namespace Hoodrich.Gangs
                 }
             }
 
-            if (roll.Target != Vector3.Zero && here.DistanceTo(roll.Target) < ArrivedRange)
+            // YOUR PATH, FROM WHERE IT STARTS. A rider who comes by the start of the path you
+            // rode takes it -- round from its first point, the way you rode it. Michael asked for
+            // exactly that on 2026-09-24: the bikes use it when they are close to the start.
+            // Not straight after coming off it, and not when he is already on his way there.
+            if (roll.OnFoot && PathOn && now >= roll.PathAgainAt &&
+                !(roll.StopThere && ParkTarget(roll.Target)) &&
+                Park.Flat2(here, BikePath.First) < PathJoinRange)
+            {
+                ToPath(roll, now);
+                return false;
+            }
+
+            // Headed into the park, he is not there until he is at the door. Sixteen metres out
+            // is still on the road, and the first line he is given is checked from where he is.
+            var toPark = roll.OnFoot && roll.StopThere && ParkUsable && ParkTarget(roll.Target);
+            var arrived = toPark ? ParkArrive : ArrivedRange;
+
+            if (roll.Target != Vector3.Zero && here.DistanceTo(roll.Target) < arrived)
             {
                 if (roll.StopThere)
                 {
                     roll.Phase = RollPhase.Sitting;
                     roll.SitUntil = now + _rng.Next(SitMinMs, SitMaxMs);
 
-                    Circling(roll, now);
+                    if (toPark) StartPark(roll, now);
+                    else Circling(roll, now);
+
                     return false;
                 }
 
@@ -730,7 +838,11 @@ namespace Hoodrich.Gangs
 
             if (following)
             {
-                where = Beside(lead.Target);
+                // Into the park, a mate finds his own way in rather than a spot a few metres off
+                // his lead's -- in the park, a few metres off is inside a ramp.
+                where = ParkUsable && ParkTarget(lead.Target)
+                    ? ParkEntry(roll.Car.Position)
+                    : Beside(lead.Target);
             }
             else if (roll.OnFoot && stop)
             {
@@ -940,6 +1052,12 @@ namespace Hoodrich.Gangs
                 return;
             }
 
+            // Not with somebody stood at his back wheel, or a wall a metre off it. See RoomToBurn.
+            if (now >= roll.BurnAfter && !RoomToBurn(roll))
+            {
+                roll.BurnAfter = now + BurnRestMinMs;
+            }
+
             if (now >= roll.BurnAfter)
             {
                 var ms = BurnMinMs + _rng.Next(BurnMaxMs - BurnMinMs);
@@ -963,11 +1081,35 @@ namespace Hoodrich.Gangs
 
             if (now < roll.LapAt) return;
 
-            roll.RingAngle += LapStep;
+            // THE NEXT POINT ONLY IF HE CAN GET THERE. The circle used to be handed out blind,
+            // and a circle drawn round wherever he stopped goes through whatever is standing
+            // there -- which is how they kept riding into things. Each point is checked from
+            // where his wheels are: walls, placed things, parked cars and the ground. A couple
+            // of points further round get a try, and if none of the circle can be reached the
+            // spot is too crowded to hang about in and he moves on.
+            var wheels = Wheels(roll.Car);
+            var at = Vector3.Zero;
 
-            var at = roll.Ring + new Vector3((float)Math.Cos(roll.RingAngle) * roll.RingRadius,
-                                             (float)Math.Sin(roll.RingAngle) * roll.RingRadius,
-                                             0f);
+            for (var tries = 0; tries < 3; tries++)
+            {
+                roll.RingAngle += LapStep;
+
+                var p = roll.Ring + new Vector3((float)Math.Cos(roll.RingAngle) * roll.RingRadius,
+                                                (float)Math.Sin(roll.RingAngle) * roll.RingRadius,
+                                                0f);
+                p.Z = wheels.Z;
+
+                if (!Park.LineClear(_parkWorld, wheels, p)) continue;
+
+                at = p;
+                break;
+            }
+
+            if (at == Vector3.Zero)
+            {
+                roll.SitUntil = now;
+                return;
+            }
 
             try
             {
@@ -1023,6 +1165,18 @@ namespace Hoodrich.Gangs
 
         private Vector3 Hangout(Vector3 from)
         {
+            // THE PARK FIRST, once it has been looked over and when it is near enough to ride
+            // to. In by the way nearest where he is coming from; see Ride for what happens once
+            // he is there.
+            // Your path, when there is one: on at the point of it nearest where he is.
+            if (PathOn && Park.Flat2(BikePath.First, from) < HangoutRange) return ParkEntry(from);
+
+            if (ParkUsable && !PathOn && Park.Flat2(_park.Centre, from) < HangoutRange)
+            {
+                var door = _park.EntryFor(from);
+                if (door >= 0) return _park.Spots[door];
+            }
+
             var best = Vector3.Zero;
             var nearest = HangoutRange;
 
@@ -1034,6 +1188,11 @@ namespace Hoodrich.Gangs
 
                     if (d >= nearest) continue;
                     if (!Ours(spot)) continue;
+
+                    // A hangout inside the park is only ever ridden AS the park. Sent there on
+                    // its own -- before the park has been looked over -- it is a circle through
+                    // whatever is on the court, which is the thing this replaced.
+                    if (InsidePark(spot)) continue;
 
                     best = spot;
                     nearest = d;
@@ -1078,6 +1237,9 @@ namespace Hoodrich.Gangs
 
                     if (at == Vector3.Zero) continue;
                     if (!Ours(at)) continue;
+
+                    // Not the park: that is ridden on checked lines or not at all. See Ride.
+                    if (InsidePark(at)) continue;
 
                     var street = World.GetNextPositionOnStreet(at);
                     if (street != Vector3.Zero && street.DistanceTo(at) < OffRoad) continue;
@@ -1271,6 +1433,16 @@ namespace Hoodrich.Gangs
                 try
                 {
                     var want = ForTheRoad(roll.Car);
+
+                    // THE LAST STRETCH TO THE PARK AT PARK SPEED, near enough. The road reading
+                    // would have him arrive at the door doing fifteen, and the door is where the
+                    // checked lines start -- a man going that fast is past the first one before
+                    // he has been given it.
+                    if (roll.StopThere && ParkUsable && ParkTarget(roll.Target) &&
+                        Park.Flat2(roll.Car.Position, roll.Target) < ParkApproach)
+                    {
+                        want = Math.Min(want, ParkSpeed + 1f);
+                    }
 
                     // First look of his life -- start where the reading says rather than easing
                     // up from zero, which would have him crawl away from every spawn.
@@ -1514,6 +1686,10 @@ namespace Hoodrich.Gangs
                     if (at == Vector3.Zero) continue;
                     if (!Ours(at)) continue;
 
+                    // A rider passing through at road speed is not sent across the park: the
+                    // pavement inside it runs between the ramps. The park has its own way in.
+                    if (InsidePark(at)) continue;
+
                     return at;
                 }
                 catch
@@ -1643,6 +1819,10 @@ namespace Hoodrich.Gangs
                     if (at == Vector3.Zero) continue;
                     if (at.DistanceTo(player.Position) < SpawnNear) continue;
                     if (!Ours(at)) continue;
+
+                    // A bike is made on the pavement, and a bike made in the park is a bike
+                    // made on top of whatever is standing there.
+                    if (bike && InsidePark(at)) continue;
 
                     return at;
                 }
@@ -1914,6 +2094,1432 @@ namespace Hoodrich.Gangs
             }
         }
 
+        // ---- the park ------------------------------------------------------------
+
+        /// <summary>The park, once it has been looked over. See Gangs.Park.</summary>
+        private Park _park;
+        private readonly ParkWorld _parkWorld;
+        private readonly Func<Vector3, Vector3, bool> _awayFromBad;
+
+        /// <summary>
+        /// Where somebody came off, or ran into something the survey did not have, this session.
+        ///
+        /// PLACES, NOT LINKS, so they outlive the park being looked over again: a fresh survey
+        /// numbers its spots from scratch, and a list of link numbers would point at different
+        /// lines afterwards. Every survey turns these back into links -- see Surveyed.
+        /// </summary>
+        private readonly List<Vector3> _bad = new List<Vector3>();
+
+        /// <summary>The park's links that run near one of those, or that were found blocked.</summary>
+        private readonly HashSet<long> _badLinks = new HashSet<long>();
+
+        private readonly List<Vector3> _heading = new List<Vector3>();
+
+        private bool ParkOn => _cfg == null || _cfg.RollerParkRide;
+
+        /// <summary>
+        /// A path you recorded, and the setting to ride it. While this is on the survey is not
+        /// used at all: they ride your line. See BikePath and RidePath.
+        /// </summary>
+        private bool PathOn => ParkOn && (_cfg == null || _cfg.RollerParkPath) && BikePath.Ready;
+
+        private bool ParkUsable => ParkOn && (PathOn || (_park != null && _park.Ready));
+
+        /// <summary>Whether a destination is the park: a point of your path, or inside the surveyed park.</summary>
+        private bool ParkTarget(Vector3 at) => PathOn ? BikePath.On(at) : _park != null && _park.Ready && _park.Inside(at);
+
+        /// <summary>Where somebody coming from there gets on: the nearest point of your path, or the survey's way in.</summary>
+        private Vector3 ParkEntry(Vector3 from)
+        {
+            // Your path is got on at its start, and ridden round from there. See Steer.
+            if (PathOn) return BikePath.First;
+
+            var door = _park.EntryFor(from);
+            return door >= 0 ? _park.Spots[door] : Vector3.Zero;
+        }
+        private bool InsidePark(Vector3 at) => ParkOn && _park != null && _park.Inside(at);
+
+        private Vector3 ParkCentre => _cfg == null
+            ? new Vector3(-252f, -1578f, 31f)
+            : new Vector3(_cfg.RollerParkX, _cfg.RollerParkY, _cfg.RollerParkZ);
+
+        private float ParkRadius => _cfg == null ? 70f : _cfg.RollerParkRadius;
+        private float ParkSpeed => _cfg == null ? 5f : _cfg.RollerParkSpeed;
+
+        /// <summary>Rays a frame for the survey. A thousand-odd rays is a couple of seconds of these.</summary>
+        private const int ParkRaysPerFrame = 60;
+
+        /// <summary>Only looked over while you are near enough for its ground to be loaded.</summary>
+        private const float SurveyRange = 200f;
+
+        /// <summary>
+        /// Looked over again every four minutes while you are about, because things get placed,
+        /// moved and parked. A failed look is tried again sooner.
+        /// </summary>
+        private const int ResurveyMs = 240000;
+        private const int RetryMs = 60000;
+
+        /// <summary>How long a crew rides the park before heading out. Long enough to go round it.</summary>
+        private const int ParkRideMinMs = 50000;
+        private const int ParkRideMaxMs = 130000;
+
+        /// <summary>How near the way in he has to be before he is riding the park.</summary>
+        private const float ParkArrive = 6f;
+
+        /// <summary>How far out from the way in he slows to park speed.</summary>
+        private const float ParkApproach = 35f;
+
+        /// <summary>How often a rider in the park is looked at.</summary>
+        private const int WatchMs = 200;
+
+        /// <summary>Near enough the end of a line to be given the next one without slowing.</summary>
+        private const float LegDone = 3f;
+
+        /// <summary>
+        /// A crash, from the outside: doing more than this, and a fifth of a second later less
+        /// than this share of it, without having been told to brake. Slowing for a corner or
+        /// the end of a line is gentler than that; hitting a ramp is not.
+        /// </summary>
+        private const float CrashFrom = 3f;
+        private const float CrashDrop = 0.35f;
+
+        /// <summary>Less than this far in this long, this many times running, and he gives up on the park.</summary>
+        private const int ProgressMs = 3500;
+        private const float StallMove = 1.5f;
+        private const int StallsMost = 4;
+
+        /// <summary>How long he waits for somebody in his way before going another way round.</summary>
+        private const int PersonWaitMs = 3000;
+
+        /// <summary>The brake temp action, and for how long.</summary>
+        private const int BrakeAction = 1;
+        private const int BrakeMs = 700;
+
+        /// <summary>A bike's origin sits about this far above its wheels' contact with the ground.</summary>
+        private const float WheelsBelow = 0.45f;
+
+        /// <summary>How wide a berth a bad place gets, and how many are remembered.</summary>
+        private const float BadKeepOff = 2f;
+        private const int BadMost = 64;
+
+        /// <summary>A new line more than seventy-odd degrees off where he is pointing: slow for it.</summary>
+        private const float SharpTurn = 0.35f;
+
+        /// <summary>How far ahead he looks: some, plus more the faster he is going, never past the line's end.</summary>
+        private const float LookLeast = 1.6f;
+        private const float LookPerSpeed = 0.9f;
+        private const float LookMost = 7f;
+
+        /// <summary>Where the looking starts: in front of the bike, so it never sees its own front wheel.</summary>
+        private const float NoseAhead = 1.2f;
+
+        /// <summary>How far ahead the ground is checked for a drop or a step.</summary>
+        private const float GroundAhead = 2.5f;
+
+        /// <summary>Above the bike's origin: about knee and shin height off the ground.</summary>
+        private static readonly float[] LookHeights = { 0.3f, 0f };
+
+        private const IntersectFlags SeeFlags = IntersectFlags.Map | IntersectFlags.Objects
+                                              | IntersectFlags.Vehicles | IntersectFlags.Peds;
+
+        /// <summary>
+        /// Room round the back wheel a burnout needs, and how near nobody may be stood. 2.5 m
+        /// rather than 3.5: the bike does not go anywhere while it smokes, and at 3.5 almost
+        /// nowhere along a path that runs by a wall or a bench had room, so they never did it.
+        /// </summary>
+        private const float BurnRoom = 2.5f;
+        private const float BurnPeople = 5f;
+
+        /// <summary>
+        /// How a line in the park is ridden. The game's own driving flags:
+        ///
+        ///    2  stop for peds               16  steer round peds
+        ///    4  swerve round cars           32  steer round objects
+        ///    8  steer round parked cars     16777216  straight line
+        ///
+        /// THE STRAIGHT LINE IS THE IMPORTANT ONE. Without it the drive task treats any point
+        /// near a road as a road trip -- down to the nearest road node, along the road, and in
+        /// again from wherever that comes out -- which is the route nobody checked. The line it
+        /// is given here HAS been checked, so the line is what it rides.
+        /// </summary>
+        private const int ParkStyle = 2 | 4 | 8 | 16 | 32 | 16777216;
+
+        private enum Sight
+        {
+            Clear,
+            Person,
+            Thing
+        }
+
+        /// <summary>
+        /// Looks the park over when it needs it, a slice a frame.
+        ///
+        /// The park is made from the ini on the first frame and remade if the ini's park moves,
+        /// so InsidePark is answering from the start -- nothing is sent across it at road speed
+        /// while it is still being looked at.
+        /// </summary>
+        private void SurveyPark(int now)
+        {
+            if (!ParkOn) return;
+
+            var centre = ParkCentre;
+            var radius = ParkRadius;
+
+            if (_park == null || Park.Flat2(_park.Centre, centre) > 0.01f ||
+                Math.Abs(_park.Centre.Z - centre.Z) > 0.01f || Math.Abs(_park.Radius - radius) > 0.01f)
+            {
+                _park = new Park(centre, radius);
+
+                // The courts, and anything else somebody has listed as a place to be: the
+                // riders make a point of passing them.
+                foreach (var spot in Hangouts) _park.Landmarks.Add(spot);
+
+                // Anybody riding the old one is holding spot numbers that mean nothing now.
+                foreach (var roll in _out)
+                {
+                    if (roll.InPark) roll.ParkDone = true;
+                }
+            }
+
+            // RIDING YOUR PATH, NOT A SURVEY. Nothing to look over: the park stays as a circle,
+            // so every other destination still keeps out of it, and not a ray is spent.
+            if (PathOn) return;
+
+            Ped player;
+
+            try
+            {
+                player = Game.Player.Character;
+            }
+            catch
+            {
+                return;
+            }
+
+            if (player == null || !player.Exists()) return;
+
+            var away = Park.Flat2(player.Position, centre);
+
+            if (_park.Busy)
+            {
+                // Paused rather than dropped while you are too far off for its ground to be
+                // loaded -- a ray at ground that is not there finds nothing, and a survey done
+                // from the other side of town would say there is no park.
+                if (away > SurveyRange + 60f) return;
+                if (!_park.Step(ParkRaysPerFrame, now)) return;
+
+                Surveyed();
+                return;
+            }
+
+            if (!Enabled) return;
+            if (away > SurveyRange) return;
+            if (!OnOurTurf()) return;
+
+            if (_park.SurveyedAt != 0 &&
+                now - _park.SurveyedAt < (_park.Ready ? ResurveyMs : RetryMs))
+            {
+                return;
+            }
+
+            _park.Begin(_parkWorld);
+        }
+
+        private void Surveyed()
+        {
+            // Everybody in the park is holding spot numbers from the last map.
+            foreach (var roll in _out)
+            {
+                if (!roll.InPark) continue;
+
+                roll.Path = null;
+                roll.PathAt = 0;
+                roll.LegNode = -1;
+                roll.LegTo = Vector3.Zero;
+                roll.Seen.Clear();
+            }
+
+            _badLinks.Clear();
+            foreach (var at in _bad) MarkLinksNear(at);
+
+            var ramps = 0;
+            foreach (var b in _park.Blocks)
+            {
+                if (b.Feature) ramps++;
+            }
+
+            if (_park.Ready)
+            {
+                Log.Info("Rollers: the park looked over -- " + _park.Spots.Count + " places to ride, " +
+                         _park.LinkCount + " clear lines between them, " + _park.Blocks.Count +
+                         " things in it to go round (" + ramps + " of them ramps), " +
+                         _park.Doors.Count + " ways in off the road. " + _park.RaysUsed + " rays.");
+            }
+            else
+            {
+                Log.Info("Rollers: the park looked over and only " + _park.Spots.Count +
+                         " places were clear to ride, so nobody is sent in until it is looked at again. " +
+                         "If that is wrong, check RollerParkX and RollerParkY are the middle of the park.");
+            }
+        }
+
+        /// <summary>A crew arrives at the way in: from here Ride has him.</summary>
+        private void StartPark(Roll roll, int now)
+        {
+            roll.InPark = true;
+            roll.Leaving = false;
+            roll.ParkDone = false;
+            roll.SitUntil = now + _rng.Next(ParkRideMinMs, ParkRideMaxMs);
+
+            // YOUR PATH, ROUND AT LEAST ONCE. A minute or two of the survey's park was plenty,
+            // but a loop you rode is something to go round: all of it, and up to half again,
+            // timed off its own length at a little under his park speed for the corners.
+            if (PathOn)
+            {
+                var lap = (int)(BikePath.Metres * (BikePath.Loop ? 1f : 2f) / Math.Max(2f, ParkSpeed - 1f) * 1000f);
+                roll.SitUntil = now + lap + _rng.Next(lap / 2 + 1);
+            }
+
+            // A CREW GOES ROUND TOGETHER AND LEAVES TOGETHER: one clock between them, the
+            // lead's, whichever of them got there first.
+            var lead = roll.Lead != null && _out.Contains(roll.Lead) ? roll.Lead : null;
+            if (lead != null && lead.InPark) roll.SitUntil = lead.SitUntil;
+
+            foreach (var mate in _out)
+            {
+                if (mate.Lead == roll && mate.InPark) mate.SitUntil = roll.SitUntil;
+            }
+
+            roll.Path = null;
+            roll.PathAt = 0;
+            roll.LegNode = -1;
+            roll.LegTo = Vector3.Zero;
+
+            roll.PathVersion = 0;
+            roll.LeaveBy = 0;
+
+            // WHICH WAY ROUND. Some go round your loop backwards -- Michael asked for it mixed up
+            // on 2026-09-24 -- and a crew goes the same way as each other: whichever of them got
+            // on first chose, and the rest follow him round.
+            roll.Way = BikePath.Loop && _rng.Next(100) < ReverseChance ? -1 : 1;
+
+            foreach (var other in _out)
+            {
+                if (other == roll || !other.InPark || !SameCrew(roll, other)) continue;
+
+                roll.Way = other.Way;
+                break;
+            }
+
+            roll.WatchAt = now;
+            roll.LastSpeed = 0f;
+            roll.Braking = false;
+            roll.BrakeSince = 0;
+
+            roll.ProgressAt = now + ProgressMs;
+            roll.ProgressFrom = roll.Car.Position;
+            roll.Stalls = 0;
+            roll.Seen.Clear();
+
+            roll.RingRadius = 0f;
+            roll.BurnUntil = 0;
+            roll.BurnAfter = now + _rng.Next(BurnFirstMinMs, BurnFirstMaxMs) * 2;
+
+            try
+            {
+                Function.Call(Hash.SET_DRIVER_ABILITY, roll.Driver.Handle, 1.0f);
+                Function.Call(Hash.SET_DRIVER_AGGRESSIVENESS, roll.Driver.Handle, 0.0f);
+            }
+            catch
+            {
+                // He rides as he is.
+            }
+
+            Log.Debug("Rollers: a rider went into the park.");
+        }
+
+        private static void LeavePark(Roll roll)
+        {
+            roll.InPark = false;
+            roll.Leaving = false;
+            roll.ParkDone = false;
+            roll.Path = null;
+            roll.LegNode = -1;
+            roll.LegTo = Vector3.Zero;
+            roll.Braking = false;
+
+            if (roll.BurnUntil == 0) return;
+
+            roll.BurnUntil = 0;
+
+            try { Function.Call(Hash.SET_VEHICLE_BURNOUT, roll.Car.Handle, false); }
+            catch { }
+        }
+
+        /// <summary>Everybody hanging about on a bike, looked at five times a second, each on his own clock.</summary>
+        private void WatchRiders(int now)
+        {
+            for (var i = 0; i < _out.Count; i++)
+            {
+                var roll = _out[i];
+
+                if (!roll.OnFoot || roll.Phase != RollPhase.Sitting) continue;
+                if (now < roll.WatchAt) continue;
+
+                roll.WatchAt = now + WatchMs;
+
+                try
+                {
+                    if (roll.InPark) Ride(roll, now);
+                    else if (roll.RingRadius > 0f) Mind(roll, now);
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Rollers: a rider tripped: " + ex.Message);
+                }
+            }
+        }
+
+        /// <summary>
+        /// One look at one rider in the park.
+        ///
+        /// WHAT HE IS DOING is riding a straight line the park survey says is clear, from one
+        /// spot to another, and being handed the next line before he gets to the end of this
+        /// one -- so from outside it is somebody riding round the park, not stopping and
+        /// starting. Where he is going is somewhere he has not been for a while, so over a
+        /// couple of minutes he takes in all of it.
+        ///
+        /// WHAT HE IS WATCHING FOR, because a checked line is only checked for what was there
+        /// when it was checked:
+        ///   somebody in the way   -- slows right down and waits, then goes another way
+        ///   something in the way  -- brakes, and that place is off the map for everybody
+        ///   a crash anyway        -- a sudden stop nobody asked for; same again
+        ///   not getting anywhere  -- a new route, and after a few of those, out of the park
+        /// </summary>
+        private void Ride(Roll roll, int now)
+        {
+            var bike = roll.Car;
+            var rider = roll.Driver;
+
+            if (bike == null || !bike.Exists()) return;
+            if (rider == null || !rider.Exists() || !rider.IsAlive) return;
+
+            // YOUR PATH, when there is one. See RidePath.
+            if (PathOn)
+            {
+                RidePath(roll, now);
+                return;
+            }
+
+            // Riding your path until it went -- forgotten, or switched off. What he holds are
+            // points of it, not spots on the survey's map, so he starts the survey's over.
+            if (roll.PathVersion != 0)
+            {
+                roll.PathVersion = 0;
+                roll.Path = null;
+                roll.LegNode = -1;
+                roll.LegTo = Vector3.Zero;
+            }
+
+            // The park went while he was in it -- switched off, or looked over again and found
+            // wanting. Out the ordinary way.
+            if (!ParkUsable)
+            {
+                roll.ParkDone = true;
+                return;
+            }
+
+            var pos = bike.Position;
+            var speed = bike.Speed;
+
+            // ---- a burnout running ------------------------------------------------------
+            if (roll.BurnUntil != 0)
+            {
+                if (now < roll.BurnUntil)
+                {
+                    roll.LastSpeed = 0f;
+                    return;
+                }
+
+                roll.BurnUntil = 0;
+
+                try { Function.Call(Hash.SET_VEHICLE_BURNOUT, bike.Handle, false); }
+                catch { }
+
+                roll.BurnAfter = now + _rng.Next(BurnRestMinMs, BurnRestMaxMs) * 2;
+                roll.LegTo = Vector3.Zero;
+                roll.ProgressFrom = pos;
+                roll.ProgressAt = now + ProgressMs;
+            }
+
+            // ---- time up: the rest of the ride is to the way out -------------------------
+            if (!roll.Leaving && now >= roll.SitUntil)
+            {
+                roll.Leaving = true;
+                roll.Path = null;
+            }
+
+            // ---- a stop nobody asked for ------------------------------------------------
+            // Only from park speed. Coming off the road he can arrive at the door doing three
+            // times that, and slowing to ride the first line is a big drop that is not a crash.
+            if (!roll.Braking && roll.LegTo != Vector3.Zero &&
+                roll.LastSpeed > CrashFrom && roll.LastSpeed <= ParkSpeed + 1.5f &&
+                speed < roll.LastSpeed * CrashDrop)
+            {
+                Bad(pos);
+                Log.Info(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    "Rollers: a rider hit something in the park at {0:0.0}, {1:0.0}. That spot is off the map this session.",
+                    pos.X, pos.Y));
+
+                roll.Path = null;
+                roll.LegTo = Vector3.Zero;
+            }
+
+            roll.LastSpeed = speed;
+
+            // ---- the end of the line ----------------------------------------------------
+            if (roll.LegTo != Vector3.Zero && Park.Flat2(pos, roll.LegTo) < LegDone)
+            {
+                if (roll.LegNode >= 0) roll.Seen[roll.LegNode] = now;
+
+                roll.LegTo = Vector3.Zero;
+
+                if (roll.Leaving && roll.LegNode == _park.Exit)
+                {
+                    roll.ParkDone = true;
+                    return;
+                }
+
+                if (!roll.Leaving && now >= roll.BurnAfter)
+                {
+                    if (RoomToBurn(roll))
+                    {
+                        Burn(roll, now);
+                        return;
+                    }
+
+                    roll.BurnAfter = now + BurnRestMinMs;
+                }
+            }
+
+            // ---- looking where he is going ----------------------------------------------
+            if (roll.LegTo != Vector3.Zero && (speed > 0.6f || roll.Braking))
+            {
+                Vector3 seen;
+                var what = Ahead(bike, speed, Park.Flat2(pos, roll.LegTo) + 1f, out seen);
+
+                if (what == Sight.Clear)
+                {
+                    if (roll.Braking)
+                    {
+                        roll.Braking = false;
+                        roll.BrakeSince = 0;
+                        SetSpeed(roll, LegSpeed(roll, pos));
+                    }
+                }
+                else if (what == Sight.Person)
+                {
+                    // Somebody in the way. Wait for them, the way anybody on a bike does -- and
+                    // if they are not going anywhere, go somewhere else.
+                    if (!roll.Braking)
+                    {
+                        roll.Braking = true;
+                        roll.BrakeSince = now;
+                        SetSpeed(roll, 0.5f);
+                    }
+                    else if (now - roll.BrakeSince > PersonWaitMs)
+                    {
+                        roll.Braking = false;
+                        roll.BrakeSince = 0;
+                        roll.Path = null;
+                        roll.LegTo = Vector3.Zero;
+                    }
+                }
+                else
+                {
+                    // Something the survey did not have: put there since, or too thin for the
+                    // rays that made the map. On the brakes, and nobody goes past it again.
+                    Bad(seen);
+                    Brake(roll, now);
+
+                    roll.Path = null;
+                    roll.LegTo = Vector3.Zero;
+                    return;
+                }
+            }
+
+            // ---- getting anywhere -------------------------------------------------------
+            if (now >= roll.ProgressAt)
+            {
+                var moved = Park.Flat2(pos, roll.ProgressFrom);
+
+                roll.ProgressFrom = pos;
+                roll.ProgressAt = now + ProgressMs;
+
+                if (moved >= StallMove)
+                {
+                    roll.Stalls = 0;
+                }
+                else if (!roll.Braking)
+                {
+                    roll.Path = null;
+                    roll.LegTo = Vector3.Zero;
+
+                    if (++roll.Stalls >= StallsMost)
+                    {
+                        Log.Debug("Rollers: a rider could not get anywhere in the park and rode out.");
+                        roll.ParkDone = true;
+                        return;
+                    }
+                }
+            }
+
+            if (roll.LegTo == Vector3.Zero) NextParkLeg(roll, now);
+        }
+
+        // ---- riding your path -------------------------------------------------------------
+
+        /// <summary>How much of your path one line takes at most, how close to it the line keeps, and the shortest line given.</summary>
+        private const float PathLegMost = 16f;
+        private const float PathHug = 0.75f;
+        private const float PathLegLeast = 6f;
+
+        /// <summary>Time up: this long to get round to the way out, and how near it counts as out.</summary>
+        private const int PathLeaveMostMs = 60000;
+
+        /// <summary>How near the start of your path a rider has to come to take it, and how long after coming off it before he will again.</summary>
+        private const float PathJoinRange = 35f;
+        private const int PathAgainMs = 120000;
+
+        /// <summary>Out of a hundred crews, how many go round a loop backwards. Near half: mixed up.</summary>
+        private const int ReverseChance = 45;
+        private const float PathOut = 8f;
+
+        /// <summary>The point of your path nearest a road, and which path that was worked out for.</summary>
+        private int _pathExit = -1;
+        private int _pathExitFor = -1;
+
+        /// <summary>
+        /// One look at one rider on your path.
+        ///
+        /// THE SAME RIDER ON A DIFFERENT MAP. What Ride does with the survey's spots this does
+        /// with the points you rode: a straight line along as much of it as keeps to it, the
+        /// next one handed over before the end of this one, round and round a loop or to the end
+        /// and back. When his time is up he carries on round to the point nearest a road and
+        /// rides out there.
+        ///
+        /// WHAT IS DIFFERENT IS WHAT HE WATCHES FOR. The survey's lines were checked, so anything
+        /// in the way was new and worth taking off the map. Yours were ridden -- a ramp in front
+        /// of him is a ramp you rode over -- so he brakes for people and anything moving and for
+        /// nothing else. If he hits something anyway the log says where, so that stretch can be
+        /// ridden again.
+        /// </summary>
+        private void RidePath(Roll roll, int now)
+        {
+            var bike = roll.Car;
+            var pos = bike.Position;
+            var speed = bike.Speed;
+
+            // ---- a burnout running ------------------------------------------------------
+            if (roll.BurnUntil != 0)
+            {
+                if (now < roll.BurnUntil)
+                {
+                    roll.LastSpeed = 0f;
+                    return;
+                }
+
+                roll.BurnUntil = 0;
+
+                try { Function.Call(Hash.SET_VEHICLE_BURNOUT, bike.Handle, false); }
+                catch { }
+
+                roll.BurnAfter = now + _rng.Next(BurnRestMinMs, BurnRestMaxMs) * 2;
+                roll.LegTo = Vector3.Zero;
+                roll.ProgressFrom = pos;
+                roll.ProgressAt = now + ProgressMs;
+            }
+
+            // ---- a path recorded since he joined this one: he joins that ----------------
+            if (roll.PathVersion != BikePath.Version)
+            {
+                roll.PathVersion = BikePath.Version;
+                roll.LegNode = -1;
+                roll.LegTo = Vector3.Zero;
+            }
+
+            // ---- time up: on round to the way out ---------------------------------------
+            if (!roll.Leaving && now >= roll.SitUntil)
+            {
+                roll.Leaving = true;
+                roll.LeaveBy = now + PathLeaveMostMs;
+            }
+
+            if (roll.Leaving)
+            {
+                var exit = PathExit();
+
+                if (now >= roll.LeaveBy || exit < 0 || Park.Flat2(pos, BikePath.Points[exit]) < PathOut)
+                {
+                    roll.ParkDone = true;
+                    return;
+                }
+            }
+
+            // ---- a stop nobody asked for ------------------------------------------------
+            if (!roll.Braking && roll.LegTo != Vector3.Zero &&
+                roll.LastSpeed > CrashFrom && roll.LastSpeed <= ParkSpeed + 1.5f &&
+                speed < roll.LastSpeed * CrashDrop)
+            {
+                Log.Info(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    "Rollers: a rider hit something on your path at {0:0.0}, {1:0.0}. If it keeps happening there, ride that stretch again.",
+                    pos.X, pos.Y));
+
+                roll.LegTo = Vector3.Zero;
+            }
+
+            roll.LastSpeed = speed;
+
+            // ---- the end of the line ----------------------------------------------------
+            // Near it he is asked for the next one -- which round a corner is this one still,
+            // until he is into the corner. See BikePath.Ahead.
+            var due = roll.LegTo != Vector3.Zero && Park.Flat2(pos, roll.LegTo) < LegDone;
+
+            // HE STOPS AND LIGHTS UP THE BACK WHEEL. Now and then, where there is room, a man on
+            // an engine pulls up, holds it on the brake and smokes the back tyre for a few
+            // seconds, then rides on -- and his crew beside him do it with him. Michael asked for
+            // it on 2026-09-24. Not on a BMX, which has no engine to do it with.
+            if (due && !roll.Leaving && now >= roll.BurnAfter)
+            {
+                if (!Pedal(roll) && RoomToBurn(roll))
+                {
+                    var ms = PathBurnMinMs + _rng.Next(PathBurnMaxMs - PathBurnMinMs);
+
+                    roll.LegTo = Vector3.Zero;
+                    Burn(roll, now, ms);
+                    CrewBurns(roll, now, ms);
+                    return;
+                }
+
+                roll.BurnAfter = now + BurnRestMinMs;
+            }
+
+            // ---- people, and anything moving --------------------------------------------
+            if (roll.LegTo != Vector3.Zero && (speed > 0.6f || roll.Braking))
+            {
+                Vector3 seen;
+                var what = Ahead(bike, speed, Park.Flat2(pos, roll.LegTo) + 1f, out seen, true);
+
+                if (what == Sight.Clear)
+                {
+                    if (roll.Braking)
+                    {
+                        roll.Braking = false;
+                        roll.BrakeSince = 0;
+                        SetSpeed(roll, LegSpeed(roll, pos));
+                    }
+                }
+                else if (!roll.Braking)
+                {
+                    roll.Braking = true;
+                    roll.BrakeSince = now;
+                    SetSpeed(roll, 0.5f);
+                }
+                else if (now - roll.BrakeSince > PersonWaitMs)
+                {
+                    // Still there. The line again from here, and the drive task goes round him.
+                    roll.Braking = false;
+                    roll.BrakeSince = 0;
+                    roll.LegTo = Vector3.Zero;
+                }
+            }
+
+            // ---- getting anywhere -------------------------------------------------------
+            if (now >= roll.ProgressAt)
+            {
+                var moved = Park.Flat2(pos, roll.ProgressFrom);
+
+                roll.ProgressFrom = pos;
+                roll.ProgressAt = now + ProgressMs;
+
+                if (moved >= StallMove)
+                {
+                    roll.Stalls = 0;
+                }
+                else if (!roll.Braking)
+                {
+                    roll.LegTo = Vector3.Zero;
+
+                    if (++roll.Stalls >= StallsMost)
+                    {
+                        Log.Info(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                            "Rollers: a rider could not get on along your path at {0:0.0}, {1:0.0} and rode out.",
+                            pos.X, pos.Y));
+
+                        roll.ParkDone = true;
+                        return;
+                    }
+                }
+            }
+
+            if (roll.LegTo == Vector3.Zero || due) NextPathLeg(roll);
+        }
+
+        /// <summary>The next straight line along your path, from wherever his wheels are.</summary>
+        private void NextPathLeg(Roll roll)
+        {
+            var pts = BikePath.Points;
+
+            if (pts.Count < 2)
+            {
+                roll.ParkDone = true;
+                return;
+            }
+
+            var wheels = Wheels(roll.Car);
+
+            // Joining it: at the nearest point, going the way that has more of it ahead.
+            if (roll.LegNode < 0 || roll.LegNode >= pts.Count)
+            {
+                var n = BikePath.Nearest(wheels);
+
+                if (n < 0)
+                {
+                    roll.ParkDone = true;
+                    return;
+                }
+
+                // A loop keeps the way round he was given when he got on (see StartPark); a
+                // there-and-back path is ridden towards whichever end has more of it ahead.
+                if (!BikePath.Loop) roll.Way = n < pts.Count / 2 ? 1 : -1;
+                else if (roll.Way == 0) roll.Way = 1;
+                roll.LegNode = n;
+
+                if (Park.Flat2(wheels, pts[n]) > LegDone)
+                {
+                    GoPath(roll, n);
+                    return;
+                }
+            }
+
+            var way = roll.Way;
+            var k = BikePath.Ahead(roll.LegNode, ref way, wheels, PathLegMost, PathHug, PathLegLeast);
+
+            // Nothing past the point he is riding to keeps to the path from here yet: he rides on
+            // into it on the task he already has, rather than being handed the same one again.
+            if (k == roll.LegNode && roll.LegTo != Vector3.Zero) return;
+
+            roll.Way = way;
+            GoPath(roll, k);
+        }
+
+        /// <summary>
+        /// Off to the start of your path, to ride it: the same instruction Aim gives a rider going
+        /// to hang out, with the start as the place. Steer starts him on it when he gets there.
+        /// </summary>
+        private void ToPath(Roll roll, int now, bool crew = true)
+        {
+            var where = BikePath.First;
+
+            // NUDGES ARE LEFT AS THEY ARE, on purpose. A man who cannot get to the start is
+            // pointed somewhere else by the stuck check, rides past the start again, and is sent
+            // back to it -- and if this cleared his count he would do that for ever instead of
+            // being handed back.
+            roll.Target = where;
+            roll.StopThere = true;
+            roll.LookedAt = now;
+            roll.WasAt = roll.Car.Position;
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, roll.Driver.Handle);
+
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, roll.Driver.Handle, roll.Car.Handle,
+                              where.X, where.Y, where.Z, CruiseBike, 0, roll.Car.Model.Hash, StyleBike, 4f, true);
+
+                Function.Call(Hash.SET_DRIVE_TASK_CRUISE_SPEED, roll.Driver.Handle, CruiseBike);
+                roll.Cruise = 0f;
+                roll.PaceAt = 0;
+
+                Function.Call(Hash.SET_DRIVER_ABILITY, roll.Driver.Handle, 1.0f);
+                Function.Call(Hash.SET_PED_KEEP_TASK, roll.Driver.Handle, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Rollers: could not send a rider to the path: " + ex.Message);
+            }
+
+            if (!crew) return;
+
+            // HIS CREW COMES WITH HIM, wherever they are behind him: a crew that splits at the
+            // start of the path is two groups of strangers.
+            var with = 0;
+
+            foreach (var other in _out)
+            {
+                if (other == roll || !other.OnFoot || other.InPark || !SameCrew(roll, other)) continue;
+                if (other.Phase != RollPhase.Rolling || (other.StopThere && ParkTarget(other.Target))) continue;
+                if (other.Car == null || !other.Car.Exists()) continue;
+                if (other.Driver == null || !other.Driver.Exists() || !other.Driver.IsAlive) continue;
+
+                ToPath(other, now, false);
+                with++;
+            }
+
+            Log.Info("Rollers: a rider came by the start of your path and took it" +
+                     (with > 0 ? ", and " + with + " of his crew with him." : "."));
+        }
+
+        /// <summary>How long a burnout on the path lasts, and how near his crew have to be to join in.</summary>
+        private const int PathBurnMinMs = 3000;
+        private const int PathBurnMaxMs = 6500;
+        private const float CrewBurnNear = 15f;
+
+        /// <summary>His crew, near him on the path, pull up and do it with him, and all ride on after.</summary>
+        private void CrewBurns(Roll roll, int now, int ms)
+        {
+            foreach (var other in _out)
+            {
+                if (other == roll || !other.InPark || other.Leaving || other.BurnUntil != 0) continue;
+                if (!SameCrew(roll, other) || Pedal(other)) continue;
+                if (other.Car == null || !other.Car.Exists()) continue;
+                if (other.Driver == null || !other.Driver.Exists() || !other.Driver.IsAlive) continue;
+                if (Park.Flat2(other.Car.Position, roll.Car.Position) > CrewBurnNear) continue;
+
+                other.LegTo = Vector3.Zero;
+                Burn(other, now, ms + _rng.Next(-600, 601));
+            }
+        }
+
+        /// <summary>Whether two of them rode out together: one the other's lead, or both the same man's.</summary>
+        private static bool SameCrew(Roll a, Roll b)
+        {
+            return a.Lead == b || b.Lead == a || (a.Lead != null && a.Lead == b.Lead);
+        }
+
+        /// <summary>A pedal bike: no engine, so no burnout.</summary>
+        private static bool Pedal(Roll roll)
+        {
+            try { return roll.Car != null && roll.Car.Exists() && roll.Car.Model.IsBicycle; }
+            catch { return true; }
+        }
+
+        /// <summary>Off along one line, to one point of your path.</summary>
+        private void GoPath(Roll roll, int index)
+        {
+            roll.LegNode = index;
+            roll.LegTo = BikePath.Points[index];
+            roll.Braking = false;
+            roll.BrakeSince = 0;
+
+            var speed = LegSpeed(roll, roll.Car.Position);
+            var to = roll.LegTo;
+
+            try
+            {
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, roll.Driver.Handle, roll.Car.Handle,
+                              to.X, to.Y, to.Z, speed, 0, roll.Car.Model.Hash, ParkStyle, 1.5f, true);
+
+                Function.Call(Hash.SET_DRIVE_TASK_CRUISE_SPEED, roll.Driver.Handle, speed);
+                Function.Call(Hash.SET_PED_KEEP_TASK, roll.Driver.Handle, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Rollers: could not send a rider along the path: " + ex.Message);
+            }
+        }
+
+        /// <summary>The point of your path nearest a road: where he rides out. Worked out once a path.</summary>
+        private int PathExit()
+        {
+            if (_pathExitFor == BikePath.Version) return _pathExit;
+
+            _pathExitFor = BikePath.Version;
+            _pathExit = -1;
+
+            var pts = BikePath.Points;
+            var best = float.MaxValue;
+
+            // Every other point is plenty, and it is a native call apiece.
+            for (var i = 0; i < pts.Count; i += 2)
+            {
+                var d = _parkWorld.ToRoad(pts[i]);
+                if (d < 0f || d >= best) continue;
+
+                best = d;
+                _pathExit = i;
+            }
+
+            if (_pathExit < 0 && pts.Count > 0) _pathExit = 0;
+            return _pathExit;
+        }
+
+        /// <summary>
+        /// The next straight line for a rider in the park.
+        ///
+        /// Somewhere to go if he has nowhere (or the way out, if his time is up), a route there
+        /// over the park's links that stays off every bad place, and then the longest straight
+        /// piece of that route he can ride from where his wheels actually are -- checked there
+        /// and then against the world, not taken on trust from the survey.
+        /// </summary>
+        private void NextParkLeg(Roll roll, int now)
+        {
+            var wheels = Wheels(roll.Car);
+            var from = _park.Nearest(wheels);
+
+            if (from < 0)
+            {
+                roll.ParkDone = true;
+                return;
+            }
+
+            // Off the grid -- just in from the road, or pushed off a line -- and the nearest
+            // spot is a clear ride away: that first.
+            if (Park.Flat2(wheels, _park.Spots[from]) > 2.5f &&
+                _awayFromBad(wheels, _park.Spots[from]) &&
+                _park.Clear(_parkWorld, wheels, _park.Spots[from]))
+            {
+                Go(roll, from, roll.Car.Position);
+                return;
+            }
+
+            for (var tries = 0; tries < 4; tries++)
+            {
+                if (roll.Path == null || roll.PathAt >= roll.Path.Count)
+                {
+                    var goal = roll.Leaving
+                        ? _park.Exit
+                        : _park.Pick(from, roll.Seen, Heading(roll), _rng, now);
+
+                    if (goal < 0 || goal == from)
+                    {
+                        if (roll.Leaving)
+                        {
+                            roll.ParkDone = true;
+                            return;
+                        }
+
+                        continue;
+                    }
+
+                    roll.Path = _park.Route(from, goal, _badLinks);
+                    roll.PathAt = 1;
+
+                    if (roll.Path == null || roll.Path.Count < 2)
+                    {
+                        roll.Path = null;
+
+                        // No way to the door that stays off the bad places. Out by road.
+                        if (roll.Leaving)
+                        {
+                            roll.ParkDone = true;
+                            return;
+                        }
+
+                        continue;
+                    }
+                }
+
+                var k = _park.NextLeg(_parkWorld, wheels, roll.Path, roll.PathAt, _awayFromBad);
+
+                if (k >= 0)
+                {
+                    roll.PathAt = k + 1;
+                    Go(roll, roll.Path[k], roll.Car.Position);
+                    return;
+                }
+
+                // Not even the next spot along is clear from here: something is in the way that
+                // was not there when the park was looked over. Off the map, another way round.
+                if (Park.Flat2(wheels, _park.Spots[from]) < 3f && roll.PathAt < roll.Path.Count)
+                {
+                    _badLinks.Add(Park.LinkKey(from, roll.Path[roll.PathAt]));
+                }
+
+                roll.Path = null;
+            }
+
+            // Nowhere to go from here right now. Stood still, and looked at again shortly --
+            // and if that keeps happening, out of the park.
+            if (++roll.Stalls >= StallsMost)
+            {
+                roll.ParkDone = true;
+                return;
+            }
+
+            Brake(roll, now);
+        }
+
+        /// <summary>Off along one line, to one spot.</summary>
+        private void Go(Roll roll, int spot, Vector3 pos)
+        {
+            roll.LegNode = spot;
+            roll.LegTo = _park.Spots[spot];
+            roll.Braking = false;
+            roll.BrakeSince = 0;
+
+            var speed = LegSpeed(roll, pos);
+            var to = roll.LegTo;
+
+            try
+            {
+                Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD, roll.Driver.Handle, roll.Car.Handle,
+                              to.X, to.Y, to.Z, speed, 0, roll.Car.Model.Hash, ParkStyle, 1.5f, true);
+
+                Function.Call(Hash.SET_DRIVE_TASK_CRUISE_SPEED, roll.Driver.Handle, speed);
+                Function.Call(Hash.SET_PED_KEEP_TASK, roll.Driver.Handle, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Rollers: could not send a rider across the park: " + ex.Message);
+            }
+        }
+
+        /// <summary>The park speed, less for a short line and less again for a sharp turn onto one.</summary>
+        private float LegSpeed(Roll roll, Vector3 pos)
+        {
+            var speed = ParkSpeed;
+            if (roll.LegTo == Vector3.Zero) return speed;
+
+            var to = roll.LegTo - pos;
+            to.Z = 0f;
+
+            var len = to.Length();
+            if (len < 7f) speed = Math.Min(speed, 3.5f);
+            if (len < 0.1f) return speed;
+
+            try
+            {
+                var fwd = roll.Car.ForwardVector;
+                fwd.Z = 0f;
+
+                var flen = fwd.Length();
+                if (flen > 0.1f && (fwd.X * to.X + fwd.Y * to.Y) / (flen * len) < SharpTurn)
+                {
+                    speed = Math.Min(speed, 2.5f);
+                }
+            }
+            catch
+            {
+                // The plain number.
+            }
+
+            return speed;
+        }
+
+        private static void SetSpeed(Roll roll, float speed)
+        {
+            try { Function.Call(Hash.SET_DRIVE_TASK_CRUISE_SPEED, roll.Driver.Handle, speed); }
+            catch { }
+        }
+
+        /// <summary>On the brakes for a moment. Nothing new is decided until they are off.</summary>
+        private static void Brake(Roll roll, int now)
+        {
+            roll.Braking = true;
+            roll.BrakeSince = now;
+            roll.WatchAt = now + BrakeMs;
+
+            try
+            {
+                Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, roll.Driver.Handle, roll.Car.Handle,
+                              BrakeAction, BrakeMs);
+            }
+            catch
+            {
+                SetSpeed(roll, 0f);
+            }
+        }
+
+        /// <summary>
+        /// What is in front of him, as far as the end of his line and no further.
+        ///
+        /// NO FURTHER BECAUSE HE TURNS THERE. Looking past the end of a line sees whatever the
+        /// line was drawn to go round -- a ramp a metre and a bit beyond the spot -- and brakes
+        /// for a thing he was never going to reach.
+        ///
+        /// Two rays at knee and shin height, from in front of the bike so it never sees its own
+        /// wheel. A slope is not a wall: a hit on ground facing upwards is the ground rising.
+        /// Then the ground a couple of metres on, for a drop, a step, or the top of something
+        /// placed -- a ray reads a ramp's surface as ground, and a bike does not.
+        /// </summary>
+        private Sight Ahead(Vehicle bike, float speed, float limit, out Vector3 at, bool peopleOnly = false)
+        {
+            at = Vector3.Zero;
+
+            var fwd = bike.ForwardVector;
+            fwd.Z = 0f;
+            if (fwd.Length() < 0.1f) return Sight.Clear;
+            fwd.Normalize();
+
+            var pos = bike.Position;
+            var reach = Math.Min(LookMost, LookLeast + speed * LookPerSpeed);
+            reach = Math.Min(reach, Math.Max(1f, limit - NoseAhead));
+
+            var nose = pos + fwd * NoseAhead;
+
+            foreach (var lift in LookHeights)
+            {
+                var from = nose + new Vector3(0f, 0f, lift);
+                var hit = World.Raycast(from, from + fwd * reach, SeeFlags, bike);
+
+                if (!hit.DidHit) continue;
+
+                var who = hit.HitEntity;
+
+                // The ground rising ahead, not something stood on it.
+                if (who == null && hit.SurfaceNormal.Z > 0.7f) continue;
+
+                at = hit.HitPosition;
+
+                if ((who as Ped) != null) return Sight.Person;
+
+                // Another rider, or a car going past: somebody to wait for, not a wall.
+                var car = who as Vehicle;
+                if (car != null && Moving(car)) return Sight.Person;
+
+                // On a path somebody rode, a thing in front of him is a thing he rode past or over.
+                if (peopleOnly) continue;
+
+                return Sight.Thing;
+            }
+
+            if (peopleOnly || limit < GroundAhead) return Sight.Clear;
+
+            var probe = pos + fwd * GroundAhead;
+            var under = pos.Z - WheelsBelow;
+
+            var g = World.Raycast(new Vector3(probe.X, probe.Y, pos.Z + 0.6f),
+                                  new Vector3(probe.X, probe.Y, under - 1.6f),
+                                  IntersectFlags.Map | IntersectFlags.Objects, bike);
+
+            if (!g.DidHit)
+            {
+                at = probe;
+                return Sight.Thing;
+            }
+
+            var rise = g.HitPosition.Z - under;
+            var onThing = g.HitEntity != null && g.HitEntity.Exists();
+
+            // A slope as steep as the park allows, over this distance, plus a kerb's worth.
+            var most = Park.Bump + GroundAhead * Park.Steepest;
+
+            if (onThing || rise > most || rise < -(0.8f + GroundAhead * Park.Steepest))
+            {
+                at = g.HitPosition;
+                return Sight.Thing;
+            }
+
+            return Sight.Clear;
+        }
+
+        /// <summary>
+        /// A rider hanging about somewhere that is not the park -- riding his circle -- given
+        /// the same eyes. Anything in front of him and the circle is done: he brakes and moves on.
+        /// </summary>
+        private void Mind(Roll roll, int now)
+        {
+            if (roll.BurnUntil != 0 && now < roll.BurnUntil) return;
+
+            var bike = roll.Car;
+            if (bike == null || !bike.Exists()) return;
+            if (roll.Driver == null || !roll.Driver.Exists() || !roll.Driver.IsAlive) return;
+
+            float speed;
+
+            try { speed = bike.Speed; }
+            catch { return; }
+
+            if (speed < 0.6f) return;
+
+            Vector3 seen;
+            if (Ahead(bike, speed, LookMost, out seen) == Sight.Clear) return;
+
+            Brake(roll, now);
+            roll.SitUntil = now;
+        }
+
+        /// <summary>
+        /// Whether there is room for a burnout here: nothing placed, no wall and no car within
+        /// reach of the back wheel, and nobody stood close enough to get it in the shins.
+        /// </summary>
+        private bool RoomToBurn(Roll roll)
+        {
+            try
+            {
+                var bike = roll.Car;
+                var pos = bike.Position;
+                var ground = pos.Z - WheelsBelow;
+
+                if (_park != null && _park.Ready)
+                {
+                    foreach (var b in _park.Blocks)
+                    {
+                        if (b.Hi < ground + 0.14f || b.Lo > ground + 2.2f) continue;
+                        if (b.Distance(pos.X, pos.Y) < BurnRoom) return false;
+                    }
+                }
+
+                var from = pos + new Vector3(0f, 0f, 0.2f);
+
+                for (var k = 0; k < 8; k++)
+                {
+                    var turn = k * Math.PI / 4.0;
+                    var to = from + new Vector3((float)Math.Cos(turn) * BurnRoom, (float)Math.Sin(turn) * BurnRoom, 0f);
+
+                    var hit = World.Raycast(from, to, IntersectFlags.Map | IntersectFlags.Objects | IntersectFlags.Vehicles, bike);
+                    if (hit.DidHit && !(hit.HitEntity == null && hit.SurfaceNormal.Z > 0.7f)) return false;
+                }
+
+                foreach (var ped in World.GetNearbyPeds(pos, BurnPeople))
+                {
+                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+
+                    var crew = false;
+                    foreach (var m in roll.Crew)
+                    {
+                        if (m != null && m.Handle == ped.Handle) crew = true;
+                    }
+
+                    if (!crew) return false;
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void Burn(Roll roll, int now, int ms = 0)
+        {
+            if (ms <= 0) ms = BurnMinMs + _rng.Next(BurnMaxMs - BurnMinMs);
+
+            try
+            {
+                Function.Call(Hash.CLEAR_PED_TASKS, roll.Driver.Handle);
+                Function.Call(Hash.SET_VEHICLE_BURNOUT, roll.Car.Handle, true);
+                Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, roll.Driver.Handle, roll.Car.Handle, BurnAction, ms);
+
+                roll.BurnUntil = now + ms;
+                roll.LastSpeed = 0f;
+            }
+            catch
+            {
+                roll.BurnAfter = now + BurnRestMinMs;
+            }
+        }
+
+        /// <summary>Where his wheels are: the ground under the bike, or a fair guess at it.</summary>
+        private static Vector3 Wheels(Vehicle bike)
+        {
+            var pos = bike.Position;
+
+            try
+            {
+                var hit = World.Raycast(pos + new Vector3(0f, 0f, 0.3f), pos - new Vector3(0f, 0f, 2f),
+                                        IntersectFlags.Map | IntersectFlags.Objects, bike);
+
+                if (hit.DidHit) return new Vector3(pos.X, pos.Y, hit.HitPosition.Z);
+            }
+            catch
+            {
+                // The guess below.
+            }
+
+            return new Vector3(pos.X, pos.Y, pos.Z - WheelsBelow);
+        }
+
+        /// <summary>Where the other riders in the park are headed, so this one goes somewhere else.</summary>
+        private List<Vector3> Heading(Roll me)
+        {
+            _heading.Clear();
+
+            foreach (var r in _out)
+            {
+                if (r == me || !r.InPark || r.Path == null || r.Path.Count == 0) continue;
+
+                var goal = r.Path[r.Path.Count - 1];
+                if (goal >= 0 && goal < _park.Spots.Count) _heading.Add(_park.Spots[goal]);
+            }
+
+            return _heading;
+        }
+
+        /// <summary>Somewhere nobody should ride past: remembered, and its links taken off the map.</summary>
+        private void Bad(Vector3 at)
+        {
+            if (at == Vector3.Zero) return;
+
+            foreach (var p in _bad)
+            {
+                if (Park.Flat2(p, at) < 1f) return;
+            }
+
+            if (_bad.Count >= BadMost) _bad.RemoveAt(0);
+
+            _bad.Add(at);
+            MarkLinksNear(at);
+        }
+
+        private void MarkLinksNear(Vector3 at)
+        {
+            if (_park == null) return;
+
+            for (var i = 0; i < _park.Spots.Count; i++)
+            {
+                foreach (var j in _park.Links[i])
+                {
+                    if (j < i) continue;
+                    if (Park.Near2(at, _park.Spots[i], _park.Spots[j]) < BadKeepOff) _badLinks.Add(Park.LinkKey(i, j));
+                }
+            }
+        }
+
+        private bool AwayFromBad(Vector3 a, Vector3 b)
+        {
+            foreach (var p in _bad)
+            {
+                if (Park.Near2(p, a, b) < BadKeepOff) return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// A car that is going somewhere: moving, one of ours, or yours. Left out of the park's
+        /// survey, because it will not be there, and waited for rather than written off as a
+        /// wall when it is in the way.
+        /// </summary>
+        private bool Moving(Vehicle car)
+        {
+            try
+            {
+                if (car == null || !car.Exists()) return false;
+                if (car.Speed > 0.5f) return true;
+
+                foreach (var roll in _out)
+                {
+                    if (roll.Car != null && roll.Car.Handle == car.Handle) return true;
+                }
+
+                var you = Game.Player.Character;
+                if (you != null && you.Exists() && you.CurrentVehicle != null &&
+                    you.CurrentVehicle.Handle == car.Handle)
+                {
+                    return true;
+                }
+            }
+            catch
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         // ---- clearing up -------------------------------------------------------
 
         private void Prune(int now)
@@ -1949,6 +3555,19 @@ namespace Hoodrich.Gangs
 
                 var far = player != null && player.Exists()
                           && roll.Car.Position.DistanceTo(player.Position) > LetGoRange;
+
+                // Off his bike in the park is the one thing all of the looking was for, so it
+                // goes in the log with where it happened. Nobody else is sent past that spot.
+                if (taken && roll.InPark && !(mine != 0 && roll.Car.Handle == mine))
+                {
+                    var at = roll.Car.Position;
+                    Bad(at);
+                    Log.Info(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                        PathOn
+                            ? "Rollers: a rider came off on your path at {0:0.0}, {1:0.0}. If it keeps happening there, ride that stretch again."
+                            : "Rollers: a rider came off in the park at {0:0.0}, {1:0.0}. Nobody is sent past there again this session.",
+                        at.X, at.Y));
+                }
 
                 if (taken || old || far)
                 {

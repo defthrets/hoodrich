@@ -1198,6 +1198,11 @@ namespace Hoodrich.Supply
 
                 var h = _livePed.Handle;
                 Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
+
+                // He stands at his spot and he is the same man every session, which is the
+                // whole requirement. Keyed on his id from dealers.json rather than on the
+                // spot, so moving him in the data does not make him somebody else.
+                Core.Folk.Stamp(_livePed, "dealer:" + def.Id);
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);
 
