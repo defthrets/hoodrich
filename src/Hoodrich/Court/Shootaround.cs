@@ -284,6 +284,9 @@ namespace Hoodrich.Court
 
         private void Offer(Ped me)
         {
+            // Nothing on the floor while the host has the court for something else. See CourtHost.Closed.
+            if (CourtHost.Closed()) return;
+
             if (!_startRead)
             {
                 _startRead = true;

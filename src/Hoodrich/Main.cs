@@ -3660,6 +3660,7 @@ namespace Hoodrich
                 Court.CourtHost.Ticker = UI.Notify.Ticker;
                 Court.CourtHost.Problem = UI.Notify.Problem;
                 Court.CourtHost.Busy = () => Core.Mind.Busy || InputGuard.Busy;
+                Court.CourtHost.Closed = () => _jobs != null && _jobs.IsRunning;
                 Court.CourtHost.Swallow = InputGuard.Swallow;
                 Court.CourtHost.T = Core.Lang.T;
                 Court.CourtHost.Counted = UI.Draw.CountRect;

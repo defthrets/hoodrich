@@ -41,6 +41,13 @@ namespace Hoodrich.Court
         /// <summary>Something else has the player -- a menu, a conversation -- and the court should not offer itself.</summary>
         public static Func<bool> Busy = () => false;
 
+        /// <summary>
+        /// THE COURT IS SHUT: no ring on the floor and no prompt, for as long as this says so. For a
+        /// host whose own jobs use the court -- Posted Up's bike ride ends in a fist fight on it, and a
+        /// "shoot hoops" ring in the middle of that is a game offering itself in the wrong scene.
+        /// </summary>
+        public static Func<bool> Closed = () => false;
+
         /// <summary>The press that started a game, eaten, so nothing else answers it too.</summary>
         public static Action Swallow = () => { };
 
