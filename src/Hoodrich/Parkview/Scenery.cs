@@ -2722,12 +2722,6 @@ namespace Hoodrich.Parkview
             /// <summary>What he is waiting on while he is not up, for the log. See NotUp.</summary>
             public string Why;
 
-            /// <summary>What he is waiting on while he is not up, for the log. See NotUp.</summary>
-            public string Why;
-
-            /// <summary>What he is waiting on while he is not up, for the log. See NotUp.</summary>
-            public string Why;
-
             /// <summary>Who he is talking to, while he is.</summary>
             public Life With;
 
