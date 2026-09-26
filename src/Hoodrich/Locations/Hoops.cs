@@ -72,6 +72,15 @@ namespace Hoodrich.Locations
             public bool Jump;
             public float Release;
             public float Up;
+
+            /// <summary>How much faster than the game plays it.</summary>
+            public float Speed = 1f;
+
+            /// <summary>
+            /// Where it is stopped, once the ball has gone: Raise the Roof pumps the arms twice, and
+            /// a shot is one push. Nought lets it play out.
+            /// </summary>
+            public float Cut;
         }
 
         /// <summary>
@@ -84,10 +93,10 @@ namespace Hoodrich.Locations
         /// </summary>
         private static readonly Style[] Styles =
         {
-            new Style { Name = "Set shot", Dict = "anim@mp_player_intupperraise_the_roof", Clip = "enter", Jump = false, Release = 0.55f, Up = 1.2f },
-            new Style { Name = "Two-hand jumper", Dict = "anim@mp_player_intupperraise_the_roof", Clip = "enter", Jump = true, Release = 0.5f, Up = 1.5f },
-            new Style { Name = "Jump shot", Dict = "weapons@projectile@", Clip = "throw_h_fb_stand", Jump = true, Release = 0.36f, Up = 1.5f },
-            new Style { Name = "Push shot", Dict = "weapons@projectile@", Clip = "throw_m_fb_stand", Jump = false, Release = 0.34f, Up = 1.2f }
+            new Style { Name = "Set shot", Dict = "anim@mp_player_intupperraise_the_roof", Clip = "enter", Jump = false, Release = 0.30f, Up = 1.2f, Speed = 1.6f, Cut = 0.46f },
+            new Style { Name = "Two-hand jumper", Dict = "anim@mp_player_intupperraise_the_roof", Clip = "enter", Jump = true, Release = 0.30f, Up = 1.5f, Speed = 1.6f, Cut = 0.46f },
+            new Style { Name = "Jump shot", Dict = "weapons@projectile@", Clip = "throw_h_fb_stand", Jump = true, Release = 0.36f, Up = 1.5f, Speed = 1.3f },
+            new Style { Name = "Push shot", Dict = "weapons@projectile@", Clip = "throw_m_fb_stand", Jump = false, Release = 0.34f, Up = 1.2f, Speed = 1.3f }
         };
 
         /// <summary>Every clip set a game asks for, and lets go of at the end.</summary>
@@ -113,15 +122,21 @@ namespace Hoodrich.Locations
         /// <summary>Street Golf's meter: up and back down over this long while the button is held.</summary>
         private const float ChargeTime = 1.15f;
 
-        /// <summary>What the bottom and the top of the meter throw the ball at, in metres a second.</summary>
-        private const float SpeedLow = 3.5f;
-        private const float SpeedHigh = 13.5f;
+        /// <summary>
+        /// The meter against the throw: nine tenths of it is exactly the rim's distance -- as the
+        /// top of Street Golf's meter is its sweet spot -- and every tenth either side is five per
+        /// cent of pace more or less. So the green is only as wide as the rim, from where he stands:
+        /// wide close in, a sliver from three.
+        /// </summary>
+        private const float Full = 0.9f;
+        private const float Spread = 0.5f;
+
+        /// <summary>Street Golf's fine aim: while the meter runs, the left stick turns the line this fast, and this far either way.</summary>
+        private const float FineSpeed = 18f;
+        private const float FineMost = 25f;
 
         /// <summary>The arc a shot leaves the hand on. A good shot drops into the rim from above.</summary>
         private const float Arc = 52f;
-
-        /// <summary>Looking within this many degrees of the hoop is looking at it.</summary>
-        private const float OnLine = 4.5f;
 
         /// <summary>The ball's middle has to come down through this much of the rim's middle.</summary>
         private const float MakeRadius = 0.24f;
@@ -145,13 +160,21 @@ namespace Hoodrich.Locations
 
         private float _charge;
         private float _power;
-        private float _sweet;
-        private float _half;
+        /// <summary>The green on the meter: the powers that come down through the rim from where he stands.</summary>
+        private float _sweetLo = 2f;
+        private float _sweetHi = -1f;
         private int _lastTick;
 
         private bool _good;
-        private bool _onLine;
         private float _aim;
+        private float _fine;
+
+        /// <summary>The throw worked out as he let go: where it leaves from, and how. The ball follows it to the letter.</summary>
+        private Vector3 _launchFrom;
+        private Vector3 _launch;
+
+        /// <summary>The shot's clip is still on his arms, to be sped up and cut short. See ShotClip.</summary>
+        private bool _clipLive;
         private float _from;
         private bool _three;
 
@@ -209,6 +232,7 @@ namespace Hoodrich.Locations
             }
 
             HoldTheButtons(_mode == Mode.Charging);
+            ShotClip(me);
 
             switch (_mode)
             {
@@ -286,6 +310,7 @@ namespace Hoodrich.Locations
             catch { /* asked again while it waits */ }
 
             _score = _streak = _shots = _made = 0;
+            _fine = 0f;
             _banner = "";
             _mode = Mode.Starting;
             _at = Game.GameTime;
@@ -464,8 +489,16 @@ namespace Hoodrich.Locations
             var cycle = t % 2f;
             _power = cycle <= 1f ? cycle : 2f - cycle;
 
-            // Turned to where he is looking, the way Street Golf turns the golfer.
-            _aim = Deg360(GameplayCamera.Rotation.Z);
+            // Street Golf's aim: where the camera looks, and a fine turn on the left stick with his
+            // feet planted. He turns to it, the way the golfer does.
+            try
+            {
+                var fine = Function.Call<float>(Hash.GET_DISABLED_CONTROL_NORMAL, 0, (int)Control.MoveLeftRight);
+                if (Math.Abs(fine) > 0.15f) _fine = Clamp(_fine - fine * FineSpeed * dt, -FineMost, FineMost);
+            }
+            catch { }
+
+            _aim = Deg360(GameplayCamera.Rotation.Z + _fine);
             Turn(me, _aim, dt);
 
             Sweet(me);
@@ -473,25 +506,62 @@ namespace Hoodrich.Locations
             if (!Down(Control.Attack)) Shoot(me);
         }
 
-        /// <summary>Where the green is on the meter from where he stands: the power that reaches the rim.</summary>
+        /// <summary>Where the ball leaves his hands: over him at the style's height, a hand in front along the aim.</summary>
+        private Vector3 From(Ped me, float aim) => me.Position + Vector3.WorldUp * Shot.Up + Dir(aim) * 0.25f;
+
+        /// <summary>
+        /// The throw for a power, the way Street Golf throws for a swing: along the aim, on the arc
+        /// that carries to the rim, and as hard as the meter says. See Full.
+        /// </summary>
+        private static Vector3 Throw(float aim, float ideal, float arc, float power)
+        {
+            var s = ideal * (1f + Spread * (power - Full));
+            var th = arc * (float)Math.PI / 180f;
+            return Dir(aim) * (s * (float)Math.Cos(th)) + Vector3.WorldUp * (s * (float)Math.Sin(th));
+        }
+
+        /// <summary>How far out a throw comes down through the rim's height, flat. Below nought if it never gets up to it.</summary>
+        private float Carry(Vector3 from, Vector3 v)
+        {
+            var dz = _rim.Z - from.Z;
+            var disc = v.Z * v.Z - 2f * Gravity * dz;
+            if (disc < 0f) return -1f;
+
+            var t = (v.Z + (float)Math.Sqrt(disc)) / Gravity;
+            return (float)Math.Sqrt(v.X * v.X + v.Y * v.Y) * t;
+        }
+
+        /// <summary>
+        /// The green on the meter: every power whose throw comes down through the rim from where he
+        /// stands, worked out, not guessed -- a sliver from three, a hand's width under the hoop.
+        /// </summary>
         private void Sweet(Ped me)
         {
-            var from = me.Position + Vector3.WorldUp * Shot.Up;
-            var flat = Flat(_rim - me.Position);
+            _sweetLo = 2f;
+            _sweetHi = -1f;
 
-            Vector3 v;
-            float speed;
+            var from = From(me, _aim);
+            float ideal, arc;
+            if (!Ideal(from, out ideal, out arc)) return;
 
-            if (!Solve(from, _rim, out v, out speed))
+            var toward = Toward(from, _rim);
+            var target = Flat(_rim - from);
+
+            for (var p = 0f; p <= 1.0001f; p += 0.005f)
             {
-                _sweet = -1f;
-                return;
+                var d = Carry(from, Throw(toward, ideal, arc, p));
+                if (d < 0f || Math.Abs(d - target) > MakeRadius - 0.04f) continue;
+
+                if (p < _sweetLo) _sweetLo = p;
+                if (p > _sweetHi) _sweetHi = p;
             }
+        }
 
-            _sweet = Clamp((speed - SpeedLow) / (SpeedHigh - SpeedLow), 0.04f, 0.96f);
-
-            // Wider close in, narrower from deep.
-            _half = Clamp(0.07f - 0.004f * (flat - 4f), 0.035f, 0.085f);
+        /// <summary>The pace and the arc that carry the ball from a point to the rim. See Solve.</summary>
+        private bool Ideal(Vector3 from, out float speed, out float arc)
+        {
+            Vector3 v;
+            return Solve(from, _rim, out v, out speed, out arc);
         }
 
         private static void Turn(Ped me, float want, float dt)
@@ -512,10 +582,13 @@ namespace Hoodrich.Locations
 
         private void Shoot(Ped me)
         {
-            _good = _sweet >= 0f && Math.Abs(_power - _sweet) <= _half;
-            // Looking at it from where the camera is: over his shoulder, not out of his head.
-            _onLine = Math.Abs(AngleDiff(_aim, Toward(GameplayCamera.Position, _rim))) <= OnLine;
+            _good = _power >= _sweetLo && _power <= _sweetHi;
             _from = Flat(_rim - me.Position);
+
+            // The throw, fixed now: the line he was looking at is the flight he gets.
+            _launchFrom = From(me, _aim);
+            float ideal, arc;
+            _launch = Ideal(_launchFrom, out ideal, out arc) ? Throw(_aim, ideal, arc, _power) : Vector3.Zero;
             _three = _from > ThreeFrom;
             _shotAt = me.Position;
 
@@ -527,6 +600,7 @@ namespace Hoodrich.Locations
                 // The legs jump, if this way does; the arms shoot, on the upper body over whatever the legs do.
                 if (s.Jump) Function.Call(Hash.TASK_JUMP, me.Handle, true, false, false);
                 Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, s.Dict, s.Clip, 8f, -8f, -1, 48, 0f, false, false, false);
+                _clipLive = true;
             }
             catch { }
 
@@ -555,8 +629,8 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
-        /// Out of his hand and on its way. In the green and on line, on the exact arc to the rim;
-        /// otherwise as hard as the meter said, the way he was looking.
+        /// Out of his hand and on its way, exactly as the line showed: from where the line began,
+        /// along his aim, as hard as the meter stood when he let go. Nothing steers it to the hoop.
         /// </summary>
         private void Release(Ped me)
         {
@@ -573,18 +647,10 @@ namespace Hoodrich.Locations
             {
                 Function.Call(Hash.DETACH_ENTITY, _ball.Handle, true, true);
 
-                var from = _ball.Position;
-                Vector3 v;
-                float speed;
-
-                if (!(_good && _onLine && Solve(from, _rim, out v, out speed)))
-                {
-                    var heading = _onLine ? Toward(from, _rim) : _aim;
-                    var dir = Dir(heading);
-                    var th = Arc * (float)Math.PI / 180f;
-                    speed = SpeedLow + (SpeedHigh - SpeedLow) * _power;
-                    v = dir * (speed * (float)Math.Cos(th)) + Vector3.WorldUp * (speed * (float)Math.Sin(th));
-                }
+                // From where the line started, so the flight is the line to the letter.
+                var from = _launchFrom;
+                var v = _launch;
+                Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, _ball.Handle, from.X, from.Y, from.Z, false, false, false);
 
                 // Flown by the game, with nothing slowing it but the rim -- Street Golf's ball.
                 Function.Call(Hash.FREEZE_ENTITY_POSITION, _ball.Handle, false);
@@ -686,14 +752,21 @@ namespace Hoodrich.Locations
 
                 string why;
 
-                if (!_onLine) why = "Wide -- look at the hoop.";
-                else if (!_crossed) why = "Short -- more on the meter.";
+                if (!_crossed) why = "Short -- more on the meter.";
                 else
                 {
-                    // Where it came down through the rim's height, against where the rim is.
-                    var along = Flat(_cross - _shotAt) - Flat(_rim - _shotAt);
+                    // Where it came down through the rim's height, against where the rim is: along
+                    // the line from his hands to the rim, and either side of it.
+                    var line = Flat3D(_rim - _launchFrom);
+                    var reach = line.Length();
+                    line *= 1f / Math.Max(0.01f, reach);
 
-                    why = along < -0.25f ? "Short -- more on the meter."
+                    var off = Flat3D(_cross - _launchFrom);
+                    var along = Vector3.Dot(off, line) - reach;
+                    var side = line.X * off.Y - line.Y * off.X;
+
+                    why = Math.Abs(side) > 0.25f ? (side > 0f ? "Wide left -- aim a touch right." : "Wide right -- aim a touch left.")
+                        : along < -0.25f ? "Short -- more on the meter."
                         : along > 0.25f ? "Long -- less on the meter."
                         : "Off the rim.";
                 }
@@ -971,10 +1044,11 @@ namespace Hoodrich.Locations
         /// point to the other, and a steeper arc if that one cannot get there. Street Golf's physics
         /// flies it without drag, so the sum is the flight.
         /// </summary>
-        private static bool Solve(Vector3 from, Vector3 to, out Vector3 velocity, out float speed)
+        private static bool Solve(Vector3 from, Vector3 to, out Vector3 velocity, out float speed, out float used)
         {
             velocity = Vector3.Zero;
             speed = 0f;
+            used = Arc;
 
             var d = to - from;
             var flat = Flat3D(d);
@@ -991,6 +1065,7 @@ namespace Hoodrich.Locations
 
                 speed = (float)Math.Sqrt(Gravity * dist * dist / denom);
                 velocity = flat * (speed * c) + Vector3.WorldUp * (speed * (float)Math.Sin(th));
+                used = arc;
                 return true;
             }
 
@@ -1077,11 +1152,13 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
-        /// STREET GOLF'S AIM LINE: the flight worked out the way the shot will be, and drawn as a
-        /// thin ribbon turned to the camera. Holding the ball, it is the shot in the green along
-        /// where he is looking; with the meter running, it is the shot as the meter stands now.
-        /// It ends where it comes down through the rim's height, and it is green when that is
-        /// through the rim. Michael asked for the golf line on the basketball on 2026-09-26.
+        /// STREET GOLF'S AIM LINE, and only that. The flight worked out the way the shot will go and
+        /// drawn as a thin ribbon turned to the camera: holding the ball, a full shot (the top of
+        /// the meter's green) along where he is aiming; with the meter running, the shot as the
+        /// meter stands, so it stretches and shrinks as the meter plays. It ends in a ring where
+        /// the ball comes down through the rim's height -- over the rim, and it goes in. Nothing
+        /// changes colour for looking at the hoop, and nothing steers the ball to it: Michael asked
+        /// for it just like the golf on 2026-09-26.
         /// </summary>
         private void Line(Ped me)
         {
@@ -1090,68 +1167,97 @@ namespace Hoodrich.Locations
             try
             {
                 var eye = GameplayCamera.Position;
-                var aim = Deg360(GameplayCamera.Rotation.Z);
-                var from = me.Position + Vector3.WorldUp * Shot.Up + Dir(aim) * 0.25f;
-                var onLine = Math.Abs(AngleDiff(aim, Toward(eye, _rim))) <= OnLine;
                 var charging = _mode == Mode.Charging;
-                var good = charging && _sweet >= 0f && Math.Abs(_power - _sweet) <= _half;
+                var aim = charging ? _aim : Deg360(GameplayCamera.Rotation.Z + _fine);
+                var from = From(me, aim);
 
-                Vector3 v;
-                float speed;
+                float ideal, arc;
+                if (!Ideal(from, out ideal, out arc)) return;
 
-                if (!((!charging || good) && onLine && Solve(from, _rim, out v, out speed)))
-                {
-                    var p = charging ? _power : (_sweet >= 0f ? _sweet : 0.5f);
-                    var th = Arc * (float)Math.PI / 180f;
-                    speed = SpeedLow + (SpeedHigh - SpeedLow) * p;
-                    v = Dir(onLine ? Toward(from, _rim) : aim) * (speed * (float)Math.Cos(th)) +
-                        Vector3.WorldUp * (speed * (float)Math.Sin(th));
-                }
+                var v = Throw(aim, ideal, arc, charging ? _power : Full);
 
                 var floor = me.Position.Z - 1f;
                 var pos = from;
                 var end = from;
-                var through = false;
+                var down = false;
                 var pts = new List<Vector3> { from };
 
-                for (var i = 0; i < 90; i++)
+                for (var i = 0; i < 120; i++)
                 {
                     var next = pos + v * LineStep;
                     v.Z -= Gravity * LineStep;
 
-                    // Coming down through the rim's height: the end of the line, in or out.
+                    // Coming down through the rim's height: the end of the line.
                     if (pos.Z > _rim.Z && next.Z <= _rim.Z && v.Z < 0f)
                     {
                         var t = (pos.Z - _rim.Z) / Math.Max(0.0001f, pos.Z - next.Z);
                         end = pos + (next - pos) * t;
-                        through = Flat(end - _rim) <= MakeRadius;
+                        down = true;
                         pts.Add(end);
                         break;
                     }
 
-                    if (next.Z < floor) break;
+                    if (next.Z < floor)
+                    {
+                        end = next;
+                        down = true;
+                        pts.Add(next);
+                        break;
+                    }
 
                     pts.Add(next);
                     pos = next;
                     end = next;
                 }
 
-                var ink = through ? Color.FromArgb(150, 114, 204, 114)
-                        : charging ? Color.FromArgb(120, 240, 200, 80)
-                        : Color.FromArgb(80, 255, 255, 255);
+                // Street Golf's own inks: cool while he lines it up, warm while the meter runs.
+                var ink = charging ? Color.FromArgb(70, 255, 220, 120) : Color.FromArgb(45, 190, 235, 200);
 
-                for (var i = 0; i + 1 < pts.Count; i++) Segment(pts[i], pts[i + 1], 0.025f, ink, eye);
+                for (var i = 0; i + 1 < pts.Count; i++) Segment(pts[i], pts[i + 1], 0.03f, ink, eye);
 
-                if (through)
+                if (down)
                 {
-                    Function.Call(Hash.DRAW_MARKER, 25, _rim.X, _rim.Y, _rim.Z + 0.02f,
-                                  0f, 0f, 0f, 0f, 0f, 0f, 0.5f, 0.5f, 0.5f,
-                                  114, 204, 114, 140, false, false, 2, false, 0, 0, false);
+                    Function.Call(Hash.DRAW_MARKER, 25, end.X, end.Y, end.Z + 0.02f,
+                                  0f, 0f, 0f, 0f, 0f, 0f, 0.45f, 0.45f, 0.45f,
+                                  255, 225, 140, 90, false, false, 2, false, 0, 0, false);
                 }
             }
             catch
             {
                 // No line this frame.
+            }
+        }
+
+        /// <summary>
+        /// The shot's clip on his arms: played at its style's pace, and for the set shot stopped once
+        /// the ball has gone and the arms have made their one push. Raise the Roof pumps twice.
+        /// </summary>
+        private void ShotClip(Ped me)
+        {
+            if (!_clipLive) return;
+
+            try
+            {
+                var s = Styles[_shotStyle];
+
+                if (!Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, me.Handle, s.Dict, s.Clip, 3))
+                {
+                    _clipLive = false;
+                    return;
+                }
+
+                Function.Call(Hash.SET_ENTITY_ANIM_SPEED, me.Handle, s.Dict, s.Clip, s.Speed);
+
+                if (s.Cut > 0f && _released &&
+                    Function.Call<float>(Hash.GET_ENTITY_ANIM_CURRENT_TIME, me.Handle, s.Dict, s.Clip) >= s.Cut)
+                {
+                    Function.Call(Hash.STOP_ANIM_TASK, me.Handle, s.Dict, s.Clip, -3f);
+                    _clipLive = false;
+                }
+            }
+            catch
+            {
+                _clipLive = false;
             }
         }
 
@@ -1249,8 +1355,8 @@ namespace Hoodrich.Locations
             const float gap = 0.002f;
 
             var cw = (width - gap * (cells - 1)) / cells;
-            var lo = _sweet < 0f ? 2f : _sweet - _half;
-            var hi = _sweet < 0f ? 2f : _sweet + _half;
+            var lo = _sweetHi < 0f ? 2f : _sweetLo;
+            var hi = _sweetHi < 0f ? 2f : _sweetHi;
             var sweet = _power >= lo && _power <= hi;
 
             UI.Draw.Rect(left + width * 0.5f, y, width + 0.012f, h + 0.012f, Color.FromArgb(150, 0, 0, 0));
