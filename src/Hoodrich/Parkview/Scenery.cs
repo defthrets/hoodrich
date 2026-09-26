@@ -117,6 +117,12 @@ namespace Hoodrich.Parkview
             /// </summary>
             public HashSet<int> Camp = new HashSet<int>();
 
+            /// <summary>A second place of work for a man, by his saved handle -- "jobs:" in the Note. See Work.</summary>
+            public Dictionary<int, List<Job>> Jobs = new Dictionary<int, List<Job>>();
+
+            /// <summary>The panes of glass that are made solid -- "glass:" in the Note. See Glaze.</summary>
+            public HashSet<int> Glass = new HashSet<int>();
+
             /// <summary>
             /// Whether this one lives here rather than stands in it. ASKED IN ONE PLACE,
             /// because it is asked in three -- the life, the drunk walk and the unlocking --
@@ -864,6 +870,12 @@ namespace Hoodrich.Parkview
                 try { scene.Camp = Listed(path, "camp:"); }
                 catch { /* nobody lives in a camp */ }
 
+                try { scene.Jobs = Jobs(path); }
+                catch { /* everybody has the one place */ }
+
+                try { scene.Glass = Listed(path, "glass:"); }
+                catch { /* the glass stays a picture of glass */ }
+
                 int peds = 0, props = 0, cars = 0;
 
                 foreach (var one in items)
@@ -1514,6 +1526,19 @@ namespace Hoodrich.Parkview
                             scene.Paved.Add(item.Handle);
 
                             if (paved == Verdict.Up) continue;
+                        }
+                        // THE GLASS MADE SOLID, where the file asks. See Glaze.
+                        else if (!given && item != null && scene.Glass.Contains(item.Handle))
+                        {
+                            var glazed = Glaze(scene, made, item);
+
+                            if (glazed == Verdict.NotYet)
+                            {
+                                scene.Solid.Remove(made.Handle);
+                                continue;
+                            }
+
+                            if (glazed == Verdict.Up) continue;
                         }
                         else if (given && item != null && scene.Floors.ContainsKey(item.Handle))
                         {
@@ -2744,6 +2769,12 @@ namespace Hoodrich.Parkview
             public Spooner.Placed Bed;
             public bool Asleep;
 
+            /// <summary>His jobs -- his mark first -- which he is at, which he is walking to, and the corners left on the way. See Work.</summary>
+            public List<Job> JobList;
+            public int JobAt;
+            public int JobTo = -1;
+            public Queue<Vector3> Legs;
+
             /// <summary>Who he is talking to, while he is.</summary>
             public Life With;
 
@@ -2816,7 +2847,10 @@ namespace Hoodrich.Parkview
             ComingBack,
 
             /// <summary>Turning back round on his mark after NPC Mind let go of him. NextAt is when his idle comes back. See Back.</summary>
-            Turning
+            Turning,
+
+            /// <summary>Walking between his jobs, a corner at a time. Going is the next corner. See Work.</summary>
+            Shifting
         }
 
         private readonly List<Life> _lives = new List<Life>();
@@ -3684,6 +3718,24 @@ namespace Hoodrich.Parkview
                 return;
             }
 
+            // A MAN AT HIS OTHER JOB carries on at it where he stands, rather than walking home
+            // across the shop through the shelves. See Work.
+            if (l.JobAt > 0)
+            {
+                var jobs = JobsOf(l);
+
+                if (l.JobAt < jobs.Count && ped.Position.DistanceTo(jobs[l.JobAt].At) <= JobStay)
+                {
+                    AtJob(l, l.JobAt, now);
+                    return;
+                }
+
+                l.JobAt = 0;
+            }
+
+            l.JobTo = -1;
+            l.Legs = null;
+
             var most = l.Scene.RoamMost > 0f ? l.Scene.RoamMost : StrollMost;
 
             if (l.Roams && !l.Stays && ped.Position.DistanceTo(l.Item.At) <= most)
@@ -4352,6 +4404,25 @@ namespace Hoodrich.Parkview
                     l.NextAt = now + (_quiet && !l.Stays ? Dice.Next(StaggerMs) : Beat(l));
                     return true;
 
+                case Stage.Shifting:
+                    {
+                        // A corner at a time: on to the next when he reaches this one, or when
+                        // the leg has had its time -- and at his job when there are none left.
+                        var off = ped.Position - l.Going;
+                        off.Z = 0f;
+
+                        if (off.Length() > LegThere && now < l.NextAt) return true;
+
+                        if (l.Legs != null && l.Legs.Count > 0)
+                        {
+                            NextLeg(l, now);
+                            return true;
+                        }
+
+                        AtJob(l, l.JobTo, now);
+                        return true;
+                    }
+
                 case Stage.Leaving:
                     {
                         var far = ped.Position.DistanceTo(here);
@@ -4411,6 +4482,14 @@ namespace Hoodrich.Parkview
                 l.Turn++;
                 Doing(l.Scene, l.Who, l.Item, l.Turn);
                 l.NextAt = now + Beat(l);
+                return;
+            }
+
+            // A MAN WITH TWO JOBS works them: the one he is at, and now and then the walk to the
+            // other -- the young one in the corner shop, between the fruit and the shelves. See Work.
+            if (l.Scene.Jobs.ContainsKey(l.Item.Handle))
+            {
+                Work(l, now, roll);
                 return;
             }
 
@@ -4552,8 +4631,9 @@ namespace Hoodrich.Parkview
                 // Not a man NPC Mind has: turning him to somebody else would take him off it.
                 if (o.TakenAt != 0) continue;
 
-                // Nor one sat down or lying in his camp, or on his way to: a chat stands him up.
-                if (o.Asleep || o.Seat != null || o.Bed != null) continue;
+                // Nor one sat down or lying in his camp, or on his way to, or at work: a chat
+                // stands him up, and puts a man at his other job back on his mark after it.
+                if (o.Asleep || o.Seat != null || o.Bed != null || o.Scene.Jobs.ContainsKey(o.Item.Handle)) continue;
                 if (o.Who == null || !o.Who.Exists() || !o.Who.IsAlive) continue;
 
                 // ON THE SAME FLOOR. Six metres reaches from a balcony to the ground under it,
@@ -4704,6 +4784,345 @@ namespace Hoodrich.Parkview
 
             return "WORLD_HUMAN_BUM_STANDING";
         }
+
+        // ==================================================================
+        // Two jobs
+        // ==================================================================
+
+        /// <summary>One place a man works: where, which way he faces, the corners of the walk in from his mark, and what he does there.</summary>
+        private sealed class Job
+        {
+            public Vector3 At;
+            public float Heading;
+            public readonly List<Vector3> Via = new List<Vector3>();
+            public string[] Idles = new string[0];
+        }
+
+        /// <summary>
+        /// A second place of work for a man -- in the Note, "jobs: 610923 = x, y, z, heading via
+        /// x, y = idle, idle; ..." -- where it is, which way he faces there, the corners of the
+        /// walk to it from his mark (none, or any number, each "via x, y"), and what he does
+        /// there: scenarios or dict/clip pairs, the same as idles:. His mark is his first job,
+        /// with his idles: list. See Work.
+        /// </summary>
+        private static Dictionary<int, List<Job>> Jobs(string path)
+        {
+            var jobs = new Dictionary<int, List<Job>>();
+
+            foreach (var line in Clauses(path))
+            {
+                if (!line.StartsWith("jobs:", StringComparison.OrdinalIgnoreCase)) continue;
+
+                foreach (var one in line.Substring(5).Split(';'))
+                {
+                    var parts = one.Split('=');
+                    if (parts.Length != 3) continue;
+
+                    int handle;
+                    if (!int.TryParse(parts[0].Trim(), out handle)) continue;
+
+                    var legs = parts[1].Split(new[] { " via " }, StringSplitOptions.RemoveEmptyEntries);
+                    var place = Numbers(legs[0]);
+                    if (place.Count < 4) continue;
+
+                    var job = new Job { At = new Vector3(place[0], place[1], place[2]), Heading = place[3] };
+
+                    for (var i = 1; i < legs.Length; i++)
+                    {
+                        var corner = Numbers(legs[i]);
+                        if (corner.Count >= 2) job.Via.Add(new Vector3(corner[0], corner[1], job.At.Z));
+                    }
+
+                    var idles = new List<string>();
+
+                    foreach (var raw in parts[2].Split(','))
+                    {
+                        var entry = raw.Trim();
+                        if (entry.Length > 0) idles.Add(entry);
+                    }
+
+                    if (idles.Count == 0) continue;
+                    job.Idles = idles.ToArray();
+
+                    List<Job> list;
+                    if (!jobs.TryGetValue(handle, out list)) jobs[handle] = list = new List<Job>();
+                    list.Add(job);
+                }
+            }
+
+            return jobs;
+        }
+
+        private static List<float> Numbers(string text)
+        {
+            var list = new List<float>();
+
+            foreach (var raw in text.Split(','))
+            {
+                float f;
+                if (float.TryParse(raw.Trim(), System.Globalization.NumberStyles.Float,
+                                   System.Globalization.CultureInfo.InvariantCulture, out f)) list.Add(f);
+            }
+
+            return list;
+        }
+
+        /// <summary>His jobs, his mark first with his own idles, worked out once.</summary>
+        private List<Job> JobsOf(Life l)
+        {
+            if (l.JobList != null) return l.JobList;
+
+            string[] own;
+            l.Scene.Idles.TryGetValue(l.Item.Handle, out own);
+
+            var list = new List<Job> { new Job { At = l.Item.At, Heading = l.Item.Yaw, Idles = own ?? new string[0] } };
+
+            List<Job> more;
+            if (l.Scene.Jobs.TryGetValue(l.Item.Handle, out more)) list.AddRange(more);
+
+            l.JobList = list;
+            return list;
+        }
+
+        /// <summary>
+        /// A beat for a man with two jobs: now and then the walk to the other, otherwise the next
+        /// thing at this one. Michael put the young one in the corner shop on 2026-09-26 bent over
+        /// the fruit at one end and stocking the shelves at the other, and asked for him to "walk
+        /// between the two jobs". Never a chat: see Chat.
+        /// </summary>
+        private void Work(Life l, int now, int roll)
+        {
+            var jobs = JobsOf(l);
+
+            if (jobs.Count > 1 && roll < WorkMoveChance)
+            {
+                var next = (l.JobAt + 1 + Dice.Next(jobs.Count - 1)) % jobs.Count;
+                Shift(l, jobs, next, now);
+                return;
+            }
+
+            AtJob(l, l.JobAt, now);
+        }
+
+        /// <summary>
+        /// Off to another job, in straight lines -- the shop floor is props, and a prop floor has
+        /// no navmesh -- out of where he is by its own corners backwards, and in to the next by
+        /// its corners forwards. See the Shifting stage.
+        /// </summary>
+        private void Shift(Life l, List<Job> jobs, int next, int now)
+        {
+            var legs = new List<Vector3>();
+
+            var from = jobs[l.JobAt];
+            for (var i = from.Via.Count - 1; i >= 0; i--) legs.Add(from.Via[i]);
+
+            var to = jobs[next];
+            legs.AddRange(to.Via);
+            legs.Add(to.At);
+
+            Loose(l);
+            l.Legs = new Queue<Vector3>(legs);
+            l.JobTo = next;
+            l.State = Stage.Shifting;
+
+            NextLeg(l, now);
+        }
+
+        private void NextLeg(Life l, int now)
+        {
+            var at = l.Legs.Dequeue();
+            var ped = l.Who;
+
+            var heading = l.Legs.Count == 0
+                ? JobsOf(l)[l.JobTo].Heading
+                : Function.Call<float>(Hash.GET_HEADING_FROM_VECTOR_2D, at.X - ped.Position.X, at.Y - ped.Position.Y);
+
+            GoStraight(ped, at, heading, LegMs);
+
+            l.Going = at;
+            l.NextAt = now + LegMs;
+        }
+
+        /// <summary>At a job: facing its way, doing the next thing on its list. His mark is his idles:, the same as anybody.</summary>
+        private void AtJob(Life l, int index, int now)
+        {
+            var ped = l.Who;
+            var jobs = JobsOf(l);
+
+            if (index < 0 || index >= jobs.Count) index = 0;
+
+            var job = jobs[index];
+
+            l.JobAt = index;
+            l.JobTo = -1;
+            l.Legs = null;
+            l.State = Stage.Marked;
+            l.Turn++;
+
+            try
+            {
+                if (index == 0 || job.Idles.Length == 0)
+                {
+                    Doing(l.Scene, ped, l.Item, l.Turn);
+                }
+                else
+                {
+                    Function.Call(Hash.CLEAR_PED_TASKS_IMMEDIATELY, ped.Handle);
+
+                    var entry = job.Idles[(Steady(job.At) + l.Turn) % job.Idles.Length];
+                    var slash = entry.IndexOf('/');
+
+                    if (slash > 0) Give(ped, entry.Substring(0, slash), entry.Substring(slash + 1));
+                    else Scenario(ped, entry);
+                }
+
+                Function.Call(Hash.SET_ENTITY_HEADING, ped.Handle, job.Heading);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Scenery: a job would not start: " + ex.Message);
+            }
+
+            l.NextAt = now + Between(JobLeastMs, JobMostMs);
+        }
+
+        /// <summary>How often a beat is the walk to the other job, how long a stint at one lasts, and the walk's tolerances.</summary>
+        private const int WorkMoveChance = 45;
+        private const int JobLeastMs = 25000;
+        private const int JobMostMs = 70000;
+        private const float LegThere = 0.45f;
+        private const int LegMs = 9000;
+        private const float JobStay = 2f;
+
+        // ==================================================================
+        // Glass
+        // ==================================================================
+
+        /// <summary>
+        /// A pane of glass made solid -- "glass:" in the Note.
+        ///
+        /// A PANE IS A PICTURE OF GLASS. The corner shop's windows at Parkview are
+        /// v_24_wdr_mesh_windows, window meshes out of an interior, and a mesh made to sit in a
+        /// wall the interior already has carries no collision of its own: the log says so for
+        /// every one of them, and Michael walked through them on 2026-09-26. So each gets the
+        /// floors' blocks stood on end -- the narrowest Bikers building block, turned upright,
+        /// as many as its width needs, centred on the pane and turned with it, invisible,
+        /// frozen and solid. Centred by the game's own offsets rather than by arithmetic on a
+        /// rotation order, because a box stood on end can go either way up. A block per pane,
+        /// so the gap the door stands in stays open.
+        /// </summary>
+        private static Verdict Glaze(Scene scene, Entity pane, Spooner.Placed item)
+        {
+            Tile best = null;
+            var blo = Vector3.Zero;
+            var bhi = Vector3.Zero;
+
+            foreach (var name in TileNames)
+            {
+                var model = new Model(name);
+                if (!model.IsValid) continue;
+                if (!Models.Ready(model)) return Verdict.NotYet;
+
+                Vector3 lo, hi;
+                if (!Dimensions(model, out lo, out hi)) continue;
+
+                var t = new Tile { Model = model, W = hi.X - lo.X, L = hi.Y - lo.Y, Top = hi.Z };
+                if (best != null && t.W * t.L >= best.W * best.L) continue;
+
+                best = t;
+                blo = lo;
+                bhi = hi;
+            }
+
+            if (best == null)
+            {
+                Log.Info("Scenery: no wall in " + Say(item) + " in " + scene.Name + " -- none of the block models are on this install.");
+                return Verdict.No;
+            }
+
+            Vector3 min, max;
+
+            try
+            {
+                var pl = new OutputArgument();
+                var ph = new OutputArgument();
+                Function.Call(Hash.GET_MODEL_DIMENSIONS, pane.Model.Hash, pl, ph);
+                min = pl.GetResult<Vector3>();
+                max = ph.GetResult<Vector3>();
+            }
+            catch
+            {
+                return Verdict.No;
+            }
+
+            var alongX = max.X - min.X >= max.Y - min.Y;
+            var run = alongX ? max.X - min.X : max.Y - min.Y;
+
+            if (run < 0.3f)
+            {
+                Log.Info("Scenery: no wall in " + Say(item) + " in " + scene.Name + " -- it is " + run.ToString("0.00") + " m across.");
+                return Verdict.No;
+            }
+
+            var along = alongX ? pane.RightVector : pane.ForwardVector;
+            along.Z = 0f;
+            along.Normalize();
+
+            var centre = pane.GetOffsetPosition(new Vector3((min.X + max.X) * 0.5f, (min.Y + max.Y) * 0.5f, (min.Z + max.Z) * 0.5f));
+            var middle = new Vector3((blo.X + bhi.X) * 0.5f, (blo.Y + bhi.Y) * 0.5f, (blo.Z + bhi.Z) * 0.5f);
+            var yaw = alongX ? item.Yaw : item.Yaw + 90f;
+            var many = Math.Max(1, (int)Math.Ceiling((run - 0.2f) / best.W));
+            var step = run / many;
+            var made = 0;
+
+            for (var i = 0; i < many; i++)
+            {
+                var at = centre + along * ((i - (many - 1) * 0.5f) * step);
+
+                try
+                {
+                    var block = World.CreateProp(best.Model, at, false, false);
+                    if (block == null || !block.Exists()) continue;
+
+                    Function.Call(Hash.SET_ENTITY_ROTATION, block.Handle, 90f, 0f, yaw, 2, true);
+
+                    // Its middle onto the pane's middle, whichever way up the box went.
+                    block.PositionNoOffset = block.Position + (at - block.GetOffsetPosition(middle));
+
+                    Function.Call(Hash.SET_ENTITY_COLLISION, block.Handle, true, true);
+                    Function.Call(Hash.FREEZE_ENTITY_POSITION, block.Handle, true);
+                    Function.Call(Hash.SET_ENTITY_DYNAMIC, block.Handle, false);
+                    Function.Call(Hash.SET_ENTITY_VISIBLE, block.Handle, false, false);
+                    Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, block.Handle, true, true);
+
+                    scene.Up.Add(block);
+                    scene.Solid.Add(block.Handle);
+                    _tiles.Add(block.Handle);
+                    made++;
+
+                    if (!_glazeSaid)
+                    {
+                        _glazeSaid = true;
+                        var length = block.ForwardVector;
+
+                        Log.Info("Scenery: glass is walled with " + Names.Say(best.Model.Hash) + ", " + best.W.ToString("0.0") +
+                                 " m wide and " + (bhi.Z - blo.Z).ToString("0.00") + " m thick, stood on end" +
+                                 (Math.Abs(length.Z) < 0.9f ? " -- and it is NOT upright (its length points " + length + ")." : "."));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("A glass wall would not stand: " + ex.Message);
+                }
+            }
+
+            Log.Info("Scenery: " + Say(item) + " in " + scene.Name + " is solid now -- " + made + " block(s) across its " +
+                     run.ToString("0.0") + " m.");
+
+            return made > 0 ? Verdict.Up : Verdict.No;
+        }
+
+        private static bool _glazeSaid;
 
         // ==================================================================
         // A camp
