@@ -45,76 +45,51 @@ namespace Hoodrich.Locations
         private enum Mode { Off, Starting, Holding, Charging, Shooting, Flying, Result }
 
         /// <summary>
-        /// The court's two ends: Michael's HUD readings at the top of each key, and the way he faced
-        /// the hoop from there. Either one starts a game; in the game, turn to the other hoop and it
-        /// is the one you shoot at.
+        /// WHERE A GAME STARTS: one ring on the court. There were two, one at the top of each key,
+        /// and Michael asked for the one on 2026-09-26 -- set where he stands with the developer
+        /// tools (D-pad down, holding the ball) and read from the ini over this, which is the
+        /// middle of the court until he has.
         /// </summary>
-        private static readonly Vector3[] Spots =
-        {
-            new Vector3(-201.428f, -1508.783f, 31.631f),
-            new Vector3(-209.672f, -1518.733f, 31.616f)
-        };
+        private static readonly Vector3 StartAt = new Vector3(-205.550f, -1513.758f, 31.624f);
 
-        private static readonly float[] SpotFacing = { 316.079f, 136.238f };
+        private Vector3 _start;
+        private bool _startRead;
 
         private const string BallName = "prop_bskball_01";
 
         private const string HoldDict = "anim@sports@ballgame@handball@";
         private const string HoldClip = "ball_idle";
-        /// <summary>
-        /// One way to shoot: the clip, on the upper body; how far through it the ball goes; and how
-        /// high over him the ball is when it does.
-        /// </summary>
-        private sealed class Style
-        {
-            public string Name;
-            public string Dict;
-            public string Clip;
-            public float Release;
-            public float Up;
-
-            /// <summary>How much faster than the game plays it.</summary>
-            public float Speed = 1f;
-
-            /// <summary>
-            /// Where it is stopped, once the ball has gone: Raise the Roof pumps the arms twice, and
-            /// a shot is one push. Nought lets it play out.
-            /// </summary>
-            public float Cut;
-        }
 
         /// <summary>
-        /// THE WAYS TO SHOOT. The set shot is the one Michael kept, and the only one a player gets;
-        /// the other two stay for the developer tools to try, D-pad left on the court. All of them
-        /// are the arms only: the two-hand jumper went with the jump, which Michael had taken off.
+        /// THE SHOT: both hands pushing the ball up from the chest -- the up half of Raise the Roof,
+        /// played 1.6 times as fast, the ball gone 30% of the way through it and the clip stopped at
+        /// 46%, after the one push. Michael kept it over two grenade throws and a jump, and the
+        /// picker that tried them went for the release.
         /// </summary>
-        private static readonly Style[] Styles =
-        {
-            new Style { Name = "Set shot", Dict = "anim@mp_player_intupperraise_the_roof", Clip = "enter", Release = 0.30f, Up = 1.2f, Speed = 1.6f, Cut = 0.46f },
-            new Style { Name = "Jump shot", Dict = "weapons@projectile@", Clip = "throw_h_fb_stand", Release = 0.36f, Up = 1.5f, Speed = 1.3f },
-            new Style { Name = "Push shot", Dict = "weapons@projectile@", Clip = "throw_m_fb_stand", Release = 0.34f, Up = 1.2f, Speed = 1.3f }
-        };
+        private const string ShotDict = "anim@mp_player_intupperraise_the_roof";
+        private const string ShotAnim = "enter";
+        private const float ShotRelease = 0.30f;
+        private const float ShotSpeed = 1.6f;
+        private const float ShotCut = 0.46f;
 
-        /// <summary>Every clip set a game might ask for, all let go at the end. See Wanted.</summary>
-        private static readonly string[] Dicts = { HoldDict, "anim@mp_player_intupperraise_the_roof", "weapons@projectile@" };
+        /// <summary>How high over him the ball goes, for a line drawn before the ball is in his hands.</summary>
+        private const float ShotUp = 1.2f;
 
-        private int _style;
-        private int _shotStyle;
-        private bool _styleRead;
+        /// <summary>Every clip set a game asks for, and lets go of at the end.</summary>
+        private static readonly string[] Dicts = { HoldDict, ShotDict };
 
-        private Style Shot => Styles[_style];
-
-        /// <summary>How near the spot to be offered a game, and how far the ring is drawn from.</summary>
+        /// <summary>How near the start to be offered a game, and how far its ring is drawn from.</summary>
         private const float OfferReach = 1.3f;
         private const float RingReach = 30f;
 
-        /// <summary>How far from both hoops before the game is put away.</summary>
+        /// <summary>How far from every hoop before the game is put away.</summary>
         private const float CourtReach = 26f;
 
         /// <summary>
-        /// THE RINGS: for each hoop, in the order of Spots, the middle of its rim and how far from
-        /// there to the edge of the ring the ball has to come down through. Placed by hand on the
-        /// court (see RingPlacing); a placing in the ini is read over these.
+        /// THE RINGS, one for each hoop on the court: the middle of its rim, and how far from there
+        /// to the edge of the ring the ball has to come down through. Every one counts, wherever
+        /// the game was started. Placed by hand on the court (see RingPlacing); a placing in the
+        /// ini is read over these, and a hoop added on the court (D-pad left) is Ring3 and on.
         ///
         /// Hoop 2's is Michael's own, placed on 2026-09-26: 51 cm across, 3.09 m up, and 5.2 m
         /// from the spot -- a metre further out than a regulation court puts it, which is where the
@@ -186,9 +161,12 @@ namespace Hoodrich.Locations
         private int _at;
         private Prop _ball;
 
-        /// <summary>The two hoops' rings as this game has them, and the hoop he is shooting at: the one he looks at.</summary>
-        private readonly Vector3[] _ring = new Vector3[2];
-        private readonly float[] _ringSize = new float[2];
+        /// <summary>Every hoop's ring as this game has them, and the hoop he is shooting at: the one he looks at.</summary>
+        private readonly List<Vector3> _ring = new List<Vector3>();
+        private readonly List<float> _ringSize = new List<float>();
+
+        /// <summary>The most rings a court is read for: Ring1 to Ring8.</summary>
+        private const int MostRings = 8;
         private int _hoop;
 
         private Vector3 Rim => _ring[_hoop];
@@ -230,6 +208,7 @@ namespace Hoodrich.Locations
         private float _ringWasSize;
         private float _ringFloor;
         private bool _ringWait;
+        private bool _ringNew;
 
         private int _score;
         private int _streak;
@@ -300,22 +279,43 @@ namespace Hoodrich.Locations
 
         private void Offer(Ped me)
         {
-            var at = -1;
-
-            for (var i = 0; i < Spots.Length; i++)
+            if (!_startRead)
             {
-                var d = me.Position.DistanceTo(Spots[i]);
-                if (d > RingReach) continue;
-
-                Ring(Spots[i]);
-                if (d <= OfferReach) at = i;
+                _startRead = true;
+                _start = ReadStart();
             }
 
-            if (at < 0 || me.IsInVehicle() || Mind.Busy || InputGuard.Busy) return;
+            var d = me.Position.DistanceTo(_start);
+            if (d > RingReach) return;
+
+            Ring(_start);
+
+            if (d > OfferReach || me.IsInVehicle() || Mind.Busy || InputGuard.Busy) return;
 
             Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to shoot hoops.");
 
-            if (Game.IsControlJustPressed(Control.Context)) Start(me, at);
+            if (Game.IsControlJustPressed(Control.Context)) Start(me);
+        }
+
+        /// <summary>Where a game starts: his own spot from the ini, or the middle of the court.</summary>
+        private static Vector3 ReadStart()
+        {
+            try
+            {
+                var parts = Settings.Read("Hoops", "Start", "").Split(',');
+
+                float x, y, z;
+                if (parts.Length == 3 &&
+                    float.TryParse(parts[0].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out x) &&
+                    float.TryParse(parts[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out y) &&
+                    float.TryParse(parts[2].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out z))
+                {
+                    return new Vector3(x, y, z);
+                }
+            }
+            catch { }
+
+            return StartAt;
         }
 
         private static void Ring(Vector3 spot)
@@ -325,7 +325,7 @@ namespace Hoodrich.Locations
                 Function.Call(Hash.DRAW_MARKER, 1, spot.X, spot.Y, spot.Z - 1.0f,
                               0f, 0f, 0f, 0f, 0f, 0f,
                               1.1f, 1.1f, 0.35f,
-                              240, 160, 60, 105,
+                              240, 160, 60, 45,
                               false, false, 2, false, 0, 0, false);
             }
             catch
@@ -334,7 +334,7 @@ namespace Hoodrich.Locations
             }
         }
 
-        private void Start(Ped me, int spot)
+        private void Start(Ped me)
         {
             InputGuard.Swallow();
 
@@ -347,21 +347,15 @@ namespace Hoodrich.Locations
             }
             catch { }
 
+            // Every hoop on the court, and the one he is looking at to start with.
             LoadRings();
-            _hoop = spot;
-
-            // The other ways to shoot are the builder's; everybody else shoots the set shot.
-            if (!_dev) _style = 0;
-            else if (!_styleRead)
-            {
-                _styleRead = true;
-                _style = ReadStyle();
-            }
+            _hoop = 0;
+            _hoop = HoopToward(me.Position, Deg360(GameplayCamera.Rotation.Z));
 
             // Asked for now and let go at the end: the only things this ever loads.
             try
             {
-                foreach (var d in Wanted()) Function.Call(Hash.REQUEST_ANIM_DICT, d);
+                foreach (var d in Dicts) Function.Call(Hash.REQUEST_ANIM_DICT, d);
                 Models.Ready(new Model(BallName));
             }
             catch { /* asked again while it waits */ }
@@ -373,24 +367,7 @@ namespace Hoodrich.Locations
             _mode = Mode.Starting;
             _at = Game.GameTime;
 
-            Log.Info("Hoops: on the court at ring " + (spot + 1) + ", its hoop's ring at " + _ring[spot] + ".");
-        }
-
-        /// <summary>The clip sets this game needs: the idle and the set shot's -- every one, for somebody trying the others.</summary>
-        private IEnumerable<string> Wanted()
-        {
-            yield return HoldDict;
-
-            if (!_dev)
-            {
-                yield return Styles[0].Dict;
-                yield break;
-            }
-
-            foreach (var d in Dicts)
-            {
-                if (d != HoldDict) yield return d;
-            }
+            Log.Info("Hoops: a game on, " + _ring.Count + " hoop(s) on the court.");
         }
 
         private void Starting(Ped me, int now)
@@ -400,7 +377,7 @@ namespace Hoodrich.Locations
             try
             {
                 ready = Models.Ready(new Model(BallName));
-                foreach (var d in Wanted()) ready = ready && Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, d);
+                foreach (var d in Dicts) ready = ready && Function.Call<bool>(Hash.HAS_ANIM_DICT_LOADED, d);
             }
             catch { }
 
@@ -547,22 +524,26 @@ namespace Hoodrich.Locations
             // The hoop he is looking at is the one he is shooting at.
             _hoop = HoopToward(me.Position, Deg360(GameplayCamera.Rotation.Z));
 
-            // The builder's tools: the hoop's ring, and the other ways to shoot.
+            // The builder's tools: the near hoop's ring, a ring for a hoop not yet on the list, and
+            // where a game starts.
             if (_dev)
             {
                 if (JustPressed(Control.PhoneRight))
                 {
-                    StartRing(me);
+                    StartRing(me, NearestHoop(me.Position), false);
                     return;
                 }
 
                 if (JustPressed(Control.PhoneLeft))
                 {
-                    _style = (_style + 1) % Styles.Length;
-                    SaveStyle();
-                    Sound("NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET");
-                    Banner(Shot.Name.ToUpperInvariant(), "D-pad left for another.", Color.White);
-                    _bannerUntil = Game.GameTime + 1100;
+                    AddRing(me);
+                    return;
+                }
+
+                if (JustPressed(Control.PhoneDown))
+                {
+                    StartHere(me);
+                    return;
                 }
             }
 
@@ -615,7 +596,7 @@ namespace Hoodrich.Locations
             }
             catch { }
 
-            return me.Position + Vector3.WorldUp * Shot.Up + Dir(aim) * 0.25f;
+            return me.Position + Vector3.WorldUp * ShotUp + Dir(aim) * 0.25f;
         }
 
         /// <summary>
@@ -704,7 +685,7 @@ namespace Hoodrich.Locations
             var best = _hoop;
             var off = float.MaxValue;
 
-            for (var i = 0; i < _ring.Length; i++)
+            for (var i = 0; i < _ring.Count; i++)
             {
                 var d = Math.Abs(AngleDiff(heading, Toward(from, _ring[i])));
                 if (d >= off) continue;
@@ -729,7 +710,7 @@ namespace Hoodrich.Locations
         {
             var best = 0;
 
-            for (var i = 1; i < _ring.Length; i++)
+            for (var i = 1; i < _ring.Count; i++)
             {
                 if (Flat(_ring[i] - at) < Flat(_ring[best] - at)) best = i;
             }
@@ -767,14 +748,11 @@ namespace Hoodrich.Locations
 
             _shotAt = me.Position;
 
-            _shotStyle = _style;
-            var s = Styles[_shotStyle];
-
             try
             {
                 // The arms only, on the upper body: no jump under them. Michael had the hop in and
                 // out again on 2026-09-26 -- "no jump on the animation just do the hands".
-                Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, s.Dict, s.Clip, 8f, -8f, -1, 48, 0f, false, false, false);
+                Function.Call(Hash.TASK_PLAY_ANIM, me.Handle, ShotDict, ShotAnim, 8f, -8f, -1, 48, 0f, false, false, false);
                 _clipLive = true;
             }
             catch { }
@@ -792,13 +770,12 @@ namespace Hoodrich.Locations
 
             try
             {
-                var s = Styles[_shotStyle];
-                if (Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, me.Handle, s.Dict, s.Clip, 3))
-                    phase = Function.Call<float>(Hash.GET_ENTITY_ANIM_CURRENT_TIME, me.Handle, s.Dict, s.Clip);
+                if (Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, me.Handle, ShotDict, ShotAnim, 3))
+                    phase = Function.Call<float>(Hash.GET_ENTITY_ANIM_CURRENT_TIME, me.Handle, ShotDict, ShotAnim);
             }
             catch { }
 
-            if (phase < Styles[_shotStyle].Release && now - _at < ReleaseMs) return;
+            if (phase < ShotRelease && now - _at < ReleaseMs) return;
 
             Release(me);
         }
@@ -880,7 +857,7 @@ namespace Hoodrich.Locations
             }
             catch { }
 
-            for (var i = 0; i < _ring.Length; i++)
+            for (var i = 0; i < _ring.Count; i++)
             {
                 var r = _ring[i];
                 if (!(_prev.Z > r.Z && pos.Z <= r.Z)) continue;
@@ -1016,31 +993,53 @@ namespace Hoodrich.Locations
             return true;
         }
 
-        /// <summary>The rings where they were placed: Michael's own from the ini, and RingAt for everybody else.</summary>
+        /// <summary>
+        /// The rings where they were placed: RingAt for everybody, Michael's own placings from the ini
+        /// over them, and after them any hoop he added on the court -- Ring3 and on, up to the first
+        /// one missing.
+        /// </summary>
         private void LoadRings()
         {
-            for (var i = 0; i < _ring.Length; i++)
+            _ring.Clear();
+            _ringSize.Clear();
+
+            IniFile ini = null;
+
+            try { ini = IniFile.Load(Paths.Ini); }
+            catch { }
+
+            for (var i = 0; i < MostRings; i++)
             {
-                _ring[i] = RingAt[i];
-                _ringSize[i] = RingWide[i];
+                var have = i < RingAt.Length;
+                var at = have ? RingAt[i] : Vector3.Zero;
+                var size = have ? RingWide[i] : 0.23f;
 
                 try
                 {
-                    var parts = Settings.Read("Hoops", "Ring" + (i + 1), "").Split(',');
-                    if (parts.Length != 4) continue;
+                    var parts = (ini == null ? "" : ini.GetString("Hoops", "Ring" + (i + 1), "")).Split(',');
 
-                    var f = new float[4];
-                    var ok = true;
+                    if (parts.Length == 4)
+                    {
+                        var f = new float[4];
+                        var ok = true;
 
-                    for (var k = 0; k < 4 && ok; k++)
-                        ok = float.TryParse(parts[k].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out f[k]);
+                        for (var k = 0; k < 4 && ok; k++)
+                            ok = float.TryParse(parts[k].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out f[k]);
 
-                    if (!ok) continue;
-
-                    _ring[i] = new Vector3(f[0], f[1], f[2]);
-                    _ringSize[i] = Clamp(f[3], 0.08f, 1.2f);
+                        if (ok)
+                        {
+                            at = new Vector3(f[0], f[1], f[2]);
+                            size = Clamp(f[3], 0.08f, 1.2f);
+                            have = true;
+                        }
+                    }
                 }
                 catch { }
+
+                if (!have) break;
+
+                _ring.Add(at);
+                _ringSize.Add(size);
             }
         }
 
@@ -1054,17 +1053,55 @@ namespace Hoodrich.Locations
         /// at, and under hoop 1 looking up the court that was hoop 2, twenty metres off: the ring
         /// he was moving was out of sight, and the one beside him never moved (2026-09-26).
         /// </summary>
-        private void StartRing(Ped me)
+        private void StartRing(Ped me, int who, bool fresh)
         {
             _ringPlacing = true;
-            _ringWho = NearestHoop(me.Position);
-            _ringWas = _ring[_ringWho];
-            _ringWasSize = _ringSize[_ringWho];
+            _ringWho = who;
+            _ringNew = fresh;
+            _ringWas = _ring[who];
+            _ringWasSize = _ringSize[who];
             _ringWait = true;
 
             float ground;
             _ringFloor = Ground.Probe(me.Position + Vector3.WorldUp * 0.5f, out ground) ? ground : me.Position.Z - 1f;
 
+            Sound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
+        }
+
+        /// <summary>
+        /// A NEW HOOP'S RING, for a hoop on the court the list does not have yet: a step in front of
+        /// him at a rim's height, handed straight to the placer. B takes it away again. Michael asked
+        /// for every hoop on the court to count, on 2026-09-26.
+        /// </summary>
+        private void AddRing(Ped me)
+        {
+            if (_ring.Count >= MostRings)
+            {
+                Banner("NO MORE HOOPS", MostRings + " is the most a court is read for.", Red);
+                return;
+            }
+
+            float ground;
+            var floor = Ground.Probe(me.Position + Vector3.WorldUp * 0.5f, out ground) ? ground : me.Position.Z - 1f;
+            var at = me.Position + Dir(Deg360(GameplayCamera.Rotation.Z)) * 1.5f;
+
+            _ring.Add(new Vector3(at.X, at.Y, floor + 3.05f));
+            _ringSize.Add(0.23f);
+
+            StartRing(me, _ring.Count - 1, true);
+        }
+
+        /// <summary>The one ring a game starts from, moved to where he is standing, and kept in the ini.</summary>
+        private void StartHere(Ped me)
+        {
+            _start = me.Position;
+            _startRead = true;
+
+            var text = string.Format(CultureInfo.InvariantCulture, "{0:0.000},{1:0.000},{2:0.000}", _start.X, _start.Y, _start.Z);
+            Settings.Put("Hoops", "Start", text);
+            Log.Info("Hoops: a game starts here now -- [Hoops] Start=" + text + ".");
+
+            Banner("THE GAME STARTS HERE", "Put the ball down and the ring is here.", Green);
             Sound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
         }
 
@@ -1090,6 +1127,8 @@ namespace Hoodrich.Locations
                 Log.Info("Hoops: hoop " + (i + 1) + "'s ring placed -- [Hoops] Ring" + (i + 1) + "=" + text +
                          " (x, y, z, and from the middle to the edge).");
 
+                _ringNew = false;
+
                 Sound("SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET");
                 return;
             }
@@ -1097,8 +1136,20 @@ namespace Hoodrich.Locations
             if (JustPressed(Control.PhoneCancel))
             {
                 _ringPlacing = false;
-                _ring[i] = _ringWas;
-                _ringSize[i] = _ringWasSize;
+
+                if (_ringNew)
+                {
+                    // A new one, never kept: gone again.
+                    _ring.RemoveAt(i);
+                    _ringSize.RemoveAt(i);
+                    if (_hoop >= _ring.Count) _hoop = 0;
+                }
+                else
+                {
+                    _ring[i] = _ringWas;
+                    _ringSize[i] = _ringWasSize;
+                }
+
                 Sound("BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET");
                 return;
             }
@@ -1218,7 +1269,8 @@ namespace Hoodrich.Locations
                     Den.Buttons.Show(Control.Attack, "Hold to shoot",
                                      Control.PhoneCancel, "Put the ball down",
                                      Control.PhoneRight, "Place the near hoop",
-                                     Control.PhoneLeft, "Shot: " + Shot.Name);
+                                     Control.PhoneLeft, "Add a hoop",
+                                     Control.PhoneDown, "Start the game here");
                 else
                     Den.Buttons.Show(Control.Attack, "Hold to shoot",
                                      Control.PhoneCancel, "Put the ball down");
@@ -1278,8 +1330,8 @@ namespace Hoodrich.Locations
         }
 
         /// <summary>
-        /// The shot's clip on his arms: played at its style's pace, and for the set shot stopped once
-        /// the ball has gone and the arms have made their one push. Raise the Roof pumps twice.
+        /// The shot's clip on his arms: played at its pace, and stopped once the ball has gone and
+        /// the arms have made their one push. Raise the Roof pumps twice.
         /// </summary>
         private void ShotClip(Ped me)
         {
@@ -1287,20 +1339,18 @@ namespace Hoodrich.Locations
 
             try
             {
-                var s = Styles[_shotStyle];
-
-                if (!Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, me.Handle, s.Dict, s.Clip, 3))
+                if (!Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, me.Handle, ShotDict, ShotAnim, 3))
                 {
                     _clipLive = false;
                     return;
                 }
 
-                Function.Call(Hash.SET_ENTITY_ANIM_SPEED, me.Handle, s.Dict, s.Clip, s.Speed);
+                Function.Call(Hash.SET_ENTITY_ANIM_SPEED, me.Handle, ShotDict, ShotAnim, ShotSpeed);
 
-                if (s.Cut > 0f && _released &&
-                    Function.Call<float>(Hash.GET_ENTITY_ANIM_CURRENT_TIME, me.Handle, s.Dict, s.Clip) >= s.Cut)
+                if (_released &&
+                    Function.Call<float>(Hash.GET_ENTITY_ANIM_CURRENT_TIME, me.Handle, ShotDict, ShotAnim) >= ShotCut)
                 {
-                    Function.Call(Hash.STOP_ANIM_TASK, me.Handle, s.Dict, s.Clip, -3f);
+                    Function.Call(Hash.STOP_ANIM_TASK, me.Handle, ShotDict, ShotAnim, -3f);
                     _clipLive = false;
                 }
             }
@@ -1348,51 +1398,6 @@ namespace Hoodrich.Locations
             Function.Call(Hash.DRAW_POLY, p.X, p.Y, p.Z, q.X, q.Y, q.Z, r.X, r.Y, r.Z, (int)c.R, (int)c.G, (int)c.B, (int)c.A);
         }
 
-        // ---- the remembered shot ---------------------------------------------------------------
-
-        private static string StylePath => System.IO.Path.Combine(Paths.Writable, "hoops.txt");
-
-        private static int ReadStyle()
-        {
-            try
-            {
-                if (!System.IO.File.Exists(StylePath)) return 0;
-
-                foreach (var raw in System.IO.File.ReadAllLines(StylePath))
-                {
-                    var line = raw.Trim();
-                    if (!line.StartsWith("shot=", StringComparison.OrdinalIgnoreCase)) continue;
-
-                    var name = line.Substring(5).Trim();
-
-                    for (var i = 0; i < Styles.Length; i++)
-                    {
-                        if (string.Equals(Styles[i].Name, name, StringComparison.OrdinalIgnoreCase)) return i;
-                    }
-                }
-            }
-            catch
-            {
-                // The first one, then.
-            }
-
-            return 0;
-        }
-
-        private void SaveStyle()
-        {
-            try
-            {
-                System.IO.File.WriteAllText(StylePath, "# The way he shoots on the court. Written by the mod." + Environment.NewLine +
-                                                       "shot=" + Shot.Name + Environment.NewLine);
-                Log.Info("Hoops: shooting the " + Shot.Name + " now.");
-            }
-            catch
-            {
-                // It is only remembered for this game.
-            }
-        }
-
         /// <summary>The ring placer on screen: the ring, bright, and how high and how wide it is.</summary>
         private void RingScreen()
         {
@@ -1414,7 +1419,7 @@ namespace Hoodrich.Locations
         /// <summary>Both rings, for somebody with the developer tools: the one being placed bright, the other faint.</summary>
         private void Rings(int bright)
         {
-            for (var i = 0; i < _ring.Length; i++)
+            for (var i = 0; i < _ring.Count; i++)
             {
                 var ink = i == bright ? Color.FromArgb(255, 255, 200, 60) : Color.FromArgb(150, 255, 255, 255);
                 Circle(_ring[i], _ringSize[i], ink);
