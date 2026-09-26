@@ -124,6 +124,15 @@ namespace Hoodrich.Parkview
             public HashSet<int> Glass = new HashSet<int>();
 
             /// <summary>
+            /// A room you are put into, not a place you walk up to -- "indoors" in the Note. Its
+            /// people are stood straight on their marks when it is built, because walking in from
+            /// somewhere out of sight means nothing in a garage you have just been put inside,
+            /// and a man who the file says stays would never be put on a mark you can see. The
+            /// gambling den. They get their lives as ever once they are up.
+            /// </summary>
+            public bool Indoors;
+
+            /// <summary>
             /// Whether this one lives here rather than stands in it. ASKED IN ONE PLACE,
             /// because it is asked in three -- the life, the drunk walk and the unlocking --
             /// and three copies of a rule is two chances to get it wrong.
@@ -876,6 +885,9 @@ namespace Hoodrich.Parkview
                 try { scene.Glass = Listed(path, "glass:"); }
                 catch { /* the glass stays a picture of glass */ }
 
+                try { scene.Indoors = Clauses(path).Exists(c => c.StartsWith("indoors", StringComparison.OrdinalIgnoreCase)); }
+                catch { /* everybody walks in */ }
+
                 int peds = 0, props = 0, cars = 0;
 
                 foreach (var one in items)
@@ -1206,7 +1218,7 @@ namespace Hoodrich.Parkview
                 // fills none of it in: who roams, who walks drunk, and the number NPC Mind
                 // knows him by. It used to be left out for a man walking in, so a roamer who
                 // walked in was never a roamer.
-                if (item.What == Spooner.Kind.Ped && LifeOn)
+                if (item.What == Spooner.Kind.Ped && LifeOn && !scene.Indoors)
                 {
                     var stays = scene.Stays.Contains(item.Handle);
                     var camp = scene.Camp.Contains(item.Handle);

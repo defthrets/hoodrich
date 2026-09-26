@@ -46,14 +46,21 @@ namespace Hoodrich.Den
 
         private Entity _roulette;
         private Entity _blackjack;
+        private Entity _poker;
+        private Entity _jukebox;
         private readonly List<Entity> _slots = new List<Entity>();
 
         private Dealer _croupier;
         private Dealer _cardDealer;
+        private Dealer _pokerDealer;
 
         private Roulette _atRoulette;
         private Blackjack _atBlackjack;
+        private Poker _atPoker;
         private Slots _atSlot;
+
+        /// <summary>The script's own emitter is tied to the jukebox prop. See Tune.</summary>
+        private bool _linked;
 
         /// <summary>How far round the way in the furniture is looked for.</summary>
         private const float Reach = 40f;
@@ -89,7 +96,26 @@ namespace Hoodrich.Den
 
         private static readonly int[] RouletteModels =
         {
-            Game.GenerateHash("vw_prop_casino_roulette_01"), Game.GenerateHash("vw_prop_casino_roulette_01b")
+            Game.GenerateHash("vw_prop_casino_roulette_01"), Game.GenerateHash("vw_prop_casino_roulette_01b"),
+            Game.GenerateHash("ch_prop_casino_roulette_01a"), Game.GenerateHash("ch_prop_casino_roulette_01b")
+        };
+
+        /// <summary>The Diamond's three card poker tables, and the heist and island ones that look like them.</summary>
+        private static readonly int[] PokerModels =
+        {
+            Game.GenerateHash("vw_prop_casino_3cardpoker_01"), Game.GenerateHash("vw_prop_casino_3cardpoker_01b"),
+            Game.GenerateHash("ch_prop_casino_poker_01a"), Game.GenerateHash("ch_prop_casino_poker_01b"),
+            Game.GenerateHash("h4_prop_casino_3cardpoker_01a"), Game.GenerateHash("h4_prop_casino_3cardpoker_01b"),
+            Game.GenerateHash("h4_prop_casino_3cardpoker_01c"), Game.GenerateHash("h4_prop_casino_3cardpoker_01d"),
+            Game.GenerateHash("h4_prop_casino_3cardpoker_01e")
+        };
+
+        /// <summary>Anything in the room that is a jukebox. See Tune.</summary>
+        private static readonly int[] JukeboxModels =
+        {
+            Game.GenerateHash("bkr_prop_clubhouse_jukebox_01a"), Game.GenerateHash("bkr_prop_clubhouse_jukebox_01b"),
+            Game.GenerateHash("bkr_prop_clubhouse_jukebox_02a"), Game.GenerateHash("prop_jukebox_01"),
+            Game.GenerateHash("prop_jukebox_02")
         };
 
         private static readonly int[] BlackjackModels =
@@ -102,7 +128,9 @@ namespace Hoodrich.Den
             Game.GenerateHash("vw_prop_casino_slot_01a"), Game.GenerateHash("vw_prop_casino_slot_02a"),
             Game.GenerateHash("vw_prop_casino_slot_03a"), Game.GenerateHash("vw_prop_casino_slot_04a"),
             Game.GenerateHash("vw_prop_casino_slot_05a"), Game.GenerateHash("vw_prop_casino_slot_06a"),
-            Game.GenerateHash("vw_prop_casino_slot_07a"), Game.GenerateHash("vw_prop_casino_slot_08a")
+            Game.GenerateHash("vw_prop_casino_slot_07a"), Game.GenerateHash("vw_prop_casino_slot_08a"),
+            Game.GenerateHash("ch_prop_casino_slot_04a"), Game.GenerateHash("ch_prop_casino_slot_06a"),
+            Game.GenerateHash("ch_prop_casino_slot_08a")
         };
 
         private static readonly string[] RouletteIdles =
@@ -112,6 +140,16 @@ namespace Hoodrich.Den
 
         private static readonly string[] BlackjackIdles = { "idle", "dealer_idle" };
 
+        private static readonly string[] PokerIdles = { "female_deck_idle" };
+
+        /// <summary>Who deals where: strippers, since 2026-09-26. See Dealer.</summary>
+        private const string RouletteDealerModel = "s_f_y_stripper_01";
+        private const string PokerDealerModel = "s_f_y_stripper_02";
+        private const string BlackjackDealerModel = "s_f_y_stripperlite";
+
+        /// <summary>The emitter the game keeps for a radio a script has put down. See Tune.</summary>
+        private const string PropEmitter = "SE_Script_Placed_Prop_Emitter_Boombox";
+
         public Floor(Settings cfg, GangRegistry gangs, InteriorDoor door)
         {
             _cfg = cfg;
@@ -120,7 +158,7 @@ namespace Hoodrich.Den
         }
 
         /// <summary>A game is up: it has the keys and the bottom of the screen.</summary>
-        public bool IsPlaying => _atRoulette != null || _atBlackjack != null || _atSlot != null;
+        public bool IsPlaying => _atRoulette != null || _atBlackjack != null || _atPoker != null || _atSlot != null;
 
         private int MinBet => _cfg == null ? 100 : _cfg.DenMinBet;
         private int MaxBet => _cfg == null ? 10000 : _cfg.DenMaxBet;
@@ -176,11 +214,24 @@ namespace Hoodrich.Den
 
             if (_croupier != null) _croupier.Remove();
             if (_cardDealer != null) _cardDealer.Remove();
+            if (_pokerDealer != null) _pokerDealer.Remove();
             _croupier = null;
             _cardDealer = null;
+            _pokerDealer = null;
+
+            // The jukebox's emitter back off, or it plays Blonded to an empty garage all night.
+            if (_linked)
+            {
+                try { Function.Call(Hash.SET_STATIC_EMITTER_ENABLED, PropEmitter, false); }
+                catch { /* it is only sound */ }
+
+                _linked = false;
+            }
 
             _roulette = null;
             _blackjack = null;
+            _poker = null;
+            _jukebox = null;
             _slots.Clear();
 
             Scene.Forget();
@@ -206,7 +257,7 @@ namespace Hoodrich.Den
             if (now < _lookAt) return;
             _lookAt = now + LookEveryMs;
 
-            if (Alive(_roulette) && Alive(_blackjack) && _slots.Count > 0) return;
+            if ((Alive(_roulette) || Alive(_poker)) && _slots.Count > 0 && Alive(_jukebox)) return;
 
             try
             {
@@ -221,7 +272,9 @@ namespace Hoodrich.Den
 
                     if (Is(hash, RouletteModels)) _roulette = prop;
                     else if (Is(hash, BlackjackModels)) _blackjack = prop;
+                    else if (Is(hash, PokerModels)) _poker = prop;
                     else if (Is(hash, SlotModels)) _slots.Add(prop);
+                    else if (Is(hash, JukeboxModels)) _jukebox = prop;
                 }
             }
             catch (Exception ex)
@@ -229,43 +282,67 @@ namespace Hoodrich.Den
                 Log.Debug("Den: could not look for the tables: " + ex.Message);
             }
 
-            if (!_saidTables && (Alive(_roulette) || Alive(_blackjack) || _slots.Count > 0))
+            if (!_saidTables && (Alive(_roulette) || Alive(_blackjack) || Alive(_poker) || _slots.Count > 0))
             {
                 _saidTables = true;
                 Log.Info("Den: the room has " + (Alive(_roulette) ? "the roulette, " : "no roulette, ") +
                          (Alive(_blackjack) ? "the blackjack, " : "no blackjack, ") +
-                         _slots.Count + " slot machine(s).");
+                         (Alive(_poker) ? "the poker, " : "no poker, ") +
+                         _slots.Count + " slot machine(s), " + (Alive(_jukebox) ? "a jukebox." : "no jukebox."));
             }
         }
 
+        /// <summary>
+        /// The jukebox on Blonded. The ini's static emitters if it names any -- the clubhouse had
+        /// three of its own -- and otherwise the jukebox Michael put in the room: the game keeps
+        /// an emitter for a radio a script has put down, and it is tied to the prop, so the music
+        /// comes out of the box. Asked for until the room has stood its jukebox up.
+        /// </summary>
         private void Tune()
         {
             if (_tuned) return;
-            _tuned = true;
 
             var station = Radio.Blonded;
             var names = Jukebox;
 
-            if (names.Length == 0)
+            if (names.Length > 0)
             {
-                Log.Info("Den: no jukebox in this room -- [GamblingDen] Jukebox names none.");
+                _tuned = true;
+
+                foreach (var name in names)
+                {
+                    try
+                    {
+                        Function.Call(Hash.SET_STATIC_EMITTER_ENABLED, name, true);
+                        Function.Call(Hash.SET_EMITTER_RADIO_STATION, name, station);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Debug("Den: could not tune " + name + ": " + ex.Message);
+                    }
+                }
+
+                Log.Info("Den: the jukebox is on " + station + ".");
                 return;
             }
 
-            foreach (var name in names)
-            {
-                try
-                {
-                    Function.Call(Hash.SET_STATIC_EMITTER_ENABLED, name, true);
-                    Function.Call(Hash.SET_EMITTER_RADIO_STATION, name, station);
-                }
-                catch (Exception ex)
-                {
-                    Log.Debug("Den: could not tune " + name + ": " + ex.Message);
-                }
-            }
+            if (!Alive(_jukebox)) return;
 
-            Log.Info("Den: the jukebox is on " + station + ".");
+            _tuned = true;
+
+            try
+            {
+                Function.Call(Hash.LINK_STATIC_EMITTER_TO_ENTITY, PropEmitter, _jukebox.Handle);
+                Function.Call(Hash.SET_STATIC_EMITTER_ENABLED, PropEmitter, true);
+                Function.Call(Hash.SET_EMITTER_RADIO_STATION, PropEmitter, station);
+                _linked = true;
+
+                Log.Info("Den: the jukebox is on " + station + ", out of the box in the room.");
+            }
+            catch (Exception ex)
+            {
+                Log.Info("Den: could not put the jukebox on: " + ex.Message);
+            }
         }
 
         private void Dealers()
@@ -277,16 +354,23 @@ namespace Hoodrich.Den
 
             if (Alive(_roulette))
             {
-                if (_croupier == null) _croupier = new Dealer(_roulette, Scene.RouletteDealer, RouletteIdles, "roulette", _rng);
+                if (_croupier == null) _croupier = new Dealer(_roulette, Scene.RouletteDealer, RouletteIdles, "roulette", _rng, RouletteDealerModel);
                 if (!_croupier.Exists) _croupier.Spawn(gang);
                 _croupier.Update();
             }
 
             if (Alive(_blackjack))
             {
-                if (_cardDealer == null) _cardDealer = new Dealer(_blackjack, Scene.BlackjackDealer, BlackjackIdles, "blackjack", _rng);
+                if (_cardDealer == null) _cardDealer = new Dealer(_blackjack, Scene.BlackjackDealer, BlackjackIdles, "blackjack", _rng, BlackjackDealerModel);
                 if (!_cardDealer.Exists) _cardDealer.Spawn(gang);
                 _cardDealer.Update();
+            }
+
+            if (Alive(_poker))
+            {
+                if (_pokerDealer == null) _pokerDealer = new Dealer(_poker, Scene.PokerDealer, PokerIdles, "poker", _rng, PokerDealerModel);
+                if (!_pokerDealer.Exists) _pokerDealer.Spawn(gang);
+                _pokerDealer.Update();
             }
         }
 
@@ -303,6 +387,11 @@ namespace Hoodrich.Den
             {
                 _atBlackjack.Update();
                 if (_atBlackjack.Finished) _atBlackjack = null;
+            }
+            else if (_atPoker != null)
+            {
+                _atPoker.Update();
+                if (_atPoker.Finished) _atPoker = null;
             }
             else if (_atSlot != null)
             {
@@ -338,6 +427,19 @@ namespace Hoodrich.Den
                 if (Game.IsControlJustPressed(Control.Context))
                 {
                     _atBlackjack = new Blackjack(_cardDealer, MinBet, MaxBet, _rng);
+                    InputGuard.Swallow();
+                }
+
+                return;
+            }
+
+            if (Alive(_poker) && Flat(at, _poker.Position) <= TableReach && _pokerDealer != null && _pokerDealer.Exists)
+            {
+                Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to play three card poker. $" + MinBet.ToString("N0") + " ante.");
+
+                if (Game.IsControlJustPressed(Control.Context))
+                {
+                    _atPoker = new Poker(_pokerDealer, MinBet, MaxBet, _rng);
                     InputGuard.Swallow();
                 }
 
@@ -385,6 +487,7 @@ namespace Hoodrich.Den
 
             _atRoulette = null;
             _atBlackjack = null;
+            _atPoker = null;
             _atSlot = null;
         }
 

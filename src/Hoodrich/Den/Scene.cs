@@ -32,12 +32,13 @@ namespace Hoodrich.Den
         public const string RouletteTable = "anim_casino_b@amb@casino@games@roulette@table";
         public const string BlackjackDealer = "anim_casino_b@amb@casino@games@blackjack@dealer_female";
         public const string SharedDealer = "anim_casino_b@amb@casino@games@shared@dealer@";
+        public const string PokerDealer = "anim_casino_b@amb@casino@games@threecardpoker@dealer";
         public const string SlotsMale = "anim_casino_a@amb@casino@games@slots@male";
         public const string SlotsFemale = "anim_casino_a@amb@casino@games@slots@female";
 
         public static readonly string[] All =
         {
-            RouletteDealer, RouletteTable, BlackjackDealer, SharedDealer, SlotsMale, SlotsFemale
+            RouletteDealer, RouletteTable, BlackjackDealer, SharedDealer, PokerDealer, SlotsMale, SlotsFemale
         };
 
         private static readonly HashSet<string> Asked = new HashSet<string>();

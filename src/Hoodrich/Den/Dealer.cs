@@ -41,10 +41,15 @@ namespace Hoodrich.Den
         private const int VariantMinMs = 14000;
         private const int VariantMaxMs = 30000;
 
-        private const string Model = "g_f_y_families_01";
+        /// <summary>
+        /// Who she is: strippers since 2026-09-26 -- Michael asked for them behind the den's
+        /// tables. A female model either way, because the casino's dealer clips are a woman's.
+        /// </summary>
+        private readonly string _model;
 
-        public Dealer(Entity table, string idleDict, string[] idles, string who, Random rng)
+        public Dealer(Entity table, string idleDict, string[] idles, string who, Random rng, string model = "s_f_y_stripper_01")
         {
+            _model = string.IsNullOrEmpty(model) ? "s_f_y_stripper_01" : model;
             _table = table;
             _idleDict = idleDict;
             _idles = idles;
@@ -70,7 +75,7 @@ namespace Hoodrich.Den
 
             try
             {
-                var model = new Model(Model);
+                var model = new Model(_model);
                 if (!model.IsValid || !model.IsInCdImage || !Models.Ready(model)) return false;
 
                 // Beside the table and not in it. The scene moves her to her mark on the
