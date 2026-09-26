@@ -43,11 +43,20 @@ namespace Hoodrich.Locations
     {
         private enum Mode { Off, Starting, Holding, Charging, Shooting, Flying, Result }
 
-        /// <summary>The court: Michael's HUD reading at the top of the key, facing the hoop.</summary>
-        private static readonly Vector3 Spot = new Vector3(-201.428f, -1508.783f, 31.631f);
+        /// <summary>
+        /// The court's two ends: Michael's HUD readings at the top of each key, and the way he faced
+        /// the hoop from there. Either one starts a game; in the game, turn to the other hoop and it
+        /// is the one you shoot at.
+        /// </summary>
+        private static readonly Vector3[] Spots =
+        {
+            new Vector3(-201.428f, -1508.783f, 31.631f),
+            new Vector3(-209.672f, -1518.733f, 31.616f)
+        };
+
+        private static readonly float[] SpotFacing = { 316.079f, 136.238f };
 
         private const string BallName = "prop_bskball_01";
-        private const string HoopName = "prop_basketball_net";
 
         private const string HoldDict = "anim@sports@ballgame@handball@";
         private const string HoldClip = "ball_idle";
@@ -58,8 +67,8 @@ namespace Hoodrich.Locations
         private const float OfferReach = 1.3f;
         private const float RingReach = 30f;
 
-        /// <summary>How far round him a hoop is looked for, and how far from it before the game is put away.</summary>
-        private const float HoopFind = 30f;
+        /// <summary>How far down the court a backboard is looked for, and how far from the rim before the game is put away.</summary>
+        private const float HoopFind = 16f;
         private const float CourtReach = 26f;
 
         /// <summary>PH_R_Hand: the ball rides in his right hand.</summary>
@@ -97,10 +106,10 @@ namespace Hoodrich.Locations
         private int _at;
         private Prop _ball;
 
-        /// <summary>The hoop being shot at, and its rim, read once a hoop. See Rim.</summary>
-        private Prop _hoop;
+        /// <summary>The rim being shot at, and every rim read so far, by where its board is. See RimAhead.</summary>
         private Vector3 _rim;
-        private readonly Dictionary<int, Vector3> _rims = new Dictionary<int, Vector3>();
+        private bool _haveRim;
+        private readonly Dictionary<string, Vector3> _rims = new Dictionary<string, Vector3>();
 
         private float _charge;
         private float _power;
@@ -161,8 +170,7 @@ namespace Hoodrich.Locations
             }
 
             // Put away if he is not on the court to play any more.
-            if (!me.IsAlive || me.IsInVehicle() || me.IsRagdoll ||
-                _hoop == null || !_hoop.Exists() || me.Position.DistanceTo(_hoop.Position) > CourtReach)
+            if (!me.IsAlive || me.IsInVehicle() || me.IsRagdoll || !_haveRim || me.Position.DistanceTo(_rim) > CourtReach)
             {
                 Stop(me.IsAlive && !me.IsInVehicle() ? "Off the court -- the ball stays behind." : null);
                 return;
@@ -187,23 +195,29 @@ namespace Hoodrich.Locations
 
         private void Offer(Ped me)
         {
-            var d = me.Position.DistanceTo(Spot);
-            if (d > RingReach) return;
+            var at = -1;
 
-            Ring(me);
+            for (var i = 0; i < Spots.Length; i++)
+            {
+                var d = me.Position.DistanceTo(Spots[i]);
+                if (d > RingReach) continue;
 
-            if (d > OfferReach || me.IsInVehicle() || Mind.Busy || InputGuard.Busy) return;
+                Ring(Spots[i]);
+                if (d <= OfferReach) at = i;
+            }
+
+            if (at < 0 || me.IsInVehicle() || Mind.Busy || InputGuard.Busy) return;
 
             Help.ShowThisFrame("Press ~INPUT_CONTEXT~ to shoot hoops.");
 
-            if (Game.IsControlJustPressed(Control.Context)) Start(me);
+            if (Game.IsControlJustPressed(Control.Context)) Start(me, at);
         }
 
-        private static void Ring(Ped me)
+        private static void Ring(Vector3 spot)
         {
             try
             {
-                Function.Call(Hash.DRAW_MARKER, 1, Spot.X, Spot.Y, Spot.Z - 1.0f,
+                Function.Call(Hash.DRAW_MARKER, 1, spot.X, spot.Y, spot.Z - 1.0f,
                               0f, 0f, 0f, 0f, 0f, 0f,
                               1.1f, 1.1f, 0.35f,
                               240, 160, 60, 105,
@@ -215,13 +229,13 @@ namespace Hoodrich.Locations
             }
         }
 
-        private void Start(Ped me)
+        private void Start(Ped me, int spot)
         {
             InputGuard.Swallow();
 
-            if (!Aim(me))
+            if (!Aim(me, SpotFacing[spot], Spots[spot]))
             {
-                Notify.Problem("There is no hoop on this court.");
+                Notify.Problem("Can't find the hoop from here -- look at it and press again.");
                 return;
             }
 
@@ -239,7 +253,7 @@ namespace Hoodrich.Locations
             _mode = Mode.Starting;
             _at = Game.GameTime;
 
-            Log.Info("Hoops: on the court, shooting at the hoop at " + _hoop.Position + ", the rim at " + _rim + ".");
+            Log.Info("Hoops: on the court at ring " + (spot + 1) + ", the rim at " + _rim + ".");
         }
 
         private void Starting(Ped me, int now)
@@ -302,7 +316,7 @@ namespace Hoodrich.Locations
             }
 
             _mode = Mode.Off;
-            _hoop = null;
+            _haveRim = false;
             InputGuard.Swallow();
         }
 
@@ -386,8 +400,8 @@ namespace Hoodrich.Locations
 
             if (!Down(Control.Attack) || now - _at < 250) return;
 
-            // The hoop he is looking at, if he has walked to the other end.
-            Aim(me);
+            // The other hoop, if he has turned round to it; the one he had, if nothing else is there.
+            if (Math.Abs(AngleDiff(Deg360(GameplayCamera.Rotation.Z), Toward(GameplayCamera.Position, _rim))) > 60f) Aim(me, -1f, Vector3.Zero);
 
             _charge = 0f;
             _power = 0f;
@@ -643,170 +657,201 @@ namespace Hoodrich.Locations
             _at = Game.GameTime;
         }
 
-        // ---- the hoop and its rim ---------------------------------------------------------------
+        // ---- the hoops and their rims -----------------------------------------------------------
 
         /// <summary>
-        /// The hoop he is looking at, of those on the court, and its rim. False when there is no
-        /// hoop in reach at all.
+        /// The hoop he is looking at -- or, when the camera is off it, the one the ring faces -- and
+        /// its rim. False when nothing like a backboard is down the court from him.
         /// </summary>
-        private bool Aim(Ped me)
+        private bool Aim(Ped me, float facing, Vector3 ring)
         {
-            Prop best = null;
-            var bestScore = float.MaxValue;
-            var look = Dir(GameplayCamera.Rotation.Z);
-
-            try
-            {
-                foreach (var p in World.GetNearbyProps(me.Position, HoopFind, new Model(HoopName)))
-                {
-                    if (p == null || !p.Exists()) continue;
-
-                    var to = Flat3D(p.Position - me.Position);
-                    var d = to.Length();
-                    if (d < 0.01f) continue;
-
-                    // Mostly which one he faces, then which is nearer.
-                    var facing = Vector3.Dot(to * (1f / d), look);
-                    var score = (1f - facing) * 40f + d;
-
-                    if (score >= bestScore) continue;
-
-                    bestScore = score;
-                    best = p;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Debug("Hoops: could not look for the hoop: " + ex.Message);
-            }
-
-            if (best == null) return false;
-
-            _hoop = best;
-
             Vector3 rim;
-            if (!_rims.TryGetValue(best.Handle, out rim))
+
+            if (!RimAhead(me, Deg360(GameplayCamera.Rotation.Z), out rim) &&
+                !(facing >= 0f && RimAhead(me, facing, out rim)))
             {
-                rim = Rim(best, me.Position);
-                _rims[best.Handle] = rim;
+                if (facing < 0f) return false;
+
+                // No backboard answered from the ring: the rim where a regulation court has it
+                // from the free-throw line, 4.2 m down the court and 3.05 m up.
+                float ground;
+                var floor = Ground.Probe(ring + Vector3.WorldUp * 0.5f, out ground) ? ground : ring.Z - 1f;
+                rim = new Vector3(ring.X, ring.Y, floor + 3.05f) + Dir(facing) * 4.2f;
+
+                Log.Warn("Hoops: no backboard answered from the ring at " + ring + "; the rim is put where a " +
+                         "regulation court has it, at " + rim + ".");
             }
 
             _rim = rim;
+            _haveRim = true;
             return true;
         }
 
         /// <summary>
-        /// Where the middle of the rim is, off the hoop's own backboard: rays from the court side
-        /// at a slice of heights, two either side of the middle so the pole is missed and only the
-        /// board is hit, give the board's face and its bottom edge; a sweep across at the board's
-        /// middle gives its centre. The rim is 15 cm above the bottom edge and out from the face by
-        /// the gap and its own radius, as a regulation hoop is built. Read once a hoop.
+        /// THE HOOPS ARE THE MAP'S. The court's poles and backboards are built into the map rather
+        /// than props the game hands a script -- no prop_basketball_net stands on this court, which
+        /// is why the first build said there was no hoop -- so the hoop is found by looking for it.
+        /// Rays straight down the court from him at the heights a backboard hangs: the NEAREST flat
+        /// upright face turned back at him, at one depth over a run of heights, is the board. The
+        /// building behind the far hoop is further off than its board and is passed over.
         /// </summary>
-        private static Vector3 Rim(Prop hoop, Vector3 court)
+        private bool RimAhead(Ped me, float heading, out Vector3 rim)
         {
-            var o = hoop.Position;
-            var toward = Flat3D(court - o);
-            if (toward.Length() < 0.1f) toward = Flat3D(hoop.ForwardVector);
-            toward.Normalize();
+            rim = Vector3.Zero;
 
-            var me = Game.Player.Character;
-            var ignore = me != null && me.Exists() ? me.Handle : 0;
-
-            // The court under it: a backboard hangs well above head height, and nothing lower
-            // -- the low wall round the court, a bench -- is taken for one.
-            float ground;
-            var floor = Ground.Probe(o + Vector3.WorldUp * 1f, out ground) ? ground : o.Z;
-            var lowest = floor + 1.8f - o.Z;
-
-            // Twice: once from where he stands, and again square to the board itself if he was
-            // stood off to one side of it, so the rim is put out from its face and not his line.
-            for (var pass = 0; pass < 2; pass++)
+            try
             {
-                var side = new Vector3(toward.Y, -toward.X, 0f);
+                var look = Dir(heading);
+                var at = me.Position;
 
-                float low, high, face;
-                Vector3 normal;
+                float ground;
+                var floor = Ground.Probe(at + Vector3.WorldUp * 0.5f, out ground) ? ground : at.Z - 1f;
 
-                if (!Band(o, toward, side, ignore, lowest, out low, out high, out face, out normal)) break;
+                var hs = new List<float>();
+                var ds = new List<float>();
+                var ns = new List<Vector3>();
 
-                if (pass == 0 && normal.Length() > 0.5f && Vector3.Dot(normal, toward) < 0.996f && Vector3.Dot(normal, toward) > 0.5f)
+                for (var h = floor + 2.2f; h <= floor + 5.0f; h += 0.1f)
                 {
-                    toward = normal;
-                    continue;
+                    var from = new Vector3(at.X, at.Y, h);
+                    Vector3 where, normal;
+
+                    if (!Ray(from, from + look * HoopFind, me.Handle, out where, out normal)) continue;
+
+                    var n = Flat3D(normal);
+                    if (n.Length() < 0.85f) continue;
+                    n.Normalize();
+
+                    if (Vector3.Dot(n, -look) < 0.5f) continue;
+
+                    hs.Add(h);
+                    ds.Add(Vector3.Dot(where - from, look));
+                    ns.Add(n);
                 }
 
-                // Across the board at its middle: its centre, which is the rim's.
-                var mid = (low + high) * 0.5f;
-                float left = float.MaxValue, right = float.MinValue;
+                // The nearest group at one depth with a board's worth of height in it.
+                var order = new List<int>();
+                for (var i = 0; i < ds.Count; i++) order.Add(i);
+                order.Sort((a, b) => ds[a].CompareTo(ds[b]));
 
-                for (var s = -1.6f; s <= 1.6f; s += 0.05f)
+                List<int> board = null;
+
+                foreach (var first in order)
                 {
-                    float along;
-                    float up;
-                    if (!Board(o, toward, side, s, mid, ignore, out along, out up)) continue;
-                    if (Math.Abs(along - face) > 0.12f) continue;
+                    var group = new List<int>();
+                    float lo = float.MaxValue, hi = float.MinValue;
 
-                    if (s < left) left = s;
-                    if (s > right) right = s;
+                    foreach (var k in order)
+                    {
+                        if (ds[k] < ds[first] || ds[k] > ds[first] + 0.25f) continue;
+                        group.Add(k);
+                        if (hs[k] < lo) lo = hs[k];
+                        if (hs[k] > hi) hi = hs[k];
+                    }
+
+                    if (group.Count >= 4 && hi - lo >= 0.3f)
+                    {
+                        board = group;
+                        break;
+                    }
                 }
 
-                var centre = left <= right ? (left + right) * 0.5f : 0f;
-                var rim = o + toward * (face + 0.38f) + side * centre + Vector3.WorldUp * (low + 0.15f);
+                if (board == null) return false;
 
-                Log.Info("Hoops: the backboard of the hoop at " + o + " is " + (high - low).ToString("0.00") + " m tall and " +
-                         (left <= right ? (right - left).ToString("0.00") : "?") + " m wide, " + face.ToString("0.00") +
-                         " m out, its bottom " + low.ToString("0.00") + " m up; the rim is at " + rim + ".");
-                return rim;
+                float depth = 0f, mid = 0f;
+                var facing = Vector3.Zero;
+
+                foreach (var k in board)
+                {
+                    depth += ds[k];
+                    mid += hs[k];
+                    facing += ns[k];
+                }
+
+                depth /= board.Count;
+                mid = mid / board.Count - floor;
+                facing.Normalize();
+
+                // Where the board is, on the floor under its face: every board is read once.
+                var o = new Vector3(at.X, at.Y, floor) + look * depth;
+                var key = Math.Round(o.X) + "," + Math.Round(o.Y);
+
+                if (_rims.TryGetValue(key, out rim)) return true;
+
+                if (!RimAt(o, facing, mid, me.Handle, out rim)) return false;
+
+                _rims[key] = rim;
+                return true;
             }
-
-            // Nothing answered: the box the model comes in, and a regulation height off the ground under it.
-            var lo = new OutputArgument();
-            var hi = new OutputArgument();
-            Function.Call(Hash.GET_MODEL_DIMENSIONS, hoop.Model.Hash, lo, hi);
-            var min = lo.GetResult<Vector3>();
-            var max = hi.GetResult<Vector3>();
-
-            var reach = Math.Max(Math.Max(Math.Abs(min.X), Math.Abs(max.X)), Math.Max(Math.Abs(min.Y), Math.Abs(max.Y)));
-            var guess = new Vector3(o.X, o.Y, floor + 3.05f) + toward * Math.Max(0.3f, reach - 0.23f);
-
-            Log.Warn("Hoops: no backboard answered at the hoop at " + o + "; the rim is guessed at " + guess +
-                     " off the model's box (" + min + " to " + max + "). Tell Claude how the shots fall.");
-            return guess;
+            catch (Exception ex)
+            {
+                Log.Debug("Hoops: could not look for the hoop: " + ex.Message);
+                return false;
+            }
         }
 
         /// <summary>
-        /// The backboard as a band of heights: rays two either side of the middle, at a slice of
-        /// heights, each pair landing on one flat upright face at the same depth. The longest
-        /// unbroken run of those is the board -- a stray hit on a fence behind or the court
-        /// under it is a different depth, or a floor, and is not part of it.
+        /// The rim off its board: across the board at its middle for its edges and so its centre,
+        /// then up it either side of the centre for its bottom edge and its top. The rim is 15 cm
+        /// above the bottom edge and out from the face by the gap and its own radius, as a
+        /// regulation hoop is built.
         /// </summary>
-        private static bool Band(Vector3 o, Vector3 toward, Vector3 side, int ignore, float lowest,
-                                 out float low, out float high, out float face, out Vector3 normal)
+        private static bool RimAt(Vector3 o, Vector3 toward, float mid, int ignore, out Vector3 rim)
         {
-            low = high = face = 0f;
-            normal = Vector3.Zero;
+            rim = Vector3.Zero;
 
-            var dzs = new List<float>();
-            var faces = new List<float>();
+            var side = new Vector3(toward.Y, -toward.X, 0f);
+            float left = float.MaxValue, right = float.MinValue;
 
-            for (var dz = Math.Max(-1.0f, lowest); dz <= 6.0f; dz += 0.08f)
+            for (var s = -1.6f; s <= 1.6f; s += 0.05f)
             {
-                float a, b, na, nb;
-                if (!Board(o, toward, side, -0.45f, dz, ignore, out a, out na)) continue;
-                if (!Board(o, toward, side, 0.45f, dz, ignore, out b, out nb)) continue;
-                if (Math.Abs(a - b) > 0.15f) continue;
+                float along;
+                if (!Board(o, toward, side, s, mid, ignore, out along)) continue;
 
-                dzs.Add(dz);
-                faces.Add((a + b) * 0.5f);
+                if (s < left) left = s;
+                if (s > right) right = s;
             }
 
-            // The longest run of neighbouring heights at one depth.
+            if (left > right) return false;
+
+            var centre = (left + right) * 0.5f;
+            var c = o + side * centre;
+
+            float low, high;
+            if (!Band(c, toward, side, ignore, out low, out high)) return false;
+
+            rim = c + toward * 0.38f + Vector3.WorldUp * (low + 0.15f);
+
+            Log.Info("Hoops: a backboard " + (right - left).ToString("0.00") + " m wide and " + (high - low).ToString("0.00") +
+                     " m tall, its bottom " + low.ToString("0.00") + " m up; the rim is at " + rim + ".");
+            return true;
+        }
+
+        /// <summary>
+        /// The board's bottom and top: rays two either side of its centre at a slice of heights,
+        /// each pair landing on its face. The longest unbroken run of those is the board.
+        /// </summary>
+        private static bool Band(Vector3 c, Vector3 toward, Vector3 side, int ignore, out float low, out float high)
+        {
+            low = high = 0f;
+
+            var rows = new List<float>();
+
+            for (var dz = 1.8f; dz <= 6.0f; dz += 0.08f)
+            {
+                float a, b;
+                if (!Board(c, toward, side, -0.4f, dz, ignore, out a)) continue;
+                if (!Board(c, toward, side, 0.4f, dz, ignore, out b)) continue;
+
+                rows.Add(dz);
+            }
+
             int bestStart = -1, bestLen = 0;
 
-            for (var i = 0; i < dzs.Count; )
+            for (var i = 0; i < rows.Count; )
             {
                 var j = i + 1;
-                while (j < dzs.Count && dzs[j] - dzs[j - 1] <= 0.12f && Math.Abs(faces[j] - faces[j - 1]) <= 0.12f) j++;
+                while (j < rows.Count && rows[j] - rows[j - 1] <= 0.12f) j++;
 
                 if (j - i > bestLen)
                 {
@@ -819,81 +864,52 @@ namespace Hoodrich.Locations
 
             if (bestLen < 4) return false;
 
-            low = dzs[bestStart];
-            high = dzs[bestStart + bestLen - 1];
-            if (high - low < 0.4f || high - low > 2.5f) return false;
+            low = rows[bestStart];
+            high = rows[bestStart + bestLen - 1];
 
-            for (var k = bestStart; k < bestStart + bestLen; k++) face += faces[k];
-            face /= bestLen;
-
-            // Its face, which way it looks, off one more ray at its middle.
-            normal = Facing(o, toward, (low + high) * 0.5f, ignore);
-            return true;
-        }
-
-        /// <summary>The board's own facing, flat, off a ray at its middle.</summary>
-        private static Vector3 Facing(Vector3 o, Vector3 toward, float dz, int ignore)
-        {
-            try
-            {
-                var a = o + toward * 3.5f + Vector3.WorldUp * dz;
-                var b = o - toward * 1.5f + Vector3.WorldUp * dz;
-
-                var ray = Function.Call<int>(Hash.START_EXPENSIVE_SYNCHRONOUS_SHAPE_TEST_LOS_PROBE,
-                                             a.X, a.Y, a.Z, b.X, b.Y, b.Z, 1 | 16, ignore, 7);
-
-                var hit = new OutputArgument();
-                var where = new OutputArgument();
-                var normal = new OutputArgument();
-                var thing = new OutputArgument();
-
-                Function.Call<int>(Hash.GET_SHAPE_TEST_RESULT, ray, hit, where, normal, thing);
-                if (!hit.GetResult<bool>()) return Vector3.Zero;
-
-                var n = Flat3D(normal.GetResult<Vector3>());
-                if (n.Length() < 0.5f) return Vector3.Zero;
-                n.Normalize();
-
-                // Out of the board towards the court, whichever way the model wound it.
-                return Vector3.Dot(n, toward) < 0f ? -n : n;
-            }
-            catch
-            {
-                return Vector3.Zero;
-            }
+            return high - low >= 0.4f && high - low <= 2.5f;
         }
 
         /// <summary>
-        /// One ray at the board: how far out from the hoop's middle it hit, if it hit something
-        /// upright within the hoop's own depth. A floor or a roof is not a backboard.
+        /// One ray at the board, from the court: whether it hit something upright ON the board's
+        /// face -- not the wall behind the far hoop, not the court, not the sky.
         /// </summary>
-        private static bool Board(Vector3 o, Vector3 toward, Vector3 side, float s, float dz, int ignore, out float along, out float upright)
+        private static bool Board(Vector3 o, Vector3 toward, Vector3 side, float s, float dz, int ignore, out float along)
         {
             along = 0f;
-            upright = 0f;
+
+            var a = o + toward * 3.5f + side * s + Vector3.WorldUp * dz;
+            var b = o - toward * 1.5f + side * s + Vector3.WorldUp * dz;
+
+            Vector3 where, normal;
+            if (!Ray(a, b, ignore, out where, out normal)) return false;
+
+            along = Vector3.Dot(where - o, toward);
+            return Math.Abs(along) <= 0.2f && Math.Abs(normal.Z) < 0.5f;
+        }
+
+        /// <summary>A ray into the map and anything standing, and where it hit and what way that faces.</summary>
+        private static bool Ray(Vector3 a, Vector3 b, int ignore, out Vector3 where, out Vector3 normal)
+        {
+            where = Vector3.Zero;
+            normal = Vector3.Zero;
 
             try
             {
-                var a = o + toward * 3.5f + side * s + Vector3.WorldUp * dz;
-                var b = o - toward * 1.5f + side * s + Vector3.WorldUp * dz;
-
                 var ray = Function.Call<int>(Hash.START_EXPENSIVE_SYNCHRONOUS_SHAPE_TEST_LOS_PROBE,
                                              a.X, a.Y, a.Z, b.X, b.Y, b.Z, 1 | 16, ignore, 7);
 
                 var hit = new OutputArgument();
-                var where = new OutputArgument();
-                var normal = new OutputArgument();
+                var at = new OutputArgument();
+                var n = new OutputArgument();
                 var thing = new OutputArgument();
 
-                Function.Call<int>(Hash.GET_SHAPE_TEST_RESULT, ray, hit, where, normal, thing);
+                Function.Call<int>(Hash.GET_SHAPE_TEST_RESULT, ray, hit, at, n, thing);
                 if (!hit.GetResult<bool>()) return false;
 
-                along = Vector3.Dot(where.GetResult<Vector3>() - o, toward);
-                upright = Math.Abs(normal.GetResult<Vector3>().Z);
-
-                // The hoop's own depth, and a face that stands up: anything behind it, well out on
-                // the court, or lying flat is not its board.
-                return along > -0.6f && along < 2.2f && upright < 0.5f;
+                where = at.GetResult<Vector3>();
+                normal = n.GetResult<Vector3>();
+                return true;
             }
             catch
             {
