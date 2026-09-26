@@ -2038,6 +2038,9 @@ namespace Hoodrich.Parkview
                 if (lod > LodMost) lod = LodMost;
                 if (lod < LodLeast) lod = LodLeast;
 
+                // A BUILDING IS DRAWN AS FAR AS THE MAP'S ARE. See Big.
+                if (Big(thing)) lod = LodBuilding;
+
                 Function.Call(Hash.SET_ENTITY_LOD_DIST, thing.Handle, lod);
             }
             catch
@@ -2072,6 +2075,52 @@ namespace Hoodrich.Parkview
         private const int LodDefault = 300;
         private const int LodLeast = 60;
         private const int LodMost = 500;
+
+        /// <summary>
+        /// How far a building placed as a prop is drawn from, and how big a thing has to be to be
+        /// one. A whole block put down in the spooner -- Parkview's db_apart_02_ and the rest --
+        /// comes without the low-detail copy the map's own buildings fade into, so at its draw
+        /// distance it simply goes. At three and five hundred metres that was well inside the
+        /// distance the map's buildings are still standing at, and Michael saw his blocks blink
+        /// in and out on the skyline on 2026-09-26. Fifteen hundred is about where the map's
+        /// own give way to the far scenery. It is only how far away it is drawn: the model is
+        /// already in memory, standing, either way.
+        /// </summary>
+        private const int LodBuilding = 1500;
+        private const float BuildingSize = 10f;
+
+        private static readonly Dictionary<int, bool> BigModels = new Dictionary<int, bool>();
+
+        /// <summary>Whether a thing is building-sized: ten metres or more along any side. Asked once a model.</summary>
+        private static bool Big(Entity thing)
+        {
+            var hash = thing.Model.Hash;
+            bool big;
+            if (BigModels.TryGetValue(hash, out big)) return big;
+
+            try
+            {
+                var lo = new OutputArgument();
+                var hi = new OutputArgument();
+                Function.Call(Hash.GET_MODEL_DIMENSIONS, hash, lo, hi);
+                var size = hi.GetResult<Vector3>() - lo.GetResult<Vector3>();
+
+                big = size.X >= BuildingSize || size.Y >= BuildingSize || size.Z >= BuildingSize;
+
+                if (big)
+                {
+                    Log.Info("Scenery: " + Names.Say(hash) + " is building-sized (" + size.X.ToString("0") + " x " +
+                             size.Y.ToString("0") + " x " + size.Z.ToString("0") + " m); drawn from " + LodBuilding + " m.");
+                }
+            }
+            catch
+            {
+                big = false;
+            }
+
+            BigModels[hash] = big;
+            return big;
+        }
 
         private static Entity Car(Spooner.Placed item, Model model)
         {
