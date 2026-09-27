@@ -948,6 +948,15 @@
       "gang": "vagos"
     },
     {
+      "handle": "deacon_lostmc",
+      "name": "Deacon",
+      "gender": "male",
+      "pic": "",
+      "verified": false,
+      "voice": "deacon_lostmc",
+      "gang": "lost"
+    },
+    {
       "handle": "weicheng_ls",
       "name": "Wei Cheng",
       "gender": "male",
@@ -10921,6 +10930,22 @@
       ],
       "AmbientBeach": [
         "pacific bluffs beach club. my fathers favourite. he goes. i stay. we. we take turns"
+      ]
+    },
+    "deacon_lostmc": {
+      "Ambient": [
+        "clubhouse lot's full tonight. bikes only. park your hatchback somewhere else",
+        "if you're buying, come by. if you're looking, keep driving",
+        "mirror park got another coffee place. we give it a month",
+        "somebody's kid keeps revving a scooter out front. we're working on it",
+        "four things on the table. no credit, no samples, no cops",
+        "rained all day and the road's still better company than most people",
+        "don't text. show up. and don't show up with your whole crew",
+        "city boys come up here to buy and act like it's a museum",
+        "been on this lot since before the yuppies found the lake",
+        "sold a man paper today who asked if it was artisanal. mirror park, everybody",
+        "patched in longer than half these kids have been alive",
+        "chapter's fine. thanks for asking. nobody asked"
       ]
     },
     "flaco_dutchlondon": {

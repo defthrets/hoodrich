@@ -943,9 +943,10 @@ namespace Hoodrich.Supply
             // rule that used to apply only to the two Docks contacts applies to all fourteen.
             // The alternative was a phone menu where half the numbers worked anywhere and half
             // did not, with nothing on screen to say which was which.
-            // A MAN WHO ONLY SELLS AT HIS DOOR has no phone to answer, wherever you ring from.
-            // Said before the house, because it is the real reason: going home would not help.
-            if (def.DoorOnly) return "Only sells at his door";
+            // A MAN WHO ONLY SELLS IN PERSON has no phone to answer, wherever you ring from --
+            // Flaco at his door, Deacon at the clubhouse. Said before the house, because it is the
+            // real reason: going home would not help.
+            if (def.DoorOnly) return "Only sells in person";
 
             if (needHome && AtHome != null && !AtHome())
             {

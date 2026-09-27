@@ -521,6 +521,57 @@
       "noRoomLine": "You got nowhere to stash it, you got nothing to buy. Come back.",
       "noSpaceLine": "Your spot's full, homie. Sort that out first.",
       "farewell": "Go on. Get outta here."
+    },
+    {
+      "id": "deacon",
+      "name": "Deacon",
+      "tag": "DCN",
+      "kind": "GangCorner",
+      "gangId": "lost",
+      "doorOnly": true,
+      "_where": [
+        "THE LOST MC CLUBHOUSE, off Mirror Park. Michael stood on the spot on 2026-09-27 and read",
+        "heading 192.8, which is the way Deacon faces. He sells in person and nowhere else: no",
+        "number, no delivery. Three of the club stand round him (see Supply.Stoop)."
+      ],
+      "models": [
+        "g_m_y_lost_03",
+        "g_m_y_lost_02",
+        "g_m_y_lost_01"
+      ],
+      "drugs": [
+        "meth",
+        "crack",
+        "coke",
+        "lsd"
+      ],
+      "zones": [],
+      "x": 987.981,
+      "y": -106.558,
+      "z": 74.329,
+      "heading": 192.783,
+      "priceMultiplier": 1.0,
+      "minRank": 0,
+      "maxOrderGrams": 400,
+      "openHour": 0,
+      "closeHour": 24,
+      "lotValue": 1000,
+      "lotStep": 5,
+      "priceFloor": 0,
+      "priceStep": 5,
+      "purity": 0.8,
+      "uncutFromLots": 2,
+      "purePurity": 1.0,
+      "pureMultiplier": 1.25,
+      "pureChancePercent": 10,
+      "greeting": "You're a long way from Forum Drive, kid. Club's open for business, not for sightseeing. What'll it be?",
+      "buyLine": "Crank, rock, blow and paper. That's what the club moves.",
+      "shopLine": "Crank, rock, blow and paper, and tonight none of it's been stepped on. Name it and say how much.",
+      "shopCutLine": "Crank, rock, blow and paper. Cut a little -- buy heavy and it comes clean. Name it and say how much.",
+      "handOverLine": "There. Now get it off the property before somebody asks who you are.",
+      "noRoomLine": "No place to keep it? Then you ain't buying. Come back when you got a stash.",
+      "noSpaceLine": "Your stash is full, kid. Clear some room first.",
+      "farewell": "Ride safe. Or don't. Not my problem."
     }
   ],
   "later": [
