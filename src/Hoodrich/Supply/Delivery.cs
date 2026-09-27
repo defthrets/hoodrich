@@ -338,6 +338,9 @@ namespace Hoodrich.Supply
             public Vector3 Inside;
             public Vector3 LeaveFor;
             public string Landed;
+
+            /// <summary>He sets off from the named start by Denise's. Only her house: see TryRoundTheCorner.</summary>
+            public bool NamedStart;
         }
 
         /// <summary>
@@ -384,7 +387,8 @@ namespace Hoodrich.Supply
                 HasInside = true,
                 Inside = DropInside,
                 LeaveFor = LeaveFor,
-                Landed = "in the house"
+                Landed = "in the house",
+                NamedStart = true
             };
         }
 
@@ -1369,7 +1373,17 @@ namespace Hoodrich.Supply
         /// <summary>Puts him and the car on a road far enough out to be off screen, and sends him.</summary>
         private void Dispatch(Ped player)
         {
-            if (!TryStartPoint(player.Position, out var start))
+            // FROM ROUND THE CORNER, FOR ANYWHERE BUT DENISE'S. Michael, 2026-09-27: "when we call
+            // from a safe house we are renting the plug should spawn around the corner from that
+            // house im texing from not the denise spot, spawn them out of sight on the road". The
+            // named start is a straight run in to Denise's and nowhere else; a stash house or the
+            // Parkview block gets a road near it that nobody can see a car appear on.
+            Vector3 start;
+            var found = Here.NamedStart
+                ? TryStartPoint(player.Position, out start)
+                : TryRoundTheCorner(Here.Park, out start) || TryStartPoint(player.Position, out start);
+
+            if (!found)
             {
                 Cancel("He could not get to you from where you are.");
                 return;
@@ -3448,6 +3462,76 @@ namespace Hoodrich.Supply
         /// Only used when the named start is in view. A fixed spot you can see a car appear on
         /// is worse than a longer drive.
         /// </summary>
+        /// <summary>How near and how far round the corner he appears: a short drive, and not in the street outside.</summary>
+        private const float CornerNear = 90f;
+        private const float CornerFar = 170f;
+
+        /// <summary>
+        /// A road round the corner from where he is bringing it: near enough that the run is a
+        /// minute rather than a crossing of the city, and somewhere a car cannot be seen to
+        /// appear -- off the screen, or on it with a building in the way. For everywhere but
+        /// Denise's, whose named start already is that. Falls back to TryStartPoint if the
+        /// streets round the place give nothing.
+        /// </summary>
+        private bool TryRoundTheCorner(Vector3 around, out Vector3 spot)
+        {
+            spot = Vector3.Zero;
+
+            var player = Game.Player.Character;
+            var eye = Vector3.Zero;
+            try { eye = GameplayCamera.Position; }
+            catch { /* then only the screen is asked */ }
+
+            for (var attempt = 0; attempt < 24; attempt++)
+            {
+                var distance = CornerNear + (float)_rng.NextDouble() * (CornerFar - CornerNear);
+                var angle = _rng.NextDouble() * Math.PI * 2.0;
+
+                var candidate = around + new Vector3((float)Math.Cos(angle) * distance,
+                                                     (float)Math.Sin(angle) * distance, 0f);
+
+                Vector3 onRoad;
+                try { onRoad = World.GetNextPositionOnStreet(candidate); }
+                catch { continue; }
+
+                if (onRoad == Vector3.Zero) continue;
+
+                // The nearest road to a point can be a long way from it; round the corner means
+                // round THIS corner.
+                var gap = onRoad.DistanceTo(around);
+                if (gap < CornerNear * 0.7f || gap > CornerFar * 1.4f) continue;
+
+                if (player != null && player.Exists() && onRoad.DistanceTo(player.Position) < CornerNear * 0.7f) continue;
+
+                if (Seen(eye, onRoad)) continue;
+
+                spot = onRoad;
+                Log.Info("Delivery: setting off from round the corner, " + (int)gap + "m from " + Here.Name + ".");
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Whether a car put down here would be seen arriving from nowhere: on the screen, with nothing in the way.</summary>
+        private static bool Seen(Vector3 eye, Vector3 at)
+        {
+            try
+            {
+                var lifted = at + new Vector3(0f, 0f, 1.2f);
+
+                if (!Function.Call<bool>(Hash.IS_SPHERE_VISIBLE, lifted.X, lifted.Y, lifted.Z, 3f)) return false;
+                if (eye == Vector3.Zero) return true;
+
+                // On the screen -- but a wall between is still out of sight.
+                return !World.Raycast(eye, lifted, IntersectFlags.Map | IntersectFlags.Objects).DidHit;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
         private bool TryStartPoint(Vector3 origin, out Vector3 spot)
         {
             spot = Vector3.Zero;
