@@ -1018,6 +1018,9 @@ namespace Hoodrich.Locations
         /// "Leroy's Electrical", or one that brings its own "the" -- is said as it is; anything
         /// else gets a "the". It was "the" every time, which is how the den's door read "go into
         /// the the gambling den".
+        ///
+        /// AN ADDRESS IS A NAME TOO. A house named by its number starts with a digit, which is
+        /// not upper case, so "32 Jamestown St" came out as "go into the 32 Jamestown St".
         /// </summary>
         private string Room
         {
@@ -1025,7 +1028,7 @@ namespace Hoodrich.Locations
             {
                 var name = _spec.Name ?? "";
                 if (name.StartsWith("the ", StringComparison.OrdinalIgnoreCase)) return name;
-                if (name.Length > 0 && char.IsUpper(name[0])) return name;
+                if (name.Length > 0 && (char.IsUpper(name[0]) || char.IsDigit(name[0]))) return name;
                 return "the " + name;
             }
         }
