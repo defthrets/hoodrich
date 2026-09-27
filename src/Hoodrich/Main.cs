@@ -3428,7 +3428,7 @@ namespace Hoodrich
                             if (_postUp == null || !_postUp.IsPosted) return false;
 
                             var code = _postUp.CodeWord ?? "";
-                            if (_social.PostAsYouSometimes("YouWhereAt", code, 240000, 100) == null) return false;
+                            if (_social.PostAsYouSometimes("YouWhereAt", code, 240000, 100, straightUp: true) == null) return false;
 
                             _postUp.Advertise(180000);
                             _postUp.AddCornerHeat(0.5f);
@@ -3446,7 +3446,7 @@ namespace Hoodrich
                             var target = TrackTarget();
                             if (target == null) return false;
 
-                            if (_social.PostAsYouSometimes("YouDissTrack", target.Name, 900000, 100) == null) return false;
+                            if (_social.PostAsYouSometimes("YouDissTrack", target.Name, 900000, 100, straightUp: true) == null) return false;
 
                             _social.Dissed(target.Id, target.Name, 4 + _rng.Next(4));
                             _payback.Owed(target.Id);
@@ -3461,7 +3461,7 @@ namespace Hoodrich
                         {
                             if (!_crew.IsAffiliated) return false;
 
-                            if (_social.PostAsYouSometimes("YouBigUp", _crew.Current.Name, 180000, 100) == null) return false;
+                            if (_social.PostAsYouSometimes("YouBigUp", _crew.Current.Name, 180000, 100, straightUp: true) == null) return false;
 
                             _crew.AddRep(2f, "for the post");
                             _social.Gain(4 + _rng.Next(8));
@@ -3479,7 +3479,7 @@ namespace Hoodrich
                             if (_postUp == null || !_postUp.IsPosted) return false;
 
                             var code = _postUp.CodeWord ?? "";
-                            if (_social.PostAsYouSometimes("YouPriceDrop", code, 600000, 100) == null) return false;
+                            if (_social.PostAsYouSometimes("YouPriceDrop", code, 600000, 100, straightUp: true) == null) return false;
 
                             _postUp.Advertise(300000);
                             _postUp.AddCornerHeat(1.2f);
@@ -3501,7 +3501,7 @@ namespace Hoodrich
 
                             if (!string.IsNullOrEmpty(no)) { UI.Notify.Failure(no); return false; }
 
-                            _social.PostAsYouSometimes("YouCallHomies", "", 300000, 100);
+                            _social.PostAsYouSometimes("YouCallHomies", "", 300000, 100, straightUp: true);
                             _social.Gain(4 + _rng.Next(8));
                             return true;
                         }
@@ -3518,7 +3518,7 @@ namespace Hoodrich
                                 return false;
                             }
 
-                            if (_social.PostAsYouSometimes("YouFlex", "", 900000, 100) == null) return false;
+                            if (_social.PostAsYouSometimes("YouFlex", "", 900000, 100, straightUp: true) == null) return false;
 
                             _social.Gain(60 + _rng.Next(90));
                             _state.AddNotoriety(2.5f);
@@ -3545,7 +3545,7 @@ namespace Hoodrich
                                 return false;
                             }
 
-                            if (_social.PostAsYouSometimes("YouTruce", them.Name, 1200000, 100) == null) return true;
+                            if (_social.PostAsYouSometimes("YouTruce", them.Name, 1200000, 100, straightUp: true) == null) return true;
 
                             _crew.AddRep(-4f);
                             _social.Gain(5 + _rng.Next(12));
@@ -3560,7 +3560,7 @@ namespace Hoodrich
                         {
                             if (!_crew.IsAffiliated) return false;
 
-                            if (_social.PostAsYouSometimes("YouRIP", _crew.Current.Name, 900000, 100) == null) return false;
+                            if (_social.PostAsYouSometimes("YouRIP", _crew.Current.Name, 900000, 100, straightUp: true) == null) return false;
 
                             _crew.AddRep(3f, "for the memorial");
                             _social.Gain(25 + _rng.Next(45));
@@ -3580,7 +3580,7 @@ namespace Hoodrich
                                 return false;
                             }
 
-                            if (_social.PostAsYouSometimes("YouBought", "", 1800000, 100) == null) return false;
+                            if (_social.PostAsYouSometimes("YouBought", "", 1800000, 100, straightUp: true) == null) return false;
 
                             UI.Cash.Take(cost);
                             _social.Gain(700 + _rng.Next(900));
@@ -3595,9 +3595,9 @@ namespace Hoodrich
                     // The resolved topic first, and the plain day post behind it -- so a set
                     // nobody has written lines for still puts something out rather than
                     // swallowing the button press.
-                    if (topic != null && _social.PostAsYou(topic[0], topic[1]) != null) return true;
+                    if (topic != null && _social.PostAsYou(topic[0], topic[1], straightUp: true) != null) return true;
 
-                    return _social.PostAsYou("YouDaily", "") != null;
+                    return _social.PostAsYou("YouDaily", "", straightUp: true) != null;
                 };
 
                 // Naming a set does three things at once and they have to happen together: the
@@ -3607,7 +3607,7 @@ namespace Hoodrich
                     var gang = _gangs.Get(id);
                     if (gang == null) return false;
 
-                    var said = _social.PostAsYou("YouDiss" + Pretty(id), gang.Name);
+                    var said = _social.PostAsYou("YouDiss" + Pretty(id), gang.Name, straightUp: true);
                     if (said == null) return false;
 
                     _social.Dissed(gang.Id, gang.Name, 2 + _rng.Next(3));
@@ -3698,6 +3698,14 @@ namespace Hoodrich
                                     || Core.Larder.TheirMenuIsUp
                                     || Core.Mind.IsBusy
                                     || _hoops.Placing;
+
+                // HIS AUTOMATIC POSTS ARE TYPED OUT, on the phone, before they go up -- and cut
+                // off where he stopped if something stops him. See PhoneController.Type. Not while
+                // the counter or the bong has his hands, which Busy does not see.
+                _phone.Occupied = () => (_cutting != null && _cutting.IsBusy)
+                                        || (_lounge != null && _lounge.Smoking)
+                                        || InputGuard.Busy;
+                _social.Thumbs = (text, done) => _phone.Type(text, done);
 
                 pages.ShowVanillaPhone = () => _phone.ShowVanillaPhone();
 
@@ -4019,6 +4027,12 @@ namespace Hoodrich
                 // the drop-on-death check inside it never once saw a death. See DeadDrop.Watch.
                 Core.Pace.At("_deadDrop.Watch");
                 _deadDrop?.Watch();
+
+                // HIS THUMBS, every frame and before any screen can return early: a conversation
+                // or a menu opening is what stops him typing, and those return before the phone's
+                // own tick. See PhoneController.Drafts.
+                Core.Pace.At("_phone.Drafts");
+                _phone.Drafts(available, AnyScreenUp());
 
                 // No lid. Every frame rather than on mounting, because the game hands one out
                 // the moment he sits on a bike and would do it again on the next one -- and

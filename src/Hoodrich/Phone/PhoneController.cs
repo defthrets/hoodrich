@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Keys = System.Windows.Forms.Keys;
 using Control = GTA.Control;
 using GTA;
@@ -512,6 +513,230 @@ namespace Hoodrich.Phone
         {
             return Function.Call<int>(Hash.GET_NUMBER_OF_THREADS_RUNNING_THE_SCRIPT_WITH_THIS_HASH,
                                       Game.GenerateHash("appinternet")) > 0;
+        }
+
+        // ---- typing his own posts ------------------------------------------------------
+
+        /// <summary>One of his automatic posts, waiting for his thumbs. See Type.</summary>
+        private sealed class Draft
+        {
+            public string Text = "";
+            public Action<float> Done;
+            public int Queued;
+        }
+
+        private readonly Queue<Draft> _drafts = new Queue<Draft>();
+        private Draft _typing;
+        private int _typingSince;
+        private int _typingMs;
+        private int _typingHealth;
+        private int _typingArmour;
+
+        /// <summary>How many can wait at once. Past this one goes straight up, untyped.</summary>
+        private const int DraftsMost = 3;
+
+        /// <summary>How long one waits for a moment he is free to type it, before it goes up as it is.</summary>
+        private const int DraftPatienceMs = 20000;
+
+        /// <summary>How long the typing takes: a start, a little more for every letter, within a couple of seconds.</summary>
+        private const int TypingBaseMs = 1200;
+        private const int TypingPerCharMs = 18;
+        private const int TypingLeastMs = 2000;
+        private const int TypingMostMs = 3500;
+
+        /// <summary>
+        /// Set by Main: something of the mod's has his body -- the counter, the bong -- that
+        /// Busy does not cover. He does not take the phone out over it. See FreeToType.
+        /// </summary>
+        public Func<bool> Occupied;
+
+        /// <summary>
+        /// Franklin types one of his own automatic posts out before it goes up. Michael,
+        /// 2026-09-27: "a quick little text animation for a couple seconds, it can be
+        /// interupted, if interupted the social message should cut off half way though".
+        ///
+        /// THE PHONE'S OWN THEATRE, not a second one: the same handset, the same take-out, the
+        /// same reading loop and the same put-away the menu uses, so a post being typed and the
+        /// phone being open look like the same phone. Walking and jogging carry on -- it is an
+        /// upper-body clip, and people type walking -- but anything that needs his hands stops
+        /// it, and <paramref name="done"/> is told how far he got. See StoppedBy.
+        ///
+        /// It waits for a moment he is free -- on foot, not fighting, nothing else on the screen
+        /// -- for up to twenty seconds, and goes up as it is if none comes: a post about the
+        /// body he just dropped is still news once the shooting stops, and stale after that.
+        /// </summary>
+        public void Type(string text, Action<float> done)
+        {
+            if (done == null) return;
+
+            if (_drafts.Count >= DraftsMost)
+            {
+                done(1f);
+                return;
+            }
+
+            _drafts.Enqueue(new Draft { Text = text ?? "", Done = done, Queued = Game.GameTime });
+        }
+
+        /// <summary>
+        /// Every frame, from Main, before any screen can return early: a draft is started when
+        /// he is free, kept going while nothing stops it, and handed back -- whole or cut -- when
+        /// it is done. Before the screens because a conversation or a menu opening is exactly
+        /// what has to stop it, and those return before Update runs.
+        /// </summary>
+        public void Drafts(bool available, bool screenUp)
+        {
+            TickHandset();
+
+            var now = Game.GameTime;
+
+            if (_typing != null)
+            {
+                var share = Math.Min(1f, (now - _typingSince) / (float)_typingMs);
+                var why = StoppedBy(available, screenUp);
+
+                if (why == null && share < 1f)
+                {
+                    HoldItUp();
+                    KeepHandset();
+                    return;
+                }
+
+                StopTyping(why == null ? 1f : share, why);
+                return;
+            }
+
+            if (_drafts.Count == 0) return;
+
+            var next = _drafts.Peek();
+
+            if (!FreeToType(available, screenUp))
+            {
+                if (now - next.Queued < DraftPatienceMs) return;
+
+                _drafts.Dequeue();
+                Log.Info("No moment for him to type his post in " + (DraftPatienceMs / 1000) + "s; it goes up as it is.");
+                Hand(next, 1f);
+                return;
+            }
+
+            _drafts.Dequeue();
+            StartTyping(next);
+        }
+
+        /// <summary>Whether he can take the phone out and type right now.</summary>
+        private bool FreeToType(bool available, bool screenUp)
+        {
+            if (!available || screenUp) return false;
+            if (_menu.IsOpen || _menu.Leaving || _browserMode || _vanillaMode) return false;
+
+            // The handset is still somebody else's: on its way out, or still in his hand.
+            if (_shownAt != 0 || _puttingAwayAt != 0) return false;
+
+            if (Busy != null && Busy()) return false;
+            if (Occupied != null && Occupied()) return false;
+
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists() || !player.IsAlive) return false;
+            if (player.IsInVehicle() || player.IsGettingIntoVehicle) return false;
+            if (player.IsRagdoll || player.IsFalling || player.IsJumping || player.IsClimbing ||
+                player.IsSwimming || player.IsInCover) return false;
+            if (player.IsShooting || Game.Player.IsAiming || player.IsInMeleeCombat ||
+                player.IsReloading || player.IsSprinting) return false;
+
+            if (Function.Call<bool>(Hash.IS_PED_RUNNING_MOBILE_PHONE_TASK, player.Handle)) return false;
+            if (!Function.Call<bool>(Hash.IS_PLAYER_CONTROL_ON, Game.Player.Handle)) return false;
+            if (Function.Call<bool>(Hash.IS_CUTSCENE_PLAYING)) return false;
+
+            return true;
+        }
+
+        /// <summary>What stopped him, or null while nothing has. Walking is not on this list.</summary>
+        private string StoppedBy(bool available, bool screenUp)
+        {
+            var player = Game.Player.Character;
+            if (player == null || !player.Exists() || !player.IsAlive) return "down";
+
+            // Our own phone first: it takes the handset over as it is, so it is not put away.
+            if (_menu.IsOpen || _browserMode || _vanillaMode) return PhoneTookIt;
+
+            if (!available) return "the game";
+            if (screenUp || (Busy != null && Busy())) return "something else";
+            if (player.IsInVehicle() || player.IsGettingIntoVehicle) return "a car";
+            if (player.IsRagdoll || player.IsFalling || player.IsJumping || player.IsClimbing ||
+                player.IsSwimming || player.IsInCover) return "moving";
+            if (player.IsShooting || Game.Player.IsAiming || player.IsInMeleeCombat || player.IsReloading) return "a fight";
+            if (player.IsSprinting) return "running";
+            if (player.Health < _typingHealth || player.Armor < _typingArmour) return "getting hurt";
+
+            if (Pressed(Control.Jump) || Pressed(Control.Enter) || Pressed(Control.Aim) ||
+                Pressed(Control.Attack) || Pressed(Control.MeleeAttackLight) || Pressed(Control.Cover) ||
+                Pressed(Control.SelectWeapon)) return "his hands";
+
+            return null;
+        }
+
+        private const string PhoneTookIt = "the phone";
+
+        private void StartTyping(Draft draft)
+        {
+            var player = Game.Player.Character;
+
+            _typing = draft;
+            _typingSince = Game.GameTime;
+            _typingMs = Math.Max(TypingLeastMs, Math.Min(TypingMostMs, TypingBaseMs + draft.Text.Length * TypingPerCharMs));
+            _typingHealth = player.Health;
+            _typingArmour = player.Armor;
+
+            TakeItOut();
+
+            Log.Info("Typing his post (" + _typingMs + " ms).");
+        }
+
+        /// <summary>
+        /// Done or stopped. Done puts the phone away the way the menu does; stopped lets go at
+        /// once, because whatever stopped him has his hands now -- a put-away clip over an aim
+        /// or a fall is the phone fighting him for them.
+        /// </summary>
+        private void StopTyping(float share, string why)
+        {
+            var draft = _typing;
+            _typing = null;
+
+            if (why == null)
+            {
+                PutItAway();
+            }
+            else if (why != PhoneTookIt)
+            {
+                _shownAt = 0;
+                _holding = false;
+
+                try
+                {
+                    var player = Game.Player.Character;
+                    if (player != null && player.Exists() && player.IsAlive && !player.IsRagdoll)
+                    {
+                        Function.Call(Hash.CLEAR_PED_SECONDARY_TASK, player.Handle);
+                    }
+                }
+                catch
+                {
+                    // It runs out.
+                }
+
+                DropHandset();
+            }
+
+            if (why != null) Log.Info("Stopped typing at " + (int)(share * 100f) + "% -- " + why + ".");
+
+            Hand(draft, share);
+        }
+
+        private static void Hand(Draft draft, float share)
+        {
+            try { draft.Done(share); }
+            catch (Exception ex) { Log.Debug("Could not put his post up: " + ex.Message); }
         }
 
         private void EndVanillaMode()

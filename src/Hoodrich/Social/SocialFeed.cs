@@ -971,7 +971,8 @@ namespace Hoodrich.Social
             return post.Plain;
         }
 
-        public string PostAsYouSometimes(string set, string subject, int gapMs, int chancePercent)
+        public string PostAsYouSometimes(string set, string subject, int gapMs, int chancePercent,
+                                         bool straightUp = false)
         {
             if (string.IsNullOrEmpty(set)) return null;
 
@@ -983,14 +984,29 @@ namespace Hoodrich.Social
 
             if (chancePercent < 100 && _rng.Next(100) >= chancePercent) return null;
 
-            return PostAsYou(set, subject);
+            return PostAsYou(set, subject, straightUp);
         }
 
         /// <summary>When each of his own sets is allowed to speak again.</summary>
         private readonly Dictionary<string, int> _yourNext =
             new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-        public string PostAsYou(string set, string subject)
+        /// <summary>
+        /// Set by Main: he types one of his own automatic posts out on his phone before it goes
+        /// up, and says how much of it he got through -- 1 for all of it. See
+        /// Phone.PhoneController.Type. Null puts every post up at once.
+        /// </summary>
+        public Action<string, Action<float>> Thumbs;
+
+        /// <summary>
+        /// One of his own. <paramref name="straightUp"/> is a post he chose on the Socials screen,
+        /// which goes up the moment he picks it; everything else the mod posts for him is typed
+        /// out first -- see Thumbs -- and cut off where he stopped if something stops him.
+        ///
+        /// Returns the post's words straight away either way, so a caller asking "did it post"
+        /// is answered now; the post itself lands when he has finished with it.
+        /// </summary>
+        public string PostAsYou(string set, string subject, bool straightUp = false)
         {
             var post = Build(set, subject ?? "");
 
@@ -1006,10 +1022,74 @@ namespace Hoodrich.Social
             post.By = Me;
             post.AboutYou = true;
 
+            // HE TYPES IT FIRST. Michael, 2026-09-27: "every time franklin does an automatic post
+            // on socials he should do a quick little text animation for a couple seconds, it can
+            // be interupted, if interupted the social message should cut off half way though the
+            // message". The words are chosen now; what lands is however much of them he got down.
+            if (!straightUp && Thumbs != null)
+            {
+                var typed = post;
+
+                try
+                {
+                    Thumbs(post.Body, share => Publish(typed, share));
+                    return post.Plain;
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not hand his post to his thumbs: " + ex.Message);
+                }
+            }
+
+            Publish(post, 1f);
+            return post.Plain;
+        }
+
+        /// <summary>
+        /// Puts one of his own up: all of it, or as far as he got. Stamped now, not when the words
+        /// were chosen, so a post he spent three seconds typing does not land already three
+        /// seconds old.
+        /// </summary>
+        private void Publish(Post post, float share)
+        {
+            if (post == null) return;
+
+            if (share < 1f)
+            {
+                post.Body = CutOff(post.Body, share);
+                Log.Info("His post went up cut off at " + (int)(share * 100f) + "%: \"" + post.Body + "\"");
+            }
+
+            post.At = Game.GameTime;
+
             Add(post);
             Notify(post);
+        }
 
-            return post.Plain;
+        /// <summary>The least of a post that goes up when he is stopped, so it is never one letter.</summary>
+        private const float LeastOfIt = 0.2f;
+
+        /// <summary>
+        /// Where his thumb stopped: the share of it he got through and not a letter more,
+        /// mid-word if that is where it was -- a post cut off at a word boundary reads as
+        /// finished. Never inside a ~colour~ tag, which would bleed into everything after it.
+        /// </summary>
+        private static string CutOff(string text, float share)
+        {
+            if (string.IsNullOrEmpty(text)) return text ?? "";
+
+            var n = (int)Math.Round(text.Length * Math.Max(LeastOfIt, Math.Min(1f, share)));
+            n = Math.Max(Math.Min(3, text.Length), Math.Min(text.Length, n));
+
+            var cut = text.Substring(0, n);
+
+            // An odd number of tildes is a tag left open: back to before it.
+            var tildes = 0;
+            foreach (var c in cut) if (c == '~') tildes++;
+
+            if (tildes % 2 == 1) cut = cut.Substring(0, cut.LastIndexOf('~'));
+
+            return cut.TrimEnd();
         }
 
         /// <summary>

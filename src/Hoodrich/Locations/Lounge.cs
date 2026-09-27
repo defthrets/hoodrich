@@ -69,6 +69,9 @@ namespace Hoodrich.Locations
         private int _channel;
         private int _screen;
 
+        /// <summary>A hit is going: the bong is in his hands. See PhoneController.Type, which waits for it.</summary>
+        public bool Smoking => _step != 0;
+
         public void Update()
         {
             var me = Game.Player.Character;
