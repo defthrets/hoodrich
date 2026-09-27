@@ -234,6 +234,16 @@ namespace Hoodrich.Supply
             def.JoinAccept = node["joinAccept"].AsString(def.JoinAccept);
             def.JoinRefuse = node["joinRefuse"].AsString(def.JoinRefuse);
             def.JoinAlready = node["joinAlready"].AsString(def.JoinAlready);
+            def.ColdOpen = node["coldOpen"].AsString(def.ColdOpen);
+            def.ColdAsk = node["coldAsk"].AsString(def.ColdAsk);
+            def.ColdPush = node["coldPush"].AsString(def.ColdPush);
+            def.ColdMoney = node["coldMoney"].AsString(def.ColdMoney);
+            def.ColdGive = node["coldGive"].AsString(def.ColdGive);
+            def.ColdLeave = node["coldLeave"].AsString(def.ColdLeave);
+            def.TruceLine = node["truceLine"].AsString(def.TruceLine);
+            def.TruceNote = node["truceNote"].AsString(def.TruceNote);
+            def.TruceReply = node["truceReply"].AsString(def.TruceReply);
+            def.DoorOnly = node["doorOnly"].AsBool(def.DoorOnly);
 
             ReplaceList(def.ArrivalLines, node["arrivalLines"]);
             ReplaceList(def.CarryLines, node["carryLines"]);
@@ -932,9 +942,13 @@ namespace Hoodrich.Supply
             // rule that used to apply only to the two Docks contacts applies to all fourteen.
             // The alternative was a phone menu where half the numbers worked anywhere and half
             // did not, with nothing on screen to say which was which.
+            // A MAN WHO ONLY SELLS AT HIS DOOR has no phone to answer, wherever you ring from.
+            // Said before the house, because it is the real reason: going home would not help.
+            if (def.DoorOnly) return "Only sells at his door";
+
             if (needHome && AtHome != null && !AtHome())
             {
-                return "Call him from the house";
+                return "Call him from one of your places";
             }
 
             // NOT A CONTACT UNTIL YOU HAVE MET HIM.

@@ -959,6 +959,28 @@ namespace Hoodrich.Core
                 // a door anybody may use. See InteriorDoor, "rented".
                 door.Rent = (int)Clamp(from.GetInt(section, "RentPerWeek", 0), 0f, 1000000f);
 
+                // THE HOUSE NUMBER, for a door named after its address: the street's own name
+                // goes after it once the game has said. See DoorSpec.Address.
+                door.Address = from.GetString(section, "Address", "").Trim();
+
+                // MORE THAN ONE WAY IN. Door2, Door3 and Door4, each three coordinates and a
+                // heading like the first. See DoorSpec.MoreDoors.
+                for (var n = 2; n <= 4; n++)
+                {
+                    var wx = from.GetFloat(section, "Door" + n + "X", 0f);
+                    var wy = from.GetFloat(section, "Door" + n + "Y", 0f);
+                    if (Math.Abs(wx) < 0.01f && Math.Abs(wy) < 0.01f) continue;
+
+                    door.MoreDoors.Add(new Vector3(wx, wy, from.GetFloat(section, "Door" + n + "Z", door.DoorZ)));
+                    door.MoreDoorHeadings.Add(from.GetFloat(section, "Door" + n + "Heading", door.DoorHeading));
+                }
+
+                // Where a plug's car pulls up for it. See DoorSpec.DropX.
+                door.DropX = from.GetFloat(section, "DropX", 0f);
+                door.DropY = from.GetFloat(section, "DropY", 0f);
+                door.DropZ = from.GetFloat(section, "DropZ", 0f);
+                door.DropHeading = from.GetFloat(section, "DropHeading", 0f);
+
                 // A door with nothing on either end of it is a section somebody started and
                 // did not finish. Better ignored than put at the middle of the map.
                 if (Math.Abs(door.DoorX) < 0.01f && Math.Abs(door.DoorY) < 0.01f) continue;

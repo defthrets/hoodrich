@@ -383,6 +383,16 @@ namespace Hoodrich.Gangs
 
         public bool IsRunning { get; private set; }
 
+        /// <summary>
+        /// Whether a war with this set is on this minute: one they brought, or one you started
+        /// on their block. See Affiliation.Squared -- nobody is squared with anybody during one.
+        /// </summary>
+        public bool Fighting(string gangId)
+        {
+            return IsRunning && _attacker != null &&
+                   string.Equals(_attacker.Id, gangId, StringComparison.OrdinalIgnoreCase);
+        }
+
         public GangWar Defend(string who, Vector3 where)
         {
             _targets.Add(new WarTarget { Who = who, Where = where });

@@ -1556,7 +1556,23 @@ namespace Hoodrich.Dealing
             if (Crew == null) return null;
 
             var beefing = Crew.BeefingWith();
-            return beefing.Count == 0 ? null : beefing[0];
+
+            // NOT THE SET WHOSE BLOCK THIS IS, WHEN THEY SQUARED HIM. Serving on their block is
+            // the one thing their man let him do, and a carload of them for it would be his word
+            // broken; anybody else at war with his lot still comes. See Affiliation.Squared.
+            foreach (var them in beefing)
+            {
+                if (Turf != null && Turf.Owner != null &&
+                    string.Equals(them.Id, Turf.Owner.Id, StringComparison.OrdinalIgnoreCase) &&
+                    Crew.Squared(them.Id))
+                {
+                    continue;
+                }
+
+                return them;
+            }
+
+            return null;
         }
 
         private void SpawnDriveBy(Ped player, GangDef gang)

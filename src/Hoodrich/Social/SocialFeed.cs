@@ -948,6 +948,29 @@ namespace Hoodrich.Social
             return post.Plain;
         }
 
+        /// <summary>
+        /// One of a set's own has squared you with his homies, and the set hears about it -- in
+        /// its own words, from its own people, "Squared" + the set, the way FoundYou is. The
+        /// subject is the man who said so. See Gangs.Affiliation.Squared.
+        /// </summary>
+        public string SquaredBy(string gangId, string who)
+        {
+            _forceGang = gangId ?? "";
+
+            var post = Build("Squared" + Pretty(gangId), who ?? "") ?? Build("Squared", who ?? "");
+
+            _forceGang = "";
+
+            if (post == null) return null;
+
+            post.AboutYou = true;
+
+            Add(post);
+            Notify(post);
+
+            return post.Plain;
+        }
+
         public string PostAsYouSometimes(string set, string subject, int gapMs, int chancePercent)
         {
             if (string.IsNullOrEmpty(set)) return null;

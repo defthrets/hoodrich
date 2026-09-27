@@ -248,6 +248,12 @@ namespace Hoodrich.Territory
                     // this probe works out is still worked out -- the status drives the
                     // gang behaviour, and that has nothing to do with telling you about it.
                 }
+
+                // AND RE-ASKED EVERY SCAN, not only on crossing into the zone. Whether a set has
+                // a problem with him changes while he stands still -- a truce agreed at a door,
+                // a war started on the block -- and the answer from the moment he walked in went
+                // stale with it.
+                _status = Classify(_owner);
             }
             catch (Exception ex)
             {
@@ -262,6 +268,11 @@ namespace Hoodrich.Territory
             var mine = _affiliation.Current;
             if (mine == null) return TurfStatus.Foreign;
             if (owner.Id == mine.Id) return TurfStatus.Home;
+
+            // SQUARED ON THEIR BLOCK. One of theirs vouched for him, so serving here gets him
+            // the look a stranger gets rather than the one an enemy gets, whatever the beef
+            // says -- until a war with them is on. See Affiliation.Squared.
+            if (_affiliation.Squared(owner.Id)) return TurfStatus.Foreign;
 
             // Hostile means THEY have a problem with you, not that the file once said their
             // gang and yours do not get on. Somebody's block is only dangerous ground if you

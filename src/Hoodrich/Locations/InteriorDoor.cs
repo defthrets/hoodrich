@@ -67,6 +67,33 @@ namespace Hoodrich.Locations
         /// </summary>
         public readonly List<Vector3> Elsewhere = new List<Vector3>();
 
+        /// <summary>
+        /// The house number, for a door whose name is its address: "32", with the game's own
+        /// name for the street the door is on after it once the game has said -- see
+        /// InteriorDoor.NameTheStreet. Empty for a door whose Name is the whole of it.
+        ///
+        /// NOT TYPED IN. Michael asked for the houses to carry their real street names
+        /// (2026-09-27), and the only thing that knows what the street outside a door is called
+        /// is the game -- the same call its own HUD makes for the name in the corner of the
+        /// screen. A street read off the map by eye is a guess; this is what the sign says.
+        /// </summary>
+        public string Address = "";
+
+        /// <summary>
+        /// The other ways in, for a place with more than one: Door2, Door3 and Door4 in the ini,
+        /// each where a man stands at it and the way he faces it. The first way in is DoorX/Y/Z
+        /// and it carries the blip. Any of them lets him in, and he comes back out of the one he
+        /// went in by. See InteriorDoor.FromTheDoor.
+        /// </summary>
+        public readonly List<Vector3> MoreDoors = new List<Vector3>();
+        public readonly List<float> MoreDoorHeadings = new List<float>();
+
+        /// <summary>
+        /// Where a plug's car pulls up for this place, and the way it points: DropX/Y/Z and
+        /// DropHeading, read off the HUD stood where the car should stop. Nought for a place
+        /// nobody has stood one on, which no plug is rung to. See Supply.Delivery.DropNear.
+        /// </summary>
+        public float DropX, DropY, DropZ, DropHeading;
     }
 
     /// <summary>
@@ -134,6 +161,82 @@ namespace Hoodrich.Locations
         /// The game's date as one number, so a week is arithmetic. Months taken as thirty-one,
         /// the way the Parkview rooms count, so a short month never runs it backwards.
         /// </summary>
+        /// <summary>
+        /// The door he is behind, by its ini section, or empty when he is outside: a line
+        /// "in|House77" in the same file, so a script reload or a game that ended with him in a
+        /// room brings him back out of the door he went in by. See InteriorDoor.Best.
+        ///
+        /// Kept in memory once read. It is asked for on the frame he is found in a room nothing
+        /// put him in, and a file read on a frame is a stutter for no reason.
+        /// </summary>
+        public static string WayIn()
+        {
+            if (_wayIn != null) return _wayIn;
+
+            _wayIn = "";
+
+            try
+            {
+                if (!System.IO.File.Exists(Paths.LeasesFile)) return _wayIn;
+
+                foreach (var raw in System.IO.File.ReadAllLines(Paths.LeasesFile))
+                {
+                    var bits = raw.Trim().Split('|');
+                    if (bits.Length < 2 || !string.Equals(bits[0].Trim(), WayInKey, StringComparison.OrdinalIgnoreCase)) continue;
+
+                    _wayIn = bits[1].Trim();
+                    break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not read the way in from leases.txt: " + ex.Message);
+            }
+
+            return _wayIn;
+        }
+
+        /// <summary>Writes down the door he went in by, or that he is out when it is empty.</summary>
+        public static void WentIn(string section)
+        {
+            section = section ?? "";
+            if (string.Equals(WayIn(), section, StringComparison.OrdinalIgnoreCase)) return;
+
+            _wayIn = section;
+
+            // The lease lines are left exactly as they are: only this one line changes.
+            try
+            {
+                var lines = new List<string>();
+
+                if (System.IO.File.Exists(Paths.LeasesFile))
+                {
+                    foreach (var raw in System.IO.File.ReadAllLines(Paths.LeasesFile))
+                    {
+                        var bits = raw.Trim().Split('|');
+                        if (string.Equals(bits[0].Trim(), WayInKey, StringComparison.OrdinalIgnoreCase)) continue;
+
+                        lines.Add(raw);
+                    }
+                }
+                else
+                {
+                    lines.Add("# The doors you rent, and the day the next week falls due. Written by the mod.");
+                }
+
+                if (section.Length > 0) lines.Add(WayInKey + "|" + section);
+
+                System.IO.File.WriteAllLines(Paths.LeasesFile, lines.ToArray());
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not write the way in to leases.txt: " + ex.Message);
+            }
+        }
+
+        private const string WayInKey = "in";
+        private static string _wayIn;
+
         public static int Today()
         {
             try
@@ -335,9 +438,337 @@ namespace Hoodrich.Locations
                 var player = Game.Player.Character;
                 if (player == null || !player.Exists() || player.IsInVehicle()) return false;
 
-                return player.Position.DistanceTo(Door) <= DoorRange;
+                return FromTheDoor(player.Position) <= DoorRange;
             }
         }
+
+        /// <summary>Every way in: the ini's door first, then Door2 and on. See DoorSpec.MoreDoors.</summary>
+        private readonly List<Vector3> _ways = new List<Vector3>();
+        private readonly List<float> _wayHeadings = new List<float>();
+
+        /// <summary>How far a spot is from the nearest way in.</summary>
+        public float FromTheDoor(Vector3 at)
+        {
+            var best = float.MaxValue;
+
+            foreach (var way in _ways)
+            {
+                var gap = at.DistanceTo(way);
+                if (gap < best) best = gap;
+            }
+
+            return best;
+        }
+
+        /// <summary>The way in nearest a spot.</summary>
+        public Vector3 WayInNearest(Vector3 at)
+        {
+            var best = Door;
+            var bestGap = float.MaxValue;
+
+            foreach (var way in _ways)
+            {
+                var gap = at.DistanceTo(way);
+                if (gap >= bestGap) continue;
+
+                best = way;
+                bestGap = gap;
+            }
+
+            return best;
+        }
+
+        /// <summary>What it is called, the street and all once the game has said. See NameTheStreet.</summary>
+        public string Name => Capital(_spec.Name);
+
+        /// <summary>Whether it is his to use: rented and paid up, or a door anybody may use.</summary>
+        public bool IsHis => _spec.Rent <= 0 || _rented;
+
+        /// <summary>Whether somebody has stood where a plug's car pulls up for this place. See DoorSpec.DropX.</summary>
+        public bool HasDrop => Math.Abs(_spec.DropX) > 0.01f || Math.Abs(_spec.DropY) > 0.01f;
+
+        public Vector3 DropAt => new Vector3(_spec.DropX, _spec.DropY, _spec.DropZ);
+        public float DropHeading => _spec.DropHeading;
+
+        /// <summary>The first way in, which is the front door. Where a plug takes the box.</summary>
+        public Vector3 FrontDoor => Door;
+
+        /// <summary>
+        /// Where a plug's car pulls up for this place, and the way it points, read like a spot
+        /// off the HUD: the Drop in doors.ini where somebody has stood one, and otherwise the
+        /// side of the road nearest the front door, worked out from the game's own road nodes.
+        ///
+        /// EVERY STASH HOUSE, not only the ones with a kerb read for them. Michael, 2026-09-27:
+        /// "make all the stash houses have the abilities to call the plugs from 20m from the
+        /// entrys radius and the pull will pull up outside and deliver to the front door". A
+        /// kerb somebody stood on is still the better answer and still wins; this is what a
+        /// place without one gets, worked out once, the first time a plug is rung to it -- he is
+        /// within twenty metres of the door by then, so the roads round it are loaded.
+        /// </summary>
+        public bool TryDrop(out Vector3 park, out float heading)
+        {
+            if (HasDrop)
+            {
+                park = DropAt;
+                heading = DropHeading;
+                return true;
+            }
+
+            if (!_kerbFound && _kerbTries < KerbTriesMost) FindTheKerb();
+
+            park = _kerb;
+            heading = _kerbHeading;
+            return _kerbFound;
+        }
+
+        /// <summary>
+        /// The side of the nearest road to the front door, and the heading along it that puts
+        /// the kerb on the car's right -- the side a car pulls in on, in a city that drives on
+        /// the right.
+        /// </summary>
+        private void FindTheKerb()
+        {
+            _kerbTries++;
+
+            try
+            {
+                var door = Door;
+
+                var nodeOut = new OutputArgument();
+                var headOut = new OutputArgument();
+
+                if (!Function.Call<bool>(Hash.GET_CLOSEST_VEHICLE_NODE_WITH_HEADING,
+                                         door.X, door.Y, door.Z, nodeOut, headOut, 1, 3f, 0f))
+                {
+                    return;
+                }
+
+                var node = nodeOut.GetResult<Vector3>();
+                var along = headOut.GetResult<float>();
+                if (node == Vector3.Zero) return;
+
+                // The edge of the road nearest the door. Where the game has none to give, the
+                // node itself: a car stopped in the lane outside is still outside.
+                var sideOut = new OutputArgument();
+                var side = Function.Call<bool>(Hash.GET_POSITION_BY_SIDE_OF_ROAD, door.X, door.Y, door.Z, -1, sideOut)
+                    ? sideOut.GetResult<Vector3>()
+                    : Vector3.Zero;
+
+                if (side == Vector3.Zero || side.DistanceTo(node) > KerbFromNodeMost) side = node;
+
+                // Half a car in from the edge, so it sits in the gutter rather than on the kerb.
+                var inward = new Vector3(node.X - side.X, node.Y - side.Y, 0f);
+                var width = inward.Length();
+                var spot = width > KerbInset
+                    ? side + inward * (KerbInset / width)
+                    : side;
+
+                if (spot.DistanceTo(door) > KerbFromDoorMost)
+                {
+                    Log.Info("The nearest road to " + _spec.Name + "'s front door is " + (int)spot.DistanceTo(door) +
+                             "m off; no plug is rung to it until a Drop is read in doors.ini.");
+                    _kerbTries = KerbTriesMost;
+                    return;
+                }
+
+                // The kerb on his right. The node's heading runs one way or the other along the
+                // road; turned round when the kerb is on the other side of it.
+                var r = along * (float)(Math.PI / 180.0);
+                var right = new Vector3((float)Math.Cos(r), (float)Math.Sin(r), 0f);
+                var toKerb = new Vector3(side.X - node.X, side.Y - node.Y, 0f);
+
+                if (toKerb.Length() > 0.5f && right.X * toKerb.X + right.Y * toKerb.Y < 0f)
+                {
+                    along += 180f;
+                    if (along >= 360f) along -= 360f;
+                }
+
+                // A standing man's height, the way a Drop is read, so both go through the same
+                // arithmetic on the way to a parked car.
+                _kerb = new Vector3(spot.X, spot.Y, spot.Z + 1f);
+                _kerbHeading = along;
+                _kerbFound = true;
+
+                Log.Info("A plug pulls up for " + _spec.Name + " at " + _kerb + " facing " +
+                         along.ToString("0") + ", the side of the road nearest its front door.");
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Could not find a kerb for " + _spec.Name + ": " + ex.Message);
+            }
+        }
+
+        private Vector3 _kerb;
+        private float _kerbHeading;
+        private bool _kerbFound;
+        private int _kerbTries;
+
+        /// <summary>How many times the roads are asked before a place goes without.</summary>
+        private const int KerbTriesMost = 3;
+
+        /// <summary>How far in from the road's edge the car sits.</summary>
+        private const float KerbInset = 1.3f;
+
+        /// <summary>The edge the game gives has to be on this road, and the road near this door.</summary>
+        private const float KerbFromNodeMost = 12f;
+        private const float KerbFromDoorMost = 45f;
+
+        /// <summary>
+        /// The door he went in by, while he is in.
+        ///
+        /// SEVERAL DOORS OPEN INTO ONE ROOM NOW. Apartment E2 and four of the stash houses are
+        /// all the low-end apartment, and two more share the medium one -- the rooms every flat
+        /// in GTA Online shares -- and NoticeHesInThere claims him for any door whose room he
+        /// is stood in. So every one of them claimed him the moment he walked in through one,
+        /// and the way out was whichever door happened to be updated first when he pressed the
+        /// button: in on Dutch London, out on the landing at Parkview.
+        ///
+        /// The door that has him keeps him, and the others leave him alone until it lets go.
+        /// </summary>
+        private static InteriorDoor _wentInBy;
+
+        /// <summary>Every door there is, so the doors onto one room can agree which of them has him.</summary>
+        private static readonly List<InteriorDoor> All = new List<InteriorDoor>();
+
+        /// <summary>This one has him. Written down, so a reload lets him out of it too.</summary>
+        private void Claim()
+        {
+            _wentInBy = this;
+            Leases.WentIn(_spec.Section);
+        }
+
+        /// <summary>He is out of this one.</summary>
+        private void LetGo()
+        {
+            if (_wentInBy != this) return;
+
+            _wentInBy = null;
+            Leases.WentIn("");
+        }
+
+        /// <summary>
+        /// Which of the doors onto this room has him, when nothing here put him in it.
+        ///
+        /// The one he went in by, if the leases remember it; otherwise one he rents; otherwise
+        /// the first. Every door asks and they all get the same answer, so exactly one of them
+        /// claims him.
+        /// </summary>
+        private static InteriorDoor Best(int room)
+        {
+            var wayIn = Leases.WayIn();
+            InteriorDoor rented = null;
+            InteriorDoor first = null;
+
+            foreach (var door in All)
+            {
+                if (door == null) continue;
+
+                int theirs;
+
+                try
+                {
+                    var at = door.Inside;
+                    theirs = Function.Call<int>(Hash.GET_INTERIOR_AT_COORDS, at.X, at.Y, at.Z);
+                }
+                catch
+                {
+                    continue;
+                }
+
+                if (theirs != room) continue;
+
+                if (wayIn.Length > 0 &&
+                    string.Equals(door._spec.Section, wayIn, StringComparison.OrdinalIgnoreCase))
+                {
+                    return door;
+                }
+
+                if (rented == null && door._spec.Rent > 0 && door._rented) rented = door;
+                if (first == null) first = door;
+            }
+
+            return rented ?? first;
+        }
+
+        /// <summary>
+        /// Puts the street's own name on a door named by its address. See DoorSpec.Address.
+        ///
+        /// The game names a street from the road nodes round it, and it only has those for the
+        /// part of the map near the player -- so the nodes round the door are asked for first,
+        /// and the name is asked once they are there. From anywhere for the first half-minute,
+        /// which covers most doors; after that only from near enough that the roads are loaded
+        /// anyway. Until then the door answers to its Name.
+        /// </summary>
+        private void NameTheStreet(Ped player)
+        {
+            if (_named || string.IsNullOrEmpty(_spec.Address)) return;
+
+            var now = Game.GameTime;
+            if (_nameFrom == 0) _nameFrom = now;
+
+            if (now - _nameFrom > NameFarMs && player.Position.DistanceTo(Door) > NameNear) return;
+
+            try
+            {
+                var at = Door;
+
+                Function.Call(Hash.REQUEST_PATH_NODES_IN_AREA_THIS_FRAME,
+                              at.X - NameBox, at.Y - NameBox, at.X + NameBox, at.Y + NameBox);
+
+                if (!Function.Call<bool>(Hash.ARE_NODES_LOADED_FOR_AREA,
+                                         at.X - NameBox, at.Y - NameBox, at.X + NameBox, at.Y + NameBox))
+                {
+                    return;
+                }
+
+                var street = new OutputArgument();
+                var crossing = new OutputArgument();
+
+                Function.Call(Hash.GET_STREET_NAME_AT_COORD, at.X, at.Y, at.Z, street, crossing);
+
+                var hash = street.GetResult<int>();
+                var name = hash == 0
+                    ? ""
+                    : (Function.Call<string>(Hash.GET_STREET_NAME_FROM_HASH_KEY, hash) ?? "").Trim();
+
+                _named = true;
+
+                if (name.Length == 0)
+                {
+                    Log.Info("The game has no street at the door of " + _spec.Name + "; it keeps that name.");
+                    return;
+                }
+
+                var was = _spec.Name;
+                _spec.Name = _spec.Address + " " + name;
+
+                try
+                {
+                    if (_blip != null && _blip.Exists()) _blip.Name = Capital(_spec.Name);
+                }
+                catch
+                {
+                    // It takes the name when it is next made.
+                }
+
+                Log.Info(was + " is " + _spec.Name + ", by the game's own street names.");
+            }
+            catch (Exception ex)
+            {
+                _named = true;
+                Log.Debug("Could not name the street at " + _spec.Name + ": " + ex.Message);
+            }
+        }
+
+        private bool _named;
+        private int _nameFrom;
+
+        /// <summary>How long a door is named from anywhere, and from how near after that.</summary>
+        private const int NameFarMs = 30000;
+        private const float NameNear = 300f;
+
+        /// <summary>Half the side of the square of road asked for round the door.</summary>
+        private const float NameBox = 60f;
 
 
         /// <summary>
@@ -389,6 +820,18 @@ namespace Hoodrich.Locations
         public InteriorDoor(DoorSpec spec)
         {
             _spec = spec;
+
+            // Every way in, the first one first. See FromTheDoor.
+            _ways.Add(Door);
+            _wayHeadings.Add(_spec.DoorHeading);
+
+            for (var i = 0; i < _spec.MoreDoors.Count; i++)
+            {
+                _ways.Add(_spec.MoreDoors[i]);
+                _wayHeadings.Add(i < _spec.MoreDoorHeadings.Count ? _spec.MoreDoorHeadings[i] : _spec.DoorHeading);
+            }
+
+            All.Add(this);
 
             if (_spec.Rent > 0)
             {
@@ -472,7 +915,10 @@ namespace Hoodrich.Locations
             get
             {
                 if (_cameFrom == Vector3.Zero) return Door;
-                return _cameFrom.DistanceTo(Door) > DoorwaySlack ? Door : _cameFrom;
+
+                // Any of the ways in. A place with two had him coming out of the first, whichever
+                // he used, because the second is further than the slack from it.
+                return FromTheDoor(_cameFrom) > DoorwaySlack ? Door : _cameFrom;
             }
         }
 
@@ -494,6 +940,8 @@ namespace Hoodrich.Locations
             if (_spec.Rent > 0) Rent(player);
 
             NoticeHesInThere(player);
+
+            NameTheStreet(player);
 
             EnsureBlip();
 
@@ -522,9 +970,9 @@ namespace Hoodrich.Locations
 
             if (shut && Hush != null && Hush()) return;
 
-            Ring(Door, player);
+            foreach (var way in _ways) Ring(way, player);
 
-            if (player.Position.DistanceTo(Door) > DoorRange) return;
+            if (FromTheDoor(player.Position) > DoorRange) return;
 
             // Shut, and saying so. See Shut.
             if (shut)
@@ -1089,9 +1537,10 @@ namespace Hoodrich.Locations
                 }
 
                 _inside = true;
-                Core.Indoors.Enter(Back, _spec.Name);
-                Core.Indoors.Enter(Back, _spec.Name);
-                Core.Indoors.Enter(Back, _spec.Name);
+                Claim();
+                Core.Indoors.Enter(Back, _spec.Section);
+                Core.Indoors.Enter(Back, _spec.Section);
+                Core.Indoors.Enter(Back, _spec.Section);
 
                 // Where he ended up, not where the ini said to put him. Everything about
                 // getting out again is measured from here.
@@ -1185,11 +1634,17 @@ namespace Hoodrich.Locations
 
             if (mine == 0 || mine != room) return;
 
+            // SEVERAL DOORS, ONE ROOM. The door he went in by keeps him; failing that, the one
+            // the leases say, one he rents, or the first. See _wentInBy.
+            if (_wentInBy != null && _wentInBy != this && _wentInBy._inside) return;
+            if (Best(room) != this) return;
+
             _inside = true;
+            Claim();
             _standing = player.Position;
-            Core.Indoors.Enter(Back, _spec.Name);
-            Core.Indoors.Enter(Back, _spec.Name);
-            Core.Indoors.Enter(Back, _spec.Name);
+            Core.Indoors.Enter(Back, _spec.Section);
+            Core.Indoors.Enter(Back, _spec.Section);
+            Core.Indoors.Enter(Back, _spec.Section);
             _enteredAt = Game.GameTime;
 
             // Switched on, and the furniture too, in case whatever put him here did not bring it.
@@ -1255,9 +1710,10 @@ namespace Hoodrich.Locations
                          "m from it; something else moved him, so it is forgotten.");
 
                 _inside = false;
-                Core.Indoors.Exit(_spec.Name);
-                Core.Indoors.Exit(_spec.Name);
-                Core.Indoors.Exit(_spec.Name);
+                LetGo();
+                Core.Indoors.Exit(_spec.Section);
+                Core.Indoors.Exit(_spec.Section);
+                Core.Indoors.Exit(_spec.Section);
                 _standing = Vector3.Zero;
                 return true;
             }
@@ -1344,7 +1800,7 @@ namespace Hoodrich.Locations
                 Fade(false);
 
                 player.Position = Back;
-                player.Heading = _cameFrom != Vector3.Zero && _cameFrom.DistanceTo(Door) <= DoorwaySlack
+                player.Heading = _cameFrom != Vector3.Zero && FromTheDoor(_cameFrom) <= DoorwaySlack
                     ? BackFacing
                     : _spec.DoorHeading;
 
@@ -1361,15 +1817,16 @@ namespace Hoodrich.Locations
                 Log.Info("Out of the " + _spec.Name + " to " + Back +
                          (_cameFrom == Vector3.Zero
                               ? " (the ini's door -- nothing remembered the way in)"
-                              : _cameFrom.DistanceTo(Door) > DoorwaySlack
+                              : FromTheDoor(_cameFrom) > DoorwaySlack
                                   ? " (the ini's door -- what was remembered was " +
-                                    (int)_cameFrom.DistanceTo(Door) + "m from it)"
+                                    (int)FromTheDoor(_cameFrom) + "m from it)"
                                   : " (the way he came in)"));
 
                 _inside = false;
-                Core.Indoors.Exit(_spec.Name);
-                Core.Indoors.Exit(_spec.Name);
-                Core.Indoors.Exit(_spec.Name);
+                LetGo();
+                Core.Indoors.Exit(_spec.Section);
+                Core.Indoors.Exit(_spec.Section);
+                Core.Indoors.Exit(_spec.Section);
                 _standing = Vector3.Zero;
 
                 Wait(400);
@@ -1630,6 +2087,11 @@ namespace Hoodrich.Locations
             catch { /* teardown */ }
 
             _blip = null;
+
+            // Not LetGo: the way in stays written down, so a reload with him in the room lets
+            // him out of the right door. Only this session's memory of the door goes.
+            if (_wentInBy == this) _wentInBy = null;
+            All.Remove(this);
 
             // The IPL is left loaded on purpose. Unloading an interior the player might be
             // standing in is a far worse ending than a warehouse nobody is looking at.

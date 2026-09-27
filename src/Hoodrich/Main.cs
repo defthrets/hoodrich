@@ -2577,6 +2577,12 @@ namespace Hoodrich
                 // running a second scan of its own.
                 _crew.RivalDropped = gang => _war.RivalDropped(gang);
 
+                // SQUARED ON THE BLOCK. A set's man can tell his homies to leave Franklin be on
+                // their streets -- kept on the save as "truce:<set>" -- and a war with that set
+                // puts it aside for as long as the war lasts. See Affiliation.Squared.
+                _crew.Truce = id => _state != null && _state.HasBeenOffered(TruceKey(id));
+                _crew.AtWar = id => _war != null && _war.Fighting(id);
+
                 // Not in the middle of a job. It keeps waiting rather than being cancelled --
                 // the debt does not expire because you happened to be working when it came due.
                 _payback.Busy = () => onAJob()
@@ -3197,6 +3203,12 @@ namespace Hoodrich
                         : null;
                 };
 
+                // THE MAN AT THE DOOR WHO DOES NOT LIKE YOU YET. Cold until his set has squared
+                // you, and the first sale is what squares you. See DealerTalk.Cold and Truce.
+                _juanTalk.Squared = def => def != null && _state != null &&
+                                           _state.HasBeenOffered(TruceKey(def.GangId));
+                _juanTalk.Square = MakeTruce;
+
                 _dealers.TalkBuilder = def =>
                 {
                     _juanTalk.Who = def;
@@ -3209,7 +3221,38 @@ namespace Hoodrich
                 // Denise's door and only Denise's: a box is brought to a house, and the room
                 // Parkview rents has no door a plug knows. The cupboard is reached from both.
                 _delivery.AtHome = () => _stash.AtDenise;
-                _dealers.AtHome = () => _stash.AtDenise;
+
+                // A STASH HOUSE OF HIS, stood within twenty metres of any of its ways in: the
+                // car pulls up on its kerb -- read, or worked out from the roads -- and the box
+                // goes to the front door. See Delivery.DropNear and InteriorDoor.TryDrop.
+                _delivery.DropNear = at =>
+                {
+                    foreach (var d in _doors)
+                    {
+                        if (d == null || !d.IsLet || !d.IsHis) continue;
+                        if (d.FromTheDoor(at) > Delivery.DropReach) continue;
+
+                        Vector3 park;
+                        float heading;
+                        if (!d.TryDrop(out park, out heading)) continue;
+
+                        return new Delivery.Drop
+                        {
+                            Name = d.Name,
+                            Park = park,
+                            Heading = heading,
+                            Door = d.FrontDoor
+                        };
+                    }
+
+                    return null;
+                };
+
+                // WHEREVER A PLUG WILL ACTUALLY COME. This asked only whether he was at Denise's,
+                // so at Parkview -- where the delivery itself has worked since 0.9.9 -- every
+                // plug on the phone was greyed out with "call him from the house" and the run
+                // could never be placed. The delivery is the one that knows where it goes.
+                _dealers.AtHome = () => _delivery.CanComeHere;
                 _delivery.HouseDoor = _stash.Position;
                 _delivery.House = _stash.Stash;
 
@@ -5518,6 +5561,44 @@ namespace Hoodrich
         /// types; "in Davis" is what a news report says, and the feed already has a slot for
         /// that.
         /// </summary>
+        /// <summary>The save's record that a set has squared him. See Affiliation.Squared.</summary>
+        private static string TruceKey(string gangId)
+        {
+            return "truce:" + (gangId ?? "").ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// His first buy off a man whose set has no love for him, and the man tells his homies.
+        ///
+        /// Written to the save, squared on the street at once rather than on the next pass, and
+        /// said on screen in so many words -- the part about wars included, because that is half
+        /// of what the man said. Then the block hears about it: his set always, you sometimes.
+        /// </summary>
+        private void MakeTruce(DealerDef def)
+        {
+            if (def == null || string.IsNullOrEmpty(def.GangId) || _state == null) return;
+
+            var key = TruceKey(def.GangId);
+            if (_state.HasBeenOffered(key)) return;
+
+            _state.MarkOffered(key);
+            _state.Touch();
+
+            if (_crew != null) _crew.SquareNow();
+
+            var gang = _gangs == null ? null : _gangs.Get(def.GangId);
+            var name = gang == null ? def.GangId : gang.Name;
+
+            Notify.Important("~y~" + name + "~s~ let you walk and serve on their blocks now. A war is still a war.");
+            Log.Info(def.Name + " squared him with " + def.GangId + ": the block lets him be. " +
+                     "Beef and wars were never his to call off.");
+
+            if (_social == null) return;
+
+            _social.SquaredBy(def.GangId, def.Name);
+            _social.PostAsYouSometimes("YouSquared", def.Name, 0, 60);
+        }
+
         private static string StreetNameHere()
         {
             try

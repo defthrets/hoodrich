@@ -589,6 +589,48 @@ namespace Hoodrich.Supply
         /// </summary>
         public bool IsGangDealer => !string.IsNullOrEmpty(GangId);
 
+        /// <summary>
+        /// A man from a set that has no love for Franklin, the first time: what he says when
+        /// you walk up, what you say back, what he says to that, what you say to THAT, and what
+        /// he says once he has decided your money is good. Then the shop.
+        ///
+        /// MICHAEL'S VAGOS MAN ON DUTCH LONDON (2026-09-27): "make it so hes hostile towards us
+        /// in dialogue at first, but frank just wants to buy from him, so he will alow the
+        /// sale". Franklin is not there for trouble and never offers any -- every answer on the
+        /// way in is him keeping it about the money, or walking away.
+        ///
+        /// Only until the truce. Once his set has squared you (see TruceLine) he greets you
+        /// with Greeting like anybody else, and this is never said again. Empty ColdOpen means
+        /// a man with no first meeting of his own.
+        /// </summary>
+        public string ColdOpen = "";
+        public string ColdAsk = "";
+        public string ColdPush = "";
+        public string ColdMoney = "";
+        public string ColdGive = "";
+        public string ColdLeave = "";
+
+        /// <summary>
+        /// What he says after the first sale: that he will tell his homies to leave you be on
+        /// their blocks -- walking through, and serving -- and then that it goes no further than
+        /// that. "aye holmes just cause we square doesnt mean i speak for the aldlies ya know
+        /// ese", in Michael's words, "meaning they will still have gang wars". TruceReply is
+        /// what you say back. See Gangs.Affiliation.Squared, which is what the words do.
+        /// </summary>
+        public string TruceLine = "";
+        public string TruceNote = "";
+        public string TruceReply = "";
+
+        /// <summary>
+        /// Sells at his door and nowhere else: no number, no delivery, no texts, no cold calls.
+        /// The phone lists him once you have met him and says so, rather than offering a call
+        /// he would never answer. See DealerManager.RefusalReason.
+        /// </summary>
+        public bool DoorOnly;
+
+        /// <summary>Whether he has a first meeting of his own. See ColdOpen.</summary>
+        public bool IsWary => !string.IsNullOrEmpty(ColdOpen);
+
         public bool IsOpenAt(int hour)
         {
             if (OpenHour == CloseHour) return true;

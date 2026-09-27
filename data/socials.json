@@ -939,6 +939,15 @@
       "voice": "hao_tuner"
     },
     {
+      "handle": "flaco_dutchlondon",
+      "name": "Flaco",
+      "gender": "male",
+      "pic": "",
+      "verified": false,
+      "voice": "flaco_dutchlondon",
+      "gang": "vagos"
+    },
+    {
       "handle": "weicheng_ls",
       "name": "Wei Cheng",
       "gender": "male",
@@ -7594,6 +7603,39 @@
       "cheapest thing in this city right now is in a basement in strawberry",
       "you can't buy a connect. you gotta drive one to la puerta and get shot at with him"
     ],
+    "Squared": [
+      "word from {subject}: the green boy can walk through. don't make it more than that",
+      "{subject} said his money's good. so it's good. that's all it is",
+      "somebody from chamberlain been buying on the east side and nobody's touched him. {subject}'s call",
+      "one of forum drive's own is allowed on the block now. ask {subject} why, not me",
+      "{subject} vouched for the chamberlain boy. the block holds it. the war don't care",
+      "franklin got a door on the east side now. one door. {subject}'s"
+    ],
+    "SquaredVagos": [
+      "{subject} said let the green shirt shop. so we let him shop. orale",
+      "{subject} vouched for the chamberlain boy. he walks through rancho, nobody trips. that's it tho",
+      "vatos seen franklin on dutch london {timeofday}. {subject} said leave him be. we leaving him be",
+      "one green shirt allowed on the east side and it's cause his money spend. don't get comfortable",
+      "{subject} don't speak for the whole barrio. but on the block his word holds",
+      "franklin buying off {subject} now. rancho don't care what you are if you paying",
+      "we square with the one green boy. the rest of forum drive still on the list",
+      "nobody touches franklin on the block. {subject}'s word. a war's a different thing, ese",
+      "if franklin come through amarillo let him through. homie paid",
+      "que onda chamberlain. {subject} said you good. don't make him a liar",
+      "the homies asked why the green boy walked out of rancho breathing. ask {subject}",
+      "la neta, his money was good and he kept his mouth shut. {subject} respects that. so we do"
+    ],
+    "YouSquared": [
+      "bought off a vago on dutch london today and walked out breathing",
+      "rancho got one door open for me now. just the one",
+      "man said we square. also said that don't mean nothing come war time. fair",
+      "never thought i'd be buying off the yellow. money don't know what colour it is",
+      "walked through rancho today and nobody said a word. strange feeling",
+      "{subject} ain't friendly. he's square. that's better",
+      "copped off the east side. don't tell lamar",
+      "the yellow let me serve on they blocks now. i ain't testing how far that go",
+      "{subject} made me stand on his porch for five minutes before he opened his mouth. worth it"
+    ],
     "YouDidTheHunt": [
       "went hunting today. that's the post",
       "three of them and not one heard us coming",
@@ -10879,6 +10921,29 @@
       ],
       "AmbientBeach": [
         "pacific bluffs beach club. my fathers favourite. he goes. i stay. we. we take turns"
+      ]
+    },
+    "flaco_dutchlondon": {
+      "Ambient": [
+        "door's open. knock right or don't knock",
+        "dutch london all day. you know where",
+        "don't text me. come see me",
+        "if you gotta ask what i got you ain't ready",
+        "sun out on dutch london. homies out. business out",
+        "somebody keep ringing the bell like it's a store. it is. but don't",
+        "three things on the menu. no substitutions",
+        "rancho quiet today. i like it quiet",
+        "i don't do deliveries. i do doors",
+        "if you ain't buying, you standing on my porch for what",
+        "been on this door since before the bars was on it",
+        "que onda. same place, same prices, same me",
+        "the homies bored. bored is good. bored means nothing happened",
+        "don't bring nobody i don't know. don't bring nobody i do know either"
+      ],
+      "SquaredVagos": [
+        "the green boy's money spends. told the homies leave him be on the block. that's all it is",
+        "square with franklin on the block. i don't speak for nothing past that",
+        "he paid and he didn't play me. that buys you the block. it don't buy you the barrio"
       ]
     },
     "hao_tuner": {

@@ -215,6 +215,81 @@ namespace Hoodrich.Supply
 
         private bool _opening;
 
+        /// <summary>
+        /// Set by Main: whether this man's set has already squared you. See DealerDef.ColdOpen.
+        /// </summary>
+        public Func<DealerDef, bool> Squared;
+
+        /// <summary>Set by Main: his set squares you -- he tells his homies. See DealerDef.TruceLine.</summary>
+        public Action<DealerDef> Square;
+
+        private bool IsSquared(DealerDef def)
+        {
+            try { return def != null && Squared != null && Squared(def); }
+            catch { return false; }
+        }
+
+        /// <summary>
+        /// The first time, at a door where you are not welcome. See DealerDef.ColdOpen.
+        ///
+        /// Two exchanges and then the shop, with a way out at every step: Franklin says what
+        /// he came for, gets pushed on it, and keeps it about the money. Nothing here can go
+        /// wrong for him beyond being told to leave -- the man is hostile in what he SAYS, which
+        /// is what was asked for, and the sale is what he decides in the end.
+        /// </summary>
+        private DialogueNode Cold()
+        {
+            var node = Node(Def.ColdOpen);
+
+            node.Say(His(Def.ColdAsk, "I ain't here for trouble. I'm just trying to buy."),
+                     ColdPushed, "Say what you came for").MovesOn();
+
+            node.Leave(His(Def.ColdLeave, "My bad. I'm gone."));
+            return node;
+        }
+
+        private DialogueNode ColdPushed()
+        {
+            if (string.IsNullOrEmpty(Def.ColdPush)) return ColdGiven();
+
+            var node = Node(Def.ColdPush);
+
+            node.Say(His(Def.ColdMoney, "Money spends the same on every block."),
+                     ColdGiven, "Keep it about the money").MovesOn();
+
+            node.Leave(His(Def.ColdLeave, "My bad. I'm gone."));
+            return node;
+        }
+
+        /// <summary>He decides your money is good, says so, and the stock is up.</summary>
+        private DialogueNode ColdGiven()
+        {
+            return string.IsNullOrEmpty(Def.ColdGive) ? Counter() : Beat(Def.ColdGive, Counter);
+        }
+
+        /// <summary>
+        /// After the first sale: he will tell his homies, and it goes no further than the block.
+        /// The first line says itself and hands on; the second waits for your answer.
+        /// </summary>
+        private DialogueNode Truce()
+        {
+            Func<DialogueNode> note = () =>
+            {
+                var said = Node(Def.TruceNote);
+                said.Leave(His(Def.TruceReply, "That's fair."));
+                return said;
+            };
+
+            if (string.IsNullOrEmpty(Def.TruceNote))
+            {
+                var only = Node(His(Def.TruceLine, "Aight. We square."));
+                only.Leave(His(Def.TruceReply, "That's fair."));
+                return only;
+            }
+
+            return string.IsNullOrEmpty(Def.TruceLine) ? note() : Beat(Def.TruceLine, note);
+        }
+
         public DialogueNode Root()
         {
             if (House == null)
@@ -234,6 +309,16 @@ namespace Hoodrich.Supply
             if (_opening)
             {
                 _opening = false;
+
+                // NOT WELCOME YET. A man from a set that has not squared you meets you at his door
+                // the way that set meets anybody from Chamberlain, and the shop is at the end of
+                // that rather than the start of it. See Cold. No number either: he has none to
+                // give. Face to face only -- a courier is never this man.
+                if (Def != null && Def.IsWary && Who != null && !IsSquared(Def))
+                {
+                    Def.JustMet = false;
+                    return Cold();
+                }
 
                 var hello = Def == null ? "" : Def.Greeting;
 
@@ -701,6 +786,16 @@ namespace Hoodrich.Supply
 
                 Log.Info("Bought " + grams.ToString("0") + "g " + product.Id + " off " + Name +
                          " for $" + cost + ", hand to hand.");
+
+                // THE FIRST SALE SQUARES YOU WITH HIS SET. He says so, and says how far it goes.
+                // See Truce and DealerDef.TruceLine.
+                if (Def != null && Def.IsWary && !IsSquared(Def))
+                {
+                    try { if (Square != null) Square(Def); }
+                    catch (Exception ex) { Log.Error("Could not square him with " + Def.GangId + ".", ex); }
+
+                    return Truce();
+                }
 
                 var got = Node(His(Def == null ? "" : Def.HandOverLine,
                                    "Don't stand there holding it. Go on."));

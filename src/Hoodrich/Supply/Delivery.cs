@@ -428,6 +428,107 @@ namespace Hoodrich.Supply
             };
         }
 
+        /// <summary>A stash house's own kerb, and the way in nearest it. See DropNear.</summary>
+        internal sealed class Drop
+        {
+            public string Name = "";
+            public Vector3 Park;
+            public float Heading;
+            public Vector3 Door;
+        }
+
+        /// <summary>
+        /// Set by Main: a house of his with a kerb read for it, when he is stood within reach of
+        /// its door, or null.
+        ///
+        /// THE STASH HOUSES, as well as Denise's and Parkview. Michael stood where a car should
+        /// pull up for number 7 on 2026-09-27 -- "this is where the dealers should pull up to in
+        /// there cars when i can call from a 20m radius of the door they will deleiver the
+        /// pacage to the door entry" -- and then every stash house, not only that one. So a
+        /// place of his is somewhere a plug comes to: he parks on its kerb (the Drop in
+        /// doors.ini where somebody stood one, the side of the nearest road where not), waits on
+        /// the pavement between the car and the door, and walks the box up to the front door,
+        /// where it goes in the stash. See InteriorDoor.TryDrop.
+        /// </summary>
+        public Func<Vector3, Drop> DropNear;
+
+        /// <summary>How near a door counts as being at the house, for ringing a plug to it.</summary>
+        public const float DropReach = 20f;
+
+        /// <summary>A stash house, from its kerb and its door. See DropNear.</summary>
+        private static Site StashHouse(Drop drop)
+        {
+            var heading = drop.Heading;
+            var ahead = Forward(heading);
+
+            // The HUD reads where a man stands; the car sits half a metre lower. See Parkview.
+            var park = new Vector3(drop.Park.X, drop.Park.Y, drop.Park.Z - 0.5f);
+
+            // WHERE HE WAITS: off the car toward the door, facing up the path you will come
+            // down. Nobody stood on a meeting spot at these houses, and the kerb and the door
+            // between them already say where one goes.
+            var toDoor = new Vector3(drop.Door.X - drop.Park.X, drop.Door.Y - drop.Park.Y, 0f);
+            var gap = toDoor.Length();
+
+            var meet = gap > 0.5f
+                ? drop.Park + toDoor * (Math.Min(MeetOffTheCar, gap * 0.5f) / gap)
+                : drop.Park;
+
+            return new Site
+            {
+                Name = drop.Name,
+                Park = park,
+                Heading = heading,
+                Approach = park - ahead * ApproachWest,
+                Meet = meet,
+                MeetHeading = HeadingOf(drop.Door - meet),
+                ToYou = false,
+                Door = drop.Door,
+                HasInside = false,
+                LeaveFor = park + ahead * 150f,
+                Landed = "in the stash"
+            };
+        }
+
+        /// <summary>How far off the car he waits, toward the door, where nobody measured a spot.</summary>
+        private const float MeetOffTheCar = 3f;
+
+        /// <summary>The heading that points along a direction on the ground: Forward, the other way round.</summary>
+        private static float HeadingOf(Vector3 along)
+        {
+            var h = (float)(Math.Atan2(-along.X, along.Y) * 180.0 / Math.PI);
+            return h < 0f ? h + 360f : h;
+        }
+
+        /// <summary>
+        /// Where a plug would bring it if he were rung from where this man is stood, or null for
+        /// nowhere: Denise's, a stash house of his with a kerb, or the nearest Parkview kerb.
+        /// </summary>
+        private Site SiteFor(Ped me)
+        {
+            if (AtHome == null || AtHome()) return Denises();
+            if (me == null || !me.Exists()) return null;
+
+            var drop = DropNear == null ? null : DropNear(me.Position);
+            if (drop != null) return StashHouse(drop);
+
+            return Parkview(me.Position);
+        }
+
+        /// <summary>
+        /// Whether a plug rung from here would come. For the phone's rows -- see
+        /// DealerManager.AtHome, which asked only whether he was at Denise's and so greyed every
+        /// plug out at Parkview, where the run itself has worked since the day it was written.
+        /// </summary>
+        public bool CanComeHere
+        {
+            get
+            {
+                try { return SiteFor(Game.Player.Character) != null; }
+                catch { return false; }
+            }
+        }
+
         /// <summary>The way a heading points, on the ground.</summary>
         private static Vector3 Forward(float heading)
         {
@@ -1024,17 +1125,14 @@ namespace Hoodrich.Supply
         /// <summary>Returns a player-facing refusal, or null once the call is placed.</summary>
         public string Call(DealerDef def)
         {
-            // FROM THE HOUSE, OR FROM PARKVIEW. He brings a box somewhere he knows -- Denise's
-            // kerb, or the nearest of the four on the block -- and it stops the plug being a
-            // vending machine you carry around with you.
-            var me = Game.Player.Character;
-            var site = AtHome == null || AtHome()
-                ? Denises()
-                : me != null && me.Exists() ? Parkview(me.Position) : null;
+            // FROM THE HOUSE, A STASH HOUSE, OR PARKVIEW. He brings a box somewhere he knows --
+            // Denise's kerb, the kerb read for a house of yours, or the nearest of the four on the
+            // block -- and it stops the plug being a vending machine you carry around with you.
+            var site = SiteFor(Game.Player.Character);
 
             if (site == null)
             {
-                return "Text him from the house or from Parkview. He ain't meeting you on a corner.";
+                return "Text him from one of your places -- the house, a stash house with a drop, or Parkview. He ain't meeting you on a corner.";
             }
 
             if (def == null) return "No such contact.";

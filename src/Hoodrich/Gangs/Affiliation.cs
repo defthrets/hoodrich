@@ -800,8 +800,131 @@ namespace Hoodrich.Gangs
             }
             _touchedGroups.Clear();
 
+            // The sets that squared him go back to the game's own opinion of him.
+            foreach (var hash in _squaredGroups)
+            {
+                try
+                {
+                    Function.Call(Hash.CLEAR_RELATIONSHIP_BETWEEN_GROUPS, RelNeutral, hash, _playerGroupHash);
+                }
+                catch
+                {
+                    // Nothing useful to do during teardown.
+                }
+            }
+
+            _squaredGroups.Clear();
+
             // Handles are reused, so who had been shot at goes with the session.
             _struck.Clear();
+        }
+
+        // ---- squared on the block ----------------------------------------------
+
+        /// <summary>Set by Main: whether one of a set's own has squared him with his homies. See Squared.</summary>
+        public Func<string, bool> Truce;
+
+        /// <summary>Set by Main: whether a war with a set is on this minute. See Squared.</summary>
+        public Func<string, bool> AtWar;
+
+        /// <summary>
+        /// Whether this set lets him be on its blocks: walking through them, and serving on them.
+        ///
+        /// ONE MAN'S WORD, AND ONLY FOR THE STREET. Flaco on Dutch London tells his homies to
+        /// leave Franklin alone once Franklin has bought off him -- and says in the same breath
+        /// that it does not mean he speaks for the rest of it (Michael, 2026-09-27: "meaning
+        /// they will still have gang wars"). So beef is untouched: the standing stays where it
+        /// was, the raids still come, and while a war with them is on nobody is squared with
+        /// anybody. What it stops is the block treating him as a target for being on it --
+        /// see KeepTheBlocksSquare, Territory.TurfWatch.Classify and Dealing.PostUp.
+        /// </summary>
+        public bool Squared(string gangId)
+        {
+            if (string.IsNullOrEmpty(gangId) || Truce == null) return false;
+
+            try
+            {
+                if (!Truce(gangId)) return false;
+                return AtWar == null || !AtWar(gangId);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Neutral, from their side, for every set that has squared him: they stop squaring up
+        /// to him for being on their street. See Squared.
+        ///
+        /// NEUTRAL, NOT RESPECT. Respect counts as friendly, and the game will not have a man
+        /// fire on somebody friendly -- it is the reason SET_CAN_ATTACK_FRIENDLY exists -- so a
+        /// war's crews, a job's targets and a drive-by in their colours would all have stood
+        /// there holding guns. Neutral is a stranger they have no reason to start on, and
+        /// anybody told to fight him still does. Their side of it only; how he sees them is
+        /// not what was asked about.
+        ///
+        /// Stood aside while a war with them is on: GangWar writes its own hate on the same
+        /// pair for the length of it and puts back what it found. Re-asserted on the home
+        /// set's timer, because the game resets these on its own.
+        /// </summary>
+        private void KeepTheBlocksSquare()
+        {
+            if (_playerGroupHash == 0 || _gangs == null) return;
+
+            foreach (var gang in _gangs.All)
+            {
+                if (gang == null || gang.GroupHash == 0) continue;
+                if (string.Equals(gang.Id, HomeSet, StringComparison.OrdinalIgnoreCase)) continue;
+                if (Current != null && string.Equals(gang.Id, Current.Id, StringComparison.OrdinalIgnoreCase)) continue;
+
+                var want = Squared(gang.Id);
+                var have = _squaredGroups.Contains(gang.GroupHash);
+
+                try
+                {
+                    if (want)
+                    {
+                        Function.Call(Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, RelNeutral,
+                                      gang.GroupHash, _playerGroupHash);
+
+                        if (!have)
+                        {
+                            _squaredGroups.Add(gang.GroupHash);
+                            Log.Info("Squared with " + gang.Id + ": they let him be on their blocks.");
+                        }
+
+                        continue;
+                    }
+
+                    if (!have) continue;
+
+                    _squaredGroups.Remove(gang.GroupHash);
+
+                    // At war, the war has the pair and puts it back itself when it is done.
+                    if (AtWar != null && AtWar(gang.Id))
+                    {
+                        Log.Info("At war with " + gang.Id + ": squared on the block is off until it is over.");
+                        continue;
+                    }
+
+                    Function.Call(Hash.CLEAR_RELATIONSHIP_BETWEEN_GROUPS, RelNeutral,
+                                  gang.GroupHash, _playerGroupHash);
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Could not square the block with " + gang.Id + ": " + ex.Message);
+                }
+            }
+        }
+
+        /// <summary>The sets currently told to leave him be, by relationship group.</summary>
+        private readonly HashSet<int> _squaredGroups = new HashSet<int>();
+
+        /// <summary>Squares the blocks now rather than on the next pass: for the moment it is agreed.</summary>
+        public void SquareNow()
+        {
+            KeepTheBlocksSquare();
         }
 
         // ---- per-tick ----------------------------------------------------------
@@ -823,6 +946,9 @@ namespace Hoodrich.Gangs
                 // you leave the area and come back -- and then his own people start challenging
                 // him on his own street again.
                 RespectHome();
+
+                // And every set that has squared him, on the same clock for the same reason.
+                KeepTheBlocksSquare();
 
                 if (Current != null) ApplyRelations(Current);
                 else _lastReapply = now;

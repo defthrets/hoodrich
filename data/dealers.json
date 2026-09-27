@@ -452,6 +452,73 @@
         "I'm gone. Tape's still on downstairs if you ever wanna hear the second half.",
         "Later, Franklin. Text me. Not too often. But text me."
       ]
+    },
+    {
+      "id": "flaco",
+      "name": "Flaco",
+      "tag": "FLC",
+      "kind": "GangCorner",
+      "gangId": "vagos",
+      "doorOnly": true,
+      "_where": [
+        "THE DOOR ON DUTCH LONDON. Michael stood at it on 2026-09-27 -- the barred door marked",
+        "1327 in Rancho, heading 329.6, facing it -- and Flaco stands on that spot facing the",
+        "other way, out at whoever is walking up. He sells at the door and nowhere else: no",
+        "number, no delivery. His three homies stand round him (see Supply.Stoop)."
+      ],
+      "models": [
+        "ig_vagspeak",
+        "csb_vagspeak",
+        "g_m_y_mexgang_01"
+      ],
+      "drugs": [
+        "coke",
+        "heroin",
+        "meth"
+      ],
+      "zones": [],
+      "x": 345.62,
+      "y": -2067.28,
+      "z": 20.936,
+      "heading": 149.608,
+      "priceMultiplier": 1.0,
+      "minRank": 0,
+      "maxOrderGrams": 400,
+      "openHour": 0,
+      "closeHour": 24,
+      "lotValue": 1000,
+      "lotStep": 5,
+      "priceFloor": 0,
+      "priceStep": 5,
+      "purity": 0.8,
+      "uncutFromLots": 2,
+      "purePurity": 1.0,
+      "pureMultiplier": 1.25,
+      "pureChancePercent": 10,
+      "_cold": [
+        "THE FIRST TIME, BEFORE THE VAGOS HAVE SQUARED YOU. Michael: 'make it so hes hostile",
+        "towards us in dialogue at first, but frank just wants to buy from him, so he will alow",
+        "the sale'. coldOpen, coldPush and coldGive are his; coldAsk, coldMoney and coldLeave are",
+        "what Franklin says back. The first buy squares you: truceLine and truceNote, and",
+        "truceReply is Franklin's answer. After that he greets you with greeting like anybody."
+      ],
+      "coldOpen": "Aye. The fuck you doing on my door, Chamberlain? You lost, or you looking for a problem?",
+      "coldAsk": "Ain't no problem, homie. I'm just trying to buy.",
+      "coldPush": "Buy. From the Vagos. Some Forum Drive fool walks up on Dutch London with his hand out, and I'm supposed to open the door for him? The homies seen you pull up, ese. They're waiting on me to say the word.",
+      "coldMoney": "Money spends the same in Rancho as it does on Grove.",
+      "coldGive": "Orale. Your money's green even if you ain't. Quick, before I change my mind.",
+      "coldLeave": "My bad. I'm gone.",
+      "truceLine": "Aight, Chamberlain. You paid, you didn't play me, so we square. I'ma tell the homies -- you come through Rancho, you slang on our blocks, nobody trips on you.",
+      "truceNote": "But aye, holmes. Just 'cause we square don't mean I speak for the allies, ya know, ese? The set goes to war with your people, that's the set. That ain't me, and it ain't this door.",
+      "truceReply": "That's fair.",
+      "greeting": "Chamberlain. You buying, or you just like the view?",
+      "buyLine": "Coke, chiva, cristal. That's the menu.",
+      "shopLine": "Coke, chiva, cristal, and tonight none of it's been touched. Say what, say how much.",
+      "shopCutLine": "Coke, chiva, cristal. Stepped on a little -- buy big and it comes clean. Say what, say how much.",
+      "handOverLine": "There. Now get off my porch before somebody thinks we're friends.",
+      "noRoomLine": "You got nowhere to stash it, you got nothing to buy. Come back.",
+      "noSpaceLine": "Your spot's full, homie. Sort that out first.",
+      "farewell": "Go on. Get outta here."
     }
   ],
   "later": [
