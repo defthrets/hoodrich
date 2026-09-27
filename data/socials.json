@@ -7635,15 +7635,38 @@
       "la neta, his money was good and he kept his mouth shut. {subject} respects that. so we do"
     ],
     "YouSquared": [
+      "man said we square. also said that don't mean nothing come war time. fair",
+      "{subject} ain't friendly. he's square. that's better",
+      "one more door in this city that don't want me dead. just the one",
+      "bought off somebody who can't stand me. walked out breathing. good day",
+      "money don't know whose side it's on"
+    ],
+    "YouSquaredVagos": [
       "bought off a vago on dutch london today and walked out breathing",
       "rancho got one door open for me now. just the one",
-      "man said we square. also said that don't mean nothing come war time. fair",
       "never thought i'd be buying off the yellow. money don't know what colour it is",
       "walked through rancho today and nobody said a word. strange feeling",
-      "{subject} ain't friendly. he's square. that's better",
       "copped off the east side. don't tell lamar",
       "the yellow let me serve on they blocks now. i ain't testing how far that go",
       "{subject} made me stand on his porch for five minutes before he opened his mouth. worth it"
+    ],
+    "YouSquaredLost": [
+      "bought off the lost at their own clubhouse today. still got all my teeth",
+      "never thought i'd be buying off bikers. money don't care who's selling",
+      "rode past the clubhouse after and nobody came out. strange feeling",
+      "the lost said i'm good on their turf now. i ain't testing how far that go",
+      "{subject} made me stand in that lot five minutes before he said a word. worth it",
+      "copped off the lost. don't tell lamar"
+    ],
+    "SquaredLost": [
+      "{subject} says the chamberlain kid's money is good. club's not going to argue with money",
+      "the forum drive kid can ride through. {subject}'s word. don't make it a habit, kid",
+      "we let one city boy buy at the clubhouse. {subject} vouched. that's the whole story",
+      "nobody touches the green kid on our turf. {subject}'s word. a war's a different thing",
+      "{subject} don't speak for the whole charter. but on our turf his word holds",
+      "kid paid cash and kept his mouth shut. {subject} likes that. so we put up with him",
+      "grapeseed to east v, the green kid gets waved through. {subject}'s call",
+      "if the chamberlain kid comes by the lot, let him be. he's buying, not visiting"
     ],
     "YouDidTheHunt": [
       "went hunting today. that's the post",
@@ -10946,6 +10969,10 @@
         "sold a man paper today who asked if it was artisanal. mirror park, everybody",
         "patched in longer than half these kids have been alive",
         "chapter's fine. thanks for asking. nobody asked"
+      ],
+      "SquaredLost": [
+        "the green kid's money spends. told the boys to leave him be. that's all it is",
+        "square with franklin on the road. i don't speak for the charter past that"
       ]
     },
     "flaco_dutchlondon": {

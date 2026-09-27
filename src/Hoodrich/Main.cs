@@ -5624,14 +5624,22 @@ namespace Hoodrich
             var gang = _gangs == null ? null : _gangs.Get(def.GangId);
             var name = gang == null ? def.GangId : gang.Name;
 
-            Notify.Important("~y~" + name + "~s~ let you walk and serve on their blocks now. A war is still a war.");
+            Notify.Important("~y~" + name + "~s~ let you walk and serve on their turf now. A war is still a war.");
             Log.Info(def.Name + " squared him with " + def.GangId + ": the block lets him be. " +
                      "Beef and wars were never his to call off.");
 
             if (_social == null) return;
 
             _social.SquaredBy(def.GangId, def.Name);
-            _social.PostAsYouSometimes("YouSquared", def.Name, 0, 60);
+
+            // HIS OWN POST, SOMETIMES, in words about who it was -- a line about the yellow after
+            // a night on the Lost's lot is the wrong night. The set's own lines first, the general
+            // ones behind them for a set nobody has written any for yet.
+            if (_rng.Next(100) < 60 &&
+                _social.PostAsYou("YouSquared" + Pretty(def.GangId), def.Name) == null)
+            {
+                _social.PostAsYou("YouSquared", def.Name);
+            }
         }
 
         private static string StreetNameHere()
