@@ -112,6 +112,16 @@ namespace Hoodrich.Phone
             // the menu that started it and the prop has to survive until it has finished.
             TickHandset();
 
+            // THE GAME'S BROWSER HAS THE SCREEN AND THE BUTTONS until it closes, whatever else
+            // is true -- see OpenBrowser. Before the availability check on purpose: a browser
+            // left open across a moment we call unavailable would otherwise come back to a phone
+            // holding its buttons down.
+            if (_browserMode)
+            {
+                BrowserFrame();
+                return;
+            }
+
             if (!available)
             {
                 if (_menu.IsOpen) ClosePhone();
@@ -402,6 +412,106 @@ namespace Hoodrich.Phone
             _vanillaMode = true;
             _vanillaUsed = false;
             _vanillaUntil = Game.GameTime + Math.Max(1, _cfg.VanillaPhoneSeconds) * 1000;
+        }
+
+        // ---- the game's browser --------------------------------------------------------
+
+        /// <summary>The game's own internet: the script its phone's Internet app runs, and its laptop.</summary>
+        private const string BrowserScript = "appInternet";
+
+        /// <summary>Its stack, the number the game itself starts it with. See OpenBrowser.</summary>
+        private const int BrowserStack = 4592;
+
+        /// <summary>How long it is given to stream before the open is given up.</summary>
+        private const int BrowserLoadMs = 5000;
+
+        /// <summary>How long after starting before its absence means it has been closed.</summary>
+        private const int BrowserGraceMs = 1500;
+
+        private bool _browserMode;
+        private bool _browserStarted;
+        private int _browserAskedAt;
+        private int _browserStartedAt;
+
+        /// <summary>The game's browser is on the screen. See OpenBrowser.</summary>
+        public bool BrowserUp => _browserMode;
+
+        /// <summary>
+        /// Opens the game's own internet browser: the Browser app. Michael, 2026-09-27: "another
+        /// app called browser, and it will just bring up the vanilla internet browser".
+        ///
+        /// THE SAME SCRIPT THE GAME STARTS, STARTED THE SAME WAY. No native opens the browser;
+        /// the phone's Internet app and the laptop both start appInternet -- REQUEST_SCRIPT, wait
+        /// for it, START_NEW_SCRIPT at a stack of 4592, which is the decompiled laptop_trigger
+        /// word for word. Ours goes away first, and nothing of ours touches a control while it
+        /// runs: SuppressVanillaPhone holds the phone's buttons down every frame, and those are
+        /// the buttons the browser is driven with.
+        /// </summary>
+        public void OpenBrowser()
+        {
+            _menu.Close();
+            RestoreWorld();
+
+            _browserMode = true;
+            _browserStarted = false;
+            _browserAskedAt = Game.GameTime;
+        }
+
+        /// <summary>Starts it once it has streamed, and hands the phone back when it has closed.</summary>
+        private void BrowserFrame()
+        {
+            var now = Game.GameTime;
+
+            try
+            {
+                if (!_browserStarted)
+                {
+                    Function.Call(Hash.REQUEST_SCRIPT, BrowserScript);
+
+                    if (!Function.Call<bool>(Hash.HAS_SCRIPT_LOADED, BrowserScript))
+                    {
+                        if (now - _browserAskedAt < BrowserLoadMs) return;
+
+                        _browserMode = false;
+                        Log.Warn("The game's browser (" + BrowserScript + ") did not load in " + BrowserLoadMs + " ms.");
+                        Notify.Problem("the browser wouldn't open.");
+                        return;
+                    }
+
+                    if (!BrowserRunning()) Function.Call<int>(Hash.START_NEW_SCRIPT, BrowserScript, BrowserStack);
+
+                    Function.Call(Hash.SET_SCRIPT_AS_NO_LONGER_NEEDED, BrowserScript);
+
+                    _browserStarted = true;
+                    _browserStartedAt = now;
+
+                    Log.Info("Opened the game's browser.");
+                    return;
+                }
+
+                // A moment for its thread to exist before its absence means anything.
+                if (now - _browserStartedAt < BrowserGraceMs) return;
+                if (BrowserRunning()) return;
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("The game's browser: " + ex.Message);
+            }
+
+            _browserMode = false;
+
+            // And the press that closed it does not fall straight into ours.
+            _wasOpenPressed = true;
+            _quietUntil = Game.GameTime + QuietAfterCloseMs;
+
+            Log.Info("The game's browser closed; the phone is ours again.");
+        }
+
+        /// <summary>Whether its script is running, by the hash the game's own laptop asks by.</summary>
+        private static bool BrowserRunning()
+        {
+            return Function.Call<int>(Hash.GET_NUMBER_OF_THREADS_RUNNING_THE_SCRIPT_WITH_THIS_HASH,
+                                      Game.GenerateHash("appinternet")) > 0;
         }
 
         private void EndVanillaMode()

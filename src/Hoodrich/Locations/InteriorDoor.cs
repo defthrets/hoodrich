@@ -79,6 +79,9 @@ namespace Hoodrich.Locations
         /// </summary>
         public string Address = "";
 
+        /// <summary>What is behind the door, for the Dynasty 8 app: "Low-end", "Mid-range".</summary>
+        public string Kind = "";
+
         /// <summary>
         /// The other ways in, for a place with more than one: Door2, Door3 and Door4 in the ini,
         /// each where a man stands at it and the way he faces it. The first way in is DoorX/Y/Z
@@ -657,6 +660,104 @@ namespace Hoodrich.Locations
 
         private bool _plugsReady;
         private int _kerbFrom;
+
+        // ---- on the phone: the Dynasty 8 app --------------------------------------------
+
+        /// <summary>His, rented and paid up.</summary>
+        public bool IsRented => _spec.Rent > 0 && _rented;
+
+        /// <summary>The most weeks the phone lets him pay beyond the one he is in.</summary>
+        public const int MostWeeksAhead = 12;
+
+        /// <summary>Days until the next week's rent is taken; nought when it is not his.</summary>
+        private int DaysLeft
+        {
+            get
+            {
+                if (!IsRented) return 0;
+
+                var today = Leases.Today();
+                return today == 0 ? 0 : Math.Max(0, _due - today);
+            }
+        }
+
+        /// <summary>Whole weeks paid beyond the one he is in.</summary>
+        private int WeeksAhead => IsRented ? Math.Max(0, (DaysLeft - 1) / Week) : 0;
+
+        /// <summary>This place as the Dynasty 8 app lists it. See Core.Listing.</summary>
+        public Listing AsListing()
+        {
+            var area = "";
+            try { area = World.GetZoneLocalizedName(Door) ?? ""; }
+            catch { /* the name is enough */ }
+
+            return new Listing
+            {
+                Name = Capital(_spec.Name),
+                Area = area,
+                Kind = _spec.Kind,
+                Rent = _spec.Rent,
+                Rented = IsRented,
+                DaysLeft = DaysLeft,
+                WeeksAhead = WeeksAhead,
+                MostWeeksAhead = MostWeeksAhead,
+                Inside = _inside,
+                Door = Door,
+                PayAhead = PayAhead,
+                GiveUp = GiveUp,
+                Take = TakeFromThePhone
+            };
+        }
+
+        /// <summary>Weeks of rent now; the next week falls due that much later. Returns the weeks paid.</summary>
+        private int PayAhead(int weeks)
+        {
+            if (!IsRented) return 0;
+
+            weeks = Math.Min(weeks, MostWeeksAhead - WeeksAhead);
+            if (weeks <= 0) return 0;
+
+            var cost = _spec.Rent * weeks;
+            if (Game.Player.Money < cost) return 0;
+
+            Cash.Take(cost);
+            _due += Week * weeks;
+            Leases.Write(_spec.Section, true, _due);
+
+            Log.Info("Paid " + weeks + " week(s) ahead on " + _spec.Name + " for $" + cost +
+                     "; next due day " + _due + ".");
+            return weeks;
+        }
+
+        /// <summary>
+        /// Gives it up from the phone. The weeks paid beyond the one he is in come back; the one
+        /// he is in does not. Not while he is stood in it -- the room would be his and not his,
+        /// with the stash and the counter still open to him. Returns what came back, or -1.
+        /// </summary>
+        private int GiveUp()
+        {
+            if (!IsRented || _inside) return -1;
+
+            var back = WeeksAhead * _spec.Rent;
+            if (back > 0) Cash.Give(back);
+
+            _rented = false;
+            _due = 0;
+            Leases.Write(_spec.Section, false, 0);
+            Recolour();
+
+            Log.Info("Gave up " + _spec.Name + " on the phone; $" + back + " back for the weeks paid ahead.");
+            return back;
+        }
+
+        /// <summary>Rents it from the phone: the first week up front, the same as at the door. See Take.</summary>
+        private bool TakeFromThePhone()
+        {
+            if (_spec.Rent <= 0 || _rented) return _rented;
+
+            Take();
+            return _rented;
+        }
 
         /// <summary>How many times the roads are asked before a place goes without.</summary>
         private const int KerbTriesMost = 3;

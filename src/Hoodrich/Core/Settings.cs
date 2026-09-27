@@ -963,6 +963,9 @@ namespace Hoodrich.Core
                 // goes after it once the game has said. See DoorSpec.Address.
                 door.Address = from.GetString(section, "Address", "").Trim();
 
+                // What is behind it, for the Dynasty 8 app. See DoorSpec.Kind.
+                door.Kind = from.GetString(section, "Kind", "").Trim();
+
                 // MORE THAN ONE WAY IN. Door2, Door3 and Door4, each three coordinates and a
                 // heading like the first. See DoorSpec.MoreDoors.
                 for (var n = 2; n <= 4; n++)

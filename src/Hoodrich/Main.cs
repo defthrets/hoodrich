@@ -191,7 +191,8 @@ namespace Hoodrich
                                    || (_maskScreen != null && _maskScreen.IsOpen)
                                    || (_boot != null && _boot.IsOpen)
                                    || (_den != null && _den.IsPlaying)
-                                   || _hoops.Playing;
+                                   || _hoops.Playing
+                                   || _phone.BrowserUp;
         }
         private bool _dressed;
 
@@ -3699,6 +3700,26 @@ namespace Hoodrich
                                     || _hoops.Placing;
 
                 pages.ShowVanillaPhone = () => _phone.ShowVanillaPhone();
+
+                // THE BROWSER APP: the game's own internet. See PhoneController.OpenBrowser.
+                pages.OpenBrowser = () => _phone.OpenBrowser();
+
+                // THE DYNASTY 8 APP: every door he can rent, and the rooms Parkview lets. Two
+                // landlords in two scripts; the app sees one list. See Core.Listing.
+                pages.Places = () =>
+                {
+                    var list = new List<Listing>();
+
+                    foreach (var d in _doors)
+                    {
+                        if (d != null && d.IsLet) list.Add(d.AsListing());
+                    }
+
+                    var rooms = Core.Home.Rooms;
+                    if (rooms != null) list.AddRange(rooms() ?? new List<Listing>());
+
+                    return list;
+                };
 
                 // THE COURT, shared with the Hoops mod: what it asks of this one. Everything that
                 // differs between the two mods goes through these and nothing else.

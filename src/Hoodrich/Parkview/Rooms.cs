@@ -196,6 +196,9 @@ namespace Hoodrich.Parkview
             // and the cook screen stays up while he is at the table. See Core.Home.
             Home.InRoom = () => _inside >= 0;
 
+            // And the rooms themselves, for the Dynasty 8 app on Main's phone. See Listings.
+            Home.Rooms = Listings;
+
             // AT A TABLE WHEREVER ONE STANDS. A spot is only reachable where it is, and since
             // 2026-09-26 there is one outside the motel -- the kitchen bench in Apartment E2.
             Home.AtTable = () => Near("cut", 1.2f);
@@ -597,6 +600,106 @@ namespace Hoodrich.Parkview
         }
 
         /// <summary>Taken down with the script, so a reload does not leave them stacked up.</summary>
+        // ---- on the phone: the Dynasty 8 app ------------------------------------------------
+
+        /// <summary>The most weeks the phone lets him pay beyond the one he is in. See Locations.InteriorDoor.</summary>
+        private const int MostWeeksAhead = 12;
+
+        /// <summary>
+        /// The rooms on the block as the Dynasty 8 app lists them. Through Core.Home, because
+        /// this is Parkview's script and the phone is Main's. See Core.Listing.
+        /// </summary>
+        public List<Listing> Listings()
+        {
+            var list = new List<Listing>();
+            var today = Today();
+
+            for (var i = 0; i < _doors.Count; i++)
+            {
+                var door = _doors[i];
+                var days = door.Rented && today > 0 ? Math.Max(0, door.Due - today) : 0;
+
+                var area = "";
+                try { area = World.GetZoneLocalizedName(door.At) ?? ""; }
+                catch { /* the name is enough */ }
+
+                list.Add(new Listing
+                {
+                    Name = "Parkview " + door.Name,
+                    Area = area,
+                    Kind = "Room",
+                    Rent = _cfg.ParkviewRent,
+                    Rented = door.Rented,
+                    DaysLeft = days,
+                    WeeksAhead = door.Rented ? Math.Max(0, (days - 1) / Week) : 0,
+                    MostWeeksAhead = MostWeeksAhead,
+                    Inside = _inside == i,
+                    Door = door.At,
+                    PayAhead = weeks => PayAhead(door, weeks),
+                    GiveUp = () => GiveUp(door),
+                    Take = () => TakeFromThePhone(door)
+                });
+            }
+
+            return list;
+        }
+
+        /// <summary>Weeks of rent now; the next week falls due that much later. Returns the weeks paid.</summary>
+        private int PayAhead(Door door, int weeks)
+        {
+            var today = Today();
+            if (!door.Rented || today == 0) return 0;
+
+            var ahead = Math.Max(0, (Math.Max(0, door.Due - today) - 1) / Week);
+            weeks = Math.Min(weeks, MostWeeksAhead - ahead);
+            if (weeks <= 0) return 0;
+
+            var cost = _cfg.ParkviewRent * weeks;
+            if (Game.Player.Money < cost) return 0;
+
+            Game.Player.Money -= cost;
+            door.Due += Week * weeks;
+            Write();
+
+            Log.Info("Rooms: paid " + weeks + " week(s) ahead on " + door.Name + " for $" + cost +
+                     "; next due day " + door.Due + ".");
+            return weeks;
+        }
+
+        /// <summary>
+        /// Gives it up from the phone. The weeks paid beyond the one he is in come back; the one
+        /// he is in does not. Not while he is in it. Returns what came back, or -1.
+        /// </summary>
+        private int GiveUp(Door door)
+        {
+            if (!door.Rented) return -1;
+            if (_inside >= 0 && _inside < _doors.Count && _doors[_inside] == door) return -1;
+
+            var today = Today();
+            var ahead = today == 0 ? 0 : Math.Max(0, (Math.Max(0, door.Due - today) - 1) / Week);
+            var back = ahead * _cfg.ParkviewRent;
+
+            if (back > 0) Game.Player.Money += back;
+
+            door.Rented = false;
+            door.Due = 0;
+            Write();
+            Tint();
+
+            Log.Info("Rooms: gave up " + door.Name + " on the phone; $" + back + " back for the weeks paid ahead.");
+            return back;
+        }
+
+        /// <summary>Rents it from the phone: the first week up front, the same as at the door.</summary>
+        private bool TakeFromThePhone(Door door)
+        {
+            var i = _doors.IndexOf(door);
+            if (i < 0 || door.Rented) return door.Rented;
+
+            Rent(i);
+            return door.Rented;
+        }
+
         public void Down()
         {
             Home.UnwireRoom();

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Hoodrich.Core
 {
@@ -35,6 +36,9 @@ namespace Hoodrich.Core
         /// <summary>Set by Parkview: the player is stood at the room's table.</summary>
         public static Func<bool> AtTable;
 
+        /// <summary>Set by Parkview: the rooms on the block, rented or not, for the Dynasty 8 app. See Listing.</summary>
+        public static Func<List<Listing>> Rooms;
+
         public static bool IsBusy
         {
             get { try { return Busy != null && Busy(); } catch { return false; } }
@@ -63,6 +67,7 @@ namespace Hoodrich.Core
         {
             InRoom = null;
             AtTable = null;
+            Rooms = null;
         }
     }
 }
