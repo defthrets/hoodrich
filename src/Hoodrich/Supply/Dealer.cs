@@ -631,6 +631,13 @@ namespace Hoodrich.Supply
         /// <summary>Whether he has a first meeting of his own. See ColdOpen.</summary>
         public bool IsWary => !string.IsNullOrEmpty(ColdOpen);
 
+        /// <summary>
+        /// The gun his bodyguard carries -- "WEAPON_COMPACTRIFLE" -- or empty for the three on
+        /// the stoop. Set, he has one man with that gun in his hands right beside him instead.
+        /// See Stoop.Bodyguard.
+        /// </summary>
+        public string Guard = "";
+
         public bool IsOpenAt(int hour)
         {
             if (OpenHour == CloseHour) return true;

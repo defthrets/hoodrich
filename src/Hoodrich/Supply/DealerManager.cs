@@ -244,6 +244,7 @@ namespace Hoodrich.Supply
             def.TruceNote = node["truceNote"].AsString(def.TruceNote);
             def.TruceReply = node["truceReply"].AsString(def.TruceReply);
             def.DoorOnly = node["doorOnly"].AsBool(def.DoorOnly);
+            def.Guard = node["guard"].AsString(def.Guard);
 
             ReplaceList(def.ArrivalLines, node["arrivalLines"]);
             ReplaceList(def.CarryLines, node["carryLines"]);

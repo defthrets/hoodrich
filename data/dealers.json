@@ -460,11 +460,13 @@
       "kind": "GangCorner",
       "gangId": "vagos",
       "doorOnly": true,
+      "guard": "WEAPON_COMPACTRIFLE",
       "_where": [
         "THE DOOR ON DUTCH LONDON. Michael stood at it on 2026-09-27 -- the barred door marked",
-        "1327 in Rancho, heading 329.6, facing it -- and Flaco stands on that spot facing the",
-        "other way, out at whoever is walking up. He sells at the door and nowhere else: no",
-        "number, no delivery. His three homies stand round him (see Supply.Stoop)."
+        "1327 in Rancho -- and Flaco stands on that spot at the heading Michael read, 329.6,",
+        "which faces out at whoever is walking up (turned round from 149.6 the same day, which",
+        "had him staring at his own door). He sells at the door and nowhere else: no number, no",
+        "delivery. One bodyguard beside him with a compact rifle -- see guard and Supply.Stoop."
       ],
       "models": [
         "ig_vagspeak",
@@ -480,7 +482,7 @@
       "x": 345.62,
       "y": -2067.28,
       "z": 20.936,
-      "heading": 149.608,
+      "heading": 329.608,
       "priceMultiplier": 1.0,
       "minRank": 0,
       "maxOrderGrams": 400,
@@ -505,7 +507,7 @@
       "coldOpen": "Aye. The fuck you doing on my door, Chamberlain? You lost, or you looking for a problem?",
       "coldAsk": "Ain't no problem, homie. I'm just trying to buy.",
       "coldPush": "Buy. From the Vagos. Some Forum Drive fool walks up on Dutch London with his hand out, and I'm supposed to open the door for him? The homies seen you pull up, ese. They're waiting on me to say the word.",
-      "coldMoney": "Money spends the same in Rancho as it does on Grove.",
+      "coldMoney": "Money spends the same in Rancho as it does in Chamberlain.",
       "coldGive": "Orale. Your money's green even if you ain't. Quick, before I change my mind.",
       "coldLeave": "My bad. I'm gone.",
       "truceLine": "Aight, Chamberlain. You paid, you didn't play me, so we square. I'ma tell the homies -- you come through Rancho, you slang on our blocks, nobody trips on you.",

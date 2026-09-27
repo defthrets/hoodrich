@@ -135,6 +135,14 @@ namespace Hoodrich.Supply
             var faces = Pool(def);
             if (faces.Length == 0) return;
 
+            // ONE MAN WITH A GUN, RIGHT BESIDE HIM, for a dealer whose data says so. See Bodyguard.
+            if (!string.IsNullOrEmpty(def.Guard))
+            {
+                Bodyguard(def, at, heading, faces);
+                _forDealer = def.Id;
+                return;
+            }
+
             for (var i = 0; i < Doing.Length; i++)
             {
                 // A different face each, walking the list rather than picking at random --
@@ -154,6 +162,88 @@ namespace Hoodrich.Supply
 
             Log.Debug("Stoop: " + _crew.Count + " out with " + def.Id + ".");
         }
+
+        /// <summary>
+        /// His bodyguard: one of his set a stride off his right shoulder, facing the way he does,
+        /// with the gun in his hands. Michael, 2026-09-27, of Flaco: "make it so he only has one
+        /// bodyguard right next to him with a gun". See DealerDef.Guard.
+        ///
+        /// NOT THE STOOP'S RULES. The three on a corner never start anything and always leave; a
+        /// bodyguard stands his ground. He is in the stoop's group all the same -- neutral to
+        /// Franklin both ways, so walking up to buy is not a gunfight -- but he does not run from
+        /// one, and he does not wander or shuffle: he is stood where he is stood.
+        ///
+        /// The standing-guard idle, because it is one of the few that keeps a gun in the hands
+        /// rather than putting it away. See Gangs.Entourage, which learned that first.
+        /// </summary>
+        private void Bodyguard(DealerDef def, Vector3 at, float heading, string[] faces)
+        {
+            var spot = NextTo(at, heading);
+            var ped = Put(faces[0], spot, heading);
+            if (ped == null) return;
+
+            try
+            {
+                var gun = Function.Call<uint>(Hash.GET_HASH_KEY, def.Guard);
+
+                Function.Call(Hash.GIVE_WEAPON_TO_PED, ped.Handle, gun, 250, false, true);
+                Weapons.ExtendedClips.GiveTo(ped, def.Guard);
+                Function.Call(Hash.SET_CURRENT_PED_WEAPON, ped.Handle, gun, true);
+                Function.Call(Hash.SET_PED_CAN_SWITCH_WEAPON, ped.Handle, false);
+                Function.Call(Hash.SET_PED_DROPS_WEAPONS_WHEN_DEAD, ped.Handle, false);
+
+                // HE STANDS HIS GROUND: no fleeing (17 off, 58 on is DisableFleeFromCombat), and he
+                // takes on an armed man (46). Not deaf either -- he hears a shot like anybody.
+                Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, ped.Handle, 0, false);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 17, false);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 58, true);
+                Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, ped.Handle, 46, true);
+                Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, ped.Handle, false);
+
+                Function.Call(Hash.TASK_START_SCENARIO_IN_PLACE, ped.Handle, "WORLD_HUMAN_GUARD_STAND", 0, true);
+                ped.Heading = heading;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Stoop: could not arm " + def.Id + "'s bodyguard: " + ex.Message);
+            }
+
+            _crew.Add(ped);
+            Log.Debug("Stoop: a bodyguard out with " + def.Id + ".");
+        }
+
+        /// <summary>
+        /// A stride off his right shoulder and half a step forward, clear of the doorway he
+        /// stands in -- or the game's own nearest spot a person may stand there, if it is close.
+        /// </summary>
+        private static Vector3 NextTo(Vector3 at, float heading)
+        {
+            var r = heading * (Math.PI / 180.0);
+            var forward = new Vector3(-(float)Math.Sin(r), (float)Math.Cos(r), 0f);
+            var right = new Vector3((float)Math.Cos(r), (float)Math.Sin(r), 0f);
+            var raw = at + right * GuardSide + forward * GuardAhead;
+
+            try
+            {
+                var slot = new OutputArgument();
+
+                if (Function.Call<bool>(Hash.GET_SAFE_COORD_FOR_PED, raw.X, raw.Y, raw.Z, true, slot, 16))
+                {
+                    var safe = slot.GetResult<Vector3>();
+                    if (safe != Vector3.Zero && safe.DistanceTo(at) <= GuardSide + 1.2f) return safe;
+                }
+            }
+            catch
+            {
+                // Where the maths put him.
+            }
+
+            return raw;
+        }
+
+        /// <summary>How far off his shoulder the bodyguard stands, and how far forward of him.</summary>
+        private const float GuardSide = 1.1f;
+        private const float GuardAhead = 0.5f;
 
         /// <summary>Which faces belong on this corner.</summary>
         private static string[] Pool(DealerDef def)
