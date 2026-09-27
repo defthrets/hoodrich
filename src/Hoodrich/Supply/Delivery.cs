@@ -529,6 +529,40 @@ namespace Hoodrich.Supply
             }
         }
 
+        /// <summary>How far from the named start a run can be before he sets off from nearer. See TryStartPoint.</summary>
+        private const float FarFromStart = 600f;
+
+        /// <summary>
+        /// Which way a car set down on a road should point: along it, toward where it is going.
+        /// The game's nearest road node says which way the road runs; the destination says which
+        /// of the two. Straight at the destination when there is no road to ask.
+        /// </summary>
+        private static float HeadingOnRoad(Vector3 at, Vector3 toward)
+        {
+            try
+            {
+                var pos = new OutputArgument();
+                var head = new OutputArgument();
+
+                if (Function.Call<bool>(Hash.GET_CLOSEST_VEHICLE_NODE_WITH_HEADING,
+                                        at.X, at.Y, at.Z, pos, head, 1, 3f, 0f))
+                {
+                    var h = head.GetResult<float>();
+                    var ahead = Forward(h);
+                    var want = toward - at;
+
+                    if (ahead.X * want.X + ahead.Y * want.Y < 0f) h += 180f;
+                    return h >= 360f ? h - 360f : h;
+                }
+            }
+            catch
+            {
+                // Straight at it, below.
+            }
+
+            return HeadingOf(toward - at);
+        }
+
         /// <summary>The way a heading points, on the ground.</summary>
         private static Vector3 Forward(float heading)
         {
@@ -1367,7 +1401,11 @@ namespace Hoodrich.Supply
 
             try
             {
-                _car = World.CreateVehicle(carModel.Value, start, StartHeading);
+                // The named start has the heading read off the HUD with it. Anywhere else he is
+                // set down pointing along the road he is on, toward where he is going -- StartHeading
+                // on some other street was a three point turn in front of whoever was watching.
+                _car = World.CreateVehicle(carModel.Value, start,
+                                           start == StartPoint ? StartHeading : HeadingOnRoad(start, Here.Park));
                 if (_car == null || !_car.Exists())
                 {
                     Cancel("He could not get a car out.");
@@ -3414,25 +3452,35 @@ namespace Hoodrich.Supply
         {
             spot = Vector3.Zero;
 
-            // The named spot first, unless you are looking straight at it.
-            try
+            // The named spot first, unless you are looking straight at it -- or the run is to
+            // somewhere a long way from it.
+            //
+            // FAR FROM STRAWBERRY, HE SETS OFF FROM NEARER. The named start is a straight run in
+            // to Denise's, and short enough to Parkview and the Rancho houses; to a stash house in
+            // Mirror Park or El Burro Heights it was a drive across half the city, and the long
+            // drives are where every stuck car came from. Past FarFromStart he starts on a road
+            // round the place itself, the way he does when the named spot is in view.
+            if (origin.DistanceTo(StartPoint) <= FarFromStart)
             {
-                var player = Game.Player.Character;
-                var seen = player != null && player.Exists() &&
-                           player.Position.DistanceTo(StartPoint) < 90f &&
-                           Function.Call<bool>(Hash.IS_SPHERE_VISIBLE,
-                                               StartPoint.X, StartPoint.Y, StartPoint.Z, 3f);
+                try
+                {
+                    var player = Game.Player.Character;
+                    var seen = player != null && player.Exists() &&
+                               player.Position.DistanceTo(StartPoint) < 90f &&
+                               Function.Call<bool>(Hash.IS_SPHERE_VISIBLE,
+                                                   StartPoint.X, StartPoint.Y, StartPoint.Z, 3f);
 
-                if (!seen)
+                    if (!seen)
+                    {
+                        spot = StartPoint;
+                        return true;
+                    }
+                }
+                catch
                 {
                     spot = StartPoint;
                     return true;
                 }
-            }
-            catch
-            {
-                spot = StartPoint;
-                return true;
             }
 
             var behind = -Vector3.Zero;

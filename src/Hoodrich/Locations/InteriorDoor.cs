@@ -528,11 +528,23 @@ namespace Hoodrich.Locations
         /// </summary>
         private void FindTheKerb()
         {
-            _kerbTries++;
-
             try
             {
                 var door = Door;
+
+                // The roads round the door first, the same as the street name: the game only
+                // knows the nodes near the player unless it is asked for these. Not a try until
+                // they are there.
+                Function.Call(Hash.REQUEST_PATH_NODES_IN_AREA_THIS_FRAME,
+                              door.X - NameBox, door.Y - NameBox, door.X + NameBox, door.Y + NameBox);
+
+                if (!Function.Call<bool>(Hash.ARE_NODES_LOADED_FOR_AREA,
+                                         door.X - NameBox, door.Y - NameBox, door.X + NameBox, door.Y + NameBox))
+                {
+                    return;
+                }
+
+                _kerbTries++;
 
                 var nodeOut = new OutputArgument();
                 var headOut = new OutputArgument();
@@ -590,7 +602,8 @@ namespace Hoodrich.Locations
                 _kerbFound = true;
 
                 Log.Info("A plug pulls up for " + _spec.Name + " at " + _kerb + " facing " +
-                         along.ToString("0") + ", the side of the road nearest its front door.");
+                         along.ToString("0") + ": the side of the road nearest its front door, " +
+                         (int)spot.DistanceTo(door) + "m from it.");
             }
             catch (Exception ex)
             {
@@ -602,6 +615,48 @@ namespace Hoodrich.Locations
         private float _kerbHeading;
         private bool _kerbFound;
         private int _kerbTries;
+
+        /// <summary>
+        /// Works out, once, where a plug pulls up for a place he can rent, and says so in the log:
+        /// the Drop read for it, or the side of the nearest road. Michael, 2026-09-27: "make sure
+        /// all the stash houses work for getting the dealers to come out to" -- so every one of
+        /// them is answered for at load, where a line in the log can be checked, rather than the
+        /// first time somebody stands at the door and rings. TryDrop still asks again if this
+        /// never got an answer.
+        ///
+        /// After the street name, so the line says the house the way the map does; and gated the
+        /// same way, from anywhere for the first half-minute and from near after that.
+        /// </summary>
+        private void ReadyForPlugs(Ped player)
+        {
+            if (_plugsReady || _spec.Rent <= 0) return;
+            if (!string.IsNullOrEmpty(_spec.Address) && !_named) return;
+
+            if (HasDrop)
+            {
+                _plugsReady = true;
+                Log.Info("A plug pulls up for " + _spec.Name + " on the drop read for it, " +
+                         (int)DropAt.DistanceTo(Door) + "m from its front door.");
+                return;
+            }
+
+            if (_kerbFound || _kerbTries >= KerbTriesMost)
+            {
+                _plugsReady = true;
+                if (!_kerbFound) Log.Warn("No plug can be rung to " + _spec.Name + ": no road near its front door. Read a Drop for it in doors.ini.");
+                return;
+            }
+
+            var now = Game.GameTime;
+            if (_kerbFrom == 0) _kerbFrom = now;
+
+            if (now - _kerbFrom > NameFarMs && player.Position.DistanceTo(Door) > NameNear) return;
+
+            FindTheKerb();
+        }
+
+        private bool _plugsReady;
+        private int _kerbFrom;
 
         /// <summary>How many times the roads are asked before a place goes without.</summary>
         private const int KerbTriesMost = 3;
@@ -942,6 +997,8 @@ namespace Hoodrich.Locations
             NoticeHesInThere(player);
 
             NameTheStreet(player);
+
+            ReadyForPlugs(player);
 
             EnsureBlip();
 
