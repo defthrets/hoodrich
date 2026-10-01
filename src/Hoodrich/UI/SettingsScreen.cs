@@ -419,6 +419,15 @@ namespace Hoodrich.UI
             _rows.Add(new Opt { Kind = OptKind.Heading, Label = title });
         }
 
+        /// <summary>Whether a FranklinsCar value swaps his car. See Locations.Buffalo -- blank, "buffalo" and "buffalo2" keep it.</summary>
+        private static bool IsStx(string car)
+        {
+            var c = (car ?? "").Trim();
+            return c.Length > 0 &&
+                   !c.Equals("buffalo", StringComparison.OrdinalIgnoreCase) &&
+                   !c.Equals("buffalo2", StringComparison.OrdinalIgnoreCase);
+        }
+
         private void Tick(string label, string section, string key, Func<bool> get,
                           Action<bool> set, string note = "")
         {
@@ -568,6 +577,17 @@ namespace Hoodrich.UI
             Tick("Pause during story missions", "General", "PauseDuringMission",
                  () => c.PauseDuringMission, v => c.PauseDuringMission = v,
                  "Holds everything while a Rockstar mission is running");
+
+            // HIS CAR, ON THE MENU. The swap to the STX was an ini line the 0.9.9 settings
+            // pass took out of the shipped ini, so nobody could find it -- and a car pack that
+            // replaces his Buffalo S was being swapped out from under the player (Nextup2 and
+            // jasongeroux on the mod page). Off leaves the game's own car, whatever it is.
+            Pick("Franklin's car", "Cars", "FranklinsCar",
+                 new[] { "His own Buffalo S", "Swapped for the STX" },
+                 () => IsStx(c.FranklinsCar) ? 1 : 0,
+                 v => c.FranklinsCar = v == 1 ? "buffalo4" : "buffalo2",
+                 "His own keeps the game's car, and any car pack that replaces it",
+                 new[] { "buffalo2", "buffalo4" });
             if (c.DevTools)
             {
                 Slide("Save every", "General", "SaveIntervalSeconds",
@@ -862,6 +882,16 @@ namespace Hoodrich.UI
             Slide("Cars before it is too busy", "Block", "CarsBusy",
                   () => c.CarsBusy, v => c.CarsBusy = (int)v, 60f, 600f, 10f, "0",
                   note: "Ours hold off past this many cars in the world");
+
+            // THE SCENERY, FOR ANYBODY SHORT OF MEMORY. Everything the mod builds round Parkview
+            // and the yards streams in like the map does, and on top of a graphics mod as big as
+            // NaturalVision there is not always room for both: textures go soft or vanish round
+            // Chamberlain (reported on the mod page, 2026-09). It was a developer row; it is the
+            // first thing to try, so it is out here now.
+            Tick("The mod's scenery", "Scenery", "Enabled",
+                 () => c.Scenery,
+                 v => { c.Scenery = v; if (Scenes != null && !v) Scenes.Clear(); },
+                 "Off if textures go missing alongside a big graphics mod. The places still work");
 
             // ---- fixes -----------------------------------------------------------
             //

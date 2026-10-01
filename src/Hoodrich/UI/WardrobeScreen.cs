@@ -477,6 +477,15 @@ namespace Hoodrich.UI
 
                 var fov = Shots[shot, 4];
 
+                // NEVER THROUGH THE WALL. The shot is a set distance in front of him along the
+                // way he faces -- three metres and more for the whole body -- and in a room
+                // smaller than that the eye went out through the wall: no Franklin in the
+                // picture, and the house round him gone because the camera was outside it ("it
+                // clips outside the house", "I lose franklin's avatar and house textures", both
+                // on the mod page). Pulled in to just short of whatever is in the way, with the
+                // lens opened by the same proportion so he still fills the frame.
+                eye = InTheRoom(me, eye, ref fov);
+
                 if (_snap)
                 {
                     _eye = eye; _look = look; _fov = fov;
@@ -497,6 +506,42 @@ namespace Hoodrich.UI
             catch
             {
                 // It stays where it was, which is somewhere on him.
+            }
+        }
+
+        /// <summary>How far short of a wall the eye stops, the nearest it may come, and the widest lens.</summary>
+        private const float WallGap = 0.3f;
+        private const float NearestEye = 0.7f;
+        private const float WidestFov = 75f;
+
+        /// <summary>
+        /// The eye, pulled in front of the first wall between his chest and it, and the lens
+        /// widened so what fitted the frame from the full distance still fits from the nearer one.
+        /// </summary>
+        private static Vector3 InTheRoom(Ped me, Vector3 eye, ref float fov)
+        {
+            try
+            {
+                var from = me.Position + new Vector3(0f, 0f, 0.5f);
+                var hit = World.Raycast(from, eye, IntersectFlags.Map | IntersectFlags.Objects, me);
+                if (!hit.DidHit) return eye;
+
+                var want = from.DistanceTo(eye);
+                var room = Math.Max(NearestEye, from.DistanceTo(hit.HitPosition) - WallGap);
+                if (room >= want) return eye;
+
+                var along = eye - from;
+                along.Normalize();
+
+                // The same width of picture from nearer: tan(new/2) = tan(old/2) * want / room.
+                var half = Math.Atan(Math.Tan(fov * Math.PI / 360.0) * want / room);
+                fov = (float)Math.Min(WidestFov, half * 360.0 / Math.PI);
+
+                return from + along * room;
+            }
+            catch
+            {
+                return eye;
             }
         }
 

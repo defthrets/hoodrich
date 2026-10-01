@@ -9410,13 +9410,23 @@ namespace Hoodrich.Locations
                         continue;
                     }
 
+                    // A SQUAD CAR WITH ITS OFFICER OUT IS NOT ABANDONED. Handed back at the end
+                    // of a takeover, the officers get out -- to make an arrest, to see what is
+                    // going on -- and this read the door opening as the car being left and
+                    // deleted it where it stood, in front of him (tee4ee on the mod page: the
+                    // cop cars vanish when they get out). A police car goes when it is away, or
+                    // when its driver is gone or it is late and nobody is looking; never on screen.
+                    var law = Badged(g.Car);
+
                     var empty = g.Driver == null || !g.Driver.Exists() || !g.Driver.IsAlive
-                                || !g.Driver.IsInVehicle(g.Car);
+                                || (!law && !g.Driver.IsInVehicle(g.Car));
 
                     var away = g.Car.Position.DistanceTo(you) > GoneRange;
                     var old = now - g.Since > GhostMs;
 
                     if (!empty && !away && !old) continue;
+
+                    if (law && !away && Function.Call<bool>(Hash.IS_ENTITY_ON_SCREEN, g.Car.Handle)) continue;
 
                     // An abandoned car is deleted where it stands even if you are looking at
                     // it. It is a car with nobody in it that was not there ten minutes ago --
@@ -9650,9 +9660,22 @@ namespace Hoodrich.Locations
             // The partners riding with them go too. They are not on the Law list -- that
             // pairs one car with one driver -- so without this a squad car's passenger outlives
             // the takeover that sent him.
+            //
+            // HANDED BACK, NOT DELETED, when it ends the ordinary way. A partner who has got out
+            // to make an arrest is stood in the street in front of him, and deleting him there is
+            // an officer vanishing mid-stride. Released, the game takes him off when nobody is
+            // looking, the way it does every other cop. RestoreWorld still deletes: that is the
+            // hard teardown.
             foreach (var e in _extras)
             {
-                try { if (e != null && e.Exists()) e.Delete(); }
+                try
+                {
+                    if (e != null && e.Exists())
+                    {
+                        e.IsPersistent = false;
+                        e.MarkAsNoLongerNeeded();
+                    }
+                }
                 catch { /* already gone */ }
             }
 

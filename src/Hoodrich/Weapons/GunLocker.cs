@@ -53,6 +53,34 @@ namespace Hoodrich.Weapons
         private bool _topped;
 
         /// <summary>
+        /// Who he was, and which guns off the list were in his hands, at the last look. See Update.
+        ///
+        /// A GUN HE GOT RID OF IS GONE. The locker hands back anything on the list he is not
+        /// carrying, which is right after a load and wrong after he has put one down himself: a
+        /// trainer's remove, the wheel's drop-all, a gun he did not want. Lamar's pistol from the
+        /// bike ride is on the list -- it is his to keep -- so it came back twenty seconds after
+        /// every removal, for good (Jere_6ixx on the mod page). Now a gun that was in his hands
+        /// at the last look and is not at this one is crossed off, as long as it is the same
+        /// body and the mod has been watching him the whole time in between. A new body, or a
+        /// gap -- see _away -- is still handed everything, the way it always was.
+        /// </summary>
+        private int _lastBody;
+        private readonly HashSet<string> _hadLastLook = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Whether the mod looked away since the last look, and the frame it last ran on.
+        ///
+        /// Standing down is a death, an arrest, a load, a cutscene, a switch, a mission -- every
+        /// one of them a moment the game can take guns off him that he did not put down, and
+        /// none of them the moment to cross anything off. Update runs on every frame the mod is
+        /// up, so more than a few frames between two calls is the mod having been away, and the
+        /// next look hands everything back rather than guess.
+        /// </summary>
+        private bool _away = true;
+        private int _lastFrame;
+        private const int AwayFrames = 30;
+
+        /// <summary>
         /// Writes down what each bought gun has in it. At every save, so a shutdown a second
         /// after buying rounds does not forget them.
         /// </summary>
@@ -244,6 +272,11 @@ namespace Hoodrich.Weapons
         {
             if (_state == null || _state.GunsBought.Count == 0) return;
 
+            // Every call, not only the looks. See _away.
+            var frame = Game.FrameCount;
+            if (frame - _lastFrame > AwayFrames) _away = true;
+            _lastFrame = frame;
+
             var now = Game.GameTime;
             if (now < _next) return;
 
@@ -277,6 +310,12 @@ namespace Hoodrich.Weapons
             var back = 0;
             var parts = 0;
 
+            // Only the same body, watched the whole time since the last look, can have got rid
+            // of anything. See _hadLastLook.
+            var sameBody = _topped && !_away && me.Handle == _lastBody;
+            var hadNow = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            List<string> gotRidOf = null;
+
             for (var i = 0; i < _state.GunsBought.Count; i++)
             {
                 var name = _state.GunsBought[i];
@@ -305,6 +344,16 @@ namespace Hoodrich.Weapons
                             if (has < rounds) Function.Call(Hash.SET_PED_AMMO, me.Handle, hash, rounds);
                         }
 
+                        hadNow.Add(name);
+                        continue;
+                    }
+
+                    // In his hands at the last look, on this same body, and gone now with the mod
+                    // watching the whole time: he got rid of it. See _hadLastLook.
+                    if (sameBody && _hadLastLook.Contains(name))
+                    {
+                        if (gotRidOf == null) gotRidOf = new List<string>();
+                        gotRidOf.Add(name);
                         continue;
                     }
 
@@ -333,12 +382,35 @@ namespace Hoodrich.Weapons
                     if (!chose && def != null) ExtendedClips.GiveTo(me, def.Id);
 
                     back++;
+
+                    // In his hands from here -- if it took. A name this install does not carry is
+                    // accepted in silence, and is not a gun he could have put down.
+                    if (Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, me.Handle, hash, false)) hadNow.Add(name);
                 }
                 catch
                 {
                     // One that will not come back is not worth losing the others over.
                 }
             }
+
+            if (gotRidOf != null)
+            {
+                foreach (var name in gotRidOf)
+                {
+                    _state.GunsBought.RemoveAll(w => string.Equals(w, name, StringComparison.OrdinalIgnoreCase));
+                    _state.GunAmmo.Remove(name);
+                    _state.GunParts.RemoveAll(r => r != null && r.StartsWith(name + "|", StringComparison.OrdinalIgnoreCase));
+                }
+
+                _state.Touch();
+                Log.Info("Locker: " + string.Join(", ", gotRidOf.ToArray()) + " put down by him, not lost -- crossed off (" +
+                         _state.GunsBought.Count + " held).");
+            }
+
+            _lastBody = me.Handle;
+            _away = false;
+            _hadLastLook.Clear();
+            foreach (var name in hadNow) _hadLastLook.Add(name);
 
             _topped = true;
 

@@ -50,6 +50,19 @@ namespace Hoodrich.Core
 
                     var key = line.Substring(0, eq).Trim();
                     var value = StripInlineComment(line.Substring(eq + 1)).Trim();
+
+                    // THE FIRST ONE WINS, AND THE SECOND IS SAID OUT LOUD. The settings screen
+                    // writes the first copy of a key it finds (see SetValue) and a person edits
+                    // the first one they find; this used to keep the LAST, so an ini with the
+                    // same line in it twice ignored both. JacksonDTM on the mod page: set
+                    // Language=English and it would not take.
+                    if (current.ContainsKey(key))
+                    {
+                        Log.Warn(Path.GetFileName(path) + ": " + key + " is in there twice; " +
+                                 "using the first (" + current[key] + "), not " + value + ".");
+                        continue;
+                    }
+
                     current[key] = value;
                 }
             }

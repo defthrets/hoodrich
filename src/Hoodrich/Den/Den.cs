@@ -262,6 +262,10 @@ namespace Hoodrich.Den
             _saidChairs = false;
             _lookAt = 0;
 
+            // Everything asked for from here on is the den's, and is let go of on the way out.
+            // See Core.Models.Into.
+            Models.Into("den");
+
             foreach (var d in Scene.All) Scene.Request(d);
             Chips.Ask();
 
@@ -307,6 +311,9 @@ namespace Hoodrich.Den
             Scene.Forget();
             Buttons.Drop();
             Sfx.Release();
+
+            // And every card, chip, ball and reel it asked for. See Core.Models.Out.
+            Models.Out("den");
 
             Log.Info("Den: out.");
         }

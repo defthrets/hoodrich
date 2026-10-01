@@ -366,7 +366,15 @@ namespace Hoodrich.Gangs
                 new[] { "families", "marabunta", "triads" },
                 new[] { "SLAB", "GRAPES" },
                 "Stab City, Sandy Shores, Grapeseed",
-                new[] { "g_m_y_lost_01", "g_m_y_lost_02", "g_m_y_lost_03", "a_m_m_hillbilly_01" }));
+
+                // BIKERS, AND ONLY BIKERS. a_m_m_hillbilly_01 was fourth on this list, and
+                // everything that sends the club anywhere -- a raid's carloads, a drive-by on a
+                // corner, a payback crew -- takes the first model on the list that is already
+                // in memory. In South LS the club's own three almost never are and an ambient
+                // hillbilly almost always is, so the Lost came to Chamberlain as hillbillies:
+                // "the redneck attacks on the neighborhood" and "the hillbilly arrivals" on the
+                // mod page (Vitalezzzz, 2026-09-27 and 2026-10-01).
+                new[] { "g_m_y_lost_01", "g_m_y_lost_02", "g_m_y_lost_03" }));
 
             Register(Make("triads", "Wei Cheng Triads", "TRI", "AMBIENT_GANG_WEICHENG",
                 Color.FromArgb(220, 60, 60), 1,

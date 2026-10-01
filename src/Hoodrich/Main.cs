@@ -2618,6 +2618,9 @@ namespace Hoodrich
                 // The same rule as the rollers, because it is the same reason.
                 _walkers.Busy = _rollers.Busy;
 
+                // The crews only go for a set he is at war with. See Walkers.Scrap.
+                _walkers.AtWarWith = id => _crew != null && _crew.Beefing(id);
+
                 // The law staying out of a raid, a job and a bust is now told to Precinct 88
                 // rather than to a patrol system of our own -- same rule, one layer out. See
                 // Bridge.Busy.
@@ -3887,6 +3890,7 @@ namespace Hoodrich
             // text editor.
             if (!_parked && _cfg != null) Rescue();
             if (!_parked && _cfg != null) FeedToggle();
+            if (!_parked && _cfg != null) OffReminder();
 
             if (_parked || _cfg == null || !_cfg.Enabled) return;
 
@@ -4940,6 +4944,88 @@ namespace Hoodrich
                      (kept ? ", and the ini remembers it." : " -- the ini could not be written."));
 
             Notify.Ticker("~g~" + Build.Name + "~s~ back on.");
+        }
+
+        /// <summary>
+        /// While it is switched off, says how to switch it back on: once a session, and again
+        /// whenever he reaches for the phone.
+        ///
+        /// SWITCHED OFF AND NO WAY BACK, AS FAR AS ANYBODY COULD TELL. "Posted Up on" turns
+        /// everything off, the phone with it, and the way back in -- the rescue key -- is the
+        /// slash on the number pad, which a laptop does not have and nothing on screen ever
+        /// mentioned. xLurpak on the mod page: switched it off to test something, restarted,
+        /// and could not get it back. Now the game says so, and says the ini line as well.
+        /// </summary>
+        private void OffReminder()
+        {
+            if (_cfg.Enabled)
+            {
+                _offSaid = false;
+                return;
+            }
+
+            var reached = false;
+
+            try
+            {
+                reached = Game.IsControlJustPressed(Control.Phone) ||
+                          (_cfg.PhoneKey != System.Windows.Forms.Keys.None && Game.IsKeyPressed(_cfg.PhoneKey));
+            }
+            catch
+            {
+                // Then only the once.
+            }
+
+            var now = Game.GameTime;
+
+            if (_offSaid && !reached) return;
+            if (now < _offSayAt || now < OffReminderAfterMs) return;
+
+            try
+            {
+                var me = Game.Player.Character;
+                if (me == null || !me.Exists() || !Function.Call<bool>(Hash.IS_PLAYER_CONTROL_ON, Game.Player.Handle)) return;
+            }
+            catch
+            {
+                return;
+            }
+
+            _offSaid = true;
+            _offSayAt = now + 10000;
+
+            var key = KeyName(_cfg.RescueKey);
+
+            Notify.Ticker("~y~" + Build.Name + " is switched off.~s~ " +
+                          (key.Length > 0 ? "Press " + key + " to turn it back on, or set" : "Set") +
+                          " Enabled=true under [General] in Hoodrich.ini.");
+        }
+
+        private bool _offSaid;
+        private int _offSayAt;
+
+        /// <summary>Not into the loading screen: the game has to be up for anybody to read it.</summary>
+        private const int OffReminderAfterMs = 15000;
+
+        /// <summary>A key the way it is printed on the keyboard rather than the way Windows names it.</summary>
+        private static string KeyName(System.Windows.Forms.Keys key)
+        {
+            switch (key)
+            {
+                case System.Windows.Forms.Keys.None: return "";
+                case System.Windows.Forms.Keys.Divide: return "/ on the number pad";
+                case System.Windows.Forms.Keys.Multiply: return "* on the number pad";
+                case System.Windows.Forms.Keys.Subtract: return "- on the number pad";
+                case System.Windows.Forms.Keys.Add: return "+ on the number pad";
+                case System.Windows.Forms.Keys.Decimal: return ". on the number pad";
+            }
+
+            if (key >= System.Windows.Forms.Keys.NumPad0 && key <= System.Windows.Forms.Keys.NumPad9)
+            {
+                return (key - System.Windows.Forms.Keys.NumPad0) + " on the number pad";
+            }
+
+            return key.ToString();
         }
 
         /// <summary>

@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using GTA;
+using GTA.Native;
 
 namespace Hoodrich.Core
 {
@@ -32,6 +34,45 @@ namespace Hoodrich.Core
     internal static class Models
     {
         /// <summary>
+        /// The models asked for while a room is open, so they can all be let go when it shuts.
+        ///
+        /// A MODEL A SCRIPT ASKS FOR STAYS IN MEMORY UNTIL THE SCRIPT SAYS IT IS DONE WITH IT,
+        /// and Ready only ever asked. The gambling den asks for every card, chip, ball and reel
+        /// it might deal and never said so, so one visit kept the casino's models resident for
+        /// the rest of the session -- on a machine already full of a graphics mod's textures,
+        /// that is the street outside going soft (texture loss with NVE, on the mod page). A
+        /// model let go of takes nothing off a prop still standing; it only lets the streamer
+        /// drop it once nothing is.
+        /// </summary>
+        private static string _scope;
+        private static readonly HashSet<int> _asked = new HashSet<int>();
+
+        /// <summary>From here, what Ready asks for is the named room's, until Out.</summary>
+        public static void Into(string scope)
+        {
+            _scope = scope;
+        }
+
+        /// <summary>The room has shut: everything it asked for is let go of.</summary>
+        public static void Out(string scope)
+        {
+            if (_scope != scope) return;
+
+            _scope = null;
+
+            foreach (var hash in _asked)
+            {
+                try { Function.Call(Hash.SET_MODEL_AS_NO_LONGER_NEEDED, hash); }
+                catch { /* it goes when the game decides */ }
+            }
+
+            var n = _asked.Count;
+            _asked.Clear();
+
+            if (n > 0) Log.Info("Models: let go of the " + n + " the " + scope + " asked for.");
+        }
+
+        /// <summary>
         /// True when the model is loaded and ready to spawn from.
         ///
         /// Request() with no timeout is the non-blocking form: it puts the model on the
@@ -47,6 +88,7 @@ namespace Hoodrich.Core
                 if (model.IsLoaded) return true;
 
                 model.Request();
+                if (_scope != null) _asked.Add(model.Hash);
 
                 return false;
             }
