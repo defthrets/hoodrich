@@ -594,6 +594,9 @@ namespace Hoodrich.Gangs
         /// TASK_DRIVE_BY does nothing at all unless the ped is holding something he is allowed
         /// to fire out of a window, which is how you get three men driving past waving.
         /// </summary>
+        /// <summary>firing_pattern_burst_fire_driveby. See PostUp.BurstDriveBy.</summary>
+        private const int BurstDriveBy = unchecked((int)0xD31265F2);
+
         private void ArmForDriveBy(Ped man, Ped player)
         {
             try
@@ -607,8 +610,24 @@ namespace Hoodrich.Gangs
                 Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, man.Handle, 46, true);
                 Function.Call(Hash.SET_PED_ACCURACY, man.Handle, 18);
 
+                // A firing pattern last, not the gun -- see PostUp.ArmForDriveBy -- and the push
+                // under the driving task only for a man at the wheel: a biker on a bike of his
+                // own is, everybody in a car seat is not.
+                var driving = false;
+
+                try
+                {
+                    var ride = man.CurrentVehicle;
+                    driving = ride != null && ride.Exists() && ride.Driver != null &&
+                              ride.Driver.Handle == man.Handle;
+                }
+                catch
+                {
+                    // A passenger, then.
+                }
+
                 Function.Call(Hash.TASK_DRIVE_BY, man.Handle, player.Handle, 0,
-                              0f, 0f, 0f, 45f, 100, true, hash);
+                              0f, 0f, 0f, 45f, 100, driving, BurstDriveBy);
             }
             catch (Exception ex)
             {

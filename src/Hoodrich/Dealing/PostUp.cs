@@ -536,6 +536,8 @@ namespace Hoodrich.Dealing
             ReleasePatrol();
             ReleaseRivals();
 
+            EndFight("the corner closed");
+
             // Left on the ground rather than binned. This is the whole mechanic.
             // Nobody is mid-deal once the corner is shut. A handle left behind is somebody
             // his own system has stopped looking after, and handles get reused.
@@ -717,17 +719,108 @@ namespace Hoodrich.Dealing
 
             Footfall = CountFootfall(player);
 
-            // Nowhere quiet ever sells. That is the trade the player is making.
-            if (State == PostState.Posted && Footfall > 0) RollCustomer(player);
+            // A FIREFIGHT ON THE BLOCK IS NOT TRADE. See Fight.
+            var fight = Fight(player);
 
-            if (State != PostState.Investigated && State != PostState.Questioned) RollPolice(player);
+            // Nowhere quiet ever sells. That is the trade the player is making.
+            if (!fight && State == PostState.Posted && Footfall > 0) RollCustomer(player);
+
+            if (!fight && State != PostState.Investigated && State != PostState.Questioned) RollPolice(player);
 
             RollRivals(player);
-            RollDriveBy(player);
+            if (!fight) RollDriveBy(player);
             TickDriveBy(player);
-            RollPatrol(player);
+            if (!fight) RollPatrol(player);
             TickPatrol(player);
         }
+
+        /// <summary>
+        /// Whether there is a firefight near the corner, and the log told the moment one starts.
+        ///
+        /// WHAT THE CORNER STOPS DOING WHILE ONE IS ON. No customer walks over through it, no
+        /// officer is sent to search a man in the middle of it, and no carload of rivals or
+        /// patrol car is added to it. A shootout is when the game needs its own room most --
+        /// the police it sends, the ambulances, the bodies and the dropped guns come out of the
+        /// same pools as everything we put on the street -- and every one of those is something
+        /// the corner would otherwise be adding to it.
+        ///
+        /// AND THE LOG WRITES EVERY LINE UNTIL IT IS OVER. Felony83 on the mod page, 2026-09-30:
+        /// the game goes down every time there is a shootout in Chamberlain while he is posted
+        /// up, and nothing else does it. The log goes to disk half a second at a time, so the
+        /// half second that would say what happened is the half second a crash takes with it.
+        /// The start of a fight is a warning now -- a warning is written at once -- with what
+        /// the world held at that moment, and every line after it goes straight out until the
+        /// shooting stops. See Log.Hot.
+        /// </summary>
+        private bool Fight(Ped player)
+        {
+            var fighting = 0;
+
+            try
+            {
+                foreach (var ped in World.GetNearbyPeds(player, FightRange))
+                {
+                    if (ped == null || !ped.Exists() || !ped.IsAlive) continue;
+                    if (!ped.IsInCombat && !ped.IsShooting) continue;
+
+                    if (++fighting >= FightAt) break;
+                }
+            }
+            catch
+            {
+                return _fightOn;
+            }
+
+            var now = Game.GameTime;
+
+            if (fighting >= FightAt)
+            {
+                _fightSeenAt = now;
+
+                if (!_fightOn)
+                {
+                    _fightOn = true;
+                    Log.Hot = true;
+
+                    var props = -1;
+                    try { props = World.GetAllProps().Length; }
+                    catch { /* the rest of the line still says plenty */ }
+
+                    Log.Warn("Corner: a fight started near you -- " + Core.Crowded.Line() +
+                             (props >= 0 ? ", " + props + " prop(s)" : "") +
+                             ". Customers, patrols and drive-bys hold off, and the log writes every line until it is over.");
+                }
+
+                return true;
+            }
+
+            if (_fightOn && now - _fightSeenAt > FightOverMs) EndFight("the fight near you is over");
+
+            return _fightOn;
+        }
+
+        /// <summary>Back to trade, and the log back to half a second at a time.</summary>
+        private void EndFight(string why)
+        {
+            if (!_fightOn) return;
+
+            _fightOn = false;
+            Log.Hot = false;
+
+            Log.Info("Corner: " + why + ".");
+        }
+
+        private bool _fightOn;
+        private int _fightSeenAt;
+
+        /// <summary>
+        /// How many people in a fight within how far of him make it a firefight, and how long
+        /// it has to have been quiet before it is over. Three, so one buyer swinging at him is
+        /// a scuffle and not a reason to shut the corner.
+        /// </summary>
+        private const float FightRange = 60f;
+        private const int FightAt = 3;
+        private const int FightOverMs = 12000;
 
         /// <summary>How many people are actually walking past. Drives sales AND heat.</summary>
         private int CountFootfall(Ped player)
@@ -1646,6 +1739,12 @@ namespace Hoodrich.Dealing
         /// TASK_DRIVE_BY does nothing at all unless the ped is holding a weapon he is allowed
         /// to fire from a car, which is why the first pass had three men driving past waving.
         /// </summary>
+        /// <summary>
+        /// firing_pattern_burst_fire_driveby, the pattern the game's own drive-bys fire with.
+        /// The same constant the mission crew uses -- see MissionRunner.BurstDriveBy.
+        /// </summary>
+        private const int BurstDriveBy = unchecked((int)0xD31265F2);
+
         private static void ArmForDriveBy(Ped shooter, Ped player)
         {
             try
@@ -1660,8 +1759,12 @@ namespace Hoodrich.Dealing
                 Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, shooter.Handle, 46, true);
                 Function.Call(Hash.SET_PED_ACCURACY, shooter.Handle, 25);
 
+                // The LAST argument is a firing pattern, not a gun, and it was being handed the
+                // micro SMG's hash -- a pattern that does not exist. And 0 before it, not 1:
+                // pushUnderneathDrivingTaskIfDriving is for the man at the wheel, and these are
+                // passengers, which is the case Rockstar's own scripts pass 0 for.
                 Function.Call(Hash.TASK_DRIVE_BY, shooter.Handle, player.Handle, 0,
-                              0f, 0f, 0f, 40f, 100, true, weapon);
+                              0f, 0f, 0f, 40f, 100, false, BurstDriveBy);
             }
             catch (Exception ex)
             {
@@ -2385,6 +2488,15 @@ namespace Hoodrich.Dealing
 
                     var type = Function.Call<int>(Hash.GET_PED_TYPE, ped.Handle);
                     if (type != 6 && type != 27) continue;
+
+                    // ONE WHO IS FREE TO WALK OVER. Not a man in a car or a helicopter -- the
+                    // walk order takes him out of it and leaves it in the road, or the air --
+                    // and not one in the middle of a fight. During a shootout on the block the
+                    // police are already there, and this took whichever came first within a
+                    // hundred and sixty metres: an officer returning fire, told to stop
+                    // fighting, stop hearing anything and walk over to search the man on the
+                    // corner, in the middle of it.
+                    if (ped.IsInVehicle() || ped.IsInCombat) continue;
 
                     return ped;
                 }
@@ -3241,6 +3353,9 @@ namespace Hoodrich.Dealing
             _swinging.Clear();
             State = PostState.Idle;
             _product = null;
+
+            _fightOn = false;
+            Log.Hot = false;
         }
 
         /// <summary>
