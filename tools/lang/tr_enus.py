@@ -22,9 +22,13 @@ T = {
 " off. its outside, its straight, and im not a car park so come and get it": " off. its outside, its straight, and im not a parking lot so come and get it",
 "The flats on Grove": "The apartments on Grove",
 "Cut to half and you come out with twice as much. Cut to a quarter and you have four times as much, and it is obviously rubbish": "Cut to half and you come out with twice as much. Cut to a quarter and you have four times as much, and it is obviously garbage",
-"D-PAD  SLOT / CHANGE      A  COLOUR      R-STICK  LOOK      B  DONE": "D-PAD  SLOT / CHANGE      A  COLOR      R-STICK  LOOK      B  DONE",
 "Weight will not sell": "Weight will not sell",
 "Nobody has texted you yet.": "Nobody has texted you yet.",
-"1 line on you": "1 line on you",
 "Somebody's coming": "Somebody's coming",
+# ---- added 2026-10-01 --------------------------------------------------------------------------
+"COLOUR": "COLOR",
+" armour~s~": " armor~s~",
+"The boot is empty.": "The trunk is empty.",
+"~g~He's getting it out the boot.~s~": "~g~He's getting it out of the trunk.~s~",
+"Wardrobe": "Closet",
 }

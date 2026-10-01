@@ -49,7 +49,8 @@ namespace Hoodrich.Core
     /// GLUED STRINGS ARE HANDLED, CAREFULLY. A lot of the mod's notices are built by
     /// concatenation -- "Paid " + money + " to Gerald" -- so a whole-string match misses
     /// them. When the whole string is not in the table, keys that are GLUE -- ones that
-    /// start or end with a space or a colon, which only a fragment does -- are swapped out
+    /// start or end with a space or a colon, which only a fragment does, or on an edge only a
+    /// fragment has, such as a "$" with the money still to come (see IsGlue) -- are swapped out
     /// wherever they occur on a word boundary, longest first, and everything else is copied
     /// through. Keys that are whole words are NOT scanned for inside other strings: this mod
     /// is mostly dialogue, dialogue is not translated, and a title like "You" or "Cash"
@@ -63,6 +64,16 @@ namespace Hoodrich.Core
 
         /// <summary>The glue keys, longest first, for the scan in Resolve.</summary>
         private static List<string> _glue;
+
+        /// <summary>
+        /// Glue too ordinary to trust on its own -- " now.", " a week.", " short." -- because
+        /// the same words turn up inside dialogue, which is never translated. A tail is only
+        /// swapped inside a string where some glue that is NOT a tail has matched too, which
+        /// is to say inside a notice the mod built and never inside a line somebody says.
+        /// Without them every such notice came out in two languages: "c'est l'embrouille avec
+        /// Ballas now." make_langs.py lists them, from every line of dialogue in the mod.
+        /// </summary>
+        private static HashSet<string> _tails;
 
         /// <summary>Whole strings already resolved once, so a label drawn every frame costs a lookup, not a scan.</summary>
         private static readonly Dictionary<string, string> _memo = new Dictionary<string, string>();
@@ -171,6 +182,7 @@ namespace Hoodrich.Core
             _language = language;
             _table = null;
             _glue = null;
+            _tails = null;
             _memo.Clear();
 
             var file = FileFor(language);
@@ -219,8 +231,9 @@ namespace Hoodrich.Core
                     table[key] = value;
                 }
 
-                // The glue: keys that begin or end with a space or a colon are fragments by
-                // construction, and only fragments are looked for inside other strings. Nothing
+                // The glue: keys that begin or end with a space or a colon -- or on one of the
+                // other edges IsGlue knows -- are fragments by construction, and only fragments
+                // are looked for inside other strings. Nothing
                 // under three characters: a two-letter key is a coincidence waiting to happen.
                 var glue = new List<string>();
                 foreach (var key in table.Keys)
@@ -230,11 +243,18 @@ namespace Hoodrich.Core
                 }
                 glue.Sort((a, b) => b.Length.CompareTo(a.Length));
 
+                var tails = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var key in doc["tails"].AsStringList())
+                {
+                    if (table.ContainsKey(key)) tails.Add(key);
+                }
+
                 _table = table;
                 _glue = glue;
+                _tails = tails;
 
                 Log.Info(doc["language"].AsString(language.ToString()) + " loaded from " + file + ": " +
-                         table.Count + " string(s), " + glue.Count + " of them glue" +
+                         table.Count + " string(s), " + glue.Count + " of them glue, " + tails.Count + " of those tails" +
                          (doc.Has("by") ? ", by " + doc["by"].AsString("") : "") + ".");
             }
             catch (Exception ex)
@@ -242,6 +262,7 @@ namespace Hoodrich.Core
                 Log.Error("Could not load " + file + " - staying in English.", ex);
                 _table = null;
                 _glue = null;
+                _tails = null;
                 _language = Language.English;
             }
         }
@@ -250,10 +271,17 @@ namespace Hoodrich.Core
         {
             // A fragment starts or ends where a word does not: ". Sit tight." and "Paid "
             // are glue; "Paid" and "Sit tight." are whole strings and stay that way.
+            //
+            // SOME EDGES ONLY EVER HAVE SOMETHING GLUED ON. A "$" is always followed by the
+            // money, an opening colour ("Rent on ~g~") by the name it colours, and "~s~" or
+            // "'s " only ever close a coloured name. Without these, "you're $" + cost +
+            // " short." and "~y~" + name + "~s~ is on your map now." were translated on paper
+            // and English in every language in the game.
             var first = key[0];
             var last = key[key.Length - 1];
-            return !char.IsLetterOrDigit(first) && first != '~' && first != '$' && first != '(' && first != '"' && first != '\''
-                || last == ' ' || last == ':';
+            if (last == ' ' || last == ':' || last == '$' || last == '~') return true;
+            if (key.StartsWith("~s~", StringComparison.Ordinal) || key.StartsWith("'s ", StringComparison.Ordinal)) return true;
+            return !char.IsLetterOrDigit(first) && first != '~' && first != '$' && first != '(' && first != '"' && first != '\'';
         }
 
         /// <summary>The string in the current language, or itself when there is no translation.</summary>
@@ -276,29 +304,21 @@ namespace Hoodrich.Core
             string whole;
             if (_table.TryGetValue(english, out whole)) return whole;
 
-            // Colour codes are not part of a string's meaning. "~y~Paid~s~ $200" is "Paid $200"
-            // to a translator, and the game's own tags are the same in every language -- so a
-            // string that starts with one is looked up without it, and gets it back.
-            if (english.Length > 3 && english[0] == '~')
-            {
-                var close = english.IndexOf('~', 1);
-                if (close > 0 && close < 6)
-                {
-                    var tag = english.Substring(0, close + 1);
-                    var rest = english.Substring(close + 1);
-                    var inner = Resolve(rest);
-                    if (!ReferenceEquals(inner, rest)) return tag + inner;
-                }
-            }
+            var bare = Untagged(english);
+            if (bare != null) return bare;
 
             if (_glue == null || _glue.Count == 0) return english;
 
             // NOT A WHOLE STRING, SO IT WAS GLUED TOGETHER. Walk it; at each position take the
             // longest GLUE key that starts there, on a word boundary, and copy anything nothing
-            // matches -- the names, the numbers, the money -- through untouched.
+            // matches -- the names, the numbers, the money -- through untouched. The result
+            // only counts if something other than a tail matched, or the string is a bare
+            // readout: see _tails and IsReadout.
             var sb = new System.Text.StringBuilder(english.Length + 32);
+            var loose = new System.Text.StringBuilder();
             var i = 0;
-            var any = false;
+            var anchored = false;
+            var tailed = false;
 
             while (i < english.Length)
             {
@@ -326,16 +346,78 @@ namespace Hoodrich.Core
                 {
                     sb.Append(_table[hit]);
                     i += hit.Length;
-                    any = true;
+                    if (_tails == null || !_tails.Contains(hit)) anchored = true;
+                    else tailed = true;
+                    loose.Append(' ');
                 }
                 else
                 {
                     sb.Append(english[i]);
+                    loose.Append(english[i]);
                     i++;
                 }
             }
 
-            return any ? sb.ToString() : english;
+            return anchored || tailed && IsReadout(loose) ? sb.ToString() : english;
+        }
+
+        /// <summary>
+        /// Whether what no key matched is only numbers, signs and colour codes -- the "12" of
+        /// "12 down", the "3" and "5" of "3 of 5", the "20g" of "20g off you". A counter on the
+        /// HUD is built like that and a line of dialogue never is, so its tails may be swapped
+        /// with nothing else to vouch for them. A unit letter on a number is allowed; two
+        /// letters together are a word.
+        /// </summary>
+        private static bool IsReadout(System.Text.StringBuilder loose)
+        {
+            var run = 0;
+            var inCode = false;
+
+            for (var i = 0; i < loose.Length; i++)
+            {
+                var c = loose[i];
+                if (c == '~')
+                {
+                    inCode = !inCode;
+                    run = 0;
+                    continue;
+                }
+                if (inCode) continue;
+
+                run = char.IsLetter(c) ? run + 1 : 0;
+                if (run >= 2) return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// The whole-string translation of a string with its opening colour codes set aside,
+        /// or null.
+        ///
+        /// Colour codes are not part of a string's meaning. "~y~Paid~s~" is "Paid~s~" to a
+        /// translator, and the game's own tags are the same in every language -- so a string
+        /// that starts with one is looked up without it, and gets it back.
+        ///
+        /// WHOLE STRINGS ONLY. This used to run the glue scan on what was left as well, and
+        /// return the moment that changed anything -- so a coloured opener such as
+        /// "~g~Posted up.~s~ Moving " never got its turn whenever a later piece of the same
+        /// notice was glue. The scan in Resolve covers the whole string, colours and all.
+        /// </summary>
+        private static string Untagged(string english)
+        {
+            if (english.Length <= 3 || english[0] != '~') return null;
+
+            var close = english.IndexOf('~', 1);
+            if (close <= 0 || close >= 6) return null;
+
+            var tag = english.Substring(0, close + 1);
+            var rest = english.Substring(close + 1);
+
+            string whole;
+            if (_table.TryGetValue(rest, out whole)) return tag + whole;
+
+            var inner = Untagged(rest);
+            return inner == null ? null : tag + inner;
         }
     }
 }
