@@ -70,6 +70,16 @@ namespace Hoodrich.Gangs
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped.Handle, true, true);
                     Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, gang.GroupHash);
 
+                    // WHICH IS EXACTLY WHAT MAKES HIM UNTALKABLE, so this is the line that
+                    // hands him back. The two calls above put him at population type 6, and
+                    // NPC Mind reads that as "another script owns this one" and will not speak
+                    // to him -- correctly, since that is also what a story mission ped looks
+                    // like. Stamping him says he is a resident rather than a mission, and says
+                    // which resident: his set and his corner, both of which are the same
+                    // tomorrow, so what he remembers about you survives the reload. See
+                    // Core.Folk.
+                    Core.Folk.Stamp(ped, "corner:" + gang.Id + ":" + Core.Folk.Mark("", at));
+
                     return ped;
                 }
                 catch (Exception ex)

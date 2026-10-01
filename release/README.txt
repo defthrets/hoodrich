@@ -19,14 +19,14 @@ left exactly as it was.
   1. ScriptHookV
      http://www.dev-c.com/gtav/scripthookv/
 
-  2. ScriptHookVDotNet -- 3.9.0 OR NEWER, on either edition
+  2. ScriptHookVDotNet 3 -- 3.6.0 OR NEWER, on either edition
      https://github.com/scripthookvdotnet/scripthookvdotnet
 
-     Not 3.6, not 3.7, not 3.8. This is built against 3.9.0, and an older one
-     refuses to load it -- which looks like nothing happening at all: no
-     message on startup, no phone, and no Hoodrich.log to read, because the
-     thing that writes the log is the thing that did not load. The error is in
-     ScriptHookVDotNet's own log.
+     It is built against 3.6.0, so 3.6, 3.7, 3.8, 3.9 and the nightlies all
+     load it. Anything older than 3.6 refuses to -- which looks like nothing
+     happening at all: no message on startup, no phone, and no Hoodrich.log
+     to read, because the thing that writes the log is the thing that did not
+     load. The error is in ScriptHookVDotNet's own log.
 
      The FULL download has a matching copy in it, if you would rather not
      think about it.
@@ -80,6 +80,10 @@ The one thing nobody works out on their own: WEIGHT YOU BUY WILL NOT SELL until
 it has been cut and bagged at the sink in Denise's kitchen. Anything you are
 GIVEN is already bagged.
 
+Round Chamberlain Hills there is more to find: the block at Parkview with its
+people, a gambling den behind the die on the ground, Apartment E2 to rent by the
+week, and a basketball court where you can shoot hoops.
+
 
 -------------------------------------------------------------------------------
   CONTROLS
@@ -89,7 +93,8 @@ GIVEN is already bagged.
   Arrow keys          move       Enter  choose       Backspace  back
   Right on the d-pad  talk to somebody
 
-Every key is rebindable in Hoodrich.ini.
+The phone's own key and the feed key are set on the settings screen: Settings,
+on the phone's wheel.
 
 
 -------------------------------------------------------------------------------
@@ -98,8 +103,15 @@ Every key is rebindable in Hoodrich.ini.
 
   * Works on both GTA V Legacy and GTA V Enhanced, same DLL.
   * Single player only. Do not take this anywhere near GTA Online.
-  * Everything is configurable: Hoodrich.ini for settings and keys,
-    Hoodrich\*.json for drugs, prices, gangs, missions and chatter.
+  * Settings are on the settings screen in the game (Settings, on the phone's
+    wheel) and in Hoodrich.ini, which says what each one does.
+    Hoodrich\*.json holds the drugs, prices, gangs, missions and chatter.
+  * Parkview -- the block on the open ground in Chamberlain Hills, its people
+    and its rooms -- is part of this mod. If you had the standalone Parkview,
+    take Parkview.dll out of scripts: this one copies your rented room across
+    from scripts\Parkview on its first start.
+  * The basketball court is also its own mod, Hoops. You do not need both:
+    with Posted Up installed, Hoops stands down.
   * Problems? Hoodrich\Hoodrich.log says what it did. Set LogLevel=Debug
     in the ini before reporting anything.
   * The Wei Cheng business at the port shows as "Coming soon" on purpose.

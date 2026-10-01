@@ -821,6 +821,11 @@ namespace Hoodrich.Gangs
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);
 
+                // KEYED ON HIS NAME AND NOT ON HIS ZONE. A leader can be moved in
+                // leaders.json without that being a different man, and he is the one person
+                // in the mod whose memory of you is most worth keeping. See Core.Folk.
+                Core.Folk.Stamp(_livePed, "leader:" + def.GangId + ":" + def.Name);
+
                 // And he cannot die. A leader is a shop, a conversation and a chain of jobs;
                 // losing him to a stray round from a fight two streets away takes all three off
                 // the map with nothing to say why. Not-targetable already stopped anybody aiming

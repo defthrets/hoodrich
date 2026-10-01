@@ -1,4 +1,198 @@
-﻿0.9.8 -- 19 September 2026
+﻿0.9.10 -- 1 October 2026
+
+
+FLACO, ON DUTCH LONDON. A Vagos dealer at the barred door marked 1327 in
+Rancho, selling coke, heroin and meth, in person only, with one of his set
+beside him holding a compact rifle. The first time, he wants to know what
+somebody from Chamberlain is doing at his door; keep it about the money and he
+sells. That first buy squares you with the Vagos on their own blocks -- they
+stop starting on you for walking them or serving on them -- but their wars are
+still their wars, and a raid is still a raid.
+
+
+DEACON, AT THE LOST CLUBHOUSE off Mirror Park. Meth, crack, coke and LSD, in
+person only, with three of the club round him. Cold at first like Flaco, and
+the first buy squares you with the Lost on their turf the same way. He has an
+account on the feed. Both of them are found by going there: a blip when you are
+close until you have met them, on the map for good after.
+
+
+EIGHT STASH HOUSES TO RENT, on the game's own street names. Apartment 9A at
+$400 a week, 77 at $600, 32 and 47 at $300, 13 at $550 and 90 at $500, in the
+low-end apartment; 4 at $750 and 7 at $700 -- two ways in -- in the mid-range
+one. Every stash house holds the one stock.
+
+
+THE PLUG COMES TO ANY OF THEM. Ring one within twenty metres of a stash house
+you rent and he sets off from round its corner, out of sight, pulls up outside
+and walks the package to the front door. Ordering from Parkview works now: the
+phone greyed every plug out there with "call him from the house", so the
+delivery added in 0.9.9 could never be placed.
+
+
+TWO NEW APPS. Dynasty 8 lists every place there is to rent, yours first with
+the soonest rent at the top: pay up to twelve weeks ahead, put it on the map,
+or give the lease up and get the weeks you paid ahead back -- and rent a new
+one straight from the phone. Browser opens the game's own internet.
+
+
+FRANKLIN TYPES HIS POSTS. When the mod posts for him -- posting up, a job done,
+a meal ordered -- he takes the phone out and types it for a couple of seconds,
+and can walk while he does. Anything that needs his hands stops him, and the
+post goes up cut off where his thumb stopped. Posts you choose yourself still
+go up the moment you pick them.
+
+
+FROM THE MOD PAGE.
+
+  The redneck attacks. The Lost were turning up in Chamberlain as hillbillies:
+  a hillbilly was on their list of members, and raids, corner drive-bys and
+  paybacks took whichever of the list was already loaded, which in South Los
+  Santos was nearly always him. The Lost are bikers only now.
+
+  The shooting that never stopped. The set's crews went for anybody from any
+  rival set who walked past, every fifteen seconds, whatever you had done. Now
+  only a set you are actually at war with.
+
+  Crashing in shootouts while posted up. The feed's pictures are taken of real
+  people, kept out of sight thirty metres over wherever you were standing --
+  and in a gang fight they counted as targets nobody could hit, stacked right
+  over your corner. They belong to nobody now. While a fight is on near your
+  corner, it sends no customers, no police stop, no drive-by and no patrol, and
+  the log writes every line until it is over, so if it still goes down the log
+  says where.
+
+  Franklin's car. Swapping his Buffalo S for the STX is on the settings screen
+  again, and back in Hoodrich.ini under [Cars]. His own Buffalo keeps the
+  game's car, and whatever car pack replaces it.
+
+  Missing textures alongside a big graphics mod. The mod's scenery can be
+  switched off on the settings screen, or with Enabled=false under [Scenery]:
+  the places still work, emptier. The gambling den lets go of the casino's
+  models when you leave it.
+
+  Switched off from the phone with no way back. While Posted Up is off, the
+  game tells you the key that turns it back on -- / on the number pad -- and
+  the line in Hoodrich.ini.
+
+  A line in Hoodrich.ini twice. The first one counts, which is the one the
+  settings screen writes, and the log says so. That was Language=English not
+  taking.
+
+  Lamar's pistol kept coming back. A gun you get rid of yourself stays gone.
+  Loading a save, dying or being arrested still hands back what you bought.
+
+  The wardrobe camera no longer goes out through the wall in a small room.
+
+  Takeover police cars no longer vanish when the officers get out, and the
+  officers are not deleted mid-stride when it ends.
+
+
+FIXES. The corner's drive-bys and payback crews fire in bursts out of the
+window, the way the game's own do. A stop and search on your corner takes an
+officer on foot, not one driving past or in the middle of a fight. A house
+named by its number reads as a name: "go into 32 Jamestown St". The read me
+says what ScriptHookVDotNet it needs: 3.6 or newer, as it has since 0.9.7.
+
+
+0.9.9 -- 26 September 2026
+
+
+PARKVIEW IS PART OF POSTED UP. The block on the open ground in Chamberlain
+Hills -- two apartment blocks and a row of houses, a corner shop with its two
+Koreans behind the counter, a camp at the hobo spot, and eighty-odd people on
+the roofs, the floors and the ground -- ships inside Posted Up now rather than
+as a mod of its own. If you had Parkview.dll, take it out of scripts: your
+rented room comes across on the first start. The people there live a little:
+they change what they are doing, walk off and come back, and walk in from off
+screen rather than appearing on their marks. And every person this mod puts
+on a street can be talked to with NPC Mind.
+
+
+THE GAMBLING DEN. Behind the die on the ground at Parkview, in a two-car garage
+under Pillbox Hill: roulette with the ball on the wheel, blackjack dealt card
+by card, and pokies at $10 a spin, the Diamond's own tables and screens, with
+dealers who talk while you play, guards on the door, and the camera free to
+look about while you are sat down. The tables' limits are in Hoodrich.ini
+under [GamblingDen].
+
+
+APARTMENT E2. A second place to rent at Parkview, $500 a week: the door up on
+the landing opens into the low-end apartment from GTA Online, with nothing
+extra to install. Cut and bag at the kitchen counter, sleep in the bed, change
+at the wardrobe, and get at the stash. The bong on the table smokes the way the
+online one does, and the TV comes on with the game's own channels. The
+apartments' icons are white until they are yours and green once they are. The
+room Parkview already rented is a stash house now too, and every stash house
+holds the one stock.
+
+
+THE PLUG COMES TO PARKVIEW. Order on the phone while you are at Parkview and
+the dealer pulls up on the block, walks up to wherever you are standing,
+throws it at your feet and goes. Pick it up and it is in your stash.
+
+
+SHOOTING HOOPS. The basketball court in Chamberlain Hills has a ball on it:
+walk into the ring in the middle of the court and pick it up. Hold to charge
+the throw -- the line out of the ball rises and stretches with the meter, and
+fades before it comes down, so where it lands is yours to judge -- and down
+through either hoop is two, or three from beyond the arc. Nothing aims it for
+you, and you can throw it as far as you like. A setting draws the rings the
+ball has to go through, to practise with. The same court is out as a mod of
+its own, Hoops; with Posted Up installed it stands down.
+
+
+LAMAR'S BIKE RIDE ends on the basketball court now, where the Ballas are
+waiting.
+
+
+THE BLOCK. The set rides round Parkview in crews -- on BMXs, dirt bikes and
+quads, pulling wheelies and burnouts -- along a way round the park that was
+ridden by hand, instead of through everything standing on it, and some crews
+go round it the other way. The takeover's cars skid for real, on the physics,
+and keep their tyres spinning until they are off course, and they crash like
+cars rather than ploughing through everything. The car meet on the lot off
+Davis is gone, the takeover throws fewer flares, and the kickabout from 0.9.8
+is out.
+
+
+THE FEED, REWRITTEN. Every GTA character in it was looked up and written from
+their own story; the gang voices post the way young men on a block actually
+post, swearing included; twenty-four ordinary working people join the city;
+and the chatter knows what time it is, what the weather is doing and which
+part of the map you are in. Each account types like one person rather than
+the same careful writer seventy times over.
+
+
+WHAT HE WEARS STAYS ON HIM. The outfit from the closet holds through death,
+Pillbox, a cell and loading a save.
+
+
+STRETCH stands on the ground in his yard rather than a metre over it, keeps
+what you bought from him, and sells drum magazines as standard.
+
+
+WITH OTHER MODS. Going through a body belongs to Bare Minimum now, and the bag
+on the floor is whichever one it has on your back. Five0 Patrol's search takes
+what it finds, and sees uncut product as well as bagged. Another mod can buy
+off you and hand you what it found, at the corner's own prices.
+
+
+THE SETTINGS ARE WHAT YOU SET. The settings screen and Hoodrich.ini hold only
+what somebody playing would change, each row and line saying what it does; the
+tuning numbers and the tools for building the mod are gone from both. Delete a
+line and it goes back to the default. An ini you already have is left alone.
+The mod's own doors are data now, in Hoodrich\doors.ini.
+
+
+FIXES. Buildings placed as props no longer blink out in the distance, and the
+map no longer drops to its low-detail models round Parkview. People in scenes
+stop falling through floors and off roofs as a save loads. The phone no longer
+flickers while something waits for a model to load. The house stops telling
+you that you are carrying. The man on the ledge behind Innocence sits on it.
+
+
+0.9.8 -- 19 September 2026
 
 
 ONE BAG, ONE SHELF. With Bare Minimum installed the bag had two shelves for

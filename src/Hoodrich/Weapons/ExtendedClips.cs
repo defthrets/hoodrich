@@ -84,6 +84,68 @@ namespace Hoodrich.Weapons
         }
 
         /// <summary>
+        /// The magazine names worth trying, biggest first.
+        ///
+        /// CLIP_DRUM and CLIP_03 are both spelt "Drum Magazine" in the game's own labels --
+        /// which of the two a given weapon uses is not consistent, so both are asked for.
+        /// CLIP_04 is deliberately absent: on the handful of weapons that have one it is not a
+        /// bigger magazine, and this list is ordered by size.
+        /// </summary>
+        private static readonly string[] Biggest = { "CLIP_DRUM", "CLIP_03" };
+
+        /// <summary>
+        /// The biggest magazine the game will actually put on this weapon.
+        ///
+        /// WHY GUESSING IS SAFE HERE AND NOT IN THE TABLE ABOVE. That table is typed out
+        /// because GIVE_WEAPON_COMPONENT_TO_PED fails in SILENCE -- a name that does not exist
+        /// does nothing at all and the player walks off with a standard magazine and no error
+        /// anywhere, which is exactly how you end up shipping a feature that has never once
+        /// worked. DOES_WEAPON_TAKE_WEAPON_COMPONENT removes that problem entirely: it is the
+        /// game's own answer about its own weapon, a wrong name simply answers no, and nothing
+        /// is fitted on a no. So a name can be tried here that must not be trusted there.
+        ///
+        /// Drums first because that is what somebody wants off a man in a yard, and the
+        /// curated extended clip second so a weapon without a drum still comes ready to use.
+        /// A weapon with neither -- the revolvers, the Double Action, anything thrown -- gets
+        /// nothing, and that is not a failure.
+        /// </summary>
+        public static string BestFor(string weaponId)
+        {
+            if (string.IsNullOrEmpty(weaponId)) return null;
+
+            var game = WeaponRegistry.GameName(weaponId);
+
+            try
+            {
+                var weapon = Function.Call<uint>(Hash.GET_HASH_KEY, game);
+
+                if (weapon != 0)
+                {
+                    var stem = game.StartsWith("WEAPON_", System.StringComparison.OrdinalIgnoreCase)
+                        ? game.Substring(7)
+                        : game;
+
+                    for (var i = 0; i < Biggest.Length; i++)
+                    {
+                        var name = "COMPONENT_" + stem + "_" + Biggest[i];
+                        var part = Function.Call<uint>(Hash.GET_HASH_KEY, name);
+
+                        if (part == 0) continue;
+                        if (!Function.Call<bool>(Hash.DOES_WEAPON_TAKE_WEAPON_COMPONENT, weapon, part)) continue;
+
+                        return name;
+                    }
+                }
+            }
+            catch
+            {
+                // Fall through to the extended clip.
+            }
+
+            return For(game);
+        }
+
+        /// <summary>
         /// Fits the bigger magazine, if there is one. Safe to call for anything.
         ///
         /// Returns true only when a component was actually fitted, so a caller can say so.
@@ -92,7 +154,10 @@ namespace Hoodrich.Weapons
         {
             if (ped == null || !ped.Exists()) return false;
 
-            var component = For(weaponId);
+            // THE BIGGEST ONE IT TAKES, not merely the extended one. He is a man in a yard
+            // selling a working piece, and if the game has a drum for it then a drum is what
+            // working means. See BestFor.
+            var component = BestFor(weaponId);
             if (component == null) return false;
 
             try

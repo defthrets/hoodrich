@@ -375,6 +375,16 @@ namespace Hoodrich.UI
 
         public static int PeakRects { get; private set; }
 
+        /// <summary>
+        /// A rectangle drawn by something that draws its own -- the court, shared with the Hoops mod
+        /// -- counted here as if it had come through Rect, so the frame's count stays the truth.
+        /// </summary>
+        public static void CountRect()
+        {
+            RectsThisFrame++;
+            Ledger.Count();
+        }
+
         /// <summary>Axis-aligned filled rectangle. w/h are normalized screen fractions.</summary>
         public static void Rect(float x, float y, float w, float h, Color c)
         {

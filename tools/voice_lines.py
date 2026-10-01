@@ -179,6 +179,12 @@ def from_data(root, texts=False):
             for field in ("greeting", "buyLine", "sourceReply", "sourceTooSoon", "farewell"):
                 add(who, block.get(field))
 
+            # THE FIRST MEETING AND THE TRUCE, for a man from a set with no love for Franklin --
+            # see DealerDef.ColdOpen. His lines only: coldAsk, coldMoney, coldLeave and truceReply
+            # are what Franklin says back, which is a row on the screen and never a recording.
+            for field in ("coldOpen", "coldPush", "coldGive", "truceLine", "truceNote"):
+                add(who, block.get(field))
+
             # THE FOUR HE SAYS WHEN SOMETHING IS IN THE WAY, and the four he borrows when the
             # file has not written him one.
             #
@@ -203,6 +209,11 @@ def from_data(root, texts=False):
                 # reached through the delivery, where the box is walked in instead. Listing it
                 # under his name is a take that could never play.
                 if field == "handOverLine" and d.get("deliveryOnly"):
+                    continue
+
+                # AND THE WALK-IN IS FOR A MAN WHO DELIVERS. A doorOnly dealer sells over his own
+                # doorstep and never drives a box anywhere, so the line could never play.
+                if field == "walkItInLine" and d.get("doorOnly"):
                     continue
 
                 add(who, block.get(field) or shared)

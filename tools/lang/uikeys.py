@@ -10,9 +10,10 @@ What is collected, and from where:
   wheel      Title = "...", Label = "...", Note = "...", Hint = "..." assignments anywhere, and
              every InfoSection .Row("label", "value", colour, "description") -- the guide
              pages and the phone's info panels;
-  notices    Notify.*("...") and Help.ShowThisFrame("...") literals, including the leading
-             fragment of a glued notice ("Paid " + money + ...), which is a key in its own
-             right with its trailing space kept;
+  notices    Notify.*("...") and Help.ShowThisFrame("...") literals -- EVERY piece of a glued
+             one ("Paid " + money + " to Gerald" is two keys, each with its edge space kept),
+             and both strings of a ternary inside one. Collecting only the first piece left
+             the end of every glued sentence in English in every language;
   labels     Draw.Text / Draw.TextRight / Hud.Text* / UiKit.Key literal first arguments --
              the footers, captions and headings;
   values     the ON/OFF words and the enum names the choice rows show.
@@ -115,6 +116,12 @@ def literals(args):
 NOT_TEXT = re.compile(r'^(?:[0-9.#,]+|~[a-z_]+~|[a-z_]+\.(?:png|json|ini|wav|xml)|\W{1,3}|\s*|[A-Z0-9_]+_[A-Z0-9_]+|STRING|[a-z]+|[A-Za-z]+_[A-Za-z_]+)$')
 
 
+# A .NET format string handed to ToString inside a text call, a run of punctuation, and the odd
+# literal that rides inside a notice without ever being drawn (a scene file's comment).
+FORMAT = re.compile(r'^(?:[NFCDPX][0-9]?|0(?:\.0+)?|#,?0(?:\.0+)?|\W+)$')
+NOT_SHOWN = {'Captured by Parkview'}
+
+
 def keep(s):
     if NOT_TEXT.match(s):
         return False
@@ -181,15 +188,16 @@ for path in glob.glob(os.path.join(ROOT, '**', '*.cs'), recursive=True):
                     add(s, tag + '.notice')
             continue
         for d, s, g in lits:
-            if d != 0:
+            # Every piece, not only the first: see the note at the top. Depth 1 is a ternary's
+            # branches and anything glued inside a bracket; deeper is somebody else's call.
+            if d > 1:
                 continue
             if name.startswith('UiKit.Key'):
-                if keep(s) and s.isupper():
+                if d == 0 and keep(s) and s.isupper():
                     add(s, tag + '.key')
                 continue
-            if keep(s) and len(s) > 2:
+            if keep(s) and len(s) > 2 and not FORMAT.match(s) and s not in NOT_SHOWN:
                 add(s, tag + '.' + ('glue' if g else name.split('.')[-1].lower()))
-            break   # only the first top-level literal of a Text/Notice call is the text
 
 # ---- not text -----------------------------------------------------------------------------------------
 keys = collections.OrderedDict((k, w) for k, w in keys.items() if keep(k))

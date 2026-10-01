@@ -234,6 +234,17 @@ namespace Hoodrich.Supply
             def.JoinAccept = node["joinAccept"].AsString(def.JoinAccept);
             def.JoinRefuse = node["joinRefuse"].AsString(def.JoinRefuse);
             def.JoinAlready = node["joinAlready"].AsString(def.JoinAlready);
+            def.ColdOpen = node["coldOpen"].AsString(def.ColdOpen);
+            def.ColdAsk = node["coldAsk"].AsString(def.ColdAsk);
+            def.ColdPush = node["coldPush"].AsString(def.ColdPush);
+            def.ColdMoney = node["coldMoney"].AsString(def.ColdMoney);
+            def.ColdGive = node["coldGive"].AsString(def.ColdGive);
+            def.ColdLeave = node["coldLeave"].AsString(def.ColdLeave);
+            def.TruceLine = node["truceLine"].AsString(def.TruceLine);
+            def.TruceNote = node["truceNote"].AsString(def.TruceNote);
+            def.TruceReply = node["truceReply"].AsString(def.TruceReply);
+            def.DoorOnly = node["doorOnly"].AsBool(def.DoorOnly);
+            def.Guard = node["guard"].AsString(def.Guard);
 
             ReplaceList(def.ArrivalLines, node["arrivalLines"]);
             ReplaceList(def.CarryLines, node["carryLines"]);
@@ -932,9 +943,14 @@ namespace Hoodrich.Supply
             // rule that used to apply only to the two Docks contacts applies to all fourteen.
             // The alternative was a phone menu where half the numbers worked anywhere and half
             // did not, with nothing on screen to say which was which.
+            // A MAN WHO ONLY SELLS IN PERSON has no phone to answer, wherever you ring from --
+            // Flaco at his door, Deacon at the clubhouse. Said before the house, because it is the
+            // real reason: going home would not help.
+            if (def.DoorOnly) return "Only sells in person";
+
             if (needHome && AtHome != null && !AtHome())
             {
-                return "Call him from the house";
+                return "Call him from one of your places";
             }
 
             // NOT A CONTACT UNTIL YOU HAVE MET HIM.
@@ -1198,6 +1214,11 @@ namespace Hoodrich.Supply
 
                 var h = _livePed.Handle;
                 Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
+
+                // He stands at his spot and he is the same man every session, which is the
+                // whole requirement. Keyed on his id from dealers.json rather than on the
+                // spot, so moving him in the data does not make him somebody else.
+                Core.Folk.Stamp(_livePed, "dealer:" + def.Id);
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);
 

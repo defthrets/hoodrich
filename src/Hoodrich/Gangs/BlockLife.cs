@@ -142,18 +142,28 @@ namespace Hoodrich.Gangs
 
             for (var i = 0; i < spot.Men; i++)
             {
-                if (Place(gang, spot, false, i < spot.Loafers)) made++;
+                if (Place(gang, spot, false, i < spot.Loafers, i)) made++;
             }
 
             for (var i = 0; i < spot.Women; i++)
             {
-                if (Place(gang, spot, true, false)) made++;
+                if (Place(gang, spot, true, false, i)) made++;
             }
 
             if (made > 0) Log.Info(made + " on the block at " + spot.Where + ".");
         }
 
-        private bool Place(GangDef gang, BlockSpot spot, bool female, bool loafing)
+        /// <summary>
+        /// One of the block's people, put down near the spot.
+        ///
+        /// <paramref name="slot"/> is which of them this is, and it exists only so the person
+        /// can be told apart from their neighbours between sessions -- see Core.Folk. It has to
+        /// come from the caller because the position cannot do the job here: unlike a corner
+        /// mark, these are scattered at random within the spot's roam, so the coordinate is
+        /// different every time the block fills and would hand the same woman a new life on
+        /// every reload.
+        /// </summary>
+        private bool Place(GangDef gang, BlockSpot spot, bool female, bool loafing, int slot)
         {
 
             // NOT INTO A WORLD THAT IS ALREADY FULL. See Core.Crowded.
@@ -192,6 +202,11 @@ namespace Hoodrich.Gangs
 
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, ped.Handle, true, true);
                     Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, ped.Handle, gang.GroupHash);
+
+                    // They live here, so they are worth remembering. The spot and the slot,
+                    // never the scattered position. See Core.Folk.
+                    Core.Folk.Stamp(ped, "block:" + Core.Folk.Mark("", spot.Where) + ":" +
+                                         (female ? "w" : "m") + slot);
 
                     // They live here. Wandering a few metres and settling into something is the
                     // whole behaviour -- a scenario nails them to one tile, and wander alone

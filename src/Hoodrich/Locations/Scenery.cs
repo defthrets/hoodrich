@@ -537,7 +537,8 @@ namespace Hoodrich.Locations
                 }
             }
 
-            if (_cfg == null || _cfg.SceneryFromMenyoo)
+            // Menyoo's own folder is a builder's: a player's saves are theirs, not scenery.
+            if (_cfg != null && _cfg.DevTools && _cfg.SceneryFromMenyoo)
             {
                 try
                 {
@@ -1613,6 +1614,16 @@ namespace Hoodrich.Locations
             ped.PositionNoOffset = at;
             ped.Heading = item.Yaw;
             ped.IsPersistent = true;
+
+            // THE PEOPLE IN THE SCENE ARE THE BEST CANDIDATES IN THE MOD for being remembered:
+            // they stand on the same authored mark in every session, which is the one thing
+            // the game cannot give an ambient ped and the one thing a memory needs.
+            //
+            // KEYED ON item.At AND NOT ON at. Those are different on purpose -- somebody who
+            // can reach their mark on foot is put down away from it and walks in, so "at" is
+            // wherever the walk started and is different every time. The mark is the person.
+            // See Core.Folk.
+            Core.Folk.Stamp(ped, "scene:" + Core.Folk.Mark(item.ModelName, item.At));
 
             // SET DRESSING, NOT A CROWD. It holds its spot: it does not startle, does not
             // wander off to a scenario of its own and does not join a fight two streets away.

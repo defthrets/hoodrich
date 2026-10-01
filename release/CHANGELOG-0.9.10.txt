@@ -1,0 +1,95 @@
+0.9.10 -- 1 October 2026
+
+
+FLACO, ON DUTCH LONDON. A Vagos dealer at the barred door marked 1327 in
+Rancho, selling coke, heroin and meth, in person only, with one of his set
+beside him holding a compact rifle. The first time, he wants to know what
+somebody from Chamberlain is doing at his door; keep it about the money and he
+sells. That first buy squares you with the Vagos on their own blocks -- they
+stop starting on you for walking them or serving on them -- but their wars are
+still their wars, and a raid is still a raid.
+
+
+DEACON, AT THE LOST CLUBHOUSE off Mirror Park. Meth, crack, coke and LSD, in
+person only, with three of the club round him. Cold at first like Flaco, and
+the first buy squares you with the Lost on their turf the same way. He has an
+account on the feed. Both of them are found by going there: a blip when you are
+close until you have met them, on the map for good after.
+
+
+EIGHT STASH HOUSES TO RENT, on the game's own street names. Apartment 9A at
+$400 a week, 77 at $600, 32 and 47 at $300, 13 at $550 and 90 at $500, in the
+low-end apartment; 4 at $750 and 7 at $700 -- two ways in -- in the mid-range
+one. Every stash house holds the one stock.
+
+
+THE PLUG COMES TO ANY OF THEM. Ring one within twenty metres of a stash house
+you rent and he sets off from round its corner, out of sight, pulls up outside
+and walks the package to the front door. Ordering from Parkview works now: the
+phone greyed every plug out there with "call him from the house", so the
+delivery added in 0.9.9 could never be placed.
+
+
+TWO NEW APPS. Dynasty 8 lists every place there is to rent, yours first with
+the soonest rent at the top: pay up to twelve weeks ahead, put it on the map,
+or give the lease up and get the weeks you paid ahead back -- and rent a new
+one straight from the phone. Browser opens the game's own internet.
+
+
+FRANKLIN TYPES HIS POSTS. When the mod posts for him -- posting up, a job done,
+a meal ordered -- he takes the phone out and types it for a couple of seconds,
+and can walk while he does. Anything that needs his hands stops him, and the
+post goes up cut off where his thumb stopped. Posts you choose yourself still
+go up the moment you pick them.
+
+
+FROM THE MOD PAGE.
+
+  The redneck attacks. The Lost were turning up in Chamberlain as hillbillies:
+  a hillbilly was on their list of members, and raids, corner drive-bys and
+  paybacks took whichever of the list was already loaded, which in South Los
+  Santos was nearly always him. The Lost are bikers only now.
+
+  The shooting that never stopped. The set's crews went for anybody from any
+  rival set who walked past, every fifteen seconds, whatever you had done. Now
+  only a set you are actually at war with.
+
+  Crashing in shootouts while posted up. The feed's pictures are taken of real
+  people, kept out of sight thirty metres over wherever you were standing --
+  and in a gang fight they counted as targets nobody could hit, stacked right
+  over your corner. They belong to nobody now. While a fight is on near your
+  corner, it sends no customers, no police stop, no drive-by and no patrol, and
+  the log writes every line until it is over, so if it still goes down the log
+  says where.
+
+  Franklin's car. Swapping his Buffalo S for the STX is on the settings screen
+  again, and back in Hoodrich.ini under [Cars]. His own Buffalo keeps the
+  game's car, and whatever car pack replaces it.
+
+  Missing textures alongside a big graphics mod. The mod's scenery can be
+  switched off on the settings screen, or with Enabled=false under [Scenery]:
+  the places still work, emptier. The gambling den lets go of the casino's
+  models when you leave it.
+
+  Switched off from the phone with no way back. While Posted Up is off, the
+  game tells you the key that turns it back on -- / on the number pad -- and
+  the line in Hoodrich.ini.
+
+  A line in Hoodrich.ini twice. The first one counts, which is the one the
+  settings screen writes, and the log says so. That was Language=English not
+  taking.
+
+  Lamar's pistol kept coming back. A gun you get rid of yourself stays gone.
+  Loading a save, dying or being arrested still hands back what you bought.
+
+  The wardrobe camera no longer goes out through the wall in a small room.
+
+  Takeover police cars no longer vanish when the officers get out, and the
+  officers are not deleted mid-stride when it ends.
+
+
+FIXES. The corner's drive-bys and payback crews fire in bursts out of the
+window, the way the game's own do. A stop and search on your corner takes an
+officer on foot, not one driving past or in the middle of a fight. A house
+named by its number reads as a name: "go into 32 Jamestown St". The read me
+says what ScriptHookVDotNet it needs: 3.6 or newer, as it has since 0.9.7.

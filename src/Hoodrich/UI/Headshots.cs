@@ -468,6 +468,9 @@ namespace Hoodrich.UI
                 // He is gone in a second either way.
             }
 
+            // NOBODY'S MAN, before anything can see him. See FaceGroup.
+            Neutral(_model, i < names.Length ? names[i] : null);
+
             _shot = Function.Call<int>(Hash.REGISTER_PEDHEADSHOT, _model.Handle);
 
             if (_shot == 0)
@@ -485,6 +488,95 @@ namespace Hoodrich.UI
             _doing = key;
             _startedAt = Game.GameTime;
         }
+
+        /// <summary>
+        /// The relationship group every face goes in: one of its own, which nobody hates.
+        ///
+        /// A FACE IS A REAL PED, IN WHATEVER GROUP THE GAME FILES HIS MODEL UNDER. For a gang
+        /// model that is the gang: the Ballas account's photograph was a Ballas -- frozen,
+        /// invisible, invincible, with no collision, thirty metres up -- and the moment a raid
+        /// set his set and ours to hate each other, everybody on the block told to fight whoever
+        /// they hate within a hundred and twenty metres had him in range. A man who cannot be
+        /// hit, killed or reached is a fight that never ends: men in the street emptying
+        /// magazines at the sky, and the police coming for the noise.
+        ///
+        /// WORST ON A CORNER. Each face is made over wherever he is stood when the feed wants
+        /// it, and posted up he stands in one place for twenty minutes -- so every face made in
+        /// that time is stacked over the one corner, right where a raid or a drive-by is coming.
+        /// Felony83 on the mod page, 2026-09-30: "Everytime theres an ambient shoot out in the
+        /// hood (Chamberlain) while im posted up selling it causes my game to crash."
+        ///
+        /// A group of their own has no relationship with anybody, which is neutral to all of
+        /// them. Made once; asking for it again after a reload hands back the same one.
+        /// </summary>
+        private static int FaceGroup()
+        {
+            if (_faceGroup != 0) return _faceGroup;
+
+            try
+            {
+                var made = new OutputArgument();
+                Function.Call(Hash.ADD_RELATIONSHIP_GROUP, "HOODRICH_FACES", made);
+                _faceGroup = made.GetResult<int>();
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Headshots could not make their relationship group: " + ex.Message);
+            }
+
+            if (_faceGroup == 0) _faceGroup = Function.Call<int>(Hash.GET_HASH_KEY, "HOODRICH_FACES");
+
+            return _faceGroup;
+        }
+
+        private static int _faceGroup;
+
+        /// <summary>
+        /// Out of his gang and into FaceGroup, and nobody's to lock on to.
+        ///
+        /// SAID ONCE PER GANG he came out of, so the log shows the thing this is for rather than
+        /// anybody having to take it on trust: a face that started life as a Ballas is the line
+        /// "came out in AMBIENT_GANG_BALLAS".
+        /// </summary>
+        private static void Neutral(Ped face, string model)
+        {
+            if (face == null || !face.Exists()) return;
+
+            try
+            {
+                var was = Function.Call<int>(Hash.GET_PED_RELATIONSHIP_GROUP_HASH, face.Handle);
+
+                foreach (var group in GangGroups)
+                {
+                    if (was != Function.Call<int>(Hash.GET_HASH_KEY, group)) continue;
+
+                    if (Said.Add(group))
+                    {
+                        Log.Info("Headshots: a face of " + (string.IsNullOrEmpty(model) ? "somebody" : model) +
+                                 " came out in " + group + " -- moved to a group of its own, so nobody fights it.");
+                    }
+
+                    break;
+                }
+
+                Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, face.Handle, FaceGroup());
+                Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, face.Handle, false);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Headshots could not stand a face down: " + ex.Message);
+            }
+        }
+
+        /// <summary>The gangs' own groups, by name, for the line Neutral says. The registry's eight and the three it does not use.</summary>
+        private static readonly string[] GangGroups =
+        {
+            "AMBIENT_GANG_FAMILY", "AMBIENT_GANG_BALLAS", "AMBIENT_GANG_MEXICAN", "AMBIENT_GANG_LOST",
+            "AMBIENT_GANG_MARABUNTE", "AMBIENT_GANG_WEICHENG", "AMBIENT_GANG_KOREAN", "AMBIENT_GANG_ARMENIAN",
+            "AMBIENT_GANG_SALVA", "AMBIENT_GANG_HILLBILLY", "AMBIENT_GANG_CULT"
+        };
+
+        private static readonly HashSet<string> Said = new HashSet<string>();
 
         private static void Waiting()
         {
