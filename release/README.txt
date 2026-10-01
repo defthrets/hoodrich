@@ -19,14 +19,14 @@ left exactly as it was.
   1. ScriptHookV
      http://www.dev-c.com/gtav/scripthookv/
 
-  2. ScriptHookVDotNet -- 3.9.0 OR NEWER, on either edition
+  2. ScriptHookVDotNet 3 -- 3.6.0 OR NEWER, on either edition
      https://github.com/scripthookvdotnet/scripthookvdotnet
 
-     Not 3.6, not 3.7, not 3.8. This is built against 3.9.0, and an older one
-     refuses to load it -- which looks like nothing happening at all: no
-     message on startup, no phone, and no Hoodrich.log to read, because the
-     thing that writes the log is the thing that did not load. The error is in
-     ScriptHookVDotNet's own log.
+     It is built against 3.6.0, so 3.6, 3.7, 3.8, 3.9 and the nightlies all
+     load it. Anything older than 3.6 refuses to -- which looks like nothing
+     happening at all: no message on startup, no phone, and no Hoodrich.log
+     to read, because the thing that writes the log is the thing that did not
+     load. The error is in ScriptHookVDotNet's own log.
 
      The FULL download has a matching copy in it, if you would rather not
      think about it.
