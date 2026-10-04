@@ -1,4 +1,66 @@
-﻿0.9.10 -- 1 October 2026
+﻿0.9.11 -- 4 October 2026
+
+
+FIVE MORE CORNERS, one to a set. Pelon for the Vagos, on a corner in Cypress
+Flats: blow and glass. Nelson for Marabunta Grande, on a bench up in El Burro
+Heights: glass and blow. Jae for the Kkangpae, on a corner in Little Seoul,
+the same two. Vahe for the Armenians, by the freeway in La Puerta: brown and
+nothing else. OG Reese for the Ballas, on a corner in Davis: rock and green.
+All five sell in person and nowhere else, cheap and stepped on to three
+quarters -- buy a big enough lot and it comes clean. Each is cold the first
+time, the way Flaco is: say what you came for, keep it about the money, and
+he sells. That first buy squares you with his set on their own blocks, and no
+further than that. Three of his people stand round him.
+
+
+EVERY CORNER MAN IS ON THE MAP FROM THE FIRST LOAD, in his set's colour and
+dimmed; meeting him brightens the pin. The Kkangpae are dark blue now, on the
+map and on their cars.
+
+
+LAMAR'S YARD, AS HE LEFT IT. The hanging weed has come down. A second wall, a
+skate ramp, a couple of containers and a couch have gone up along the east
+side.
+
+
+TEXTURES GOING SOFT. Every model the mod ever asked the streamer for stayed
+loaded for the rest of the session -- a hundred and thirty-odd cars and faces
+from the first takeover alone -- and on a card with less memory than that, the
+street turned to mud. A model nobody has used in twenty seconds is let go now.
+A takeover parks twelve cars of six kinds instead of fourteen of fourteen, and
+its crowd wears fourteen faces instead of forty-six. A big scene -- Parkview's
+flats -- goes up nearer, so it is not sat in memory from two streets away.
+
+
+STRETCH'S GUNS KEEP THEIR ROUNDS, PROPERLY. Two guns of one calibre share one
+count, and a load handed both back with it -- so a pistol and a combat pistol
+came back with double the rounds between them. They come back with what they
+had. Rounds bought off Stretch for a gun you did not buy off him are kept the
+same way now, and a scope or a grip fitted a minute before a save is still on
+the gun after it.
+
+
+WITH NPC MIND INSTALLED. The dealers, the gang leaders, Hao, Vernon and
+Stretch have conversations of their own, and NPC Mind was opening its panel
+over them with a stranger's name on it. They are this mod's people; it leaves
+them alone. A pill sold through NPC Mind's talk is a whole pill at the price
+of one, the way the corner sells them.
+
+
+TRANSLATIONS. Every string the eight other languages were missing since 0.9.9,
+and the old ones read through in full and fixed: Latin American Spanish
+throughout, and the lines that said the opposite of what they meant. Notices
+glued together out of pieces translate as a whole now.
+
+
+FIXES. A dealer who only sells at his door no longer hands you a number he
+will not answer. For whoever records voices: a greeting, a truce or a doorstep
+line with no recording is named in the log like every other missing line, so
+the to-record list is complete, and voice_lines.py lists exactly what each man
+can say.
+
+
+0.9.10 -- 1 October 2026
 
 
 FLACO, ON DUTCH LONDON. A Vagos dealer at the barred door marked 1327 in
