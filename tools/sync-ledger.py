@@ -19,7 +19,7 @@ PROJECTS = os.path.dirname(HERE)
 MODS = {
     "bare-minimum": ("BareMinimum", "Bare Minimum"),
     "fumes": ("Fumes", "Fumes"),
-    "five0patrol": ("Five0Patrol", "Five0 Patrol"),
+    "911-response": ("Response911", "911 Response"),
     "bloodymess": ("BloodyMess", "Bloody Mess"),
     "overspray": ("Overspray", "Overspray"),
     "hoops": ("Hoops", "Hoops"),
@@ -39,7 +39,7 @@ FILES = [
 # found a gore mod shipping a file about drug takeovers and car meets.
 #
 # Checked rather than assumed - hoodrich has 5 call sites and fumes 2; bare-minimum,
-# five0patrol, bloodymess and overspray had none between them.
+# five0patrol (911-response now), bloodymess and overspray had none between them.
 #
 # The copies already sitting in those four repos are not removed by this script. Deleting a
 # file it once wrote is how a sync tool eats work somebody meant to keep; they come out by
