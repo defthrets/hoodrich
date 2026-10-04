@@ -34,20 +34,45 @@ namespace Hoodrich.Core
     internal static class Models
     {
         /// <summary>
-        /// The models asked for while a room is open, so they can all be let go when it shuts.
+        /// Everything asked for and not yet let go of: when it was last asked for, and which
+        /// room asked, if one did.
         ///
         /// A MODEL A SCRIPT ASKS FOR STAYS IN MEMORY UNTIL THE SCRIPT SAYS IT IS DONE WITH IT,
-        /// and Ready only ever asked. The gambling den asks for every card, chip, ball and reel
-        /// it might deal and never said so, so one visit kept the casino's models resident for
-        /// the rest of the session -- on a machine already full of a graphics mod's textures,
-        /// that is the street outside going soft (texture loss with NVE, on the mod page). A
-        /// model let go of takes nothing off a prop still standing; it only lets the streamer
-        /// drop it once nothing is.
+        /// and Ready and Streamer.Here only ever asked. Every spawner in the mod walks a list
+        /// of candidates and spawns from the first one that is in -- and the rest of the list,
+        /// asked for along the way, stayed pinned for the session. The takeover's Theme asked
+        /// for its whole wardrobe on the way in, a hundred and thirty-odd models, and nothing
+        /// ever told the streamer it could have them back: from the first takeover of a night
+        /// the street went soft and stayed soft, which is the texture loss on the mod page
+        /// (audit, 2026-10-04). The gambling den was the one place that let go, and only of
+        /// its own.
+        ///
+        /// So everything asked for is written down, and Settle lets go of whatever nobody has
+        /// asked for in a while. That costs nothing a standing prop or a ped is using -- the
+        /// entity holds its model, and SET_MODEL_AS_NO_LONGER_NEEDED only lets the streamer
+        /// drop it once nothing does -- and a spawner that still wants one simply asks again,
+        /// which is what it does every pass anyway. A room (Into/Out) keeps what it asked for
+        /// until it shuts: the den's cards are wanted for the whole hand.
         /// </summary>
-        private static string _scope;
-        private static readonly HashSet<int> _asked = new HashSet<int>();
+        private sealed class Ask
+        {
+            public int At;
+            public string Scope;
+        }
 
-        /// <summary>From here, what Ready asks for is the named room's, until Out.</summary>
+        private static readonly Dictionary<int, Ask> _asked = new Dictionary<int, Ask>();
+        private static string _scope;
+
+        /// <summary>How long an ask is honoured after the last time anybody made it.</summary>
+        private const int HoldMs = 20000;
+
+        private const int SettleEveryMs = 5000;
+        private static int _nextSettle;
+
+        /// <summary>Reused between sweeps: what to let go of this time.</summary>
+        private static readonly List<int> _letGo = new List<int>();
+
+        /// <summary>From here, what is asked for is the named room's, until Out.</summary>
         public static void Into(string scope)
         {
             _scope = scope;
@@ -60,16 +85,14 @@ namespace Hoodrich.Core
 
             _scope = null;
 
-            foreach (var hash in _asked)
+            _letGo.Clear();
+            foreach (var pair in _asked)
             {
-                try { Function.Call(Hash.SET_MODEL_AS_NO_LONGER_NEEDED, hash); }
-                catch { /* it goes when the game decides */ }
+                if (pair.Value.Scope == scope) _letGo.Add(pair.Key);
             }
+            foreach (var hash in _letGo) LetGo(hash);
 
-            var n = _asked.Count;
-            _asked.Clear();
-
-            if (n > 0) Log.Info("Models: let go of the " + n + " the " + scope + " asked for.");
+            if (_letGo.Count > 0) Log.Info("Models: let go of the " + _letGo.Count + " the " + scope + " asked for.");
         }
 
         /// <summary>
@@ -88,7 +111,7 @@ namespace Hoodrich.Core
                 if (model.IsLoaded) return true;
 
                 model.Request();
-                if (_scope != null) _asked.Add(model.Hash);
+                Asked(model.Hash);
 
                 return false;
             }
@@ -96,6 +119,59 @@ namespace Hoodrich.Core
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Written down as asked for, by Ready and by Streamer.Here. Asked for again, the
+        /// clock restarts; asked for inside a room, it is the room's until the room shuts.
+        /// </summary>
+        public static void Asked(int hash)
+        {
+            Ask ask;
+            if (_asked.TryGetValue(hash, out ask))
+            {
+                ask.At = Game.GameTime;
+                if (_scope != null) ask.Scope = _scope;
+                return;
+            }
+
+            _asked[hash] = new Ask { At = Game.GameTime, Scope = _scope };
+        }
+
+        /// <summary>
+        /// Every few seconds, from the main tick: whatever nobody has asked for in HoldMs is
+        /// let go of, unless the room that asked for it is still open.
+        /// </summary>
+        public static void Settle()
+        {
+            var now = Game.GameTime;
+            if (now < _nextSettle) return;
+            _nextSettle = now + SettleEveryMs;
+
+            if (_asked.Count == 0) return;
+
+            _letGo.Clear();
+            foreach (var pair in _asked)
+            {
+                if (pair.Value.Scope != null && pair.Value.Scope == _scope) continue;
+                if (now - pair.Value.At < HoldMs) continue;
+                _letGo.Add(pair.Key);
+            }
+            foreach (var hash in _letGo) LetGo(hash);
+
+            if (_letGo.Count > 0)
+            {
+                Log.Debug("Models: let go of " + _letGo.Count + " nobody has asked for in " + (HoldMs / 1000) +
+                          " s; " + _asked.Count + " still asked for.");
+            }
+        }
+
+        private static void LetGo(int hash)
+        {
+            _asked.Remove(hash);
+
+            try { Function.Call(Hash.SET_MODEL_AS_NO_LONGER_NEEDED, hash); }
+            catch { /* it goes when the game decides */ }
         }
     }
 }

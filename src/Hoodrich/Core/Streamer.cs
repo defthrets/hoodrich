@@ -64,8 +64,10 @@ namespace Hoodrich.Core
                 if (model.IsLoaded) return true;
 
                 // No timeout, so nothing yields. The streamer gets the message and this frame
-                // carries on.
+                // carries on. Written down, so that if nobody spawns from it -- the rest of a
+                // candidate list never is -- Models.Settle lets it go again.
                 model.Request();
+                Models.Asked(model.Hash);
                 return false;
             }
             catch

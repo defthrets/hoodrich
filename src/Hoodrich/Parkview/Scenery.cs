@@ -94,6 +94,9 @@ namespace Hoodrich.Parkview
             public Vector3 Centre;
             public float Radius;
 
+            /// <summary>Whether the log has been told this scene goes up nearer than the setting. See Reach.</summary>
+            public bool ReachSaid;
+
             /// <summary>Where the builder has got to, and whether it is part-way through.</summary>
             public int Cursor;
             public bool Working;
@@ -370,6 +373,42 @@ namespace Hoodrich.Parkview
 
         /// <summary>How far past the scene's own edge it stays standing before it is taken out.</summary>
         private const float DropSlack = 90f;
+
+        /// <summary>A scene with more placements than this goes up nearer than the setting. See Reach.</summary>
+        private const int BigAt = 150;
+
+        /// <summary>The nearest a big scene's reach is ever scaled down to, beyond its own edge.</summary>
+        private const float ReachLeast = 50f;
+
+        /// <summary>
+        /// How near he has to be to this scene's edge for it to go up when its Note says no
+        /// "near:" of its own: the setting, or nearer for a big one.
+        ///
+        /// THE BIGGEST SCENE SETS THE BILL. The flats are four hundred and seventy placements,
+        /// two hundred and sixty models and fifty people, and at the usual two hundred and
+        /// twenty metres they were up from Hao's lot and the church camp as well as from the
+        /// flats -- on an eight-gigabyte card that is the textures on the whole of Davis going
+        /// soft for a scene nobody is looking at (audit, 2026-10-04). So a scene past BigAt
+        /// placements goes up at the setting scaled down by how far past it is, and never
+        /// nearer than ReachLeast beyond its own edge. The small ones are untouched, the
+        /// setting is still the ceiling for all of them, and a "near:" in the Note still wins.
+        /// </summary>
+        private static float Reach(Scene scene, float range)
+        {
+            var n = scene.Items.Count;
+            if (n <= BigAt) return range;
+
+            var reach = Math.Max(ReachLeast, range * BigAt / n);
+
+            if (!scene.ReachSaid)
+            {
+                scene.ReachSaid = true;
+                Log.Info("Scenery: " + scene.Name + " is " + n + " placements, so it goes up within " +
+                         reach.ToString("0") + " m of its edge rather than the usual " + range.ToString("0") + ".");
+            }
+
+            return reach;
+        }
 
         /// <summary>How many ticks one placement waits for its model before it is given up on.</summary>
         private const int ModelTries = 60;
@@ -1142,8 +1181,9 @@ namespace Hoodrich.Parkview
                 var gap = Math.Min(here.DistanceTo(scene.Centre), him.DistanceTo(scene.Centre)) - scene.Radius;
 
                 // Near: only when he is at it, and down again the moment he is not. See Near.
-                var reach = scene.Near > 0f ? Math.Min(range, scene.Near) : range;
-                var slack = scene.Near > 0f ? Math.Min(DropSlack, scene.Near) : DropSlack;
+                // Without one, a big scene is nearer than the setting anyway. See Reach.
+                var reach = scene.Near > 0f ? Math.Min(range, scene.Near) : Reach(scene, range);
+                var slack = Math.Min(DropSlack, reach);
 
                 if (!scene.Built)
                 {

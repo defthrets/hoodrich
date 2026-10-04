@@ -555,6 +555,36 @@ namespace Hoodrich.Locations
 
         // ---- the crowd ----------------------------------------------------------
 
+        /// <summary>
+        /// How many of the kerbs get a car, and how many kinds of car they get between them.
+        ///
+        /// EVERY KERB GOT ITS OWN KIND OF CAR, and that was the bill. Make's first pass took
+        /// only what nobody out there was already driving, so fourteen kerbs were fourteen
+        /// models, each with its own set of textures, on top of the performers, the lowriders,
+        /// the donks and the police -- and on an eight-gigabyte card at that resolution the
+        /// street round the junction went soft for the rest of the night (audit, 2026-10-04).
+        /// Twelve cars of six kinds still reads as a wall of parked cars from the pavement;
+        /// the two kerbs left empty are the ones the shuffle happens to deal last.
+        /// </summary>
+        private const int SpectatorsMost = 12;
+        private const int DistinctMost = 6;
+
+        /// <summary>How many models Make asks the streamer for on one try before coming back later.</summary>
+        private const int AskMost = 2;
+
+        /// <summary>
+        /// How many faces the crowd is drawn from on one night. Forty-six are on the list, and
+        /// sixty people drawn from forty-six is forty-odd ped models resident at once; fourteen,
+        /// rolled fresh each night, is the same crowd to look at.
+        /// </summary>
+        private const int FacesMost = 14;
+
+        /// <summary>Tonight's faces: a slice of Faces, rolled when the night starts. See Theme.</summary>
+        private string[] _faces;
+
+        /// <summary>The kerbs that get a car tonight: the spots, or SpectatorsMost of them.</summary>
+        private int Kerbs => Math.Min(Spots.Length, SpectatorsMost);
+
         private const int CrowdMin = 48;
         private const int CrowdMax = 68;
 
@@ -1615,6 +1645,10 @@ namespace Hoodrich.Locations
             _nextWord = now + _rng.Next(20000, 45000);
 
 
+            // Tonight's faces are rolled before the asking, so what Theme asks for is what
+            // the crowd will wear. See FacesMost.
+            _faces = Slice(Faces, FacesMost);
+
             Theme();
 
             Cars();
@@ -1748,7 +1782,9 @@ namespace Hoodrich.Locations
 
                 for (var tries = 0; tries < 6 && !got; tries++)
                 {
-                    model = new Model(Faces[_rng.Next(Faces.Length)]);
+                    // Out of tonight's palette, not the whole list. See FacesMost.
+                    var pool = _faces != null && _faces.Length > 0 ? _faces : Faces;
+                    model = new Model(pool[_rng.Next(pool.Length)]);
 
                     got = model.IsValid && model.IsInCdImage && Core.Models.Ready(model);
                 }
@@ -3065,7 +3101,6 @@ namespace Hoodrich.Locations
             // EVERY KERB, EVERY TIME. Fourteen to twenty into twenty-three places left gaps
             // in the wall, and a gap in a row of parked cars is a hole you can see the far
             // pavement through -- which is the thing the ring exists to stop.
-            var want = Spots.Length;
             var lows = _rng.Next(LowsMin, LowsMax + 1);
             var donks = _rng.Next(DonksMin, DonksMax + 1);
 
@@ -3084,6 +3119,10 @@ namespace Hoodrich.Locations
                 order[i] = order[j];
                 order[j] = t;
             }
+
+            // AND ONLY SO MANY OF THEM. See SpectatorsMost: the kerbs dealt past that are the
+            // ones that stay empty tonight.
+            if (order.Count > Kerbs) order.RemoveRange(Kerbs, order.Count - Kerbs);
 
             // THE MINIMUM-GAP CHECK THAT USED TO BE HERE WAS WRONG AND IS GONE.
             //
@@ -3226,7 +3265,7 @@ namespace Hoodrich.Locations
 
             _coming.RemoveAt(0);
 
-            var gap = SpreadMs / Math.Max(1, Spots.Length);
+            var gap = SpreadMs / Math.Max(1, Kerbs);
 
             _nextCar = now + Math.Max(500, gap);
         }
@@ -3363,7 +3402,18 @@ namespace Hoodrich.Locations
         {
             try
             {
-                foreach (var set in new[] { Faces, Parked, Lows, Donks, Drifters, Badges, Sirens })
+                // A SLICE OF EACH, NOT THE LOT. Asking for all forty-four parked cars and all
+                // forty-six faces at once was a hundred and thirty models hitting the streamer
+                // together, every one of them pinned until Models.Settle let it go -- and the
+                // night's own spawners only ever use a handful of each: see SpectatorsMost,
+                // DistinctMost and FacesMost. The faces are tonight's palette, so the crowd
+                // spawner finds what was asked for.
+                foreach (var set in new[]
+                         {
+                             Slice(Parked, DistinctMost + 2), Slice(Lows, LowsMax), Slice(Donks, DonksMax),
+                             Slice(Drifters, _here.Stages.Length + 1), Badges, Sirens,
+                             _faces ?? Slice(Faces, FacesMost)
+                         })
                 {
                     foreach (var name in set) Core.Models.Ready(new Model(name));
                 }
@@ -3372,6 +3422,18 @@ namespace Hoodrich.Locations
             {
                 Log.Debug("Takeover could not warm its models: " + ex.Message);
             }
+        }
+
+        /// <summary>Up to that many of those names, from a random start, wrapping round.</summary>
+        private string[] Slice(string[] names, int most)
+        {
+            var n = Math.Max(0, Math.Min(most, names.Length));
+            var start = names.Length > 0 ? _rng.Next(names.Length) : 0;
+            var picked = new string[n];
+
+            for (var i = 0; i < n; i++) picked[i] = names[(start + i) % names.Length];
+
+            return picked;
         }
 
         /// <summary>What sort of car came to watch.</summary>
@@ -4881,7 +4943,7 @@ namespace Hoodrich.Locations
             // rather than after them. The two phases took a minute each end to end; overlapped
             // they take about a minute together, and the street filling up with cars and people
             // at the same time is what one of these actually looks like anyway.
-            var enough = there >= (int)Math.Ceiling(Spots.Length * CrowdAfter);
+            var enough = there >= (int)Math.Ceiling(Kerbs * CrowdAfter);
 
             var late = _startedAt != 0 && now - _startedAt > FillGiveUpMs;
 
@@ -4889,7 +4951,7 @@ namespace Hoodrich.Locations
 
             _carsIn = true;
 
-            Log.Info("Takeover: " + there + " of " + Spots.Length +
+            Log.Info("Takeover: " + there + " of " + Kerbs +
                      " kerbs taken. The crowd sets off while the rest come in.");
         }
 
@@ -4961,7 +5023,7 @@ namespace Hoodrich.Locations
 
             _ringed = true;
 
-            Log.Info("Takeover: " + OnKerbs() + " of " + Spots.Length +
+            Log.Info("Takeover: " + OnKerbs() + " of " + Kerbs +
                      " kerbs taken. First car in, the rest arrive around it.");
 
             return true;
@@ -8665,8 +8727,20 @@ namespace Hoodrich.Locations
 
             Taken();
 
-            for (var pass = 0; pass < 2; pass++)
+            // FOUR PASSES, NOT TWO. The first two take only what is already in: a kind nobody
+            // is driving while fewer than DistinctMost kinds are out there, and a kind somebody
+            // already is from then on. The last two ask -- for AskMost at most, and then give
+            // up until the next try, which is along in a moment with them in. Walking the
+            // whole list with Ready on a night nothing was loaded yet asked for all forty-four
+            // of them at once, and every one of those asks pinned a car's worth of textures.
+            // See SpectatorsMost.
+            var asked = 0;
+
+            for (var pass = 0; pass < 4; pass++)
             {
+                var strict = pass % 2 == 0;
+                var askNow = pass >= 2;
+
                 for (var i = 0; i < names.Length; i++)
                 {
                     var name = names[(start + i) % names.Length];
@@ -8676,10 +8750,17 @@ namespace Hoodrich.Locations
                         var model = new Model(name);
                         if (!model.IsValid || !model.IsInCdImage) continue;
 
-                        // First time round, only what nobody out there is already driving.
-                        if (pass == 0 && _taken.Contains(model.Hash)) continue;
+                        if (strict && (_taken.Count < DistinctMost) == _taken.Contains(model.Hash)) continue;
 
-                        if (!Core.Models.Ready(model)) continue;
+                        if (!askNow)
+                        {
+                            if (!model.IsLoaded) continue;
+                        }
+                        else if (!Core.Models.Ready(model))
+                        {
+                            if (++asked >= AskMost) return null;
+                            continue;
+                        }
 
                         var car = World.CreateVehicle(model, at);
                         model.MarkAsNoLongerNeeded();

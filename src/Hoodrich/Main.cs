@@ -4044,6 +4044,12 @@ namespace Hoodrich
                 Core.Pace.At("Core.Helmets.Off");
                 Core.Helmets.Off(Game.Player.Character);
 
+                // Models asked for and never spawned from -- the rest of every candidate list,
+                // the takeover's whole wardrobe -- are let go of once nobody has asked for
+                // them in a while. Throttled inside. See Core.Models.Settle.
+                Core.Pace.At("Core.Models.Settle");
+                Core.Models.Settle();
+
                 // Before any of the full-screen UIs, every one of which returns early. A narc
                 // on the phone and a corner you are stood on both run on wall time, and a
                 // countdown that stops because you opened a menu is a countdown you can beat by
