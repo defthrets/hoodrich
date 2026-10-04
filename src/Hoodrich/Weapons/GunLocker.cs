@@ -134,6 +134,11 @@ namespace Hoodrich.Weapons
                     if (hash == 0) continue;
                     if (!Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, me.Handle, hash, false)) continue;
 
+                    // And what is bolted to it, for the same reason the count is: a scope
+                    // fitted a minute before a save used to wait up to twenty seconds for the
+                    // next look, and a save inside that window carried the old list out.
+                    Remember(name, Attachments.On(me, name));
+
                     var rounds = Function.Call<int>(Hash.GET_AMMO_IN_PED_WEAPON, me.Handle, hash);
 
                     int had;
@@ -263,7 +268,13 @@ namespace Hoodrich.Weapons
 
             Log.Info("Locker: " + _state.GunsBought.Count + " guns gone -- " + why + ".");
 
+            // AND WHAT WAS KNOWN ABOUT THEM. A count and a parts list for a gun that is gone
+            // are rows nothing reads -- the save was carrying eight of them -- and rows that
+            // would be wrong if he bought the same gun again: Snapshot writes over the count,
+            // but not before a save could carry the old one out.
             _state.GunsBought.Clear();
+            _state.GunAmmo.Clear();
+            _state.GunParts.Clear();
             _state.Touch();
         }
 
@@ -357,8 +368,30 @@ namespace Hoodrich.Weapons
                         continue;
                     }
 
-                    // With the rounds it had. See the class note.
-                    Function.Call(Hash.GIVE_WEAPON_TO_PED, me.Handle, hash, rounds, false, false);
+                    // EMPTY FIRST, THEN UP TO THE COUNT. The class note is why the rounds come
+                    // back at all; this is how.
+                    //
+                    // GIVE_WEAPON_TO_PED ADDS ITS ROUNDS, AND ROUNDS BELONG TO AN AMMO TYPE, NOT
+                    // A GUN. Two pistols bought off Stretch drink from one pistol pool, so
+                    // Snapshot wrote the same pool down against each of them -- and handing
+                    // both back with their count poured that pool in twice. Three rifles, three
+                    // times. So the gun comes back empty and the pool is raised to the count
+                    // only if it is under it: the rule the top-up above already uses. Never
+                    // lowered, never doubled, one number however many guns share it.
+                    Function.Call(Hash.GIVE_WEAPON_TO_PED, me.Handle, hash, 0, false, false);
+
+                    if (!Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, me.Handle, hash, false))
+                    {
+                        // Nothing to throw is nothing to hold: a thrown weapon given empty is
+                        // not kept. Those come back the old way, count and all -- a grenade
+                        // shares its pool with nothing.
+                        Function.Call(Hash.GIVE_WEAPON_TO_PED, me.Handle, hash, rounds, false, false);
+                    }
+                    else if (rounds > 0)
+                    {
+                        var has = Function.Call<int>(Hash.GET_AMMO_IN_PED_WEAPON, me.Handle, hash);
+                        if (has < rounds) Function.Call(Hash.SET_PED_AMMO, me.Handle, hash, rounds);
+                    }
 
                     // WHAT HE HAD BOLTED TO IT FIRST, THEN THE MAGAZINE -- and the magazine
                     // only if he had not chosen one himself. Components share slots: a clip
