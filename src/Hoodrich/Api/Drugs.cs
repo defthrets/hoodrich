@@ -228,6 +228,25 @@ namespace Hoodrich.Api
         private const float UseUnit = 1f;
 
         /// <summary>
+        /// What a caller's amount comes to in this drug's own units: a weight as asked for,
+        /// pills whole.
+        /// </summary>
+        ///
+        /// <remarks>
+        /// A PILL IS SOLD WHOLE. A mod running its own conversation sizes a buy by appetite --
+        /// a gram and a third for somebody flush -- and for powder that is a weight. For a
+        /// counted drug it was a third of a pill taken out of the bag and a price for it,
+        /// while the corner only ever deals pills by the whole (PostUp.PillDeals) and Amount
+        /// tells the buyer a rounded number. Rounded the same way Amount rounds, so what the
+        /// buyer is told, what is charged for and what leaves the bag are one number.
+        /// </remarks>
+        private static float Units(Economy.DrugDef def, float quantity)
+        {
+            if (def == null || !def.Counted) return quantity;
+            return (float)Math.Round(quantity);
+        }
+
+        /// <summary>
         /// Actually takes it: the refusal, the weight, the ritual and the high.
         /// </summary>
         ///
@@ -407,7 +426,7 @@ namespace Hoodrich.Api
                 if (def == null) return 0;
 
                 var have = _state.Stash.PackagedOf(id);
-                var take = Math.Min(grams, have);
+                var take = Units(def, Math.Min(grams, have));
 
                 // THE SAME TWO REFUSALS AS Sell, so a quote is never a number Sell would not
                 // pay. See the notes there.
@@ -474,7 +493,7 @@ namespace Hoodrich.Api
                 if (def == null) return 0;
 
                 var have = _state.Stash.PackagedOf(id);
-                var want = grams <= 0.005f ? have : Math.Min(grams, have);
+                var want = Units(def, grams <= 0.005f ? have : Math.Min(grams, have));
 
                 // ONE WHOLE UNIT AT LEAST -- a gram, or a pill. SaleValue never pays less than
                 // a dollar, which is right for a hand-to-hand and wrong for a slider: a sliver
