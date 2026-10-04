@@ -306,6 +306,15 @@
       "voice": ""
     },
     {
+      "handle": "ogreese_davis",
+      "name": "OG Reese",
+      "gang": "ballas",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": "ogreese_davis"
+    },
+    {
       "handle": "elguero_rancho",
       "name": "El Guero",
       "gang": "vagos",
@@ -1541,6 +1550,15 @@
       "gender": "female",
       "pic": "",
       "voice": ""
+    },
+    {
+      "handle": "vahe_lapuerta",
+      "name": "Vahe",
+      "gang": "armenians",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": "vahe_lapuerta"
     },
     {
       "handle": "gingerst_dae",
@@ -7704,6 +7722,42 @@
       "walked down ginger street after and nobody said a word. strange feeling",
       "the kkangpae said i'm good on their streets now. i ain't testing how far that go"
     ],
+    "SquaredArmenians": [
+      "{subject} says the chamberlain boy can do business in la puerta. so he can. finished",
+      "{subject} vouched for one green shirt. one. do not make it a thing",
+      "franklin bought off {subject} by the freeway and nobody got out of the car. {subject}'s call",
+      "nobody touches the chamberlain boy on our streets. {subject}'s word. a war is another conversation",
+      "{subject} does not speak for the family. on his lot his word holds. his lot is la puerta",
+      "green shirt came with money and left with brown. {subject} allowed it. so it is allowed",
+      "the chamberlain boy gets through alta and la puerta. until he does not"
+    ],
+    "YouSquaredArmenians": [
+      "bought off the armenians in la puerta today. his cousins never got out of the car",
+      "la puerta got one lot open for me now. just the one",
+      "never thought i'd be buying off the armenian mob. money don't need a translator",
+      "{subject} told me i'm not police like it was the nicest thing he'd ever said. worth it",
+      "copped in la puerta. don't tell lamar",
+      "drove past the freeway lot after and nobody looked twice. strange feeling",
+      "the armenians said i'm good on their streets now. i ain't testing how far that go"
+    ],
+    "SquaredBallas": [
+      "{subject} said let the green boy shop. on HIS block. we all heard it and we all got opinions",
+      "{subject} vouched for one chamberlain boy. one. the rest of forum drive still what it is",
+      "franklin bought off {subject} in davis and walked off. {subject}'s word. don't ask me, ask him",
+      "nobody touch the green boy on {subject}'s corner. {subject}'s word. a war is a war tho",
+      "{subject} don't speak for the ballas. on his block his word hold. that block only",
+      "green money on a purple block and {subject} took it. so it's taken. don't get used to seeing him",
+      "chamberlain gets through davis on one corner. one. we counting"
+    ],
+    "YouSquaredBallas": [
+      "bought off a balla in davis today. walked out breathing. still processing that",
+      "davis got one corner open for me now. one. don't tell nobody on grove",
+      "never thought i'd be buying off purple. money don't know what colour it is",
+      "{subject} made me stand there while the young ones decided if i was leaving. worth it",
+      "copped off the ballas. DON'T tell lamar",
+      "walked through davis after and nobody said a word. strangest feeling i had all year",
+      "{subject} said i'm good on his block. his block. i ain't testing the rest"
+    ],
     "YouSquaredLost": [
       "bought off the lost at their own clubhouse today. still got all my teeth",
       "never thought i'd be buying off bikers. money don't care who's selling",
@@ -11119,6 +11173,52 @@
         "the chamberlain kid paid and didn't do anything stupid. he's fine on our streets. i told people",
         "square with franklin on ginger street. with me. the kkangpae have their own opinions",
         "forum drive money counted the same as anyone's. he can walk through. nobody bothers him"
+      ]
+    },
+    "vahe_lapuerta": {
+      "Ambient": [
+        "la puerta. the freeway makes noise so nobody hears anything. this is why i like it",
+        "one product. brown. cheap and stepped on and i do not pretend otherwise",
+        "do not call me. i will not answer. then you will text anyway. so text",
+        "a man asked me if it was pure. i asked him if he was a chemist. he was not",
+        "my cousins sit in the car. they are not waiting for anything. they are my cousins",
+        "the lot by the freeway is not a shop. it is a lot. i am the shop",
+        "you are not police. i checked. this is the only compliment i give",
+        "two lots and it comes clean. one lot and it comes as it is. this is arithmetic",
+        "someone counted in front of me. slowly. i aged a year on that lot",
+        "alta, burton, pillbox, la puerta. i drive all of it. do not make me",
+        "the freeway is loud at night. good. loud is private",
+        "two hands, like a man. i say it about a box. i mean it about everything",
+        "i was never here and you never met me. standard",
+        "go and be somewhere else. it is not an insult. it is advice"
+      ],
+      "SquaredArmenians": [
+        "the chamberlain boy paid and did nothing stupid. he can come to la puerta. i told the family",
+        "square with franklin on my lot. my lot. the family has its own opinions, always",
+        "forum drive money is money. he buys, he goes, nobody touches him. this is the arrangement"
+      ]
+    },
+    "ogreese_davis": {
+      "Ambient": [
+        "on the block off davis. you ain't seen me. you never see me",
+        "rock and green, three quarters. ain't nobody claimed it was clean",
+        "don't text me. don't call me. don't say my name. come see me and keep it short",
+        "youngsters out here loud. loud gets people seen. i ain't tryin to be seen",
+        "two lots and it come clean. one lot and you get what you get. that's just arithmetic",
+        "somebody's car been sat on the corner twenty minutes. twenty. i'm countin",
+        "been on this block since before the arena had a name. still here. still ain't been seen",
+        "every young one wanna be the one. the one what, i ask. they never got an answer",
+        "davis quiet tonight. quiet make me nervous. loud make me nervous. i'm nervous",
+        "if you walkin up with your hands in your pockets, take 'em out. slow",
+        "purple since the nineties. that ain't pride, that's just the facts",
+        "i don't do deliveries. i don't do streets twice. i do this corner",
+        "rock's good. don't ask me who cooked it. i don't ask neither",
+        "go on. and you ain't seen me. i mean that every time"
+      ],
+      "SquaredBallas": [
+        "the green boy paid and didn't play me. he good on my corner. told the young ones. told 'em twice",
+        "square with franklin on this block. this block. ballas is ballas, i'm just me",
+        "green money on a purple block and i took it. that's business. that ain't a truce"
       ]
     },
     "hao_tuner": {
