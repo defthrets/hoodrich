@@ -835,6 +835,130 @@
         "outside now. come when youre ready"
       ],
       "numberLine": "I'll give you my number. Text me and I will drive it to your house -- it is safer for both of us than you coming out here twice a week."
+    },
+    {
+      "id": "koreans_corner",
+      "name": "Jae",
+      "tag": "JAE",
+      "kind": "GangCorner",
+      "gangId": "koreans",
+      "doorOnly": true,
+      "_where": [
+        "LITTLE SEOUL. Michael stood on the spot on 2026-10-04 and read -549.812, -777.295, 30.698,",
+        "heading 164.367 (south) -- the heading as read, so if he faces the wrong way, 344.4 turns",
+        "him round. He was parked in \"later\" with a spot at -689.805, -911.477 until Michael said",
+        "\"put a dealer here for kkangpae\"; everything he had is kept. He sells in person and nowhere",
+        "else, like Flaco: no number, no delivery (doorOnly). The three on the stoop stand round",
+        "him -- see Supply.Stoop."
+      ],
+      "models": [
+        "g_m_y_korean_01",
+        "g_m_m_korboss_01",
+        "g_m_y_korean_02",
+        "g_m_y_korlfor_01"
+      ],
+      "drugs": [
+        "meth",
+        "coke"
+      ],
+      "zones": [],
+      "x": -549.812,
+      "y": -777.295,
+      "z": 30.698,
+      "heading": 164.367,
+      "priceMultiplier": 0.65,
+      "minRank": 0,
+      "maxOrderGrams": 6000,
+      "openHour": 0,
+      "closeHour": 24,
+      "lotValue": 5000,
+      "lotStep": 25,
+      "priceFloor": 150,
+      "priceStep": 25,
+      "purity": 0.75,
+      "uncutFromLots": 1,
+      "purePurity": 1.0,
+      "pureMultiplier": 0.95,
+      "pureChancePercent": 20,
+      "_cold": [
+        "THE FIRST TIME, like Flaco: a Forum Drive face in Little Seoul is not welcome until he has",
+        "paid once. coldOpen, coldPush and coldGive are his; coldAsk, coldMoney and coldLeave are",
+        "Franklin's. The first buy squares you -- truceLine, truceNote, truceReply -- and after that",
+        "he greets you with greeting like anybody. Deadpan is his whole manner: see arrivalLines."
+      ],
+      "coldOpen": "No. Whatever this is, no. Forum Drive, in Little Seoul, walking up to me like I'm a kiosk. Explain yourself. Briefly.",
+      "coldAsk": "I'm buying. That's it. That's the whole thing.",
+      "coldPush": "Buying. From the Kkangpae. A Chamberlain kid wanders into Koreatown with cash and expects service, and six people on this street are now looking at me to see what I do about it. I'd like to do nothing. Help me do nothing.",
+      "coldMoney": "Easy. My money's the same as everybody else's, and I'm quicker than most.",
+      "coldGive": "Fine. Money first. Hands where people can see them. And don't talk while I count, I lose my place.",
+      "coldLeave": "My mistake. Leaving.",
+      "truceLine": "Okay. You paid, you didn't do anything stupid, so we're square. I'll tell the others -- you come through Little Seoul, you do business on our streets, nobody bothers you.",
+      "truceNote": "To be clear about what that is: it's me. Square with me. If your people and the Kkangpae go to war, that's the Kkangpae, and I'll be very busy that day. Not a threat. A schedule.",
+      "truceReply": "That's fair.",
+      "greeting": "You found Koreatown. Congratulations. What.",
+      "buyLine": "Glass and blanca. Three quarters, because it is cut. I could lie. I won't.",
+      "shopLine": "Glass and blanca, and tonight nobody has touched it. Say what, say how much. Briefly.",
+      "shopCutLine": "Glass and blanca, three quarters. Buy enough and it comes clean. Say what, say how much.",
+      "handOverLine": "There. That's transacted. Out the back, not the front.",
+      "noRoomLine": "You have nowhere to put it. So you're browsing. I don't do browsing. Come back.",
+      "noSpaceLine": "Your place is full. Fix that. I'll be here, unfortunately.",
+      "farewell": "Done. Out the back, not the front.",
+      "sourceReply": "Above me is above you. Leave it.",
+      "sourceTooSoon": "Nah.",
+      "_delivery": [
+        "HIS PHONE SIDE, KEPT. Everything below is what he says when he delivers, from the days he",
+        "was parked as a plug who drove out: nothing reads it while doorOnly is true, and taking",
+        "doorOnly off (and the cold lines with it, for a player who runs with the Kkangpae) is the",
+        "whole switch."
+      ],
+      "openingText": "jae. koreatown. glass and blanca at three quarters. it is cut and i will tell you that every single time so nobody is surprised",
+      "textCalled": [
+        "coming",
+        "one minute",
+        "walking",
+        "yes. be there"
+      ],
+      "rides": [
+        "elegy2",
+        "kuruma",
+        "sultan"
+      ],
+      "ridePaint": 12,
+      "arrivalLines": [
+        "I found it. Your street signs are a suggestion.",
+        "Okay. I'm here. That's step one.",
+        "Nobody followed me. I checked. Twice.",
+        "Let's do this before someone walks past."
+      ],
+      "carryLines": [
+        "It's sealed. Don't unseal it in the driveway.",
+        "You take that side. Yes, that side.",
+        "It's lighter than it looks. That's not a complaint.",
+        "Careful. Not because it's fragile. Because it's expensive."
+      ],
+      "dropLines": [
+        "There. It is exactly what I said it was.",
+        "Cut, as discussed. I told you that up front.",
+        "Inside. Now. This is the boring part but do it.",
+        "Okay. That's transacted."
+      ],
+      "partingLines": [
+        "I'm going back to Koreatown where the food is better.",
+        "Text, don't call. I hate calls.",
+        "Good. Don't make this weird next time.",
+        "Bye. Lock the door, seriously."
+      ],
+      "textLeaving": [
+        "leaving now. traffic permitting",
+        "on my way. it's a drive",
+        "moving. don't call, i'm driving"
+      ],
+      "textOutside": [
+        "outside. i'm here",
+        "out front. come on",
+        "here. i'd rather not sit in this street"
+      ],
+      "numberLine": "Okay. Take my number. Text me -- I hate calls -- and I'll bring it to the house. Beats you driving to Koreatown every time."
     }
   ],
   "later": [
@@ -1552,95 +1676,6 @@
       "z": 7.186,
       "heading": 11.446,
       "numberLine": "Fine. My number. You text, I drive, it arrives. Do not call me, I will not answer, and then you will text anyway."
-    },
-    {
-      "id": "koreans_corner",
-      "name": "Jae",
-      "tag": "JAE",
-      "kind": "GangCorner",
-      "gangId": "koreans",
-      "models": [
-        "g_m_y_korean_01",
-        "g_m_m_korboss_01"
-      ],
-      "drugs": [
-        "meth",
-        "coke"
-      ],
-      "zones": [
-        "KOREAT"
-      ],
-      "priceMultiplier": 0.65,
-      "purity": 0.75,
-      "purePurity": 1.0,
-      "pureMultiplier": 0.95,
-      "pureChancePercent": 20,
-      "minRank": 0,
-      "maxOrderGrams": 6000,
-      "openHour": 0,
-      "closeHour": 24,
-      "rides": [
-        "elegy2",
-        "kuruma",
-        "sultan"
-      ],
-      "ridePaint": 12,
-      "greeting": "You found Koreatown. Congratulations. What.",
-      "buyLine": "Glass and blanca. Three quarters, because it is cut. I could lie. I won't.",
-      "sourceReply": "Above me is above you. Leave it.",
-      "sourceTooSoon": "Nah.",
-      "farewell": "Done. Out the back, not the front.",
-      "openingText": "jae. koreatown. glass and blanca at three quarters. it is cut and i will tell you that every single time so nobody is surprised",
-      "textCalled": [
-        "coming",
-        "one minute",
-        "walking",
-        "yes. be there"
-      ],
-      "lotValue": 5000,
-      "priceFloor": 150,
-      "priceStep": 25,
-      "lotStep": 25,
-      "arrivalLines": [
-        "I found it. Your street signs are a suggestion.",
-        "Okay. I'm here. That's step one.",
-        "Nobody followed me. I checked. Twice.",
-        "Let's do this before someone walks past."
-      ],
-      "carryLines": [
-        "It's sealed. Don't unseal it in the driveway.",
-        "You take that side. Yes, that side.",
-        "It's lighter than it looks. That's not a complaint.",
-        "Careful. Not because it's fragile. Because it's expensive."
-      ],
-      "dropLines": [
-        "There. It is exactly what I said it was.",
-        "Cut, as discussed. I told you that up front.",
-        "Inside. Now. This is the boring part but do it.",
-        "Okay. That's transacted."
-      ],
-      "partingLines": [
-        "I'm going back to Koreatown where the food is better.",
-        "Text, don't call. I hate calls.",
-        "Good. Don't make this weird next time.",
-        "Bye. Lock the door, seriously."
-      ],
-      "textLeaving": [
-        "leaving now. traffic permitting",
-        "on my way. it's a drive",
-        "moving. don't call, i'm driving"
-      ],
-      "textOutside": [
-        "outside. i'm here",
-        "out front. come on",
-        "here. i'd rather not sit in this street"
-      ],
-      "uncutFromLots": 1,
-      "x": -689.805,
-      "y": -911.477,
-      "z": 23.672,
-      "heading": 90.429,
-      "numberLine": "Okay. Take my number. Text me -- I hate calls -- and I'll bring it to the house. Beats you driving to Koreatown every time."
     }
   ]
 }

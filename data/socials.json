@@ -1588,6 +1588,15 @@
       "voice": ""
     },
     {
+      "handle": "jae_littleseoul",
+      "name": "Jae",
+      "gang": "koreans",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": "jae_littleseoul"
+    },
+    {
       "handle": "hale_lspd",
       "name": "Ofc. Hale",
       "gang": "",
@@ -7677,6 +7686,24 @@
       "walked through cypress after and nobody said a word. strange feeling",
       "marabunta said i'm good on their blocks now. i ain't testing how far that go"
     ],
+    "SquaredKoreans": [
+      "{subject} says the chamberlain kid can do business on ginger street. so he can. that's the whole announcement",
+      "{subject} vouched for one green shirt. one. do not read anything into it",
+      "franklin bought off {subject} in little seoul and nobody moved. {subject}'s call",
+      "nobody bothers the chamberlain kid on our streets. {subject}'s word. a war is a different matter",
+      "{subject} does not speak for the kkangpae. on his corner his word holds. his corner is ginger street",
+      "green shirt walked into koreatown with cash and walked out with product. {subject} allowed it. noted",
+      "the chamberlain kid gets through little seoul. temporary until it isn't"
+    ],
+    "YouSquaredKoreans": [
+      "bought off the kkangpae in little seoul today. walked out through the back like he said",
+      "koreatown's got one door open for me now. just the one",
+      "never thought i'd be buying in little seoul. money don't speak korean and it don't have to",
+      "{subject} made me stand there while six people decided if i could talk. worth it",
+      "copped in koreatown. don't tell lamar",
+      "walked down ginger street after and nobody said a word. strange feeling",
+      "the kkangpae said i'm good on their streets now. i ain't testing how far that go"
+    ],
     "YouSquaredLost": [
       "bought off the lost at their own clubhouse today. still got all my teeth",
       "never thought i'd be buying off bikers. money don't care who's selling",
@@ -11069,6 +11096,29 @@
         "the chamberlain boy paid and did not try me. he can walk the heights. my people know",
         "square with franklin on this corner. this corner. nobody should mistake that for the whole of marabunta",
         "forum drive money is money. he buys, he goes, nobody touches him. that is the arrangement now"
+      ]
+    },
+    "jae_littleseoul": {
+      "Ambient": [
+        "koreatown. congratulations on finding it. what",
+        "glass and blanca at three quarters. it's cut. i say so every time so nobody is surprised",
+        "text, don't call. i hate calls. i will not pick up and then you will text anyway",
+        "somebody tried to haggle. i gave them a look. the look is the discount",
+        "ginger street at 2am is the only honest hour this city has",
+        "if you walk up to me like i'm a kiosk, i will treat you like a receipt",
+        "the food is better here and the prices are worse. that's koreatown",
+        "out the back, not the front. i have said this to the same man four times",
+        "nobody followed you. i checked. twice. it's a habit, not a compliment",
+        "two lots and it comes clean. one lot and you get what you paid for. that's not a riddle",
+        "it's lighter than it looks. that's not a complaint. that's chemistry",
+        "don't talk while i count. i lose my place and then we start again",
+        "little seoul minds its business. i am its business",
+        "lock your door. seriously. i say it like a joke and i don't mean it like one"
+      ],
+      "SquaredKoreans": [
+        "the chamberlain kid paid and didn't do anything stupid. he's fine on our streets. i told people",
+        "square with franklin on ginger street. with me. the kkangpae have their own opinions",
+        "forum drive money counted the same as anyone's. he can walk through. nobody bothers him"
       ]
     },
     "hao_tuner": {
