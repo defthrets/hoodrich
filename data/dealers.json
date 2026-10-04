@@ -709,6 +709,132 @@
         "out front. money first, remember"
       ],
       "numberLine": "Number's yours. Text what you want, I bring it. Money ready when I get there or I turn around, and I mean that."
+    },
+    {
+      "id": "marabunta_corner",
+      "name": "Nelson",
+      "tag": "NLS",
+      "kind": "GangCorner",
+      "gangId": "marabunta",
+      "doorOnly": true,
+      "_where": [
+        "EL BURRO HEIGHTS, up the hill from Cypress Flats. Michael stood on the spot on 2026-10-04",
+        "and read 1283.175, -1605.018, 54.825, heading 11.513 (north) -- the heading as read, so",
+        "if he faces the wrong way, 191.5 turns him round. He was parked in \"later\" with a spot",
+        "at 1295.163, -1739.323 until Michael said \"do a marabunta dealer here\"; everything he had",
+        "is kept. He sells in person and nowhere else, like Flaco: no number, no delivery",
+        "(doorOnly). His greeting said Cypress; it says the Heights now, because that is where he",
+        "stands. The three on the stoop stand round him -- see Supply.Stoop."
+      ],
+      "models": [
+        "g_m_y_salvagoon_01",
+        "g_m_y_salvaboss_01",
+        "g_m_y_salvagoon_02",
+        "g_m_y_salvagoon_03"
+      ],
+      "drugs": [
+        "meth",
+        "coke"
+      ],
+      "zones": [],
+      "x": 1283.175,
+      "y": -1605.018,
+      "z": 54.825,
+      "heading": 11.513,
+      "priceMultiplier": 0.65,
+      "minRank": 0,
+      "maxOrderGrams": 6000,
+      "openHour": 0,
+      "closeHour": 24,
+      "lotValue": 5000,
+      "lotStep": 25,
+      "priceFloor": 150,
+      "priceStep": 25,
+      "purity": 0.75,
+      "uncutFromLots": 1,
+      "purePurity": 1.0,
+      "pureMultiplier": 0.95,
+      "pureChancePercent": 18,
+      "_cold": [
+        "THE FIRST TIME, like Flaco: a Forum Drive face on a Marabunta corner is not welcome until",
+        "he has paid once. coldOpen, coldPush and coldGive are his; coldAsk, coldMoney and coldLeave",
+        "are Franklin's. The first buy squares you -- truceLine, truceNote, truceReply -- and after",
+        "that he greets you with greeting like anybody. He is quieter than Pelon and more exact,",
+        "which is his whole manner: see arrivalLines."
+      ],
+      "coldOpen": "Stop there. Forum Drive, on the Heights. You walked up a hill nobody invited you up. Tell me why, and tell me slowly.",
+      "coldAsk": "To buy, man. That's the whole reason.",
+      "coldPush": "To buy. From us. I count four of my people who can see you from where they are sitting, and one of them has already asked me. I would like to tell him no.",
+      "coldMoney": "Then tell him my money's the same colour as everybody else's.",
+      "coldGive": "It is. Alright. Money first, and keep your hands where my people can see them. I will be quick, for both our sakes.",
+      "coldLeave": "My mistake. I'm leaving.",
+      "truceLine": "Good. You paid, you did not try me, so you and I are square. My people will hear it from me -- you come through the Heights or the flats, you do your business on our blocks, nobody touches you.",
+      "truceNote": "Understand what that is. Square with me is square with me. If your people go to war with Marabunta, that is Marabunta, and I will not be able to help you. That is not a threat. It is information.",
+      "truceReply": "That's fair.",
+      "greeting": "You came all the way up to the Heights. Alright. I respect the drive.",
+      "buyLine": "Glass and blanca out the flats. Cheap. It's been cut, we all cut it, next question.",
+      "shopLine": "Glass and blanca, and tonight it has not been touched. Say what you want and how much.",
+      "shopCutLine": "Glass and blanca, three quarters. Buy enough and it comes clean. Say what you want and how much.",
+      "handOverLine": "There. Everything as agreed. Now use the road, not the yard.",
+      "noRoomLine": "You have nowhere to keep it, so you are not buying. Come back when you do.",
+      "noSpaceLine": "Your place is full. Fix that first. I will be here.",
+      "farewell": "Go. And don't come back through the yard, use the road.",
+      "sourceReply": "Above me is above you. Leave it.",
+      "sourceTooSoon": "Nah.",
+      "_delivery": [
+        "HIS PHONE SIDE, KEPT. Everything below is what he says when he delivers, from the days he",
+        "was parked as a plug who drove out: nothing reads it while doorOnly is true, and taking",
+        "doorOnly off (and the cold lines with it, for a player who runs with Marabunta) is the",
+        "whole switch."
+      ],
+      "openingText": "nelson. cypress flats and textile. glass and blanca, three quarters. its cut. everybody's is cut, mine is just honest about it",
+      "textCalled": [
+        "on my way",
+        "comin. give me a minute",
+        "walkin out now",
+        "yeah. be there"
+      ],
+      "rides": [
+        "emperor",
+        "virgo2",
+        "gburrito2"
+      ],
+      "ridePaint": 51,
+      "arrivalLines": [
+        "Took the long way. Two of the short ones got cameras.",
+        "Alright. Quiet street. I like quiet streets.",
+        "I parked facing out. Habit, don't read into it.",
+        "You're expecting me, yes? Good."
+      ],
+      "carryLines": [
+        "Let me. I know how it's packed.",
+        "Both hands under it, not the sides.",
+        "Came in through Cypress this morning. It's fresh.",
+        "Careful at the step there."
+      ],
+      "dropLines": [
+        "There. Everything as agreed.",
+        "That's what you asked for and what you paid for.",
+        "Inside before you look at it. Please.",
+        "Good. That's the business done."
+      ],
+      "partingLines": [
+        "I'll go. You'll want your evening back.",
+        "If anything is wrong you tell me, not somebody else.",
+        "Back to the flats. Long way round again.",
+        "Cuidate. And lock that door."
+      ],
+      "textLeaving": [
+        "leaving now. taking the long way, its safer",
+        "on my way. it will be a few minutes, i dont speed",
+        "moving. i will text when im there"
+      ],
+      "textOutside": [
+        "i am outside. facing out, like always",
+        "here. quiet street, lets keep it that way",
+        "outside now. come when youre ready"
+      ],
+      "numberLine": "I'll give you my number. Text me and I will drive it to your house -- it is safer for both of us than you coming out here twice a week."
     }
   ],
   "later": [
@@ -1151,97 +1277,6 @@
       "z": 21.122,
       "heading": 0.0,
       "numberLine": "...aight. Take the number. But you TEXT it, you don't call it, and I'll bring it to your house 'cause I ain't doin' this on a street again."
-    },
-    {
-      "id": "marabunta_corner",
-      "name": "Nelson",
-      "tag": "NLS",
-      "kind": "GangCorner",
-      "gangId": "marabunta",
-      "models": [
-        "g_m_y_salvagoon_01",
-        "g_m_y_salvaboss_01"
-      ],
-      "drugs": [
-        "meth",
-        "coke"
-      ],
-      "zones": [
-        "EBURO",
-        "CYPRE",
-        "TEXTI"
-      ],
-      "priceMultiplier": 0.65,
-      "purity": 0.75,
-      "purePurity": 1.0,
-      "pureMultiplier": 0.95,
-      "pureChancePercent": 18,
-      "minRank": 0,
-      "maxOrderGrams": 6000,
-      "openHour": 0,
-      "closeHour": 24,
-      "rides": [
-        "emperor",
-        "virgo2",
-        "gburrito2"
-      ],
-      "ridePaint": 51,
-      "greeting": "You came all the way out to Cypress. Alright. I respect the drive.",
-      "buyLine": "Glass and blanca out the flats. Cheap. It's been cut, we all cut it, next question.",
-      "sourceReply": "Above me is above you. Leave it.",
-      "sourceTooSoon": "Nah.",
-      "farewell": "Go. And don't come back through the yard, use the road.",
-      "openingText": "nelson. cypress flats and textile. glass and blanca, three quarters. its cut. everybody's is cut, mine is just honest about it",
-      "textCalled": [
-        "on my way",
-        "comin. give me a minute",
-        "walkin out now",
-        "yeah. be there"
-      ],
-      "lotValue": 5000,
-      "priceFloor": 150,
-      "priceStep": 25,
-      "lotStep": 25,
-      "arrivalLines": [
-        "Took the long way. Two of the short ones got cameras.",
-        "Alright. Quiet street. I like quiet streets.",
-        "I parked facing out. Habit, don't read into it.",
-        "You're expecting me, yes? Good."
-      ],
-      "carryLines": [
-        "Let me. I know how it's packed.",
-        "Both hands under it, not the sides.",
-        "Came in through Cypress this morning. It's fresh.",
-        "Careful at the step there."
-      ],
-      "dropLines": [
-        "There. Everything as agreed.",
-        "That's what you asked for and what you paid for.",
-        "Inside before you look at it. Please.",
-        "Good. That's the business done."
-      ],
-      "partingLines": [
-        "I'll go. You'll want your evening back.",
-        "If anything is wrong you tell me, not somebody else.",
-        "Back to the flats. Long way round again.",
-        "Cuidate. And lock that door."
-      ],
-      "textLeaving": [
-        "leaving now. taking the long way, its safer",
-        "on my way. it will be a few minutes, i dont speed",
-        "moving. i will text when im there"
-      ],
-      "textOutside": [
-        "i am outside. facing out, like always",
-        "here. quiet street, lets keep it that way",
-        "outside now. come when youre ready"
-      ],
-      "uncutFromLots": 1,
-      "x": 1295.163,
-      "y": -1739.323,
-      "z": 54.272,
-      "heading": 19.174,
-      "numberLine": "I'll give you my number. Text me and I will drive it to your house -- it is safer for both of us than you coming out here twice a week."
     },
     {
       "id": "lost_corner",

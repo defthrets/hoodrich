@@ -1435,6 +1435,15 @@
       "voice": ""
     },
     {
+      "handle": "nelson_elburro",
+      "name": "Nelson",
+      "gang": "marabunta",
+      "verified": false,
+      "gender": "male",
+      "pic": "",
+      "voice": "nelson_elburro"
+    },
+    {
       "handle": "grande_yesi",
       "name": "Yesi",
       "gang": "marabunta",
@@ -7650,6 +7659,24 @@
       "the yellow let me serve on they blocks now. i ain't testing how far that go",
       "{subject} made me stand on his porch for five minutes before he opened his mouth. worth it"
     ],
+    "SquaredMarabunta": [
+      "{subject} says the chamberlain boy can walk the heights. so he walks the heights. that is all it means",
+      "{subject} vouched for one green shirt. one. the rest of forum drive is still forum drive",
+      "franklin bought off {subject} on el burro and nobody moved. {subject}'s word, cipotes",
+      "nobody touches the chamberlain boy on our blocks. {subject}'s word. a war is a different conversation",
+      "{subject} does not speak for marabunta. on his corner his word holds, and his corner is where it happened",
+      "green shirt came up the hill with money and went down with product. {subject} let it happen. so we let it happen",
+      "cypress to the heights, the chamberlain boy gets let through. do not get used to him"
+    ],
+    "YouSquaredMarabunta": [
+      "bought off marabunta up on el burro today. walked back down the hill breathing",
+      "the heights got one bench open for me now. just the one",
+      "never thought i'd be buying off the letters. money don't know whose name is on the fence",
+      "{subject} made me stand there while four of his people decided if i could talk. worth it",
+      "copped off marabunta. don't tell lamar",
+      "walked through cypress after and nobody said a word. strange feeling",
+      "marabunta said i'm good on their blocks now. i ain't testing how far that go"
+    ],
     "YouSquaredLost": [
       "bought off the lost at their own clubhouse today. still got all my teeth",
       "never thought i'd be buying off bikers. money don't care who's selling",
@@ -11019,6 +11046,29 @@
         "the chamberlain boy paid and didn't play me. he's good on the flats. told the homies",
         "square with franklin on my corner. that's my corner. it ain't the barrio",
         "green money spends like yellow. he can stand on the flats. nobody trips"
+      ]
+    },
+    "nelson_elburro": {
+      "Ambient": [
+        "the heights are quiet. i keep them quiet. that is the arrangement",
+        "glass and blanca. it is cut. everybody's is cut, mine is honest about it",
+        "parked facing out again. habit. do not read into it",
+        "took the long way home. two of the short ways have cameras now",
+        "if you come up the hill, come up the road. the yard is not for walking through",
+        "a man asked me for a discount. i asked him for a reason. we both left with nothing",
+        "cypress flats below, textile to the west, and all of it reachable from this bench",
+        "my people sit where they can see. that is not for you. it is for everybody",
+        "do not text a number you do not have. come and see me. slowly",
+        "fresh in through cypress this morning. it does not get fresher than this morning",
+        "quiet street. i like quiet streets. i intend to keep this one",
+        "cuidate. and lock your door. i say it to everybody and i mean it every time",
+        "the freight line and the heights. nothing happens here, and that is the point",
+        "count it before you leave. after you leave, it is yours and so are the problems"
+      ],
+      "SquaredMarabunta": [
+        "the chamberlain boy paid and did not try me. he can walk the heights. my people know",
+        "square with franklin on this corner. this corner. nobody should mistake that for the whole of marabunta",
+        "forum drive money is money. he buys, he goes, nobody touches him. that is the arrangement now"
       ]
     },
     "hao_tuner": {
