@@ -1553,7 +1553,18 @@ namespace Hoodrich.Supply
         private readonly Dictionary<string, Blip> _marks =
             new Dictionary<string, Blip>(StringComparer.OrdinalIgnoreCase);
 
-        /// <summary>Puts a permanent mark on every pinned dealer he has met, and only those.</summary>
+        /// <summary>
+        /// Puts a permanent mark on every pinned dealer: dim until he has met the man, full
+        /// once he has.
+        ///
+        /// FROM THE FIRST LOAD. The pin used to be the prize for finding him -- nothing on the
+        /// map until you had stood in front of him -- and with four corner men out across the
+        /// east side, the Heights and Little Seoul that was a city of dealers nobody knew were
+        /// there. Michael, 2026-10-04: "make them all visible from the get go". So every man
+        /// with a spot is on the pause map from the start, in his set's colour, dimmed; meeting
+        /// him brightens the pin, which is what finding him means now. The crown still says
+        /// what it said: he is the set.
+        /// </summary>
         private void MarkTheOnesHeKnows()
         {
             if (State == null) return;
@@ -1568,15 +1579,17 @@ namespace Hoodrich.Supply
                 Blip mark;
                 var have = _marks.TryGetValue(def.Id, out mark) && mark != null && mark.Exists();
 
-                if (!known)
+                if (have)
                 {
-                    // Never met, or the paint got wiped -- no mark, and no mark left over.
-                    if (have) { try { mark.Delete(); } catch { } }
-                    if (_marks.ContainsKey(def.Id)) _marks.Remove(def.Id);
+                    // Met since the pin went down, or the paint got wiped: the pin follows.
+                    bool was;
+                    if (!_marksKnown.TryGetValue(def.Id, out was) || was != known)
+                    {
+                        try { Function.Call(Hash.SET_BLIP_ALPHA, mark.Handle, known ? 255 : UnmetAlpha); } catch { }
+                        _marksKnown[def.Id] = known;
+                    }
                     continue;
                 }
-
-                if (have) continue;
 
                 try
                 {
@@ -1629,9 +1642,13 @@ namespace Hoodrich.Supply
                     // thing to make you hunt for twice.
                     mark.IsShortRange = def.Id != GeraldId;
 
-                    _marks[def.Id] = mark;
+                    // Dim until met. See the note on the method.
+                    Function.Call(Hash.SET_BLIP_ALPHA, mark.Handle, known ? 255 : UnmetAlpha);
 
-                    Log.Info("Pinned " + def.Id + " on the map for good.");
+                    _marks[def.Id] = mark;
+                    _marksKnown[def.Id] = known;
+
+                    Log.Info("Pinned " + def.Id + " on the map for good" + (known ? "." : " -- not met yet, so dimmed."));
                 }
                 catch
                 {
@@ -1642,6 +1659,13 @@ namespace Hoodrich.Supply
 
         /// <summary>radar_ped_gang_leader. The crown the leaders used to carry.</summary>
         private const int KnownSprite = 855;
+
+        /// <summary>How a pin is drawn before he has met the man. Full once he has.</summary>
+        private const int UnmetAlpha = 150;
+
+        /// <summary>Whether each pin was last drawn as met, so the alpha is only set when that changes.</summary>
+        private readonly Dictionary<string, bool> _marksKnown =
+            new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// How close you have to be before an unknown dealer shows up at all.
@@ -1902,6 +1926,7 @@ namespace Hoodrich.Supply
             }
 
             _marks.Clear();
+            _marksKnown.Clear();
         }
     }
 }
