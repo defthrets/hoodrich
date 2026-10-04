@@ -363,11 +363,11 @@
       "name": "Kkangpae",
       "tag": "KKP",
       "colour": [
-        150,
-        40,
-        55
+        30,
+        60,
+        170
       ],
-      "blipColour": 1,
+      "blipColour": 29,
       "drugs": [
         "meth",
         "coke"
@@ -382,8 +382,8 @@
       "turfHint": "Ginger Street, Little Seoul",
       "joinRespect": 0,
       "joinable": false,
-      "paint": 12,
-      "colourWord": "black",
+      "paint": 61,
+      "colourWord": "dark blue",
       "plates": [
         "MRKIM1",
         "KKANG1",
