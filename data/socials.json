@@ -1374,11 +1374,11 @@
     {
       "handle": "rancho_pelon",
       "name": "Pelon",
-      "gang": "aztecas",
+      "gang": "vagos",
       "verified": false,
       "gender": "male",
       "pic": "",
-      "voice": ""
+      "voice": "rancho_pelon"
     },
     {
       "handle": "azteca_sil",
@@ -10996,6 +10996,29 @@
         "the green boy's money spends. told the homies leave him be on the block. that's all it is",
         "square with franklin on the block. i don't speak for nothing past that",
         "he paid and he didn't play me. that buys you the block. it don't buy you the barrio"
+      ]
+    },
+    "rancho_pelon": {
+      "Ambient": [
+        "flats quiet. flats always quiet. that's why it's the flats",
+        "money first, questions never. been saying it ten years",
+        "blanca and glass. stretched. everybody stretch it, i just the one who say so",
+        "trains going by all night and i stopped hearing them in 09",
+        "don't text me. i'm on the corner. the corner don't text",
+        "some fool asked if it was pure. everything out here is pure something",
+        "two lots and it comes clean. one lot and you get what you get",
+        "homies on the corner bored. bored is good. bored is nobody got shot",
+        "walking up slow with your hands out? walk faster or walk off",
+        "rancho raised me. the flats pay me. same yellow",
+        "que onda. same corner, same prices. cheaper than the door, worse than the door",
+        "don't bring your whole block. bring your money",
+        "somebody keep asking for a number. i AM the number. come see me",
+        "cypress flats after dark is just me, the freight line and whoever's buying"
+      ],
+      "SquaredVagos": [
+        "the chamberlain boy paid and didn't play me. he's good on the flats. told the homies",
+        "square with franklin on my corner. that's my corner. it ain't the barrio",
+        "green money spends like yellow. he can stand on the flats. nobody trips"
       ]
     },
     "hao_tuner": {

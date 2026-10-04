@@ -585,6 +585,130 @@
       "noRoomLine": "No place to keep it? Then you ain't buying. Come back when you got a stash.",
       "noSpaceLine": "Your stash is full, kid. Clear some room first.",
       "farewell": "Ride safe. Or don't. Not my problem."
+    },
+    {
+      "id": "vagos_corner",
+      "name": "Pelon",
+      "tag": "PLN",
+      "kind": "GangCorner",
+      "gangId": "vagos",
+      "doorOnly": true,
+      "_where": [
+        "THE CORNER IN CYPRESS FLATS. Michael stood on the spot on 2026-10-04 and read 968.890,",
+        "-1828.599, 31.250, heading 14.083 (north) -- the heading as read, so if he faces the wrong",
+        "way, 194.1 turns him round. He was parked in \"later\" with a Rancho spot (345.665,",
+        "-2015.147) until Michael said \"put a vagos dealer here\"; everything he had is kept. He",
+        "sells in person and nowhere else, like Flaco: no number, no delivery (doorOnly). The",
+        "three on the stoop stand round him -- see Supply.Stoop."
+      ],
+      "models": [
+        "g_m_y_mexgoon_01",
+        "g_m_y_mexgoon_03",
+        "g_m_y_mexgoon_02"
+      ],
+      "drugs": [
+        "coke",
+        "meth"
+      ],
+      "zones": [],
+      "x": 968.89,
+      "y": -1828.599,
+      "z": 31.25,
+      "heading": 14.083,
+      "priceMultiplier": 0.65,
+      "minRank": 0,
+      "maxOrderGrams": 6000,
+      "openHour": 0,
+      "closeHour": 24,
+      "lotValue": 5000,
+      "lotStep": 25,
+      "priceFloor": 150,
+      "priceStep": 25,
+      "purity": 0.75,
+      "uncutFromLots": 1,
+      "purePurity": 1.0,
+      "pureMultiplier": 0.95,
+      "pureChancePercent": 15,
+      "_cold": [
+        "THE FIRST TIME, like Flaco: a Forum Drive face on a Vagos corner is not welcome until he",
+        "has paid once. coldOpen, coldPush and coldGive are his; coldAsk, coldMoney and coldLeave",
+        "are Franklin's. The first buy squares you -- truceLine, truceNote, truceReply -- and after",
+        "that he greets you with greeting like anybody."
+      ],
+      "coldOpen": "Ey. Ey. Chamberlain, right? Green, on a Vagos corner. You lost, or you stupid?",
+      "coldAsk": "Neither, homie. I'm buying. That's all.",
+      "coldPush": "Buying. From me. Forum Drive rolls through the Flats with his hand out and I'm supposed to serve him? The homies clocked you from the bridge, ese. One word from me and that's that.",
+      "coldMoney": "Money's money. Spends the same in the Flats as it does on Forum.",
+      "coldGive": "Orale. Money first, questions never. Quick, before the homies get ideas.",
+      "coldLeave": "My bad. I'm gone.",
+      "truceLine": "Aight, Chamberlain. You paid and you didn't play me, so we square. The homies hear it from me -- you come through the Flats, you slang on our blocks, nobody trips.",
+      "truceNote": "But ey. Square with me ain't square with the barrio, you feel me? The set goes to war with your people, that's the set. That ain't me, and it ain't this corner.",
+      "truceReply": "That's fair.",
+      "greeting": "Ey. Money first, questions never.",
+      "buyLine": "Blanca and glass. Three quarters, 'cause it's been stretched. Everybody stretch it.",
+      "shopLine": "Blanca and glass, and tonight it ain't been touched. Say what, say how much.",
+      "shopCutLine": "Blanca and glass, three quarters. Buy big and it comes clean. Say what, say how much.",
+      "handOverLine": "There. Now walk. Somebody always watching out here.",
+      "noRoomLine": "Nowhere to put it, nothing to buy. Vete.",
+      "noSpaceLine": "Your spot's full, ese. Fix that first.",
+      "farewell": "Bueno. Vete.",
+      "sourceReply": "Above me is above you. Leave it.",
+      "sourceTooSoon": "Nah.",
+      "_delivery": [
+        "HIS PHONE SIDE, KEPT. Everything below is what he says when he delivers, from the days he",
+        "was parked as a plug who drove out: nothing reads it while doorOnly is true, and taking",
+        "doorOnly off (and the cold lines with it, for a player who runs with the Vagos) is the",
+        "whole switch."
+      ],
+      "openingText": "pelon. rancho, la mesa, all of it. blanca and glass, cheap, and stepped on. thats the trade",
+      "textCalled": [
+        "comin",
+        "two minutes ese",
+        "walkin over",
+        "yeah. be ready"
+      ],
+      "rides": [
+        "tornado",
+        "buccaneer2",
+        "sabregt2",
+        "virgo2"
+      ],
+      "ridePaint": 88,
+      "arrivalLines": [
+        "Ey. Money out?",
+        "I'm here. Clock's on.",
+        "This the address. Don't make me check twice.",
+        "You alone? Good."
+      ],
+      "carryLines": [
+        "It's in the trunk. Come get it, I ain't a butler.",
+        "Grab that end. Both of us or neither.",
+        "Weight's right. It's always right.",
+        "Move. Somebody always watching out here."
+      ],
+      "dropLines": [
+        "There. Cuenta si quieres. It's right.",
+        "That's it. Cut like you knew it would be.",
+        "Down. Now it's yours and it's your problem.",
+        "Bueno. That's a clean piece of business."
+      ],
+      "partingLines": [
+        "Vete. I got somewhere else to be.",
+        "Same number. Don't ring it for small.",
+        "Aight. Don't be seen with that.",
+        "I'm gone. Wasn't never here."
+      ],
+      "textLeaving": [
+        "en camino. money ready",
+        "on my way ese. clocks runnin",
+        "leavin. dont waste my time when i get there"
+      ],
+      "textOutside": [
+        "aqui. outside",
+        "im here. come out",
+        "out front. money first, remember"
+      ],
+      "numberLine": "Number's yours. Text what you want, I bring it. Money ready when I get there or I turn around, and I mean that."
     }
   ],
   "later": [
@@ -1027,99 +1151,6 @@
       "z": 21.122,
       "heading": 0.0,
       "numberLine": "...aight. Take the number. But you TEXT it, you don't call it, and I'll bring it to your house 'cause I ain't doin' this on a street again."
-    },
-    {
-      "id": "vagos_corner",
-      "name": "Pelon",
-      "tag": "PLN",
-      "kind": "GangCorner",
-      "gangId": "vagos",
-      "models": [
-        "g_m_y_mexgoon_01",
-        "g_m_y_mexgoon_03"
-      ],
-      "drugs": [
-        "coke",
-        "meth"
-      ],
-      "zones": [
-        "RANCHO",
-        "LMESA",
-        "MURRI",
-        "EBURO"
-      ],
-      "priceMultiplier": 0.65,
-      "purity": 0.75,
-      "purePurity": 1.0,
-      "pureMultiplier": 0.95,
-      "pureChancePercent": 15,
-      "minRank": 0,
-      "maxOrderGrams": 6000,
-      "openHour": 0,
-      "closeHour": 24,
-      "rides": [
-        "tornado",
-        "buccaneer2",
-        "sabregt2",
-        "virgo2"
-      ],
-      "ridePaint": 88,
-      "greeting": "Ey. Money first, questions never.",
-      "buyLine": "Blanca and glass. Three quarters, 'cause it's been stretched. Everybody stretch it.",
-      "sourceReply": "Above me is above you. Leave it.",
-      "sourceTooSoon": "Nah.",
-      "farewell": "Bueno. Vete.",
-      "openingText": "pelon. rancho, la mesa, all of it. blanca and glass, cheap, and stepped on. thats the trade",
-      "textCalled": [
-        "comin",
-        "two minutes ese",
-        "walkin over",
-        "yeah. be ready"
-      ],
-      "lotValue": 5000,
-      "priceFloor": 150,
-      "priceStep": 25,
-      "lotStep": 25,
-      "arrivalLines": [
-        "Ey. Money out?",
-        "I'm here. Clock's on.",
-        "This the address. Don't make me check twice.",
-        "You alone? Good."
-      ],
-      "carryLines": [
-        "It's in the trunk. Come get it, I ain't a butler.",
-        "Grab that end. Both of us or neither.",
-        "Weight's right. It's always right.",
-        "Move. Somebody always watching out here."
-      ],
-      "dropLines": [
-        "There. Cuenta si quieres. It's right.",
-        "That's it. Cut like you knew it would be.",
-        "Down. Now it's yours and it's your problem.",
-        "Bueno. That's a clean piece of business."
-      ],
-      "partingLines": [
-        "Vete. I got somewhere else to be.",
-        "Same number. Don't ring it for small.",
-        "Aight. Don't be seen with that.",
-        "I'm gone. Wasn't never here."
-      ],
-      "textLeaving": [
-        "en camino. money ready",
-        "on my way ese. clocks runnin",
-        "leavin. dont waste my time when i get there"
-      ],
-      "textOutside": [
-        "aqui. outside",
-        "im here. come out",
-        "out front. money first, remember"
-      ],
-      "uncutFromLots": 1,
-      "x": 345.665,
-      "y": -2015.147,
-      "z": 22.395,
-      "heading": 331.735,
-      "numberLine": "Number's yours. Text what you want, I bring it. Money ready when I get there or I turn around, and I mean that."
     },
     {
       "id": "marabunta_corner",
