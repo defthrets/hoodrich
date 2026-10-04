@@ -1215,10 +1215,14 @@ namespace Hoodrich.Supply
                 var h = _livePed.Handle;
                 Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
 
-                // He stands at his spot and he is the same man every session, which is the
-                // whole requirement. Keyed on his id from dealers.json rather than on the
-                // spot, so moving him in the data does not make him somebody else.
-                Core.Folk.Stamp(_livePed, "dealer:" + def.Id);
+                // NOT INTRODUCED TO NPC MIND. He used to be -- stamped "dealer:" + id, the same
+                // man every session -- and that made him a local NPC Mind would talk to: one
+                // press of E opened its panel and this mod's dealer talk on the same man at
+                // once, with a stranger's name over his head (OG Reese, 2026-10-04, "Mekhi
+                // Metcalf"). A man with a conversation of this mod's own has no need of one of
+                // NPC Mind's, and nothing here reads his NPC Mind name or voice. Unstamped, he
+                // is a mission ped NPC Mind refuses on its own, which is the right answer and
+                // needs no seam. The same goes for the leaders, Hao, Vernon and the armourer.
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);
 

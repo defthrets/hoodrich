@@ -412,8 +412,8 @@ namespace Hoodrich.Locations
                     _ped.IsPersistent = true;
                     _ped.BlockPermanentEvents = true;
 
-                    // He is outside that shutter every day of his life. See Core.Folk.
-                    Core.Folk.Stamp(_ped, "vernon");
+                    // NOT INTRODUCED TO NPC MIND: the basement is a conversation of this mod's
+                    // own, and introducing him put NPC Mind's panel over it. See DealerManager.
 
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
