@@ -176,8 +176,11 @@ namespace Hoodrich.Supply
             ? ""
             : Voice.Key(Name, Def.Farewell);
 
+        /// <summary>The farewell's words beside its key, for the to-record list. See Voice.Perform.</summary>
+        private string ByeWords => string.IsNullOrEmpty(Bye) ? "" : Def.Farewell;
+
         private DialogueNode Node(string line) =>
-            new DialogueNode(Name, line) { SpeakerColour = Palette.Cash, Farewell = Bye };
+            new DialogueNode(Name, line) { SpeakerColour = Palette.Cash, Farewell = Bye, FarewellLine = ByeWords };
 
         /// <summary>
         /// His words where he has them, the shared ones where he does not. See DealerDef.
@@ -200,7 +203,8 @@ namespace Hoodrich.Supply
             return new DialogueNode(Name, line)
             {
                 SpeakerColour = Palette.Cash,
-                Farewell = Bye
+                Farewell = Bye,
+                FarewellLine = ByeWords
             }.Beat(next);
         }
 
@@ -330,7 +334,13 @@ namespace Hoodrich.Supply
                 if (Def != null && Def.JustMet)
                 {
                     Def.JustMet = false;
-                    number = Def.NumberLine ?? "";
+
+                    // NOT FROM A MAN WHO ONLY SELLS AT HIS DOOR. His number line promises to
+                    // bring it to the house, and the phone answers "Only sells in person" about
+                    // the same man -- see DealerManager.RefusalReason. A promise the next
+                    // screen breaks is worse than no number, so he keeps it to himself. He is
+                    // still met: the contact is the record of having stood in front of him.
+                    if (!Def.DoorOnly) number = Def.NumberLine ?? "";
                 }
 
                 if (!string.IsNullOrEmpty(number))

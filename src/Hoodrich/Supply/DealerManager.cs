@@ -662,7 +662,9 @@ namespace Hoodrich.Supply
             var def = _owesNumber;
             _owesNumber = null;
 
-            if (string.IsNullOrEmpty(def.NumberLine)) return;
+            // A door-only man has no number to hand over. See DealerTalk.Root, which keeps the
+            // same line off the screen for the same reason.
+            if (string.IsNullOrEmpty(def.NumberLine) || def.DoorOnly) return;
 
             try
             {

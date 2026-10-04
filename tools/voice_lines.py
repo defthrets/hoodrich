@@ -141,7 +141,11 @@ def from_data(root, texts=False):
     rows, seen = [], set()
 
     def add(speaker, text):
-        if not text or len(text) < 12 or text.count(" ") < 2:
+        # A SHORT LINE IS STILL A LINE. The length test belongs to from_source, where a
+        # two-word literal is as likely a label as a sentence; a field in the json is spoken
+        # whatever its length, and "Bueno. Vete." was a farewell the game asked for and
+        # this never listed.
+        if not text or not text.strip():
             return
 
         name = key(speaker, text)
@@ -163,6 +167,10 @@ def from_data(root, texts=False):
         # different name entirely. It is loaded through the same reader as the block above and
         # every line in it is a line somebody says out loud -- and no list has ever included
         # one of them, so his whole part has been invisible to whoever was recording.
+        # Whether you can walk up to him at all: DealerDef.HasSpot, the same test.
+        spot = not d.get("deliveryOnly") and (abs(float(d.get("x") or 0)) > 0.01 or
+                                              abs(float(d.get("y") or 0)) > 0.01)
+
         for block in (d, d.get("afterCheng") or {}):
             # AN EMPTY SECOND BLOCK IS NOT A SECOND MAN. Every dealer without an afterCheng
             # came through here twice, the second time as an empty dict -- which has no lines
@@ -176,14 +184,29 @@ def from_data(root, texts=False):
             if not who:
                 continue
 
-            for field in ("greeting", "buyLine", "sourceReply", "sourceTooSoon", "farewell"):
+            # NOT buyLine AND NOT sourceTooSoon. The first is the heading of a wheel page and
+            # the second a ticker when the port is asked too early -- see WheelPages and
+            # DealerManager -- and neither goes through Voice. Eleven rows each that nothing
+            # could ever play.
+            #
+            # AND NOT A GANG MAN'S SOURCE REPLY. DealerTalk.SourceRow is for a man with no
+            # port behind him; a gang dealer's "where you getting this" is the wheel's port
+            # sequence, so the reply written for him is a line the screen never builds.
+            for field in ("greeting", "sourceReply", "farewell"):
+                if field == "sourceReply" and d.get("gangId"):
+                    continue
                 add(who, block.get(field))
 
             # THE FIRST MEETING AND THE TRUCE, for a man from a set with no love for Franklin --
             # see DealerDef.ColdOpen. His lines only: coldAsk, coldMoney, coldLeave and truceReply
             # are what Franklin says back, which is a row on the screen and never a recording.
-            for field in ("coldOpen", "coldPush", "coldGive", "truceLine", "truceNote"):
-                add(who, block.get(field))
+            #
+            # FACE TO FACE ONLY. DealerTalk.Root asks them when Who is set, which is a man you
+            # walked up to; one with nowhere to stand -- delivery-only, or no spot in the file
+            # -- is only ever a courier, and a courier is never this man.
+            if spot:
+                for field in ("coldOpen", "coldPush", "coldGive", "truceLine", "truceNote"):
+                    add(who, block.get(field))
 
             # THE FOUR HE SAYS WHEN SOMETHING IS IN THE WAY, and the four he borrows when the
             # file has not written him one.
@@ -204,11 +227,11 @@ def from_data(root, texts=False):
                                   ("noSpaceLine", "You got nowhere to put it. Sort that out first."),
                                   ("handOverLine", "Don't stand there holding it. Go on."),
                                   ("walkItInLine", "Stand aside. I'll put it inside for you.")):
-                # THE HAND-TO-HAND LINE IS FOR A MAN YOU WALK UP TO. DealerTalk says it when
-                # Who is set, which is the corner trade; a deliveryOnly dealer is only ever
-                # reached through the delivery, where the box is walked in instead. Listing it
-                # under his name is a take that could never play.
-                if field == "handOverLine" and d.get("deliveryOnly"):
+                # THE SHARED HAND-TO-HAND LINE IS FOR A MAN YOU WALK UP TO -- DealerTalk says it
+                # when Who is set, which is the corner trade. A man with nowhere to stand is
+                # only ever reached through the delivery, where the box is walked in or dropped
+                # at your feet instead; his OWN hand-over line, if he has one, is said on both.
+                if field == "handOverLine" and not spot and not block.get(field):
                     continue
 
                 # AND THE WALK-IN IS FOR A MAN WHO DELIVERS. A doorOnly dealer sells over his own
@@ -217,6 +240,13 @@ def from_data(root, texts=False):
                     continue
 
                 add(who, block.get(field) or shared)
+
+            # THE KERB DROP. At an address with no house to carry it into he throws it at your
+            # feet and says so: his own hand-over line if he has one, otherwise a literal in
+            # DealerTalk.Buy that no list carried -- which is how it came to be missing for
+            # Gerald and Hao both, each found by reading the log after a delivery.
+            if not d.get("doorOnly") and not block.get("handOverLine"):
+                add(who, "There. Pick it up, it ain't gonna walk.")
 
             # NOBODY SPEAKS A TEXT. These five go through Notify.Text, which puts a message on
             # the phone -- and Notify never calls Voice, so no recording of one has ever been
@@ -248,43 +278,68 @@ def from_data(root, texts=False):
             # a man moving his mouth in silence. Only his own are listed: the shared sets are
             # keyed under HIS name too, but they are written for the port and the corner and
             # a dealer with pools of his own never reaches them.
-            for field in ("arrivalLines", "carryLines", "dropLines", "partingLines"):
-                for line in block.get(field) or []:
-                    add(who, line)
+            #
+            # NOT FOR A MAN WHO NEVER DELIVERS: a doorOnly dealer's own pools are lines the run
+            # never reaches, however many the file gives him.
+            #
+            # AND THE HOUSE SET WHERE HE HAS NONE OF HIS OWN. This used to list a man's own
+            # pools only, on the reasoning that the shared sets were written for the port and
+            # the corner -- which is exactly why the men who say them are the two the originals
+            # were about. Tao and Gerald say the port's lines, Hao the corner's, and each says
+            # them under his own name, so each is a take of his own. See Delivery.Mine, and
+            # pools() below.
+            if not d.get("doorOnly"):
+                house = pools(root)
+                port = d.get("kind") == "Docks" and not d.get("gangId")
 
-        # And the shop line, which the source builds with the money on you and the room at the
-        # house stapled to the end, so it names itself rather than hashing: <slug>_shop when
-        # the stock is whole, <slug>_shopcut when it has been stepped on. The recording leaves
-        # the arithmetic out; the screen is already showing it. See DealerTalk.Node.
+                for field, at_port, on_corner in (("arrivalLines", "PortArrival", "CornerArrival"),
+                                                  ("carryLines", "PortCarry", "CornerCarry"),
+                                                  ("dropLines", "PortDrop", "CornerDrop"),
+                                                  ("partingLines", "PortParting", "CornerParting")):
+                    own = block.get(field) or d.get(field) or house.get(at_port if port else on_corner, [])
+
+                    for line in own:
+                        add(who, line)
+
         # THE NAMED LINES. Each is a sentence the SOURCE builds with live arithmetic stapled
         # on, so no hash can ever name it -- see DealerTalk. The recording says the words and
-        # the screen keeps the numbers.
-        for tag, text in (("shop", "Ain't got time to stand here. What you taking? Nothing here's been touched."),
-                          ("shopcut", "Ain't got time to stand here. What you taking? It's all stepped on already."),
-                          ("amount", "How many? And don't say one if you mean four.")):
-            # A DEALER WHO NEVER CUTS ANYTHING NEVER SAYS THE CUT LINE. DealerTalk picks
-            # between these two on PurityNow, and a dealer pinned at 1.0 can only ever come
-            # out of that comparison one way -- so the other file is one the game cannot ask
-            # for. Hao is that dealer: uncut is the whole of his pitch.
-            if tag == "shopcut":
-                try:
-                    if float(d.get("purity", 0) or 0) >= 0.999:
-                        continue
-                except (TypeError, ValueError):
-                    pass
+        # the screen keeps the numbers: <slug>_shop when the stock is whole, <slug>_shopcut
+        # when it has been stepped on, <slug>_amount for how many.
+        #
+        # ONCE PER MAN, NOT ONCE PER ENTRY. The slug is the speaker's, so the second man on
+        # the docks entry gets three of his own -- and says Mr Cheng's shop line in them,
+        # because DealerManager.Apply keeps whatever the second block does not rewrite. Better
+        # seen on a list than heard at the port.
+        for block in (d, d.get("afterCheng") or {}):
+            if not block:
+                continue
 
-            # HIS OWN WORDS ON THE NAMED FILE. The file is named by tag whatever is said,
-            # and DealerTalk says the dealer's shopLine when he has one -- so the text to
-            # record for vernon_shop is Vernon's line, not the shared one this used to print.
-            if tag == "shop" and d.get("shopLine"):
-                text = d["shopLine"]
-            elif tag == "shopcut" and d.get("shopCutLine"):
-                text = d["shopCutLine"]
+            who = block.get("name") or d.get("name", "")
+            if not who:
+                continue
 
-            name = slug(d.get("name", "")) + "_" + tag
-            if name not in seen:
-                seen.add(name)
-                rows.append((name + ".mp3", d.get("name", ""), text))
+            # HIS OWN WORDS ON THE NAMED FILE. The file is named by tag whatever is said, and
+            # DealerTalk says the dealer's shopLine when he has one -- so the text to record
+            # for vernon_shop is Vernon's line, not the shared one this used to print.
+            whole = (block.get("shopLine") or d.get("shopLine") or
+                     "Ain't got time to stand here. What you taking? Nothing here's been touched.")
+            cut = (block.get("shopCutLine") or d.get("shopCutLine") or
+                   "Ain't got time to stand here. What you taking? It's all stepped on already.")
+
+            for tag, text in (("shop", whole), ("shopcut", cut),
+                              ("amount", "How many? And don't say one if you mean four.")):
+                # A DEALER WHO NEVER CUTS ANYTHING NEVER SAYS THE CUT LINE. DealerTalk picks
+                # between these two on PurityNow, and a dealer pinned at 1.0 can only ever come
+                # out of that comparison one way -- so the other file is one the game cannot
+                # ask for. Hao is that dealer: uncut is the whole of his pitch. Read the way
+                # DealerManager reads it: off the top of the entry, 1.0 when it says nothing.
+                if tag == "shopcut" and purity(block, d) >= 0.999:
+                    continue
+
+                name = slug(who) + "_" + tag
+                if name not in seen:
+                    seen.add(name)
+                    rows.append((name + ".mp3", who, text))
 
     # Lamar owns MOST of the mission list, and "most" is the whole of the trouble.
     #
@@ -313,6 +368,51 @@ def from_data(root, texts=False):
             add(who, line)
 
     return rows
+
+
+def purity(block, d):
+    """What his stock arrives at, as DealerManager.Apply reads it: `purity` off the top of the
+    entry (the second man's if he says, the first's if not), and the DealerDef default, 1.0,
+    when neither does."""
+    for src in (block, d):
+        try:
+            v = src.get("purity")
+            if v is not None:
+                return float(v)
+        except (TypeError, ValueError):
+            pass
+
+    return 1.0
+
+
+# The courier's house sets: a name, an equals, a brace, string literals with commas between.
+POOL = re.compile(r'private static readonly string\[\]\s+((?:Port|Corner)(?:Arrival|Carry|Drop|Parting))'
+                  r'\s*=\s*\{(.*?)\};', re.S)
+
+_POOLS = None
+
+
+def pools(root):
+    """What a courier says on the doorstep when his entry gives him nothing of his own, read
+    out of Delivery.cs. See Delivery.Mine.
+
+    PARSED RATHER THAN COPIED, unlike the four fallbacks above: forty-eight sentences copied
+    across is a second copy that drifts, and these arrays have one shape a regex can hold to.
+    An array that is not found is an empty list, which lists nothing rather than guessing."""
+    global _POOLS
+    if _POOLS is not None:
+        return _POOLS
+
+    _POOLS = {}
+    p = os.path.join(root, "src", "Hoodrich", "Supply", "Delivery.cs")
+
+    if os.path.exists(p):
+        body = io.open(p, encoding="utf-8-sig").read()
+
+        for m in POOL.finditer(body):
+            _POOLS[m.group(1)] = [piece.replace('\\"', '"') for piece in PIECE.findall(m.group(2))]
+
+    return _POOLS
 
 
 def Giver(mission):
@@ -687,8 +787,12 @@ def main():
     if args.data:
         rows += from_data(args.root, args.texts)
 
+    sourced = set()
+
     if args.source:
-        rows += from_source(args.root)
+        said = from_source(args.root)
+        rows += said
+        sourced = set(os.path.splitext(r[0])[0].lower() for r in said)
 
     if args.feed:
         rows += from_feed(args.root)
@@ -722,9 +826,13 @@ def main():
             if me in have:
                 continue
 
-            kin = byhash[me.rsplit("_", 1)[-1]]
-            if any(os.path.splitext(o[0])[0].lower() in have for o in kin if o is not r):
-                continue
+            # ONLY FOR THE LINES THE SOURCE PUT UNDER TWO NAMES. A line from the data is
+            # listed under every man who actually reaches it, and Gerald having recorded a
+            # doorstep line is no reason to think Hao has.
+            if me in sourced:
+                kin = byhash[me.rsplit("_", 1)[-1]]
+                if any(os.path.splitext(o[0])[0].lower() in have for o in kin if o is not r):
+                    continue
 
             keep.append(r)
 

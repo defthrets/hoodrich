@@ -2216,14 +2216,14 @@ namespace Hoodrich.Supply
             // is not: a yellow caption over the delivery was the one piece of this that read
             // as a mod, and the man is stood right there making his own noise. Cued, so a
             // recorded line plays every time it comes up, and a line with no recording is
-            // logged under its name at Debug, which is how the to-record list finds it.
+            // reported once under its name, which is how the to-record list finds it.
             try
             {
                 var line = Fresh(words);
                 var who = _def == null ? "" : _def.Name;
-                var key = Voice.Key(who, line);
-
-                if (!Voice.Cue(key)) Log.Debug("Voice: nothing for " + key + " -- " + line);
+                // Perform rather than Cue: a line with no take is reported once at Info under
+                // its name, the way the conversation screen reports its own. See Voice.Perform.
+                Voice.Perform(Voice.Key(who, line), line);
             }
             catch
             {
@@ -2510,7 +2510,7 @@ namespace Hoodrich.Supply
 
             try
             {
-                Core.Voice.Cue(Core.Voice.Key(_def.Name, _def.Farewell));
+                Core.Voice.Perform(Core.Voice.Key(_def.Name, _def.Farewell), _def.Farewell);
             }
             catch
             {

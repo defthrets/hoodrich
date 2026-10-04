@@ -417,6 +417,39 @@ namespace Hoodrich.Core
         }
 
         /// <summary>
+        /// Cue, for a line with words in it: the recording plays every time, and when there is
+        /// no recording the log says so once, at Info, under the name the file would have had.
+        ///
+        /// CUE IS FOR THINGS THAT HAPPEN, AND IT REPORTS A MISS AT DEBUG -- right for a radio
+        /// call, wrong for a sentence somebody wrote. Every beat of a conversation (a greeting,
+        /// a man giving in, a truce) and every word a courier says on the doorstep goes
+        /// through Cue so that it plays on every telling, and that routed all of them round the
+        /// one line of logging the to-record list is built from. A dealer could stand at his
+        /// door with no greeting recorded for the life of the save and a log at Info would
+        /// never say which file it wanted. Same set as Say, so a name is reported once however
+        /// it was asked for.
+        /// </summary>
+        public static bool Perform(string key, string line)
+        {
+            if (Cue(key)) return true;
+
+            // Only a MISSING file is a miss. One that is there and would not play has already
+            // explained itself in Cue, and a pack that is switched off has nothing to report.
+            if (Enabled && !string.IsNullOrEmpty(key) && Find(key) == null) Miss(key, line);
+
+            return false;
+        }
+
+        /// <summary>The to-record list's one line. See Say, which writes the same one.</summary>
+        private static void Miss(string key, string line)
+        {
+            if (Missing.Add(key))
+            {
+                Log.Info("Voice: nothing for " + key + " -- " + Snip(line ?? ""));
+            }
+        }
+
+        /// <summary>
         /// A copy of the line at the level asked for, because MCI will not turn a WAV down.
         ///
         /// THE VOLUME SETTING DID NOTHING AND HAD NOT FOR A WHILE. The header of this file says

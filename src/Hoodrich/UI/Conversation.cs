@@ -115,6 +115,12 @@ namespace Hoodrich.UI
         /// plays every time rather than once. Set on the nodes of a man who has a goodbye.
         /// </summary>
         public string Farewell = "";
+
+        /// <summary>
+        /// The words of that goodbye, beside its key, for the log when the recording is not
+        /// there. Nothing draws them; the screen has closed by then. See Voice.Perform.
+        /// </summary>
+        public string FarewellLine = "";
         public Color SpeakerColour = Palette.Text;
 
         /// <summary>
@@ -644,7 +650,11 @@ namespace Hoodrich.UI
 
             // A fresh conversation starts with no goodbye; a node that has one sets it.
             if (_openedFresh) _farewell = null;
-            if (!string.IsNullOrEmpty(node.Farewell)) _farewell = node.Farewell;
+            if (!string.IsNullOrEmpty(node.Farewell))
+            {
+                _farewell = node.Farewell;
+                _farewellLine = node.FarewellLine;
+            }
 
             // And say it out loud, if somebody recorded this one. Say() stops whatever was
             // talking before it, so arrowing down a list does not stack voices on top of each
@@ -657,9 +667,12 @@ namespace Hoodrich.UI
             // worked out, so the file is named exactly as every other line in the pack is.
             if (node.Encore)
             {
-                Core.Voice.Cue(string.IsNullOrEmpty(node.VoiceKey)
-                                   ? Core.Voice.Key(node.Speaker, node.Line)
-                                   : node.VoiceKey);
+                // Perform rather than Cue, so a beat with no recording turns up on the
+                // to-record list the way an answer does. See Voice.Perform.
+                Core.Voice.Perform(string.IsNullOrEmpty(node.VoiceKey)
+                                       ? Core.Voice.Key(node.Speaker, node.Line)
+                                       : node.VoiceKey,
+                                   node.Line);
 
                 // And he does not grunt over himself. The reply was queued by whichever
                 // choice started the performance, and it would land on the first bar.
@@ -744,8 +757,10 @@ namespace Hoodrich.UI
             if (!string.IsNullOrEmpty(_farewell))
             {
                 var bye = _farewell;
+                var words = _farewellLine;
                 _farewell = null;
-                Core.Voice.Cue(bye);
+                _farewellLine = null;
+                Core.Voice.Perform(bye, words);
             }
 
             if (IsOpen)
@@ -776,6 +791,7 @@ namespace Hoodrich.UI
 
         /// <summary>The goodbye the open conversation will play when it closes, if any.</summary>
         private string _farewell;
+        private string _farewellLine;
 
         private static int FirstEnabled(DialogueNode node)
         {
