@@ -86,6 +86,9 @@ namespace Hoodrich.Parkview
             /// </summary>
             public float Near;
 
+            /// <summary>How many placements the FILE had, for a scene that is one part of it. See Reach and Cells.</summary>
+            public int Whole;
+
             /// <summary>The map props Bare has hidden, let back when the scene comes down; and the ones it left, by where they are.</summary>
             public readonly List<Spooner.Hidden> Bared = new List<Spooner.Hidden>();
             public readonly HashSet<string> BareLeft = new HashSet<string>();
@@ -381,6 +384,27 @@ namespace Hoodrich.Parkview
         private const float ReachLeast = 50f;
 
         /// <summary>
+        /// A BIG SCENE IS BUILT IN CELLS. See Cells.
+        ///
+        /// Everything in a file used to stand or fall together, so Parkview's flats -- 418
+        /// props of 243 different models, and 51 people -- were all up whenever you were
+        /// anywhere in Chamberlain Hills, which is where the mod is played, and on a card with
+        /// less memory than that the street went soft. The people, and what each of them is
+        /// sat on, stood on or leaning against, stay one scene; the loose props -- fences,
+        /// litter, trees, parked clutter -- are cut into cells this wide, each a scene of its
+        /// own that goes up this far from its own edge. From Forum Drive the flats are 81 props
+        /// of 64 models now, and the rest come up around you as you walk in.
+        /// </summary>
+        private const float CellSize = 30f;
+        private const float CellNear = 60f;
+
+        /// <summary>Fewer loose props than this are not worth cutting up.</summary>
+        private const int CellLeast = 40;
+
+        /// <summary>A prop this close to one of the scene's people is his: it stays in his scene, standing before he is.</summary>
+        private const float Beside = 2.5f;
+
+        /// <summary>
         /// How near he has to be to this scene's edge for it to go up when its Note says no
         /// "near:" of its own: the setting, or nearer for a big one.
         ///
@@ -395,7 +419,9 @@ namespace Hoodrich.Parkview
         /// </summary>
         private static float Reach(Scene scene, float range)
         {
-            var n = scene.Items.Count;
+            // The file's size, not this part's: the people of a scene cut into cells are still
+            // the people of a big scene, and go up as near as they always did.
+            var n = Math.Max(scene.Items.Count, scene.Whole);
             if (n <= BigAt) return range;
 
             var reach = Math.Max(ReachLeast, range * BigAt / n);
@@ -953,7 +979,28 @@ namespace Hoodrich.Parkview
                 // can then just walk the list, and wait once, at the first ped. See Step.
                 items.Sort((a, b) => Rank(a) - Rank(b));
 
-                var scene = new Scene { Name = name, Path = path, Items = items, Gone = gone };
+                // THE LOOSE PROPS OF A BIG SCENE GO INTO CELLS OF THEIR OWN. See Cells. Menyoo's
+                // folder is left whole: it is for authoring, and a draft is looked at as one thing.
+                var whole = items.Count;
+                List<Spooner.Placed> loose = null;
+
+                if (whole > BigAt && !_theirs.Contains(path))
+                {
+                    try { loose = Loose(path, items); }
+                    catch (Exception ex)
+                    {
+                        Log.Debug("Scenery: " + name + " is built whole: " + ex.Message);
+                        loose = null;
+                    }
+
+                    if (loose != null && loose.Count >= CellLeast)
+                    {
+                        foreach (var one in loose) items.Remove(one);
+                    }
+                    else loose = null;
+                }
+
+                var scene = new Scene { Name = name, Path = path, Items = items, Gone = gone, Whole = whole };
                 Measure(scene);
 
                 try { scene.Stays = Stays(path); }
@@ -1036,7 +1083,123 @@ namespace Hoodrich.Parkview
                 Log.Info("Scene \"" + name + "\": " + count +
                          ", around " + scene.Centre.X.ToString("0") + ", " +
                          scene.Centre.Y.ToString("0") + " and " + scene.Radius.ToString("0") + " m out.");
+
+                if (loose != null)
+                {
+                    var cells = Cells(name, path, loose);
+                    foreach (var cell in cells) _scenes.Add(cell);
+
+                    Log.Info("Scene \"" + name + "\": " + loose.Count + " loose prop(s) more, cut into " + cells.Count +
+                             " cell(s) of " + CellSize.ToString("0") + " m that each go up within " +
+                             CellNear.ToString("0") + " m of their own edge. See Cells.");
+                }
             }
+        }
+
+        /// <summary>
+        /// The props of a big scene that nobody in it depends on: not attached to anything and
+        /// nothing attached to them, not a floor the file lays, not a building it keeps up, not
+        /// a seat it sits somebody on, and not within Beside of one of its people. What is left
+        /// is fences, litter, trees and parked clutter -- the bulk of a block, and the part that
+        /// can come and go around the player without anybody falling through it. See Cells.
+        /// </summary>
+        private static List<Spooner.Placed> Loose(string path, List<Spooner.Placed> items)
+        {
+            var parents = new HashSet<int>();
+            var people = new List<Vector3>();
+
+            foreach (var one in items)
+            {
+                if (one.Attached) parents.Add(one.AttachedTo);
+                if (one.What == Spooner.Kind.Ped) people.Add(one.At);
+            }
+
+            var keepModels = new HashSet<uint>();
+            var keeps = Keeps(path, keepModels);
+            var floors = Floors(path);
+            var seats = new HashSet<int>(Pairs(path, "sits:").Values);
+
+            var loose = new List<Spooner.Placed>();
+
+            foreach (var one in items)
+            {
+                if (one.What != Spooner.Kind.Prop || one.Attached || parents.Contains(one.Handle)) continue;
+                if (floors.ContainsKey(one.Handle) || keeps.Contains(one.Handle) || seats.Contains(one.Handle)) continue;
+                if (keepModels.Contains(unchecked((uint)one.ModelHash))) continue;
+
+                var his = false;
+
+                foreach (var at in people)
+                {
+                    var dx = one.At.X - at.X;
+                    var dy = one.At.Y - at.Y;
+
+                    if (dx * dx + dy * dy <= Beside * Beside && Math.Abs(one.At.Z - at.Z) < Beside)
+                    {
+                        his = true;
+                        break;
+                    }
+                }
+
+                if (his) continue;
+
+                loose.Add(one);
+            }
+
+            return loose;
+        }
+
+        /// <summary>
+        /// The loose props as scenes, one per CellSize square of the map they stand in. Each is
+        /// named and filed as the scene it came out of -- the hide key writes the name down, and
+        /// the daily roll for a "sometimes" is keyed by it -- carries the glass the file names,
+        /// and goes up within CellNear of its own edge rather than the setting. Nothing else of
+        /// the Note: the people, their floors, their seats and the kept buildings are all in the
+        /// scene they were cut from.
+        /// </summary>
+        private static List<Scene> Cells(string name, string path, List<Spooner.Placed> loose)
+        {
+            var byCell = new Dictionary<long, List<Spooner.Placed>>();
+            var order = new List<long>();
+
+            foreach (var one in loose)
+            {
+                var cx = (long)Math.Floor(one.At.X / CellSize);
+                var cy = (long)Math.Floor(one.At.Y / CellSize);
+                var key = (cx << 32) ^ (cy & 0xffffffffL);
+
+                List<Spooner.Placed> list;
+
+                if (!byCell.TryGetValue(key, out list))
+                {
+                    list = new List<Spooner.Placed>();
+                    byCell[key] = list;
+                    order.Add(key);
+                }
+
+                list.Add(one);
+            }
+
+            HashSet<int> glass;
+            try { glass = Listed(path, "glass:"); }
+            catch { glass = new HashSet<int>(); }
+
+            var cells = new List<Scene>();
+
+            foreach (var key in order)
+            {
+                var cell = new Scene { Name = name, Path = path, Items = byCell[key], Near = CellNear };
+                Measure(cell);
+
+                foreach (var one in cell.Items)
+                {
+                    if (glass.Contains(one.Handle)) cell.Glass.Add(one.Handle);
+                }
+
+                cells.Add(cell);
+            }
+
+            return cells;
         }
 
         private static int Rank(Spooner.Placed item)
