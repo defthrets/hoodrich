@@ -19,6 +19,11 @@
   " off. its outside, its straight, and im not a car park so come and get it": " off. its outside, its straight, and im not a parking lot so come and get it",
   "The flats on Grove": "The apartments on Grove",
   "Cut to half and you come out with twice as much. Cut to a quarter and you have four times as much, and it is obviously rubbish": "Cut to half and you come out with twice as much. Cut to a quarter and you have four times as much, and it is obviously garbage",
-  "D-PAD  SLOT / CHANGE      A  COLOUR      R-STICK  LOOK      B  DONE": "D-PAD  SLOT / CHANGE      A  COLOR      R-STICK  LOOK      B  DONE"
- }
+  "COLOUR": "COLOR",
+  " armour~s~": " armor~s~",
+  "The boot is empty.": "The trunk is empty.",
+  "~g~He's getting it out the boot.~s~": "~g~He's getting it out of the trunk.~s~",
+  "Wardrobe": "Closet"
+ },
+ "tails": []
 }

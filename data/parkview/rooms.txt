@@ -1,0 +1,31 @@
+PARKVIEW ROOMS
+==============
+The doors you can rent a room behind. One per line:
+
+    X, Y, Z, heading, name
+
+X Y Z is the spot you stand to be offered the room -- the doorway itself, read
+off the coordinate HUD standing in front of it. Heading is which way you face
+when you come back out. Everything after the fourth comma is the name, and it
+is what the prompt and the feed call the room.
+
+A line starting with # is ignored, and so is anything that is not five fields.
+Add a door by standing at it and writing the line; there is no limit.
+
+ONLY B2 IS LET. Michael asked for the one door on 2026-09-22 -- the barred one on
+the ground floor, north side. The other five are kept below as comments rather
+than deleted, because the coordinates were read off the HUD door by door and are
+a nuisance to get again: take the # off one and it is rentable from that load.
+
+THE ROOM ITSELF is not in here -- it is one spot for all of them, and it lives
+in rooms.sav next to the log, because you set it in game rather than by hand.
+Stand in the room you want and press the set-room key (Alt+F9 by default).
+Until it is set, the mod uses the motel interior it ships with, and says so in
+the log the first time anybody tries a door.
+
+# -286.330, -1647.384, 31.858, 109.275, B1
+-286.525, -1640.531, 31.858,  88.420, B2
+# -286.258, -1647.872, 36.058, 109.094, B3
+# -286.487, -1640.547, 36.058, 100.981, B4
+# -286.293, -1647.408, 40.058,  70.953, B5
+# -286.464, -1640.614, 40.058, 334.982, B6

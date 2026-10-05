@@ -259,6 +259,27 @@ namespace Hoodrich.Core
         public static string PaintFile => Path.Combine(Writable, "paint.json");
 
         /// <summary>
+        /// The way the riders go round the park, as Michael rode it. WRITTEN, so it follows the
+        /// writability fallback; plain text, a point a line, so it can be put right by hand.
+        /// See Gangs.BikePath.
+        /// </summary>
+        public static string BikePathFile => Path.Combine(Writable, "bike-path.txt");
+
+        /// <summary>
+        /// The riders' way round Parkview as Michael rode it, shipped for everybody. Read only when
+        /// nobody has recorded their own, and never written: a recording goes to BikePathFile, so a
+        /// deploy of the data folder cannot write over it. See Gangs.BikePath.Load.
+        /// </summary>
+        public static string BikePathShipped => Path.Combine(Data, "bike-path-default.txt");
+
+        /// <summary>
+        /// The doors you rent and the day each next week falls due. WRITTEN, so it follows the
+        /// writability fallback; plain text, a door a line, so it can be put right by hand.
+        /// See Locations.Leases.
+        /// </summary>
+        public static string LeasesFile => Path.Combine(Writable, "leases.txt");
+
+        /// <summary>
         /// Recorded dialogue, next to the data rather than in the writable folder.
         ///
         /// It is CONTENT and it ships with the mod, so it belongs beside drugs.json and the
@@ -315,5 +336,46 @@ namespace Hoodrich.Core
 
         /// <summary>The translations, one json per language. Ships with the mod; nothing writes it. See Lang.</summary>
         public static string Lang => Path.Combine(Data, "lang");
+
+        /// <summary>
+        /// Parkview's shipped files: the scene, the doors, the places, the voices. Under the
+        /// data folder like everything else that ships, since 2026-09-25 when Parkview stopped
+        /// being a dll of its own with a folder of its own. See Parkview.Main.
+        /// </summary>
+        public static string Parkview
+        {
+            get
+            {
+                var d = Path.Combine(Data, "parkview");
+                EnsureDir(d);
+                return d;
+            }
+        }
+
+        /// <summary>
+        /// Parkview's scenes: the shipped one, and everything captured or hidden in game beside
+        /// it. Captures are written here rather than under Writable, as they always were: a
+        /// capture is a scene file and belongs with the scene files.
+        /// </summary>
+        public static string ParkviewScenery
+        {
+            get
+            {
+                var d = Path.Combine(Parkview, "scenery");
+                EnsureDir(d);
+                return d;
+            }
+        }
+
+        /// <summary>Where Parkview keeps what it saves: the rented rooms.</summary>
+        public static string ParkviewWritable
+        {
+            get
+            {
+                var d = Path.Combine(Writable, "parkview");
+                EnsureDir(d);
+                return d;
+            }
+        }
 }
 }

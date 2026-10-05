@@ -234,6 +234,17 @@ namespace Hoodrich.Supply
             def.JoinAccept = node["joinAccept"].AsString(def.JoinAccept);
             def.JoinRefuse = node["joinRefuse"].AsString(def.JoinRefuse);
             def.JoinAlready = node["joinAlready"].AsString(def.JoinAlready);
+            def.ColdOpen = node["coldOpen"].AsString(def.ColdOpen);
+            def.ColdAsk = node["coldAsk"].AsString(def.ColdAsk);
+            def.ColdPush = node["coldPush"].AsString(def.ColdPush);
+            def.ColdMoney = node["coldMoney"].AsString(def.ColdMoney);
+            def.ColdGive = node["coldGive"].AsString(def.ColdGive);
+            def.ColdLeave = node["coldLeave"].AsString(def.ColdLeave);
+            def.TruceLine = node["truceLine"].AsString(def.TruceLine);
+            def.TruceNote = node["truceNote"].AsString(def.TruceNote);
+            def.TruceReply = node["truceReply"].AsString(def.TruceReply);
+            def.DoorOnly = node["doorOnly"].AsBool(def.DoorOnly);
+            def.Guard = node["guard"].AsString(def.Guard);
 
             ReplaceList(def.ArrivalLines, node["arrivalLines"]);
             ReplaceList(def.CarryLines, node["carryLines"]);
@@ -651,7 +662,9 @@ namespace Hoodrich.Supply
             var def = _owesNumber;
             _owesNumber = null;
 
-            if (string.IsNullOrEmpty(def.NumberLine)) return;
+            // A door-only man has no number to hand over. See DealerTalk.Root, which keeps the
+            // same line off the screen for the same reason.
+            if (string.IsNullOrEmpty(def.NumberLine) || def.DoorOnly) return;
 
             try
             {
@@ -932,9 +945,14 @@ namespace Hoodrich.Supply
             // rule that used to apply only to the two Docks contacts applies to all fourteen.
             // The alternative was a phone menu where half the numbers worked anywhere and half
             // did not, with nothing on screen to say which was which.
+            // A MAN WHO ONLY SELLS IN PERSON has no phone to answer, wherever you ring from --
+            // Flaco at his door, Deacon at the clubhouse. Said before the house, because it is the
+            // real reason: going home would not help.
+            if (def.DoorOnly) return "Only sells in person";
+
             if (needHome && AtHome != null && !AtHome())
             {
-                return "Call him from the house";
+                return "Call him from one of your places";
             }
 
             // NOT A CONTACT UNTIL YOU HAVE MET HIM.
@@ -1198,6 +1216,15 @@ namespace Hoodrich.Supply
 
                 var h = _livePed.Handle;
                 Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
+
+                // NOT INTRODUCED TO NPC MIND. He used to be -- stamped "dealer:" + id, the same
+                // man every session -- and that made him a local NPC Mind would talk to: one
+                // press of E opened its panel and this mod's dealer talk on the same man at
+                // once, with a stranger's name over his head (OG Reese, 2026-10-04, "Mekhi
+                // Metcalf"). A man with a conversation of this mod's own has no need of one of
+                // NPC Mind's, and nothing here reads his NPC Mind name or voice. Unstamped, he
+                // is a mission ped NPC Mind refuses on its own, which is the right answer and
+                // needs no seam. The same goes for the leaders, Hao, Vernon and the armourer.
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);
 
@@ -1532,7 +1559,18 @@ namespace Hoodrich.Supply
         private readonly Dictionary<string, Blip> _marks =
             new Dictionary<string, Blip>(StringComparer.OrdinalIgnoreCase);
 
-        /// <summary>Puts a permanent mark on every pinned dealer he has met, and only those.</summary>
+        /// <summary>
+        /// Puts a permanent mark on every pinned dealer: dim until he has met the man, full
+        /// once he has.
+        ///
+        /// FROM THE FIRST LOAD. The pin used to be the prize for finding him -- nothing on the
+        /// map until you had stood in front of him -- and with four corner men out across the
+        /// east side, the Heights and Little Seoul that was a city of dealers nobody knew were
+        /// there. Michael, 2026-10-04: "make them all visible from the get go". So every man
+        /// with a spot is on the pause map from the start, in his set's colour, dimmed; meeting
+        /// him brightens the pin, which is what finding him means now. The crown still says
+        /// what it said: he is the set.
+        /// </summary>
         private void MarkTheOnesHeKnows()
         {
             if (State == null) return;
@@ -1547,15 +1585,17 @@ namespace Hoodrich.Supply
                 Blip mark;
                 var have = _marks.TryGetValue(def.Id, out mark) && mark != null && mark.Exists();
 
-                if (!known)
+                if (have)
                 {
-                    // Never met, or the paint got wiped -- no mark, and no mark left over.
-                    if (have) { try { mark.Delete(); } catch { } }
-                    if (_marks.ContainsKey(def.Id)) _marks.Remove(def.Id);
+                    // Met since the pin went down, or the paint got wiped: the pin follows.
+                    bool was;
+                    if (!_marksKnown.TryGetValue(def.Id, out was) || was != known)
+                    {
+                        try { Function.Call(Hash.SET_BLIP_ALPHA, mark.Handle, known ? 255 : UnmetAlpha); } catch { }
+                        _marksKnown[def.Id] = known;
+                    }
                     continue;
                 }
-
-                if (have) continue;
 
                 try
                 {
@@ -1608,9 +1648,13 @@ namespace Hoodrich.Supply
                     // thing to make you hunt for twice.
                     mark.IsShortRange = def.Id != GeraldId;
 
-                    _marks[def.Id] = mark;
+                    // Dim until met. See the note on the method.
+                    Function.Call(Hash.SET_BLIP_ALPHA, mark.Handle, known ? 255 : UnmetAlpha);
 
-                    Log.Info("Pinned " + def.Id + " on the map for good.");
+                    _marks[def.Id] = mark;
+                    _marksKnown[def.Id] = known;
+
+                    Log.Info("Pinned " + def.Id + " on the map for good" + (known ? "." : " -- not met yet, so dimmed."));
                 }
                 catch
                 {
@@ -1621,6 +1665,13 @@ namespace Hoodrich.Supply
 
         /// <summary>radar_ped_gang_leader. The crown the leaders used to carry.</summary>
         private const int KnownSprite = 855;
+
+        /// <summary>How a pin is drawn before he has met the man. Full once he has.</summary>
+        private const int UnmetAlpha = 150;
+
+        /// <summary>Whether each pin was last drawn as met, so the alpha is only set when that changes.</summary>
+        private readonly Dictionary<string, bool> _marksKnown =
+            new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// How close you have to be before an unknown dealer shows up at all.
@@ -1881,6 +1932,7 @@ namespace Hoodrich.Supply
             }
 
             _marks.Clear();
+            _marksKnown.Clear();
         }
     }
 }

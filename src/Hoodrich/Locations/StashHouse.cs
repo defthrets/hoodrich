@@ -79,8 +79,26 @@ namespace Hoodrich.Locations
 
         public string Name => "Aunt Denise's";
 
-        /// <summary>True when the player is close enough to move product in or out.</summary>
-        public bool AtDoor => DistanceTo() <= UseRange;
+        /// <summary>True when the player is at Denise's itself: the yard, the porch, every room.</summary>
+        public bool AtDenise => DistanceTo() <= UseRange;
+
+        /// <summary>
+        /// Set by Main: somewhere else the cupboard can be reached from -- the room Parkview
+        /// rents. THE SAME CUPBOARD. The room is another door onto the one stash the mod
+        /// has, not a second house with a second pile to keep in step; see Core.Home.
+        /// </summary>
+        public Func<bool> Elsewhere;
+
+        /// <summary>True when the player is close enough to move product in or out, here or at the rented room.</summary>
+        public bool AtDoor
+        {
+            get
+            {
+                if (AtDenise) return true;
+                try { return Elsewhere != null && Elsewhere(); }
+                catch { return false; }
+            }
+        }
 
         public float DistanceTo()
         {
@@ -132,7 +150,9 @@ namespace Hoodrich.Locations
 
             TickCutHint();
 
-            var here = AtDoor;
+            // Denise's own door and nowhere else: the guide and the tickers are about this
+            // house, and the rented room introduces itself. See Parkview.Rooms.Enter.
+            var here = AtDenise;
             if (here == _inside) return;
 
             _inside = here;
@@ -230,7 +250,7 @@ namespace Hoodrich.Locations
         /// </summary>
         private void Hush()
         {
-            if (!AtDoor) return;
+            if (!AtDenise) return;
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return;
@@ -286,7 +306,7 @@ namespace Hoodrich.Locations
         /// </summary>
         private void QuietenHousehold()
         {
-            if (!AtDoor) return;
+            if (!AtDenise) return;
 
             var player = Game.Player.Character;
             if (player == null || !player.Exists()) return;

@@ -485,6 +485,13 @@ namespace Hoodrich.UI
                 if (rounds)
                 {
                     Function.Call(Hash.ADD_AMMO_TO_PED, player.Handle, piece.Hash, piece.AmmoBox * LotsNow);
+
+                    // PAID-FOR ROUNDS ARE THE LOCKER'S BUSINESS TOO. It writes down only the
+                    // guns on its list, and a gun he turned up with -- found, given, or one
+                    // the list lost to a search -- was not on it, so a box of rounds bought
+                    // for it was whatever the game's own save last said after the next load.
+                    // He paid Stretch for them; they are kept the way a gun of Stretch's is.
+                    if (Locker != null) Locker.Bought(piece.Weapon);
                 }
                 else
                 {

@@ -597,6 +597,9 @@ namespace Hoodrich.Locations
                     _ped.IsPersistent = true;
                     _ped.BlockPermanentEvents = true;
 
+                    // NOT INTRODUCED TO NPC MIND: his shop is a conversation of this mod's own,
+                    // and introducing him put NPC Mind's panel over it. See DealerManager.
+
                     Function.Call(Hash.SET_ENTITY_AS_MISSION_ENTITY, h, true, true);
                     Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
                     Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);

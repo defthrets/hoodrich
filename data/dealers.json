@@ -452,6 +452,761 @@
         "I'm gone. Tape's still on downstairs if you ever wanna hear the second half.",
         "Later, Franklin. Text me. Not too often. But text me."
       ]
+    },
+    {
+      "id": "flaco",
+      "name": "Flaco",
+      "tag": "FLC",
+      "kind": "GangCorner",
+      "gangId": "vagos",
+      "doorOnly": true,
+      "guard": "WEAPON_COMPACTRIFLE",
+      "_where": [
+        "THE DOOR ON DUTCH LONDON. Michael stood at it on 2026-09-27 -- the barred door marked",
+        "1327 in Rancho -- and Flaco stands on that spot at the heading Michael read, 329.6,",
+        "which faces out at whoever is walking up (turned round from 149.6 the same day, which",
+        "had him staring at his own door). He sells at the door and nowhere else: no number, no",
+        "delivery. One bodyguard beside him with a compact rifle -- see guard and Supply.Stoop."
+      ],
+      "models": [
+        "ig_vagspeak",
+        "csb_vagspeak",
+        "g_m_y_mexgang_01"
+      ],
+      "drugs": [
+        "coke",
+        "heroin",
+        "meth"
+      ],
+      "zones": [],
+      "x": 345.62,
+      "y": -2067.28,
+      "z": 20.936,
+      "heading": 329.608,
+      "priceMultiplier": 1.0,
+      "minRank": 0,
+      "maxOrderGrams": 400,
+      "openHour": 0,
+      "closeHour": 24,
+      "lotValue": 1000,
+      "lotStep": 5,
+      "priceFloor": 0,
+      "priceStep": 5,
+      "purity": 0.8,
+      "uncutFromLots": 2,
+      "purePurity": 1.0,
+      "pureMultiplier": 1.25,
+      "pureChancePercent": 10,
+      "_cold": [
+        "THE FIRST TIME, BEFORE THE VAGOS HAVE SQUARED YOU. Michael: 'make it so hes hostile",
+        "towards us in dialogue at first, but frank just wants to buy from him, so he will alow",
+        "the sale'. coldOpen, coldPush and coldGive are his; coldAsk, coldMoney and coldLeave are",
+        "what Franklin says back. The first buy squares you: truceLine and truceNote, and",
+        "truceReply is Franklin's answer. After that he greets you with greeting like anybody."
+      ],
+      "coldOpen": "Aye. The fuck you doing on my door, Chamberlain? You lost, or you looking for a problem?",
+      "coldAsk": "Ain't no problem, homie. I'm just trying to buy.",
+      "coldPush": "Buy. From the Vagos. Some Forum Drive fool walks up on Dutch London with his hand out, and I'm supposed to open the door for him? The homies seen you pull up, ese. They're waiting on me to say the word.",
+      "coldMoney": "Money spends the same in Rancho as it does in Chamberlain.",
+      "coldGive": "Orale. Your money's green even if you ain't. Quick, before I change my mind.",
+      "coldLeave": "My bad. I'm gone.",
+      "truceLine": "Aight, Chamberlain. You paid, you didn't play me, so we square. I'ma tell the homies -- you come through Rancho, you slang on our blocks, nobody trips on you.",
+      "truceNote": "But aye, holmes. Just 'cause we square don't mean I speak for the allies, ya know, ese? The set goes to war with your people, that's the set. That ain't me, and it ain't this door.",
+      "truceReply": "That's fair.",
+      "greeting": "Chamberlain. You buying, or you just like the view?",
+      "buyLine": "Coke, chiva, cristal. That's the menu.",
+      "shopLine": "Coke, chiva, cristal, and tonight none of it's been touched. Say what, say how much.",
+      "shopCutLine": "Coke, chiva, cristal. Stepped on a little -- buy big and it comes clean. Say what, say how much.",
+      "handOverLine": "There. Now get off my porch before somebody thinks we're friends.",
+      "noRoomLine": "You got nowhere to stash it, you got nothing to buy. Come back.",
+      "noSpaceLine": "Your spot's full, homie. Sort that out first.",
+      "farewell": "Go on. Get outta here."
+    },
+    {
+      "id": "deacon",
+      "name": "Deacon",
+      "tag": "DCN",
+      "kind": "GangCorner",
+      "gangId": "lost",
+      "doorOnly": true,
+      "_where": [
+        "THE LOST MC CLUBHOUSE, off Mirror Park. Michael stood on the spot on 2026-09-27 and read",
+        "heading 192.8, which is the way Deacon faces. He sells in person and nowhere else: no",
+        "number, no delivery. Three of the club stand round him (see Supply.Stoop)."
+      ],
+      "models": [
+        "g_m_y_lost_03",
+        "g_m_y_lost_02",
+        "g_m_y_lost_01"
+      ],
+      "drugs": [
+        "meth",
+        "crack",
+        "coke",
+        "lsd"
+      ],
+      "zones": [],
+      "x": 987.981,
+      "y": -106.558,
+      "z": 74.329,
+      "heading": 192.783,
+      "priceMultiplier": 1.0,
+      "minRank": 0,
+      "maxOrderGrams": 400,
+      "openHour": 0,
+      "closeHour": 24,
+      "lotValue": 1000,
+      "lotStep": 5,
+      "priceFloor": 0,
+      "priceStep": 5,
+      "purity": 0.8,
+      "uncutFromLots": 2,
+      "purePurity": 1.0,
+      "pureMultiplier": 1.25,
+      "pureChancePercent": 10,
+      "_cold": [
+        "THE FIRST TIME, like Flaco: hostile until the first buy, which squares Franklin with the",
+        "Lost on their turf. Michael, 2026-09-27: \"make him hostile at first like flaco\"."
+      ],
+      "coldOpen": "Hold it. A Forum Drive kid on the club's lot? You took a wrong turn, or you looking to get stomped?",
+      "coldAsk": "Ain't no wrong turn, man. I'm just here to buy.",
+      "coldPush": "Buy. From the Lost. City kid rolls up to the clubhouse like it's a drive-through and wants product. Half the chapter's watching you right now, kid. Give me one reason.",
+      "coldMoney": "Cash don't care whose lot it's on.",
+      "coldGive": "Cash is a reason. Make it quick, and keep your hands where I can see them.",
+      "coldLeave": "My bad. I'm out.",
+      "truceLine": "Alright, kid. You paid and you didn't get cute, so we're square. I'll tell the boys -- you ride through our turf, you deal on it, nobody lays a hand on you.",
+      "truceNote": "But hear me. Us being square don't mean I speak for the whole charter. Your people end up at war with the club, that's the club. That ain't me.",
+      "truceReply": "That's fair.",
+      "greeting": "You're a long way from Forum Drive, kid. Club's open for business, not for sightseeing. What'll it be?",
+      "buyLine": "Crank, rock, blow and paper. That's what the club moves.",
+      "shopLine": "Crank, rock, blow and paper, and tonight none of it's been stepped on. Name it and say how much.",
+      "shopCutLine": "Crank, rock, blow and paper. Cut a little -- buy heavy and it comes clean. Name it and say how much.",
+      "handOverLine": "There. Now get it off the property before somebody asks who you are.",
+      "noRoomLine": "No place to keep it? Then you ain't buying. Come back when you got a stash.",
+      "noSpaceLine": "Your stash is full, kid. Clear some room first.",
+      "farewell": "Ride safe. Or don't. Not my problem."
+    },
+    {
+      "id": "vagos_corner",
+      "name": "Pelon",
+      "tag": "PLN",
+      "kind": "GangCorner",
+      "gangId": "vagos",
+      "doorOnly": true,
+      "_where": [
+        "THE CORNER IN CYPRESS FLATS. Michael stood on the spot on 2026-10-04 and read 968.890,",
+        "-1828.599, 31.250, heading 14.083 (north) -- the heading as read, so if he faces the wrong",
+        "way, 194.1 turns him round. He was parked in \"later\" with a Rancho spot (345.665,",
+        "-2015.147) until Michael said \"put a vagos dealer here\"; everything he had is kept. He",
+        "sells in person and nowhere else, like Flaco: no number, no delivery (doorOnly). The",
+        "three on the stoop stand round him -- see Supply.Stoop."
+      ],
+      "models": [
+        "g_m_y_mexgoon_01",
+        "g_m_y_mexgoon_03",
+        "g_m_y_mexgoon_02"
+      ],
+      "drugs": [
+        "coke",
+        "meth"
+      ],
+      "zones": [],
+      "x": 968.89,
+      "y": -1828.599,
+      "z": 31.25,
+      "heading": 14.083,
+      "priceMultiplier": 0.65,
+      "minRank": 0,
+      "maxOrderGrams": 6000,
+      "openHour": 0,
+      "closeHour": 24,
+      "lotValue": 5000,
+      "lotStep": 25,
+      "priceFloor": 150,
+      "priceStep": 25,
+      "purity": 0.75,
+      "uncutFromLots": 1,
+      "purePurity": 1.0,
+      "pureMultiplier": 0.95,
+      "pureChancePercent": 15,
+      "_cold": [
+        "THE FIRST TIME, like Flaco: a Forum Drive face on a Vagos corner is not welcome until he",
+        "has paid once. coldOpen, coldPush and coldGive are his; coldAsk, coldMoney and coldLeave",
+        "are Franklin's. The first buy squares you -- truceLine, truceNote, truceReply -- and after",
+        "that he greets you with greeting like anybody."
+      ],
+      "coldOpen": "Ey. Ey. Chamberlain, right? Green, on a Vagos corner. You lost, or you stupid?",
+      "coldAsk": "Neither, homie. I'm buying. That's all.",
+      "coldPush": "Buying. From me. Forum Drive rolls through the Flats with his hand out and I'm supposed to serve him? The homies clocked you from the bridge, ese. One word from me and that's that.",
+      "coldMoney": "Money's money. Spends the same in the Flats as it does on Forum.",
+      "coldGive": "Orale. Money first, questions never. Quick, before the homies get ideas.",
+      "coldLeave": "My bad. I'm gone.",
+      "truceLine": "Aight, Chamberlain. You paid and you didn't play me, so we square. The homies hear it from me -- you come through the Flats, you slang on our blocks, nobody trips.",
+      "truceNote": "But ey. Square with me ain't square with the barrio, you feel me? The set goes to war with your people, that's the set. That ain't me, and it ain't this corner.",
+      "truceReply": "That's fair.",
+      "greeting": "Ey. Money first, questions never.",
+      "buyLine": "Blanca and glass. Three quarters, 'cause it's been stretched. Everybody stretch it.",
+      "shopLine": "Blanca and glass, and tonight it ain't been touched. Say what, say how much.",
+      "shopCutLine": "Blanca and glass, three quarters. Buy big and it comes clean. Say what, say how much.",
+      "handOverLine": "There. Now walk. Somebody always watching out here.",
+      "noRoomLine": "Nowhere to put it, nothing to buy. Vete.",
+      "noSpaceLine": "Your spot's full, ese. Fix that first.",
+      "farewell": "Bueno. Vete.",
+      "sourceReply": "Above me is above you. Leave it.",
+      "sourceTooSoon": "Nah.",
+      "_delivery": [
+        "HIS PHONE SIDE, KEPT. Everything below is what he says when he delivers, from the days he",
+        "was parked as a plug who drove out: nothing reads it while doorOnly is true, and taking",
+        "doorOnly off (and the cold lines with it, for a player who runs with the Vagos) is the",
+        "whole switch."
+      ],
+      "openingText": "pelon. rancho, la mesa, all of it. blanca and glass, cheap, and stepped on. thats the trade",
+      "textCalled": [
+        "comin",
+        "two minutes ese",
+        "walkin over",
+        "yeah. be ready"
+      ],
+      "rides": [
+        "tornado",
+        "buccaneer2",
+        "sabregt2",
+        "virgo2"
+      ],
+      "ridePaint": 88,
+      "arrivalLines": [
+        "Ey. Money out?",
+        "I'm here. Clock's on.",
+        "This the address. Don't make me check twice.",
+        "You alone? Good."
+      ],
+      "carryLines": [
+        "It's in the trunk. Come get it, I ain't a butler.",
+        "Grab that end. Both of us or neither.",
+        "Weight's right. It's always right.",
+        "Move. Somebody always watching out here."
+      ],
+      "dropLines": [
+        "There. Cuenta si quieres. It's right.",
+        "That's it. Cut like you knew it would be.",
+        "Down. Now it's yours and it's your problem.",
+        "Bueno. That's a clean piece of business."
+      ],
+      "partingLines": [
+        "Vete. I got somewhere else to be.",
+        "Same number. Don't ring it for small.",
+        "Aight. Don't be seen with that.",
+        "I'm gone. Wasn't never here."
+      ],
+      "textLeaving": [
+        "en camino. money ready",
+        "on my way ese. clocks runnin",
+        "leavin. dont waste my time when i get there"
+      ],
+      "textOutside": [
+        "aqui. outside",
+        "im here. come out",
+        "out front. money first, remember"
+      ],
+      "numberLine": "Number's yours. Text what you want, I bring it. Money ready when I get there or I turn around, and I mean that."
+    },
+    {
+      "id": "marabunta_corner",
+      "name": "Nelson",
+      "tag": "NLS",
+      "kind": "GangCorner",
+      "gangId": "marabunta",
+      "doorOnly": true,
+      "_where": [
+        "EL BURRO HEIGHTS, up the hill from Cypress Flats. Michael stood on the spot on 2026-10-04",
+        "and read 1283.175, -1605.018, 54.825, heading 11.513 (north) -- the heading as read, so",
+        "if he faces the wrong way, 191.5 turns him round. He was parked in \"later\" with a spot",
+        "at 1295.163, -1739.323 until Michael said \"do a marabunta dealer here\"; everything he had",
+        "is kept. He sells in person and nowhere else, like Flaco: no number, no delivery",
+        "(doorOnly). His greeting said Cypress; it says the Heights now, because that is where he",
+        "stands. The three on the stoop stand round him -- see Supply.Stoop."
+      ],
+      "models": [
+        "g_m_y_salvagoon_01",
+        "g_m_y_salvaboss_01",
+        "g_m_y_salvagoon_02",
+        "g_m_y_salvagoon_03"
+      ],
+      "drugs": [
+        "meth",
+        "coke"
+      ],
+      "zones": [],
+      "x": 1283.175,
+      "y": -1605.018,
+      "z": 54.825,
+      "heading": 11.513,
+      "priceMultiplier": 0.65,
+      "minRank": 0,
+      "maxOrderGrams": 6000,
+      "openHour": 0,
+      "closeHour": 24,
+      "lotValue": 5000,
+      "lotStep": 25,
+      "priceFloor": 150,
+      "priceStep": 25,
+      "purity": 0.75,
+      "uncutFromLots": 1,
+      "purePurity": 1.0,
+      "pureMultiplier": 0.95,
+      "pureChancePercent": 18,
+      "_cold": [
+        "THE FIRST TIME, like Flaco: a Forum Drive face on a Marabunta corner is not welcome until",
+        "he has paid once. coldOpen, coldPush and coldGive are his; coldAsk, coldMoney and coldLeave",
+        "are Franklin's. The first buy squares you -- truceLine, truceNote, truceReply -- and after",
+        "that he greets you with greeting like anybody. He is quieter than Pelon and more exact,",
+        "which is his whole manner: see arrivalLines."
+      ],
+      "coldOpen": "Stop there. Forum Drive, on the Heights. You walked up a hill nobody invited you up. Tell me why, and tell me slowly.",
+      "coldAsk": "To buy, man. That's the whole reason.",
+      "coldPush": "To buy. From us. I count four of my people who can see you from where they are sitting, and one of them has already asked me. I would like to tell him no.",
+      "coldMoney": "Then tell him my money's the same colour as everybody else's.",
+      "coldGive": "It is. Alright. Money first, and keep your hands where my people can see them. I will be quick, for both our sakes.",
+      "coldLeave": "My mistake. I'm leaving.",
+      "truceLine": "Good. You paid, you did not try me, so you and I are square. My people will hear it from me -- you come through the Heights or the flats, you do your business on our blocks, nobody touches you.",
+      "truceNote": "Understand what that is. Square with me is square with me. If your people go to war with Marabunta, that is Marabunta, and I will not be able to help you. That is not a threat. It is information.",
+      "truceReply": "That's fair.",
+      "greeting": "You came all the way up to the Heights. Alright. I respect the drive.",
+      "buyLine": "Glass and blanca out the flats. Cheap. It's been cut, we all cut it, next question.",
+      "shopLine": "Glass and blanca, and tonight it has not been touched. Say what you want and how much.",
+      "shopCutLine": "Glass and blanca, three quarters. Buy enough and it comes clean. Say what you want and how much.",
+      "handOverLine": "There. Everything as agreed. Now use the road, not the yard.",
+      "noRoomLine": "You have nowhere to keep it, so you are not buying. Come back when you do.",
+      "noSpaceLine": "Your place is full. Fix that first. I will be here.",
+      "farewell": "Go. And don't come back through the yard, use the road.",
+      "sourceReply": "Above me is above you. Leave it.",
+      "sourceTooSoon": "Nah.",
+      "_delivery": [
+        "HIS PHONE SIDE, KEPT. Everything below is what he says when he delivers, from the days he",
+        "was parked as a plug who drove out: nothing reads it while doorOnly is true, and taking",
+        "doorOnly off (and the cold lines with it, for a player who runs with Marabunta) is the",
+        "whole switch."
+      ],
+      "openingText": "nelson. cypress flats and textile. glass and blanca, three quarters. its cut. everybody's is cut, mine is just honest about it",
+      "textCalled": [
+        "on my way",
+        "comin. give me a minute",
+        "walkin out now",
+        "yeah. be there"
+      ],
+      "rides": [
+        "emperor",
+        "virgo2",
+        "gburrito2"
+      ],
+      "ridePaint": 51,
+      "arrivalLines": [
+        "Took the long way. Two of the short ones got cameras.",
+        "Alright. Quiet street. I like quiet streets.",
+        "I parked facing out. Habit, don't read into it.",
+        "You're expecting me, yes? Good."
+      ],
+      "carryLines": [
+        "Let me. I know how it's packed.",
+        "Both hands under it, not the sides.",
+        "Came in through Cypress this morning. It's fresh.",
+        "Careful at the step there."
+      ],
+      "dropLines": [
+        "There. Everything as agreed.",
+        "That's what you asked for and what you paid for.",
+        "Inside before you look at it. Please.",
+        "Good. That's the business done."
+      ],
+      "partingLines": [
+        "I'll go. You'll want your evening back.",
+        "If anything is wrong you tell me, not somebody else.",
+        "Back to the flats. Long way round again.",
+        "Cuidate. And lock that door."
+      ],
+      "textLeaving": [
+        "leaving now. taking the long way, its safer",
+        "on my way. it will be a few minutes, i dont speed",
+        "moving. i will text when im there"
+      ],
+      "textOutside": [
+        "i am outside. facing out, like always",
+        "here. quiet street, lets keep it that way",
+        "outside now. come when youre ready"
+      ],
+      "numberLine": "I'll give you my number. Text me and I will drive it to your house -- it is safer for both of us than you coming out here twice a week."
+    },
+    {
+      "id": "koreans_corner",
+      "name": "Jae",
+      "tag": "JAE",
+      "kind": "GangCorner",
+      "gangId": "koreans",
+      "doorOnly": true,
+      "_where": [
+        "LITTLE SEOUL. Michael stood on the spot on 2026-10-04 and read -549.812, -777.295, 30.698,",
+        "heading 164.367 (south) -- the heading as read, so if he faces the wrong way, 344.4 turns",
+        "him round. He was parked in \"later\" with a spot at -689.805, -911.477 until Michael said",
+        "\"put a dealer here for kkangpae\"; everything he had is kept. He sells in person and nowhere",
+        "else, like Flaco: no number, no delivery (doorOnly). The three on the stoop stand round",
+        "him -- see Supply.Stoop."
+      ],
+      "models": [
+        "g_m_y_korean_01",
+        "g_m_m_korboss_01",
+        "g_m_y_korean_02",
+        "g_m_y_korlfor_01"
+      ],
+      "drugs": [
+        "meth",
+        "coke"
+      ],
+      "zones": [],
+      "x": -549.812,
+      "y": -777.295,
+      "z": 30.698,
+      "heading": 164.367,
+      "priceMultiplier": 0.65,
+      "minRank": 0,
+      "maxOrderGrams": 6000,
+      "openHour": 0,
+      "closeHour": 24,
+      "lotValue": 5000,
+      "lotStep": 25,
+      "priceFloor": 150,
+      "priceStep": 25,
+      "purity": 0.75,
+      "uncutFromLots": 1,
+      "purePurity": 1.0,
+      "pureMultiplier": 0.95,
+      "pureChancePercent": 20,
+      "_cold": [
+        "THE FIRST TIME, like Flaco: a Forum Drive face in Little Seoul is not welcome until he has",
+        "paid once. coldOpen, coldPush and coldGive are his; coldAsk, coldMoney and coldLeave are",
+        "Franklin's. The first buy squares you -- truceLine, truceNote, truceReply -- and after that",
+        "he greets you with greeting like anybody. Deadpan is his whole manner: see arrivalLines."
+      ],
+      "coldOpen": "No. Whatever this is, no. Forum Drive, in Little Seoul, walking up to me like I'm a kiosk. Explain yourself. Briefly.",
+      "coldAsk": "I'm buying. That's it. That's the whole thing.",
+      "coldPush": "Buying. From the Kkangpae. A Chamberlain kid wanders into Koreatown with cash and expects service, and six people on this street are now looking at me to see what I do about it. I'd like to do nothing. Help me do nothing.",
+      "coldMoney": "Easy. My money's the same as everybody else's, and I'm quicker than most.",
+      "coldGive": "Fine. Money first. Hands where people can see them. And don't talk while I count, I lose my place.",
+      "coldLeave": "My mistake. Leaving.",
+      "truceLine": "Okay. You paid, you didn't do anything stupid, so we're square. I'll tell the others -- you come through Little Seoul, you do business on our streets, nobody bothers you.",
+      "truceNote": "To be clear about what that is: it's me. Square with me. If your people and the Kkangpae go to war, that's the Kkangpae, and I'll be very busy that day. Not a threat. A schedule.",
+      "truceReply": "That's fair.",
+      "greeting": "You found Koreatown. Congratulations. What.",
+      "buyLine": "Glass and blanca. Three quarters, because it is cut. I could lie. I won't.",
+      "shopLine": "Glass and blanca, and tonight nobody has touched it. Say what, say how much. Briefly.",
+      "shopCutLine": "Glass and blanca, three quarters. Buy enough and it comes clean. Say what, say how much.",
+      "handOverLine": "There. That's transacted. Out the back, not the front.",
+      "noRoomLine": "You have nowhere to put it. So you're browsing. I don't do browsing. Come back.",
+      "noSpaceLine": "Your place is full. Fix that. I'll be here, unfortunately.",
+      "farewell": "Done. Out the back, not the front.",
+      "sourceReply": "Above me is above you. Leave it.",
+      "sourceTooSoon": "Nah.",
+      "_delivery": [
+        "HIS PHONE SIDE, KEPT. Everything below is what he says when he delivers, from the days he",
+        "was parked as a plug who drove out: nothing reads it while doorOnly is true, and taking",
+        "doorOnly off (and the cold lines with it, for a player who runs with the Kkangpae) is the",
+        "whole switch."
+      ],
+      "openingText": "jae. koreatown. glass and blanca at three quarters. it is cut and i will tell you that every single time so nobody is surprised",
+      "textCalled": [
+        "coming",
+        "one minute",
+        "walking",
+        "yes. be there"
+      ],
+      "rides": [
+        "elegy2",
+        "kuruma",
+        "sultan"
+      ],
+      "ridePaint": 12,
+      "arrivalLines": [
+        "I found it. Your street signs are a suggestion.",
+        "Okay. I'm here. That's step one.",
+        "Nobody followed me. I checked. Twice.",
+        "Let's do this before someone walks past."
+      ],
+      "carryLines": [
+        "It's sealed. Don't unseal it in the driveway.",
+        "You take that side. Yes, that side.",
+        "It's lighter than it looks. That's not a complaint.",
+        "Careful. Not because it's fragile. Because it's expensive."
+      ],
+      "dropLines": [
+        "There. It is exactly what I said it was.",
+        "Cut, as discussed. I told you that up front.",
+        "Inside. Now. This is the boring part but do it.",
+        "Okay. That's transacted."
+      ],
+      "partingLines": [
+        "I'm going back to Koreatown where the food is better.",
+        "Text, don't call. I hate calls.",
+        "Good. Don't make this weird next time.",
+        "Bye. Lock the door, seriously."
+      ],
+      "textLeaving": [
+        "leaving now. traffic permitting",
+        "on my way. it's a drive",
+        "moving. don't call, i'm driving"
+      ],
+      "textOutside": [
+        "outside. i'm here",
+        "out front. come on",
+        "here. i'd rather not sit in this street"
+      ],
+      "numberLine": "Okay. Take my number. Text me -- I hate calls -- and I'll bring it to the house. Beats you driving to Koreatown every time."
+    },
+    {
+      "id": "armenians_corner",
+      "name": "Vahe",
+      "tag": "VAH",
+      "kind": "GangCorner",
+      "gangId": "armenians",
+      "doorOnly": true,
+      "_where": [
+        "LA PUERTA, by the freeway. Michael stood on the spot on 2026-10-04 and read -499.419,",
+        "-1713.922, 19.899, heading 146.212 (south) -- the heading as read, so if he faces the wrong",
+        "way, 326.2 turns him round. He was parked in \"later\" with a spot at 132.305, -2205.208 until",
+        "Michael said \"put an armenian mob dealer here\"; everything he had is kept. He sells in",
+        "person and nowhere else, like Flaco: no number, no delivery (doorOnly). The three on the",
+        "stoop stand round him -- see Supply.Stoop."
+      ],
+      "models": [
+        "g_m_y_armgoon_02",
+        "g_m_m_armlieut_01",
+        "g_m_m_armboss_01"
+      ],
+      "drugs": [
+        "heroin"
+      ],
+      "zones": [],
+      "x": -499.419,
+      "y": -1713.922,
+      "z": 19.899,
+      "heading": 146.212,
+      "priceMultiplier": 0.65,
+      "minRank": 0,
+      "maxOrderGrams": 6000,
+      "openHour": 0,
+      "closeHour": 24,
+      "lotValue": 5000,
+      "lotStep": 25,
+      "priceFloor": 150,
+      "priceStep": 25,
+      "purity": 0.75,
+      "uncutFromLots": 1,
+      "purePurity": 1.0,
+      "pureMultiplier": 0.95,
+      "pureChancePercent": 25,
+      "_cold": [
+        "THE FIRST TIME, like Flaco: a Forum Drive face in La Puerta is not welcome until he has",
+        "paid once. coldOpen, coldPush and coldGive are his; coldAsk, coldMoney and coldLeave are",
+        "Franklin's. The first buy squares you -- truceLine, truceNote, truceReply -- and after that",
+        "he greets you with greeting like anybody. Impatient and literal is his whole manner: see",
+        "arrivalLines."
+      ],
+      "coldOpen": "No. Stop. You are from Forum Drive, I can see it from here, and you are walking at me with a face like a question. I do not sell to questions.",
+      "coldAsk": "No question. I'm buying. That's all.",
+      "coldPush": "Buying. From me. A boy from Chamberlain comes to La Puerta with money in his pocket and I am supposed to say thank you? My cousins are in that car. They are asking me with their eyebrows what to do with you.",
+      "coldMoney": "Tell your cousins my money's good. Better than most.",
+      "coldGive": "Money is money, fine, fine. First the money, then the brown, then you go. Do not make it a conversation.",
+      "coldLeave": "My mistake. I'm going.",
+      "truceLine": "Good. You paid, you did not do anything stupid, so we are square, you and me. I tell the others -- you come to La Puerta, you come to Alta, you do your business, nobody touches you.",
+      "truceNote": "Listen to what I said. Square with me. Not with the whole family. If your people make a war with us, that is a war, and I will be at the war. This is not a threat. It is geography.",
+      "truceReply": "That's fair.",
+      "greeting": "You are not police. I checked. Sit down, do not sit down, whatever.",
+      "buyLine": "One product. Brown. Cheap, and stepped on, and I will not pretend otherwise.",
+      "shopLine": "Brown, and tonight nobody has touched it. Say how much. Only how much, there is only one thing.",
+      "shopCutLine": "Brown, three quarters. Buy enough and it comes clean. Say how much.",
+      "handOverLine": "There. It is what I said it was. Now go and be somewhere else.",
+      "noRoomLine": "You have nowhere to put it. So why are we talking. Come back with somewhere.",
+      "noSpaceLine": "Your place is full. Fix it. I will be here, unfortunately for both of us.",
+      "farewell": "Good. Now go and be somewhere else.",
+      "sourceReply": "Above me is above you. Leave it.",
+      "sourceTooSoon": "Nah.",
+      "_delivery": [
+        "HIS PHONE SIDE, KEPT. Everything below is what he says when he delivers, from the days he",
+        "was parked as a plug who drove out: nothing reads it while doorOnly is true, and taking",
+        "doorOnly off (and the cold lines with it, for a player who runs with the family) is the",
+        "whole switch. The opening text called him sarkis; he is Vahe."
+      ],
+      "openingText": "vahe. alta, burton, around the boxville lot. one thing only -- brown. three quarters and it is cut. i do not insult people with stories",
+      "textCalled": [
+        "Coming.",
+        "Give me a moment.",
+        "I am walking.",
+        "Yes, yes. Coming."
+      ],
+      "rides": [
+        "dominator",
+        "buffalo2",
+        "fugitive"
+      ],
+      "ridePaint": 4,
+      "arrivalLines": [
+        "Yes. Hello. Where.",
+        "I drove across the whole city for this. Fine.",
+        "Nice house. Someone's mother's, I think.",
+        "I am not staying, so."
+      ],
+      "carryLines": [
+        "Take it. It is not heavy. You are not carrying a piano.",
+        "Do not drop it, I will not bring another.",
+        "It is in the box. Where else would it be.",
+        "Here. Two hands, like a man."
+      ],
+      "dropLines": [
+        "Done. Count it, do not count it, I do not care.",
+        "It is what I said it was. I do not lie about weight.",
+        "There. Now it is in a house and not in my car. Good.",
+        "Finished. This is the part I like."
+      ],
+      "partingLines": [
+        "I go now. Do not wave.",
+        "Call me when it is a real amount.",
+        "Yes yes. Goodbye. Close the door.",
+        "I was never here and you never met me. Standard."
+      ],
+      "textLeaving": [
+        "I am coming. Yes. Now.",
+        "Leaving. It is far. You know it is far.",
+        "On the way. Do not text me twice."
+      ],
+      "textOutside": [
+        "Outside. Come.",
+        "I am here. Where are you.",
+        "Front of the house. Hurry."
+      ],
+      "numberLine": "Fine. My number. You text, I drive, it arrives. Do not call me, I will not answer, and then you will text anyway."
+    },
+    {
+      "id": "ballas_corner",
+      "name": "OG Reese",
+      "tag": "OGR",
+      "kind": "GangCorner",
+      "gangId": "ballas",
+      "doorOnly": true,
+      "_where": [
+        "DAVIS. Michael stood on the spot on 2026-10-04 and read 77.533, -1948.159, 21.174, heading",
+        "281.994 (east) -- the heading as read, so if he faces the wrong way, 102.0 turns him round.",
+        "He was parked in \"later\" with a spot a few doors down (85.361, -1958.88) until Michael said",
+        "\"ballas dealer here\"; everything he had is kept. He sells in person and nowhere else, like",
+        "Flaco: no number, no delivery (doorOnly). The three on the stoop stand round him -- see",
+        "Supply.Stoop."
+      ],
+      "models": [
+        "g_m_y_ballaorig_01",
+        "g_m_y_ballaeast_01",
+        "g_m_y_ballasout_01"
+      ],
+      "drugs": [
+        "crack",
+        "weed"
+      ],
+      "zones": [],
+      "x": 77.533,
+      "y": -1948.159,
+      "z": 21.174,
+      "heading": 281.994,
+      "priceMultiplier": 0.65,
+      "minRank": 0,
+      "maxOrderGrams": 6000,
+      "openHour": 0,
+      "closeHour": 24,
+      "lotValue": 5000,
+      "lotStep": 25,
+      "priceFloor": 150,
+      "priceStep": 25,
+      "purity": 0.75,
+      "uncutFromLots": 1,
+      "purePurity": 1.0,
+      "pureMultiplier": 0.95,
+      "pureChancePercent": 16,
+      "_cold": [
+        "THE FIRST TIME, like Flaco -- and sharper, because the Ballas and the Families are the",
+        "oldest war in the game and Franklin is green on a purple block. coldOpen, coldPush and",
+        "coldGive are his; coldAsk, coldMoney and coldLeave are Franklin's. The first buy squares",
+        "you -- truceLine, truceNote, truceReply -- and after that he greets you with greeting like",
+        "anybody. Paranoid about being seen is his whole manner: see arrivalLines."
+      ],
+      "coldOpen": "Hold up. Hold the fuck up. Forum Drive, on a purple block, in daylight, walkin' up on ME? You got a death wish or a bad map, which one?",
+      "coldAsk": "Neither, man. I'm buying. That's the whole reason I'm here.",
+      "coldPush": "Buyin'. From a Balla. Chamberlain Hills wants to put green money in my hand on my own block, and every youngster on this street is lookin' at me to see if I'm about to get him killed. I ain't tryin' to get nobody killed today.",
+      "coldMoney": "Then don't. My money's green, and that's the only green thing about this.",
+      "coldGive": "...Aight. Aight. Money first, and keep your hands out where the young ones can see 'em. Quick. And you ain't seen me.",
+      "coldLeave": "My bad. I'm gone.",
+      "truceLine": "Aight, Chamberlain. You paid and you didn't play me, so you and me square. I'ma tell the youngsters -- you come through Davis, you handle your business on this block, nobody touches you.",
+      "truceNote": "But hear me. Square with me ain't square with the Ballas. Your set and mine been at it since before you could walk, and the day that goes hot, I'm purple and you're green and this corner don't exist. That's just how it is.",
+      "truceReply": "That's fair.",
+      "greeting": "You standin' on purple askin' me for somethin'. That's either brave or stupid.",
+      "buyLine": "Rock and green. Cheap. And no, it ain't clean, ain't nobody claimed it was.",
+      "shopLine": "Rock and green, and tonight it ain't been touched. Say what, say how much.",
+      "shopCutLine": "Rock and green, three quarters. Buy big and it comes clean. Say what, say how much.",
+      "handOverLine": "There. Now walk, and you ain't seen me.",
+      "noRoomLine": "You ain't got nowhere to put it, you ain't buyin'. Come back when you do.",
+      "noSpaceLine": "Your spot's full. Fix that first, then we talk.",
+      "farewell": "Go on. And you ain't seen me.",
+      "sourceReply": "Above me is above you. Leave it.",
+      "sourceTooSoon": "Nah.",
+      "_delivery": [
+        "HIS PHONE SIDE, KEPT. Everything below is what he says when he delivers, from the days he",
+        "was parked as a plug who drove out: nothing reads it while doorOnly is true, and taking",
+        "doorOnly off (and the cold lines with it, for a player who runs with the Ballas) is the",
+        "whole switch."
+      ],
+      "openingText": "you got my number somehow. fine. im on the block off davis. rock and green, three quarters. dont get seen comin",
+      "textCalled": [
+        "walkin",
+        "yeah. hurry up",
+        "comin out",
+        "aight, be there"
+      ],
+      "rides": [
+        "buccaneer2",
+        "chino2",
+        "faction2",
+        "slamvan3"
+      ],
+      "ridePaint": 145,
+      "arrivalLines": [
+        "Man, if anybody sees this car on this street.",
+        "Let's go. Quick. Real quick.",
+        "I ain't even supposed to know where you stay.",
+        "This is a favour and a risk, both."
+      ],
+      "carryLines": [
+        "Take it, take it. Don't stand there.",
+        "It's in the bag, don't check it out here.",
+        "Heavy. Yeah, that's what you paid for.",
+        "Hands. Now. Come on."
+      ],
+      "dropLines": [
+        "Done. That never happened.",
+        "That's yours. And I was never on this block.",
+        "Rock's good. Don't ask me who cooked it.",
+        "There. Now we both got somethin' on each other."
+      ],
+      "partingLines": [
+        "I'm out. I'm real out.",
+        "Don't say my name. To nobody. Ever.",
+        "Next time meet me somewhere else. Anywhere else.",
+        "Gone. And you owe me more than money for this."
+      ],
+      "textLeaving": [
+        "movin. and im takin the back way, obviously",
+        "on my way. this is stupid and im doin it anyway",
+        "leavin. dont text me again"
+      ],
+      "textOutside": [
+        "outside. come out NOW",
+        "im here. quick, quick, quick",
+        "out front. i aint sittin on this street twice"
+      ],
+      "numberLine": "...aight. Take the number. But you TEXT it, you don't call it, and I'll bring it to your house 'cause I ain't doin' this on a street again."
     }
   ],
   "later": [
@@ -805,281 +1560,6 @@
       "numberLine": "Ay, take my number, hombre. You text me, I bring it to your door myself. Save you comin' all the way out to Banning every time."
     },
     {
-      "id": "ballas_corner",
-      "name": "OG Reese",
-      "tag": "OGR",
-      "kind": "GangCorner",
-      "gangId": "ballas",
-      "models": [
-        "g_m_y_ballaorig_01",
-        "g_m_y_ballaeast_01"
-      ],
-      "drugs": [
-        "crack",
-        "weed"
-      ],
-      "zones": [
-        "DAVIS",
-        "STAD"
-      ],
-      "priceMultiplier": 0.65,
-      "purity": 0.75,
-      "purePurity": 1.0,
-      "pureMultiplier": 0.95,
-      "pureChancePercent": 16,
-      "minRank": 0,
-      "maxOrderGrams": 6000,
-      "openHour": 0,
-      "closeHour": 24,
-      "rides": [
-        "buccaneer2",
-        "chino2",
-        "faction2",
-        "slamvan3"
-      ],
-      "ridePaint": 145,
-      "greeting": "You standin' on purple askin' me for somethin'. That's either brave or stupid.",
-      "buyLine": "Rock and green. Cheap. And no, it ain't clean, ain't nobody claimed it was.",
-      "sourceReply": "Above me is above you. Leave it.",
-      "sourceTooSoon": "Nah.",
-      "farewell": "Go on. And you ain't seen me.",
-      "openingText": "you got my number somehow. fine. im on the block off davis. rock and green, three quarters. dont get seen comin",
-      "textCalled": [
-        "walkin",
-        "yeah. hurry up",
-        "comin out",
-        "aight, be there"
-      ],
-      "lotValue": 5000,
-      "priceFloor": 150,
-      "priceStep": 25,
-      "lotStep": 25,
-      "arrivalLines": [
-        "Man, if anybody sees this car on this street.",
-        "Let's go. Quick. Real quick.",
-        "I ain't even supposed to know where you stay.",
-        "This is a favour and a risk, both."
-      ],
-      "carryLines": [
-        "Take it, take it. Don't stand there.",
-        "It's in the bag, don't check it out here.",
-        "Heavy. Yeah, that's what you paid for.",
-        "Hands. Now. Come on."
-      ],
-      "dropLines": [
-        "Done. That never happened.",
-        "That's yours. And I was never on this block.",
-        "Rock's good. Don't ask me who cooked it.",
-        "There. Now we both got somethin' on each other."
-      ],
-      "partingLines": [
-        "I'm out. I'm real out.",
-        "Don't say my name. To nobody. Ever.",
-        "Next time meet me somewhere else. Anywhere else.",
-        "Gone. And you owe me more than money for this."
-      ],
-      "textLeaving": [
-        "movin. and im takin the back way, obviously",
-        "on my way. this is stupid and im doin it anyway",
-        "leavin. dont text me again"
-      ],
-      "textOutside": [
-        "outside. come out NOW",
-        "im here. quick, quick, quick",
-        "out front. i aint sittin on this street twice"
-      ],
-      "uncutFromLots": 1,
-      "x": 85.361,
-      "y": -1958.88,
-      "z": 21.122,
-      "heading": 0.0,
-      "numberLine": "...aight. Take the number. But you TEXT it, you don't call it, and I'll bring it to your house 'cause I ain't doin' this on a street again."
-    },
-    {
-      "id": "vagos_corner",
-      "name": "Pelon",
-      "tag": "PLN",
-      "kind": "GangCorner",
-      "gangId": "vagos",
-      "models": [
-        "g_m_y_mexgoon_01",
-        "g_m_y_mexgoon_03"
-      ],
-      "drugs": [
-        "coke",
-        "meth"
-      ],
-      "zones": [
-        "RANCHO",
-        "LMESA",
-        "MURRI",
-        "EBURO"
-      ],
-      "priceMultiplier": 0.65,
-      "purity": 0.75,
-      "purePurity": 1.0,
-      "pureMultiplier": 0.95,
-      "pureChancePercent": 15,
-      "minRank": 0,
-      "maxOrderGrams": 6000,
-      "openHour": 0,
-      "closeHour": 24,
-      "rides": [
-        "tornado",
-        "buccaneer2",
-        "sabregt2",
-        "virgo2"
-      ],
-      "ridePaint": 88,
-      "greeting": "Ey. Money first, questions never.",
-      "buyLine": "Blanca and glass. Three quarters, 'cause it's been stretched. Everybody stretch it.",
-      "sourceReply": "Above me is above you. Leave it.",
-      "sourceTooSoon": "Nah.",
-      "farewell": "Bueno. Vete.",
-      "openingText": "pelon. rancho, la mesa, all of it. blanca and glass, cheap, and stepped on. thats the trade",
-      "textCalled": [
-        "comin",
-        "two minutes ese",
-        "walkin over",
-        "yeah. be ready"
-      ],
-      "lotValue": 5000,
-      "priceFloor": 150,
-      "priceStep": 25,
-      "lotStep": 25,
-      "arrivalLines": [
-        "Ey. Money out?",
-        "I'm here. Clock's on.",
-        "This the address. Don't make me check twice.",
-        "You alone? Good."
-      ],
-      "carryLines": [
-        "It's in the trunk. Come get it, I ain't a butler.",
-        "Grab that end. Both of us or neither.",
-        "Weight's right. It's always right.",
-        "Move. Somebody always watching out here."
-      ],
-      "dropLines": [
-        "There. Cuenta si quieres. It's right.",
-        "That's it. Cut like you knew it would be.",
-        "Down. Now it's yours and it's your problem.",
-        "Bueno. That's a clean piece of business."
-      ],
-      "partingLines": [
-        "Vete. I got somewhere else to be.",
-        "Same number. Don't ring it for small.",
-        "Aight. Don't be seen with that.",
-        "I'm gone. Wasn't never here."
-      ],
-      "textLeaving": [
-        "en camino. money ready",
-        "on my way ese. clocks runnin",
-        "leavin. dont waste my time when i get there"
-      ],
-      "textOutside": [
-        "aqui. outside",
-        "im here. come out",
-        "out front. money first, remember"
-      ],
-      "uncutFromLots": 1,
-      "x": 345.665,
-      "y": -2015.147,
-      "z": 22.395,
-      "heading": 331.735,
-      "numberLine": "Number's yours. Text what you want, I bring it. Money ready when I get there or I turn around, and I mean that."
-    },
-    {
-      "id": "marabunta_corner",
-      "name": "Nelson",
-      "tag": "NLS",
-      "kind": "GangCorner",
-      "gangId": "marabunta",
-      "models": [
-        "g_m_y_salvagoon_01",
-        "g_m_y_salvaboss_01"
-      ],
-      "drugs": [
-        "meth",
-        "coke"
-      ],
-      "zones": [
-        "EBURO",
-        "CYPRE",
-        "TEXTI"
-      ],
-      "priceMultiplier": 0.65,
-      "purity": 0.75,
-      "purePurity": 1.0,
-      "pureMultiplier": 0.95,
-      "pureChancePercent": 18,
-      "minRank": 0,
-      "maxOrderGrams": 6000,
-      "openHour": 0,
-      "closeHour": 24,
-      "rides": [
-        "emperor",
-        "virgo2",
-        "gburrito2"
-      ],
-      "ridePaint": 51,
-      "greeting": "You came all the way out to Cypress. Alright. I respect the drive.",
-      "buyLine": "Glass and blanca out the flats. Cheap. It's been cut, we all cut it, next question.",
-      "sourceReply": "Above me is above you. Leave it.",
-      "sourceTooSoon": "Nah.",
-      "farewell": "Go. And don't come back through the yard, use the road.",
-      "openingText": "nelson. cypress flats and textile. glass and blanca, three quarters. its cut. everybody's is cut, mine is just honest about it",
-      "textCalled": [
-        "on my way",
-        "comin. give me a minute",
-        "walkin out now",
-        "yeah. be there"
-      ],
-      "lotValue": 5000,
-      "priceFloor": 150,
-      "priceStep": 25,
-      "lotStep": 25,
-      "arrivalLines": [
-        "Took the long way. Two of the short ones got cameras.",
-        "Alright. Quiet street. I like quiet streets.",
-        "I parked facing out. Habit, don't read into it.",
-        "You're expecting me, yes? Good."
-      ],
-      "carryLines": [
-        "Let me. I know how it's packed.",
-        "Both hands under it, not the sides.",
-        "Came in through Cypress this morning. It's fresh.",
-        "Careful at the step there."
-      ],
-      "dropLines": [
-        "There. Everything as agreed.",
-        "That's what you asked for and what you paid for.",
-        "Inside before you look at it. Please.",
-        "Good. That's the business done."
-      ],
-      "partingLines": [
-        "I'll go. You'll want your evening back.",
-        "If anything is wrong you tell me, not somebody else.",
-        "Back to the flats. Long way round again.",
-        "Cuidate. And lock that door."
-      ],
-      "textLeaving": [
-        "leaving now. taking the long way, its safer",
-        "on my way. it will be a few minutes, i dont speed",
-        "moving. i will text when im there"
-      ],
-      "textOutside": [
-        "i am outside. facing out, like always",
-        "here. quiet street, lets keep it that way",
-        "outside now. come when youre ready"
-      ],
-      "uncutFromLots": 1,
-      "x": 1295.163,
-      "y": -1739.323,
-      "z": 54.272,
-      "heading": 19.174,
-      "numberLine": "I'll give you my number. Text me and I will drive it to your house -- it is safer for both of us than you coming out here twice a week."
-    },
-    {
       "id": "lost_corner",
       "name": "Whistle",
       "tag": "WHS",
@@ -1262,186 +1742,6 @@
       "z": 45.376,
       "heading": 184.427,
       "numberLine": "You will have my number. You will use it by message only, and you will use it for delivery to your address. Not for conversation."
-    },
-    {
-      "id": "armenians_corner",
-      "name": "Vahe",
-      "tag": "VAH",
-      "kind": "GangCorner",
-      "gangId": "armenians",
-      "models": [
-        "g_m_y_armgoon_02",
-        "g_m_m_armlieut_01"
-      ],
-      "drugs": [
-        "heroin"
-      ],
-      "zones": [
-        "BANNING",
-        "ALTA",
-        "BURTON",
-        "PBOX"
-      ],
-      "priceMultiplier": 0.65,
-      "purity": 0.75,
-      "purePurity": 1.0,
-      "pureMultiplier": 0.95,
-      "pureChancePercent": 25,
-      "minRank": 0,
-      "maxOrderGrams": 6000,
-      "openHour": 0,
-      "closeHour": 24,
-      "rides": [
-        "dominator",
-        "buffalo2",
-        "fugitive"
-      ],
-      "ridePaint": 4,
-      "greeting": "You are not police. I checked. Sit down, do not sit down, whatever.",
-      "buyLine": "One product. Brown. Cheap, and stepped on, and I will not pretend otherwise.",
-      "sourceReply": "Above me is above you. Leave it.",
-      "sourceTooSoon": "Nah.",
-      "farewell": "Good. Now go and be somewhere else.",
-      "openingText": "sarkis. alta, burton, around the boxville lot. one thing only -- brown. three quarters and it is cut. i do not insult people with stories",
-      "textCalled": [
-        "Coming.",
-        "Give me a moment.",
-        "I am walking.",
-        "Yes, yes. Coming."
-      ],
-      "lotValue": 5000,
-      "priceFloor": 150,
-      "priceStep": 25,
-      "lotStep": 25,
-      "arrivalLines": [
-        "Yes. Hello. Where.",
-        "I drove across the whole city for this. Fine.",
-        "Nice house. Someone's mother's, I think.",
-        "I am not staying, so."
-      ],
-      "carryLines": [
-        "Take it. It is not heavy. You are not carrying a piano.",
-        "Do not drop it, I will not bring another.",
-        "It is in the box. Where else would it be.",
-        "Here. Two hands, like a man."
-      ],
-      "dropLines": [
-        "Done. Count it, do not count it, I do not care.",
-        "It is what I said it was. I do not lie about weight.",
-        "There. Now it is in a house and not in my car. Good.",
-        "Finished. This is the part I like."
-      ],
-      "partingLines": [
-        "I go now. Do not wave.",
-        "Call me when it is a real amount.",
-        "Yes yes. Goodbye. Close the door.",
-        "I was never here and you never met me. Standard."
-      ],
-      "textLeaving": [
-        "I am coming. Yes. Now.",
-        "Leaving. It is far. You know it is far.",
-        "On the way. Do not text me twice."
-      ],
-      "textOutside": [
-        "Outside. Come.",
-        "I am here. Where are you.",
-        "Front of the house. Hurry."
-      ],
-      "uncutFromLots": 1,
-      "x": 132.305,
-      "y": -2205.208,
-      "z": 7.186,
-      "heading": 11.446,
-      "numberLine": "Fine. My number. You text, I drive, it arrives. Do not call me, I will not answer, and then you will text anyway."
-    },
-    {
-      "id": "koreans_corner",
-      "name": "Jae",
-      "tag": "JAE",
-      "kind": "GangCorner",
-      "gangId": "koreans",
-      "models": [
-        "g_m_y_korean_01",
-        "g_m_m_korboss_01"
-      ],
-      "drugs": [
-        "meth",
-        "coke"
-      ],
-      "zones": [
-        "KOREAT"
-      ],
-      "priceMultiplier": 0.65,
-      "purity": 0.75,
-      "purePurity": 1.0,
-      "pureMultiplier": 0.95,
-      "pureChancePercent": 20,
-      "minRank": 0,
-      "maxOrderGrams": 6000,
-      "openHour": 0,
-      "closeHour": 24,
-      "rides": [
-        "elegy2",
-        "kuruma",
-        "sultan"
-      ],
-      "ridePaint": 12,
-      "greeting": "You found Koreatown. Congratulations. What.",
-      "buyLine": "Glass and blanca. Three quarters, because it is cut. I could lie. I won't.",
-      "sourceReply": "Above me is above you. Leave it.",
-      "sourceTooSoon": "Nah.",
-      "farewell": "Done. Out the back, not the front.",
-      "openingText": "jae. koreatown. glass and blanca at three quarters. it is cut and i will tell you that every single time so nobody is surprised",
-      "textCalled": [
-        "coming",
-        "one minute",
-        "walking",
-        "yes. be there"
-      ],
-      "lotValue": 5000,
-      "priceFloor": 150,
-      "priceStep": 25,
-      "lotStep": 25,
-      "arrivalLines": [
-        "I found it. Your street signs are a suggestion.",
-        "Okay. I'm here. That's step one.",
-        "Nobody followed me. I checked. Twice.",
-        "Let's do this before someone walks past."
-      ],
-      "carryLines": [
-        "It's sealed. Don't unseal it in the driveway.",
-        "You take that side. Yes, that side.",
-        "It's lighter than it looks. That's not a complaint.",
-        "Careful. Not because it's fragile. Because it's expensive."
-      ],
-      "dropLines": [
-        "There. It is exactly what I said it was.",
-        "Cut, as discussed. I told you that up front.",
-        "Inside. Now. This is the boring part but do it.",
-        "Okay. That's transacted."
-      ],
-      "partingLines": [
-        "I'm going back to Koreatown where the food is better.",
-        "Text, don't call. I hate calls.",
-        "Good. Don't make this weird next time.",
-        "Bye. Lock the door, seriously."
-      ],
-      "textLeaving": [
-        "leaving now. traffic permitting",
-        "on my way. it's a drive",
-        "moving. don't call, i'm driving"
-      ],
-      "textOutside": [
-        "outside. i'm here",
-        "out front. come on",
-        "here. i'd rather not sit in this street"
-      ],
-      "uncutFromLots": 1,
-      "x": -689.805,
-      "y": -911.477,
-      "z": 23.672,
-      "heading": 90.429,
-      "numberLine": "Okay. Take my number. Text me -- I hate calls -- and I'll bring it to the house. Beats you driving to Koreatown every time."
     }
   ]
 }

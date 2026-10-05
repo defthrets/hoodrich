@@ -15,9 +15,14 @@ would misbehave in the game:
 Coverage against uikeys.json (which uikeys.py rebuilds from the source) is printed per
 file so a partial translation is a decision and not an accident.
 
+It also writes each file's TAILS: the glue keys that turn up inside a line of dialogue or
+the feed as well as inside a notice. Lang swaps a tail only where some other glue matched
+too -- inside a notice the mod built, never inside a line somebody says. See spoken().
+
     python make_langs.py          from this folder
 """
 import collections
+import glob
 import importlib.util
 import io
 import json
@@ -79,12 +84,96 @@ def check(table):
     return bad
 
 
-def write(code, language, by, table, note=None):
+# ---- tails ------------------------------------------------------------------------------------------
+#
+# Lang swaps glue inside any string it is handed, and it is handed the dialogue and the feed as well
+# as the notices. A glue key that also turns up inside a line somebody SAYS -- " now.", " a week.",
+# " on the " -- would turn that line into two languages. Leaving those keys English instead left
+# every notice built from them in two languages: "c'est l'embrouille avec Ballas now." So each glue
+# key is tried against every line the mod says, and one that fires there is written out as a tail,
+# which Lang only swaps inside a string where a glue key that is NOT a tail matched as well.
+DATA = os.path.normpath(os.path.join(SP, '..', '..', 'data'))
+SRC = os.path.normpath(os.path.join(SP, '..', '..', 'src', 'Hoodrich'))
+
+
+def is_glue(key):
+    """Lang.IsGlue, to the letter."""
+    first, last = key[0], key[-1]
+    if last in ' :$~' or key.startswith('~s~') or key.startswith("'s "):
+        return True
+    return not first.isalnum() and first not in '~$("\''
+
+
+def spoken():
+    """Every line the mod says rather than shows: every string in the data files, and the long
+    sentences in the code that are not UI -- uikeys.json has the UI ones."""
+    texts = []
+
+    def walk(node):
+        if isinstance(node, str):
+            if len(node) > 6 and ' ' in node:
+                texts.append(node)
+        elif isinstance(node, list):
+            for x in node:
+                walk(x)
+        elif isinstance(node, dict):
+            for k, v in node.items():
+                if not str(k).startswith('_'):          # a comment in the file, never drawn
+                    walk(v)
+
+    for path in glob.glob(os.path.join(DATA, '**', '*.json'), recursive=True):
+        if os.sep + 'lang' + os.sep in path:
+            continue
+        try:
+            walk(json.load(io.open(path, encoding='utf-8-sig')))
+        except Exception:
+            pass
+    for path in glob.glob(os.path.join(SRC, '**', '*.cs'), recursive=True):
+        text = io.open(path, encoding='utf-8-sig', errors='replace').read()
+        for m in re.finditer(r'"((?:[^"\\\n]|\\.)*)"', text):
+            s = m.group(1).replace('\\"', '"')
+            if len(s) > 25 and s.count(' ') >= 4 and s not in known and not s.startswith(('~', 'Press ')):
+                texts.append(s)
+    return texts
+
+
+def fires(text, key):
+    """Lang.Resolve's rule: on a word boundary, and not running on into a letter."""
+    i = text.find(key)
+    while i >= 0:
+        at = i == 0 or not text[i - 1].isalnum() or not text[i].isalnum()
+        end = i + len(key)
+        runs_on = end < len(text) and text[end].isalnum() and key[-1].isalnum()
+        if at and not runs_on:
+            return True
+        i = text.find(key, i + 1)
+    return False
+
+
+SPOKEN = spoken()
+_heard = {}
+
+
+def tails_of(table):
+    """The glue keys in this table that fire inside a line the mod says."""
+    out = []
+    for k in table:
+        if len(k) < 3 or not is_glue(k):
+            continue
+        if k not in _heard:
+            _heard[k] = [t for t in SPOKEN if fires(t, k)]
+        if any(t not in table for t in _heard[k]):     # a key itself is matched whole, never scanned
+            out.append(k)
+    return sorted(out)
+
+
+def write(code, language, by, table, note=None, tails=None):
     doc = collections.OrderedDict([('language', language), ('code', code), ('by', by)])
     doc['note'] = note or ('English on the left, ' + language + ' on the right. Keep the ~y~ colour codes, the '
                            '~INPUT_~ button names and the leading and trailing spaces exactly as they are: the mod '
                            'glues fragments together on them. Anything not listed here shows in English.')
     doc['strings'] = collections.OrderedDict(table)
+    doc['tails'] = tails or []
     if not os.path.isdir(OUT):
         os.makedirs(OUT)
     path = os.path.join(OUT, code + '.json')
@@ -96,7 +185,7 @@ def write(code, language, by, table, note=None):
 
 
 fatal = False
-print("%-6s %8s %9s %8s  %s" % ('file', 'strings', 'required', 'missing', ''))
+print("%-6s %8s %9s %8s %6s  %s" % ('file', 'strings', 'required', 'missing', 'tails', ''))
 
 for name, code in FILES:
     if not os.path.exists(os.path.join(SP, name + '.py')):
@@ -128,9 +217,10 @@ for name, code in FILES:
                 'names and the leading and trailing spaces exactly as they are. Anything not listed shows in English.')
     if code == 'en-US':
         missing = []      # a spelling overlay, deliberately sparse
-    write(code, m.LANGUAGE, m.BY, table, note)
-    print("%-6s %8d %9d %8d  %s" % (code, len(table), len(required), len(missing),
-                                    ('; '.join(repr(x)[:36] for x in missing[:3]) + (' ...' if len(missing) > 3 else '')) if missing else ''))
+    tails = tails_of(table)
+    write(code, m.LANGUAGE, m.BY, table, note, tails)
+    print("%-6s %8d %9d %8d %6d  %s" % (code, len(table), len(required), len(missing), len(tails),
+                                        ('; '.join(repr(x)[:36] for x in missing[:3]) + (' ...' if len(missing) > 3 else '')) if missing else ''))
 
 if fatal:
     print("\nFAILED")

@@ -237,6 +237,22 @@ function Read-IniPairs {
     return $pairs
 }
 
+# PARKVIEW IS PART OF THIS DLL (2026-09-25): its files ship in data\parkview with everything
+# else, and its settings are in Hoodrich.ini. The standalone Parkview.dll is set aside if one is
+# still here, or every scene is built twice. Renamed rather than deleted, so it is one rename to
+# have back; ".off" is not a name ScriptHookVDotNet loads. Parkview also stands down on its own
+# if a second copy starts -- this is the tidy half. The old scripts\Parkview\ folder is left as
+# it is: the mod copies the player's captures and room save out of it on its first start.
+function Retire-Parkview([string]$scripts) {
+    foreach ($name in @('Parkview.dll', 'Parkview.pdb')) {
+        $old = Join-Path $scripts $name
+        if (-not (Test-Path $old)) { continue }
+
+        Move-Item $old (Join-Path $scripts "$name.off") -Force
+        Write-Host "  off    $name -> $name.off  (Parkview runs inside Hoodrich.dll now)" -ForegroundColor Yellow
+    }
+}
+
 function Deploy-To([string]$gameDir, [string]$label) {
     if (-not (Test-Path $gameDir)) {
         Write-Host "skip $label - not installed at $gameDir" -ForegroundColor DarkGray
@@ -372,10 +388,13 @@ function Deploy-To([string]$gameDir, [string]$label) {
                 Write-Host "         Defaults apply until they are added." -ForegroundColor DarkGray
             }
 
+            # NOT "NOTHING READS THEM". Since 0.9.9 the shipped ini holds only what a player sets,
+            # and the tuning and developer keys are read from an ini that has them and defaulted
+            # when it does not -- so a builder's ini carries a hundred keys the template does not,
+            # and every one of them is read. Counted, not listed: the list was the whole ini.
             if ($stale) {
-                Write-Host "  STALE  Hoodrich.ini has $($stale.Count) setting(s) nothing reads:" -ForegroundColor Yellow
-                Write-Host "         $($stale -join ', ')" -ForegroundColor DarkGray
-                Write-Host "         Left alone -- it is your file. Delete them, or copy Hoodrich.ini over it." -ForegroundColor DarkGray
+                Write-Host "  extra  Hoodrich.ini has $($stale.Count) setting(s) the shipped ini leaves out" -ForegroundColor DarkGray
+                Write-Host "         (tuning and developer keys, and any old ones). Left alone -- it is your file." -ForegroundColor DarkGray
             }
 
             if ($places) {
@@ -400,6 +419,8 @@ function Deploy-To([string]$gameDir, [string]$label) {
             }
         }
     }
+
+    Retire-Parkview $scripts
 }
 
 if ($Deploy) {
@@ -488,6 +509,7 @@ if ($Package) {
 
     if ($masters.Count -gt 0) { $masters | Remove-Item -Force -ErrorAction SilentlyContinue }
 
+
     # WHICH BUILD THIS DATA CAME WITH. Somebody dropping in a new dll and keeping the old
     # data folder -- because their save lives in it -- is the most common half-broken
     # install there is, and nothing about it throws. The mod reads this back and says so.
@@ -569,6 +591,12 @@ if ($Package) {
 
     $icons = @(Get-ChildItem (Join-Path $dataDir 'icons') -Filter '*.png' -ErrorAction SilentlyContinue).Count
     if ($icons -lt 50) { $problems += "only $icons icons (expected 50+)" }
+
+    # Parkview: the scene, the doors and the voices. Without the scene it loads and builds nothing.
+    foreach ($needed in @('parkview\scenery\parkview-apartments.xml', 'parkview\voices.txt',
+                          'parkview\rooms.txt', 'parkview\places.txt', 'parkview\spots.txt')) {
+        if (-not (Test-Path (Join-Path $dataDir $needed))) { $problems += "no $needed" }
+    }
 
     # And the one that only applies to the bundle that promises it.
     if ($Full -and -not (Test-Path (Join-Path $stage 'ScriptHookVDotNet3.dll'))) {

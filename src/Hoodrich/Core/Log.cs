@@ -29,6 +29,16 @@ namespace Hoodrich.Core
 
         public static LogLevel Level = LogLevel.Info;
 
+        /// <summary>
+        /// Every line straight to disk while this is on, rather than half a second at a time.
+        ///
+        /// For the moments a crash is likeliest, so the log of one ends where the game did.
+        /// Set by the corner while a fight is going on near it -- see PostUp.Fight -- and by
+        /// nothing else: a whole session written a line at a time is the cost the queue below
+        /// was built to stop paying.
+        /// </summary>
+        public static bool Hot;
+
         public static void Error(string message, Exception ex = null) => Write(LogLevel.Error, message, ex);
         public static void Warn(string message) => Write(LogLevel.Warn, message, null);
         public static void Info(string message) => Write(LogLevel.Info, message, null);
@@ -150,6 +160,7 @@ namespace Hoodrich.Core
         private static bool Due(LogLevel level)
         {
             if (level <= LogLevel.Warn) return true;
+            if (Hot) return true;
             if (Waiting.Count >= FlushAt) return true;
 
             try { return GTA.Game.GameTime - _flushedAt >= FlushEveryMs; }
@@ -189,7 +200,7 @@ namespace Hoodrich.Core
     /// </summary>
     internal static class Build
     {
-        public const string Version = "0.9.8";
+        public const string Version = "0.9.11";
         public const string Name = "Posted Up";
 
         /// <summary>

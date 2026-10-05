@@ -821,6 +821,10 @@ namespace Hoodrich.Gangs
                 Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, h, true);
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, h, false);
 
+                // NOT INTRODUCED TO NPC MIND. He has a conversation of this mod's own
+                // (LeaderTalk), and introducing him put NPC Mind's panel over it on the same
+                // press of E. See the note in DealerManager where the dealer is made.
+
                 // And he cannot die. A leader is a shop, a conversation and a chain of jobs;
                 // losing him to a stray round from a fight two streets away takes all three off
                 // the map with nothing to say why. Not-targetable already stopped anybody aiming

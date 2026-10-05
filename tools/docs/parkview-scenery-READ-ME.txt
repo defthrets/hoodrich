@@ -1,0 +1,118 @@
+OBJECT SPOONER SCENES
+=====================
+
+Anything you arrange in Menyoo's Object Spooner can be built by the mod every session
+instead of only in the session you placed it.
+
+THE SCENES IN THIS FOLDER NEED NOTHING. They ship with the mod, they are read from here
+whatever the settings say about Menyoo, every model and scenario in them is the game's
+own, and a model an install does not have is left out and named in Parkview.log rather
+than stopping anything. Menyoo is only needed to MAKE a scene, never to see one.
+
+HOW
+---
+1. Place your peds, cars and props in Menyoo's Object Spooner as usual.
+2. Object Spooner -> Saved Files -> save it under any name.
+   Menyoo writes it to  <game folder>\menyooStuff\Spooner\<name>.xml
+3. Set FromMenyoo=true in Parkview.ini, or copy the file in here. A file in here wins
+   over one of the same name in Menyoo's folder.
+
+Or press F9 stood in the middle of what you built: everything placed within 80 m is
+written to a scene file in this folder, at its live position, and listed in the log.
+That is the one thing that survives a crash.
+
+WHAT SHIPS WITH THE MOD
+-----------------------
+parkview-apartments.xml  Parkview, on the open ground in Chamberlain Hills: three
+                         apartment blocks and three houses stood up where there was
+                         nothing, the ground under the east block, a shop front fitted
+                         out, residential fencing, streetlights, cypresses and cedars,
+                         weeds and dry grass, a billboard, posters and murals, vending
+                         machines, car wrecks, a couch, bikes and bike racks, bin bags
+                         and rubbish, weed plants and planters on the roofs, a camp in
+                         the west corner and another by the car parts, and eighty-odd
+                         people on the ground, on the floors of the blocks and up on
+                         the roofs.
+
+THE NOTE
+--------
+A scene file's Note can carry instructions, one per line or separated by |:
+
+  absorbs: a, b        the spooner saves this file was made from, skipped in Menyoo's
+                       folder so a thing taken out does not come back
+  sometimes 60: 1, 2   those saved handles are only there six days in ten
+  stays: 1, 2          those peds never move off their marks -- somebody in bed: no
+                       strolls, no walk-offs, never gone for the night. He is only
+                       ever put on his mark while nobody can see it
+  straight: 1, 2       those peds stand on a floor the game's paths do not know -- a
+                       balcony, a roof, a shop or a yard walled in with props. They
+                       walk in, stroll and walk off along their own floor, in
+                       straight lines probed with rays, and never take a path
+  roams 80:            with NOTHING after the colon, everybody the file does not say
+                       stays. With handles after it, only those. The opposite of
+                       stays: they live here rather than stand in it --
+                       they walk anywhere within eighty metres of their mark instead
+                       of the usual twelve, take a turn with the bins, couches and
+                       stoves out there the way a hobo does, and barely stop moving.
+                       Some of them walk drunk
+  outings: X,Y,Z@14    somewhere worth leaving the place for, milled about within
+                       fourteen metres of it: a roamer walks up now and then, dances
+                       or smokes or talks a couple of minutes, and walks home. Six
+                       away at once at most. A coordinate, not a scene name -- it can
+                       be somewhere another mod built
+  keeps: 1, db_apart_02_
+                       never taken down when you walk away, and found again where
+                       they were next time -- for the slow ones. A NUMBER is one
+                       saved handle; a NAME is every placement of that model, which
+                       is the easier way and survives re-saving the scene. The floor
+                       tiles under a kept slab are kept with it. Sparingly: what is
+                       kept is never let go of
+  floors: 1@30.85      lay an invisible floor under that prop, top at that height, for
+                       a model that has no collision of its own (the log names them)
+  idles: 1=A,B; 2=C    what a particular man does, scenarios or animations as dict/clip,
+                       rotated through by his beats
+
+MOVING A VANILLA BENCH, LIGHT OR BIN
+------------------------------------
+It does not stick, and no scene file can make it. A bench on the street is
+part of the MAP, not something somebody placed; Menyoo will shift the one in
+front of you and it looks moved, but nothing in the map changed, so the next
+time the block streams out and back it is at its old spot again. A scene file
+only ever ADDS things.
+
+So take it over instead: look at it and press Numpad *. The map one is hidden
+for good (it goes into hidden.xml) and a real prop of the same model is put in
+the same place, rotation and all. THAT one is a thing rather than a picture --
+move it wherever you like, press F9, and it is in the scene where you left it.
+
+DO IT BEFORE YOU MOVE IT. The hide is a sphere round where the prop is when you
+press the key, so one you have already dragged ten metres leaves its map twin
+sat at the old spot, outside the sphere. Put it back first, or point at the twin
+and use the hide key on it.
+
+TAKING SOMETHING OUT
+--------------------
+Look straight at a map prop and press Ctrl+F9: it goes, and is written into hidden.xml
+in this folder so it stays gone. It will not take one of the scene's own props, or a
+person, or a car. A scene file may also carry a Removals block by hand:
+
+  <Removals><Remove><ModelHash>0x...</ModelHash><X>..</X><Y>..</Y><Z>..</Z><Radius>1.5</Radius></Remove></Removals>
+
+THE PEOPLE
+----------
+They arrive on foot when you can see their marks, and are held frozen until the ground
+under them is solid. Every three quarters of a minute to two and a half, one changes what
+he is doing, has a word with whoever is near, throws a sign, stretches his legs, or walks
+off out of sight and is back later, walking in. They talk within earshot. Hobos go
+through the bins, wrecks and piles round them. Between QuietFrom and QuietTo on the
+game's clock they drift off and drift back after. PedsLive=false in the ini leaves
+everybody stood on his mark.
+
+SETTINGS  (Parkview.ini, [Scenery])
+-----------------------------------
+Enabled     = true    Build saved scenes at all.
+FromMenyoo  = false   Read menyooStuff\Spooner as well as this folder.
+Range       = 220     How near you have to be, in metres.
+PedsLive    = true    The people come and go.
+QuietFrom   = 3       The hours, on the game's clock, that nobody is about.
+QuietTo     = 7       The same number in both means never.

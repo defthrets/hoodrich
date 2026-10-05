@@ -217,6 +217,14 @@ timeline with tabs for what is about you.
 - **Tao Cheng** — call him and he drives over from the port, parks at the kerb, opens the boot,
   walks the box through the house and puts it down in the store room.
 - **Boombox, parked car, corner life** — the block has people on it who talk to each other.
+- **Parkview** — the block on the open ground west of the courts: three apartment blocks, houses,
+  a shop front, a camp, and eighty-odd people who live there, talk out loud, walk about and are
+  not around in the small hours. Rooms behind the doors for $250 a week, a die on the ground
+  that opens the gambling den. It was its own mod for four days in September 2026 and is part of
+  this one now; its files are `data/parkview`, its code `src/Hoodrich/Parkview`, its settings
+  `[Parkview]` in the ini. F9 captures everything placed round you to a scene file, Shift+F9
+  reloads the scenes, Ctrl+F9 hides the map prop you are looking at, Alt+F9 sets the rented
+  room to where you stand, Numpad * takes over a map prop so it stays where you move it.
 
 Franklin's own block never spawns hostiles. It is his hood; he does not get jumped outside his
 own house.

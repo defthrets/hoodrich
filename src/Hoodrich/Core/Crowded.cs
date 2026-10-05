@@ -78,6 +78,19 @@ namespace Hoodrich.Core
         public static bool Busy => Peds >= PedsBusy || Vehicles >= CarsBusy;
 
         /// <summary>
+        /// Past the line by a margin as well: the answer for the few things that ARE the event
+        /// rather than the dressing round it. A takeover's four performers are sent for after
+        /// thirty spectator cars and sixty people and matter more than all of them -- a takeover
+        /// without them is a car park, which is what a full world at Chamberlain Hills produced
+        /// on 2026-09-26 -- so they are allowed a dozen over the line. The line is where OUR
+        /// spawners stop adding to the world, not where the game breaks; its own pools are a
+        /// good way past it.
+        /// </summary>
+        public const int Slack = 12;
+
+        public static bool Full => Peds >= PedsBusy + Slack || Vehicles >= CarsBusy + Slack;
+
+        /// <summary>
         /// Says, once in a while and per caller, that somebody stood down.
         ///
         /// A SPAWNER THAT SILENTLY DOES NOTHING IS INDISTINGUISHABLE FROM A BROKEN ONE, and

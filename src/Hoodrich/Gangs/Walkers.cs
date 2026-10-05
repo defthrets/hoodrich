@@ -375,6 +375,12 @@ namespace Hoodrich.Gangs
 
         private int MaxCrews => _cfg == null ? 2 : _cfg.WalkerCrews;
 
+        /// <summary>
+        /// Set by Main: whether his set is at war with this one this minute. See Scrap -- a crew
+        /// only goes for a set it is actually fighting. Null means the old rule, the rivals list.
+        /// </summary>
+        public Func<string, bool> AtWarWith;
+
         public Walkers(Settings cfg, GangRegistry gangs, string gangId, TurfWatch turf)
         {
             _cfg = cfg;
@@ -669,10 +675,18 @@ namespace Hoodrich.Gangs
             if (mine == null || mine.Rivals.Count == 0) return;
 
             // The groups we have a problem with, worked out once rather than per ped.
+            //
+            // AND ONLY THE ONES HE IS AT WAR WITH. The rivals list is the city's politics, not
+            // his: it has the Lost and the Aztecas on it, so a biker riding through or a man from
+            // El Burro walking to the shop got the whole crew on him every fifteen seconds, and
+            // the block was a firefight with the police circling it whatever he had done. A set
+            // on the list he has no beef with walks past now; one he is at war with does not.
             var hated = new List<int>();
 
             foreach (var id in mine.Rivals)
             {
+                if (AtWarWith != null && !AtWarWith(id)) continue;
+
                 var them = _gangs.Get(id);
 
                 if (them != null && them.GroupHash != 0) hated.Add(them.GroupHash);

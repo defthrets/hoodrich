@@ -34,6 +34,9 @@ namespace Hoodrich.Wheel
         /// <summary>The shape of a spray cap. The same number GraffitiScreen draws them at.</summary>
         private const float CapMark = 0.6406f;
 
+        /// <summary>The Dynasty 8 sign's width over its height. See tools/make_dynasty8.py.</summary>
+        private const float Dynasty8Sign = 3.25f;
+
         private readonly PlayerState _state;
         private readonly Drugs _drugs;
         private readonly Pricing _pricing;
@@ -1254,6 +1257,268 @@ namespace Hoodrich.Wheel
             // tools/make_luber.py.
             page.WithIcon(Icons.FromFile("luber.png"), LuberMark);
 
+            // DYNASTY 8, the game's own realtor, for the places he rents: what each costs, when
+            // the rent is next taken, paying it ahead and giving one up -- and the ones still on
+            // the market, which can be marked on the map or taken from here. Michael, 2026-09-27:
+            // "a new app for the phone it will be called dynasty 8, which will show the houses we
+            // have rented and how much, and we can pay rent in advance or cancel the lease etc."
+            page.AddSub("Dynasty 8", "~", BuildDynastyPage,
+                detail: "Your places, the rent on them, and what's on the market",
+                value: DynastySummary());
+            page.WithIcon(Icons.FromFile("dynasty8.png"));
+
+            // THE GAME'S OWN BROWSER, the same internet the vanilla phone opens -- handed the
+            // screen and the buttons until it is closed. See PhoneController.OpenBrowser.
+            page.Add("Browser", ">", () => OpenBrowser?.Invoke(),
+                detail: "The internet, the way the game's own phone has it",
+                enabled: OpenBrowser != null,
+                disabledReason: "Not wired up");
+            page.WithIcon(Icons.FromFile("browser.png"));
+
+            return page;
+        }
+
+        // ---- Dynasty 8 -------------------------------------------------------------------
+
+        /// <summary>Every place, fresh. A snapshot: the hooks on each are what change anything.</summary>
+        private List<Listing> Listings()
+        {
+            try
+            {
+                var all = Places == null ? null : Places();
+                return all ?? new List<Listing>();
+            }
+            catch (Exception ex)
+            {
+                Log.Debug("Dynasty 8: could not list the places: " + ex.Message);
+                return new List<Listing>();
+            }
+        }
+
+        private Listing Find(string name)
+        {
+            foreach (var l in Listings())
+            {
+                if (string.Equals(l.Name, name, StringComparison.OrdinalIgnoreCase)) return l;
+            }
+
+            return null;
+        }
+
+        /// <summary>The tile's line: how many are his.</summary>
+        private string DynastySummary()
+        {
+            var rented = 0;
+            foreach (var l in Listings()) if (l.Rented) rented++;
+
+            return rented == 0 ? "nothing rented" : rented + (rented == 1 ? " place" : " places");
+        }
+
+        /// <summary>"Low-end, Rancho" -- what it is and where, whichever of the two it has.</summary>
+        private static string Describe(Listing l)
+        {
+            if (string.IsNullOrEmpty(l.Kind)) return l.Area;
+            if (string.IsNullOrEmpty(l.Area)) return l.Kind;
+            return l.Kind + ", " + l.Area;
+        }
+
+        /// <summary>When the next rent is taken, said the way a person says it.</summary>
+        private static string Days(int days)
+        {
+            if (days <= 0) return "today";
+            if (days == 1) return "tomorrow";
+            return "in " + days + " days";
+        }
+
+        private static string Weeks(int n)
+        {
+            return n + (n == 1 ? " week" : " weeks");
+        }
+
+        /// <summary>
+        /// Every place: his first, the soonest rent at the top, then the market, cheapest first.
+        /// A list rather than a grid -- these are names you read, not shapes you know.
+        /// </summary>
+        private WheelPage BuildDynastyPage()
+        {
+            var all = Listings();
+
+            var yours = new List<Listing>();
+            var market = new List<Listing>();
+
+            foreach (var l in all) (l.Rented ? yours : market).Add(l);
+
+            yours.Sort((a, b) => a.DaysLeft.CompareTo(b.DaysLeft));
+            market.Sort((a, b) => a.Rent.CompareTo(b.Rent));
+
+            var page = new WheelPage("Dynasty 8", "Prime property in the Los Santos area");
+            page.WithSign("dynasty8_sign.png", Dynasty8Sign);
+            page.AsList = true;
+
+            var weekly = 0;
+            foreach (var l in yours) weekly += l.Rent;
+
+            page.PanelTitle = "Your places";
+            page.Row("Rented", yours.Count.ToString());
+            page.Row("Rent a week", "$" + weekly.ToString("N0"));
+            if (yours.Count > 0) page.Row("Next rent", Days(yours[0].DaysLeft) + ", " + yours[0].Name);
+
+            foreach (var l in yours)
+            {
+                var name = l.Name;
+
+                page.AddSub(name, ">", () => BuildPlacePage(name),
+                    detail: Describe(l) + " -- $" + l.Rent.ToString("N0") + " a week",
+                    value: "rent " + Days(l.DaysLeft));
+                page.WithIcon(Icons.FromFile("dynasty8.png"));
+            }
+
+            foreach (var l in market)
+            {
+                var name = l.Name;
+
+                page.AddSub(name, ">", () => BuildPlacePage(name),
+                    detail: Describe(l) + " -- on the market",
+                    value: "$" + l.Rent.ToString("N0") + "/wk");
+                page.WithIcon(Icons.FromFile("dynasty8.png"));
+            }
+
+            return page;
+        }
+
+        /// <summary>One place: the rent and where it is up to, and what can be done from here.</summary>
+        private WheelPage BuildPlacePage(string name)
+        {
+            var l = Find(name);
+            if (l == null) return new WheelPage("Dynasty 8", "That one is off the listings");
+
+            var page = new WheelPage(l.Name, Describe(l));
+            page.WithSign("dynasty8_sign.png", Dynasty8Sign);
+
+            page.PanelTitle = l.Rented ? "Yours" : "On the market";
+            page.Row("Rent", "$" + l.Rent.ToString("N0") + " a week");
+
+            if (l.Rented)
+            {
+                page.Row("Next rent", Days(l.DaysLeft));
+                page.Row("Paid ahead", l.WeeksAhead == 0 ? "nothing yet" : Weeks(l.WeeksAhead));
+
+                PayRow(page, l, 1, "Pay a week ahead");
+                PayRow(page, l, 4, "Pay four weeks ahead");
+                MapRow(page, l);
+
+                page.AddSub("Give up the lease", "x", () => BuildGiveUpPage(l.Name),
+                    detail: l.WeeksAhead > 0
+                        ? "The " + Weeks(l.WeeksAhead) + " paid ahead come back to you"
+                        : "The week you're in is spent",
+                    enabled: !l.Inside,
+                    disabledReason: "Not while you're in it");
+
+                return page;
+            }
+
+            var shortBy = l.Rent - Game.Player.Money;
+
+            page.Add("Rent it", ">", () =>
+            {
+                // Take says so itself either way, the same as at the door.
+                if (l.Take != null) l.Take();
+            },
+                detail: "$" + l.Rent.ToString("N0") + " for the first week, and the keys",
+                enabled: shortBy <= 0,
+                disabledReason: "You're $" + shortBy.ToString("N0") + " short");
+
+            MapRow(page, l);
+            return page;
+        }
+
+        /// <summary>
+        /// Paying ahead: this many weeks, or as many as the limit leaves. The next rent moves
+        /// back by what was paid, and the tile says where it is up to afterwards.
+        /// </summary>
+        private void PayRow(WheelPage page, Listing l, int weeks, string label)
+        {
+            var room = l.MostWeeksAhead - l.WeeksAhead;
+            var n = Math.Min(weeks, room);
+            var cost = l.Rent * Math.Max(1, n);
+
+            var why = room <= 0 ? "Paid " + Weeks(l.MostWeeksAhead) + " ahead already"
+                    : Game.Player.Money < cost ? "You're $" + (cost - Game.Player.Money).ToString("N0") + " short"
+                    : null;
+
+            page.Add(label, ">", () =>
+            {
+                var paid = l.PayAhead == null ? 0 : l.PayAhead(weeks);
+
+                if (paid <= 0)
+                {
+                    Notify.Problem("that didn't go through.");
+                    return;
+                }
+
+                var now = Find(l.Name);
+
+                Notify.Important("~g~" + l.Name + "~s~: " + Weeks(paid) + " paid ahead. Next rent " +
+                                 (now == null ? "later" : Days(now.DaysLeft)) + ".");
+            },
+                detail: n > 0 ? "$" + (l.Rent * n).ToString("N0") + " now, and the next rent is " + (n * 7) + " days later" : "",
+                enabled: why == null,
+                disabledReason: why ?? "");
+        }
+
+        /// <summary>A waypoint on its front door.</summary>
+        private static void MapRow(WheelPage page, Listing l)
+        {
+            page.Add("Mark it on the map", ">", () =>
+            {
+                try
+                {
+                    Function.Call(Hash.SET_NEW_WAYPOINT, l.Door.X, l.Door.Y);
+                    Notify.Ticker(l.Name + " is marked on your map.");
+                }
+                catch
+                {
+                    Notify.Problem("couldn't mark it.");
+                }
+            },
+                detail: "A waypoint on its front door");
+        }
+
+        /// <summary>Asked before it is done: a lease given up is gone, and so is the week you're in.</summary>
+        private WheelPage BuildGiveUpPage(string name)
+        {
+            var l = Find(name);
+            if (l == null || !l.Rented) return new WheelPage("Dynasty 8", "It isn't yours to give up");
+
+            var back = l.WeeksAhead * l.Rent;
+
+            var page = new WheelPage("Give up " + l.Name + "?", Describe(l));
+            page.WithSign("dynasty8_sign.png", Dynasty8Sign);
+
+            page.PanelTitle = "If you give it up";
+            page.Row("You get back", back > 0 ? "$" + back.ToString("N0") : "nothing");
+            page.Row("The week you're in", "spent");
+            page.Row("What's stashed", "stays yours");
+
+            page.Add("Yes, give it up", "x", () =>
+            {
+                var got = l.GiveUp == null ? -1 : l.GiveUp();
+
+                if (got < 0)
+                {
+                    Notify.Problem("you can't give that up right now.");
+                    return;
+                }
+
+                Notify.Important("~o~" + l.Name + "~s~ isn't yours any more." +
+                                 (got > 0 ? " $" + got.ToString("N0") + " back for the weeks paid ahead." : ""));
+            },
+                detail: "The lease ends now",
+                enabled: !l.Inside,
+                disabledReason: "Not while you're in it");
+
+            page.Add("No, keep it", "<", () => { }, detail: "Nothing changes");
+
             return page;
         }
 
@@ -1760,6 +2025,12 @@ namespace Hoodrich.Wheel
 
         /// <summary>Set by Main. The three who come out when you ask.</summary>
         public Gangs.Homies Crew;
+
+        /// <summary>Set by Main: every place he can rent, rented or not, for the Dynasty 8 app. See Core.Listing.</summary>
+        public Func<List<Listing>> Places;
+
+        /// <summary>Set by Main: the game's own internet. See Phone.PhoneController.OpenBrowser.</summary>
+        public Action OpenBrowser;
 
         /// <summary>Set by Main. The recovery truck, so she can be rung rather than found.</summary>
         public Locations.TowTruck Tow;
@@ -2497,27 +2768,34 @@ namespace Hoodrich.Wheel
             return ids;
         }
 
-        public IEnumerable<Opt> ResetOptions()
+        /// <summary>
+        /// START OVER, on the settings screen. A player gets three: the whole mod from nothing,
+        /// their graffiti, and the dog back to the yard. The partial wipes and the unlocks are
+        /// for building it and come with the developer tools, like the rest of the Tools.
+        /// </summary>
+        public IEnumerable<Opt> ResetOptions(bool dev)
         {
             yield return new Opt { Kind = OptKind.Heading, Label = "Start over" };
 
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "The gangs",
-                Note = "Every standing, every body, every dollar you made them, and whoever you " +
-                       "run with. Respect, money and product untouched",
-                Do = () => _crew.ResetEverything()
-            };
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "The gangs",
+                    Note = "Every standing, every body, every dollar you made them, and whoever you " +
+                           "run with. Respect, money and product untouched",
+                    Do = () => _crew.ResetEverything()
+                };
 
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Lamar's work",
-                Note = "He works down his list from the top again. What he already paid you stays paid",
-                Enabled = () => _state.MissionsDone.Count > 0,
-                Do = () => _state.ForgetMissions()
-            };
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "Lamar's work",
+                    Note = "He works down his list from the top again. What he already paid you stays paid",
+                    Enabled = () => _state.MissionsDone.Count > 0,
+                    Do = () => _state.ForgetMissions()
+                };
 
             yield return new Opt
             {
@@ -2529,52 +2807,56 @@ namespace Hoodrich.Wheel
                 Do = () => { if (Jobs != null) Jobs.ForgetPaint(); }
             };
 
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Hot blocks",
-                Note = "Every corner you have made hot forgets it. The city starts cold again",
-                Enabled = () => _postUp != null && _postUp.Ground.WarmBlocks > 0,
-                Do = () => _postUp.Ground.Forget()
-            };
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "Hot blocks",
+                    Note = "Every corner you have made hot forgets it. The city starts cold again",
+                    Enabled = () => _postUp != null && _postUp.Ground.WarmBlocks > 0,
+                    Do = () => _postUp.Ground.Forget()
+                };
 
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Gerald's packages",
-                Note = "Both fronts back on the table and the port shut again, so his whole " +
-                       "sequence runs from the top. What you already sold stays sold",
-                // Always available, deliberately.
-                //
-                // It used to require the sequence to be visibly under way, which meant the one
-                // state you could not reset out of was the one where the count had gone wrong
-                // and everything read as zero -- the escape hatch was locked by the same
-                // reading that made you need it. Resetting something you have not started is a
-                // no-op, and a no-op is a far better failure than a dead end.
-                Do = () => _state.ForgetFronts()
-            };
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "Gerald's packages",
+                    Note = "Both fronts back on the table and the port shut again, so his whole " +
+                           "sequence runs from the top. What you already sold stays sold",
+                    // Always available, deliberately.
+                    //
+                    // It used to require the sequence to be visibly under way, which meant the one
+                    // state you could not reset out of was the one where the count had gone wrong
+                    // and everything read as zero -- the escape hatch was locked by the same
+                    // reading that made you need it. Resetting something you have not started is a
+                    // no-op, and a no-op is a far better failure than a dead end.
+                    Do = () => _state.ForgetFronts()
+                };
 
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Finish Gerald's package",
-                Note = "Counts what he's fronted you as sold without selling it, so he gets in " +
-                       "touch and you can hand it in. Skips the audition, so the set will take " +
-                       "you. Press it again for the second one and the port opens up",
-                Enabled = () => _state.FrontsDone < 2 || _state.HasFrontedWork,
-                Do = () => Notify.Important("~g~" + _state.FinishFront() + "~s~")
-            };
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "Finish Gerald's package",
+                    Note = "Counts what he's fronted you as sold without selling it, so he gets in " +
+                           "touch and you can hand it in. Skips the audition, so the set will take " +
+                           "you. Press it again for the second one and the port opens up",
+                    Enabled = () => _state.FrontsDone < 2 || _state.HasFrontedWork,
+                    Do = () => Notify.Important("~g~" + _state.FinishFront() + "~s~")
+                };
 
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Count Gerald's packages done",
-                Note = "Marks both of his fronts as moved without moving them. For a save that " +
-                       "cleared one and was not credited for it -- he opens up the port instead " +
-                       "of asking again",
-                Enabled = () => _state.FrontsDone < 2,
-                Do = () => _state.CreditFronts()
-            };
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "Count Gerald's packages done",
+                    Note = "Marks both of his fronts as moved without moving them. For a save that " +
+                           "cleared one and was not credited for it -- he opens up the port instead " +
+                           "of asking again",
+                    Enabled = () => _state.FrontsDone < 2,
+                    Do = () => _state.CreditFronts()
+                };
 
             yield return new Opt
             {
@@ -2587,45 +2869,48 @@ namespace Hoodrich.Wheel
                 Do = () => ResetTrigger?.Invoke()
             };
 
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Your socials",
-                Note = "Followers back to nobody and the timeline cleared. The block carries on " +
-                       "talking; it stops knowing who you are",
-                Enabled = () => WipeSocials != null,
-                Do = () => WipeSocials?.Invoke()
-            };
-
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Unlock everything",
-                Note = "Every job marked done, every leader met, the port open, Gerald's " +
-                       "packages cleared and the rank to match. For seeing the far end of the " +
-                       "mod without playing the near end again",
-                Do = () =>
+            if (dev)
+                yield return new Opt
                 {
-                    _state.UnlockEverything(AllMissionIds(), AllGangIds());
-                    Notify.Important("~g~Everything's open.~s~");
-                }
-            };
+                    Kind = OptKind.Danger,
+                    Label = "Your socials",
+                    Note = "Followers back to nobody and the timeline cleared. The block carries on " +
+                           "talking; it stops knowing who you are",
+                    Enabled = () => WipeSocials != null,
+                    Do = () => WipeSocials?.Invoke()
+                };
 
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Unlock Lamar's work",
-                Note = "Every job on his list open at once. He works the list in order, so this " +
-                       "marks them all as done -- and a done job still shows on his list as " +
-                       "one you can run again",
-                Do = () =>
+            if (dev)
+                yield return new Opt
                 {
-                    foreach (var id in AllMissionIds()) _state.MarkDone(id);
+                    Kind = OptKind.Danger,
+                    Label = "Unlock everything",
+                    Note = "Every job marked done, every leader met, the port open, Gerald's " +
+                           "packages cleared and the rank to match. For seeing the far end of the " +
+                           "mod without playing the near end again",
+                    Do = () =>
+                    {
+                        _state.UnlockEverything(AllMissionIds(), AllGangIds());
+                        Notify.Important("~g~Everything's open.~s~");
+                    }
+                };
 
-                    _state.Touch();
-                    Notify.Important("~g~Lamar's list is open.~s~");
-                }
-            };
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "Unlock Lamar's work",
+                    Note = "Every job on his list open at once. He works the list in order, so this " +
+                           "marks them all as done -- and a done job still shows on his list as " +
+                           "one you can run again",
+                    Do = () =>
+                    {
+                        foreach (var id in AllMissionIds()) _state.MarkDone(id);
+
+                        _state.Touch();
+                        Notify.Important("~g~Lamar's list is open.~s~");
+                    }
+                };
 
             yield return new Opt
             {
@@ -2658,72 +2943,78 @@ namespace Hoodrich.Wheel
                 }
             };
 
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Your name",
-                Note = "Respect to nothing, and the rank with it. Deals, grams and earnings forgotten",
-                Do = () => _state.ForgetName()
-            };
-
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Your money",
-                Note = "The cash in hand. Not the bank and not anything you own",
-                Enabled = () => Game.Player.Money > 0,
-                Do = () => Game.Player.Money = 0
-            };
-
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "Your guns",
-                Note = "Every weapon and every round. You keep your fists",
-                Do = DropAllGuns
-            };
-
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "What you're carrying",
-                Note = "Everything in your pockets, bagged and raw. The house is a separate row",
-                Enabled = () => Stash.Total > 0.005f,
-                Do = () => Stash.Clear()
-            };
-
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "The stash house",
-                Note = "Everything kept at the house. What is on you stays in your pockets",
-                Enabled = () => _stash != null && _stash.Stash != null && _stash.Stash.Total > 0.005f,
-                Do = () => { if (_stash != null && _stash.Stash != null) _stash.Stash.Clear(); }
-            };
-
-            yield return new Opt
-            {
-                Kind = OptKind.Danger,
-                Label = "All of it",
-                Note = "Gangs, jobs, socials, your name, your money, your guns and every gram. " +
-                       "None of it comes back",
-                Do = () =>
+            if (dev)
+                yield return new Opt
                 {
-                    _crew.ResetEverything();
-                    _state.ForgetMissions();
-                    _state.ForgetName();
+                    Kind = OptKind.Danger,
+                    Label = "Your name",
+                    Note = "Respect to nothing, and the rank with it. Deals, grams and earnings forgotten",
+                    Do = () => _state.ForgetName()
+                };
 
-                    WipeSocials?.Invoke();
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "Your money",
+                    Note = "The cash in hand. Not the bank and not anything you own",
+                    Enabled = () => Game.Player.Money > 0,
+                    Do = () => Game.Player.Money = 0
+                };
 
-                    Social.Inbox.Wipe();
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "Your guns",
+                    Note = "Every weapon and every round. You keep your fists",
+                    Do = DropAllGuns
+                };
 
-                    Game.Player.Money = 0;
-                    DropAllGuns();
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "What you're carrying",
+                    Note = "Everything in your pockets, bagged and raw. The house is a separate row",
+                    Enabled = () => Stash.Total > 0.005f,
+                    Do = () => Stash.Clear()
+                };
 
-                    Stash.Clear();
-                    if (_stash != null && _stash.Stash != null) _stash.Stash.Clear();
-                }
-            };
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "The stash house",
+                    Note = "Everything kept at the house. What is on you stays in your pockets",
+                    Enabled = () => _stash != null && _stash.Stash != null && _stash.Stash.Total > 0.005f,
+                    Do = () => { if (_stash != null && _stash.Stash != null) _stash.Stash.Clear(); }
+                };
+
+            if (dev)
+                yield return new Opt
+                {
+                    Kind = OptKind.Danger,
+                    Label = "All of it",
+                    Note = "Gangs, jobs, socials, your name, your money, your guns and every gram. " +
+                           "None of it comes back",
+                    Do = () =>
+                    {
+                        _crew.ResetEverything();
+                        _state.ForgetMissions();
+                        _state.ForgetName();
+
+                        WipeSocials?.Invoke();
+
+                        Social.Inbox.Wipe();
+
+                        Game.Player.Money = 0;
+                        DropAllGuns();
+
+                        Stash.Clear();
+                        if (_stash != null && _stash.Stash != null) _stash.Stash.Clear();
+                    }
+                };
         }
 
         /// <summary>

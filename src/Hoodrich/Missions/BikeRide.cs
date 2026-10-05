@@ -58,8 +58,13 @@ namespace Hoodrich.Missions
         private static readonly Vector3 BikeSpot = new Vector3(-210.409f, -1720.489f, 32.664f);
         private const float BikeHeading = 102.085f;
 
-        /// <summary>The courts in Chamberlain Hills.</summary>
-        private static readonly Vector3 Courts = new Vector3(-227.173f, -1541.756f, 31.607f);
+        /// <summary>
+        /// The basketball court in Chamberlain Hills: where you ride to and where the Ballas are
+        /// waiting. Michael's HUD reading on the court on 2026-09-26, facing north -- it was a spot
+        /// forty metres south-west of it, off the court. The hoops game shuts while any job is
+        /// on (CourtHost.Closed), so its ring is not on the floor for the fight.
+        /// </summary>
+        private static readonly Vector3 Courts = new Vector3(-201.828f, -1510.043f, 31.632f);
 
         /// <summary>The 24/7 down the road.</summary>
         private static readonly Vector3 Shop = new Vector3(29.028f, -1352.893f, 29.341f);

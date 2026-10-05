@@ -11,6 +11,14 @@ here (`tr_*.py`), run `python make_langs.py` from this folder -- it refuses a co
 went missing, edge whitespace that changed, a key written twice, and reports coverage against
 `uikeys.json`, which `uikeys.py` rebuilds from the source.
 
+Glue and dialogue share a lookup, so `make_langs.py` also writes each file's `"tails"`: the glue
+keys (" now.", " a week.", " of ") that also turn up inside a line of dialogue or the feed. A tail
+is only swapped inside a string where some other glue matched too, or in a bare counter that is
+nothing else but numbers ("12 down"), so a notice comes out wholly translated and a line somebody
+says is never touched. Translate the ordinary words freely; the tails list keeps them out of the
+dialogue. A fixed phrase in the MIDDLE of a notice (a ternary like `"the block"`) cannot be reached
+by glue -- add the whole line, or a longer piece that spans it, by hand.
+
 Languages: en-US (a spelling overlay), pt-BR, es, fr, de, ru, pl, zh-CN and hi. Chinese only
 draws when GTA V itself is set to Chinese -- its glyphs are not in the font otherwise. Hindi is
 in Latin letters, the way it is typed, because the game's fonts have no Devanagari at all.
